@@ -45,8 +45,10 @@ export const Header: React.FC = () => {
       <div className="landing-header__inner">
         <div className="landing-header__left">
           <div className="landing-logo">
-            <span className="landing-logo__icon" />
-            <span className="landing-logo__text">Cosmic Match</span>
+            <Link className="btn btn--flat" to="/">
+              <span className="landing-logo__icon" />
+              <span className="landing-logo__text">Cosmic Match</span>
+            </Link>
           </div>
         </div>
 
