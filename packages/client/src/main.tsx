@@ -5,6 +5,9 @@ import { Provider } from 'react-redux'
 import { store } from './store'
 
 import { routes } from './routes'
+import './shared/styles/normalize.pcss'
+import './shared/styles/base.pcss'
+import './shared/styles/landing.pcss'
 
 const router = createBrowserRouter(routes)
 

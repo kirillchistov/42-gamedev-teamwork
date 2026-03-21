@@ -71,11 +71,17 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-pill);
-  background:
-    radial-gradient(circle at 20% 20%, var(--color-accent-primary), transparent 60%),
-    radial-gradient(circle at 80% 80%, var(--color-accent-secondary), transparent 60%);
-  box-shadow:
-    0 0 18px rgba(79, 70, 229, 0.6),
+  background: radial-gradient(
+      circle at 20% 20%,
+      var(--color-accent-primary),
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      var(--color-accent-secondary),
+      transparent 60%
+    );
+  box-shadow: 0 0 18px rgba(79, 70, 229, 0.6),
     0 0 0 1px rgba(148, 163, 184, 0.4);
   position: relative;
 }
@@ -245,7 +251,6 @@
   border: 1px solid var(--color-accent-primary);
 }
 
-
 .btn--outline:hover {
   background: var(--color-accent-primary-soft);
 }
@@ -327,9 +332,7 @@
 
 .hero-board__cell--match {
   background: var(--color-accent-primary-soft);
-  box-shadow:
-    0 0 0 1px rgba(79, 70, 229, 0.6),
-    0 0 12px rgba(79, 70, 229, 0.4);
+  box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.6), 0 0 12px rgba(79, 70, 229, 0.4);
   position: relative;
 }
 
@@ -338,8 +341,7 @@
   height: 18px;
   border-radius: var(--radius-pill);
   background: linear-gradient(135deg, var(--color-accent-primary), #fb7185);
-  box-shadow:
-    0 6px 14px rgba(148, 163, 184, 0.5),
+  box-shadow: 0 6px 14px rgba(148, 163, 184, 0.5),
     0 0 0 1px rgba(15, 23, 42, 0.35);
 }
 
@@ -398,20 +400,17 @@
 @keyframes heroGemPulse {
   0% {
     transform: scale(0.9);
-    box-shadow:
-      0 6px 14px rgba(148, 163, 184, 0.5),
+    box-shadow: 0 6px 14px rgba(148, 163, 184, 0.5),
       0 0 0 1px rgba(15, 23, 42, 0.35);
   }
   50% {
     transform: scale(1.1);
-    box-shadow:
-      0 0 18px rgba(79, 70, 229, 0.9),
+    box-shadow: 0 0 18px rgba(79, 70, 229, 0.9),
       0 0 32px rgba(56, 189, 248, 0.8);
   }
   100% {
     transform: scale(0.9);
-    box-shadow:
-      0 6px 14px rgba(148, 163, 184, 0.5),
+    box-shadow: 0 6px 14px rgba(148, 163, 184, 0.5),
       0 0 0 1px rgba(15, 23, 42, 0.35);
   }
 }
@@ -446,22 +445,20 @@
   0% {
     opacity: 0;
     transform: scale(0.6);
-    box-shadow: 0 0 0 rgba(56, 189, 248, 0.0);
+    box-shadow: 0 0 0 rgba(56, 189, 248, 0);
   }
   40% {
     opacity: 0.9;
     transform: scale(1);
-    box-shadow:
-      0 0 18px rgba(56, 189, 248, 0.9),
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.9),
       0 0 30px rgba(168, 85, 247, 0.8);
   }
   100% {
     opacity: 0;
     transform: scale(1.4);
-    box-shadow: 0 0 0 rgba(56, 189, 248, 0.0);
+    box-shadow: 0 0 0 rgba(56, 189, 248, 0);
   }
 }
-
 
 /* === BENEFITS (ABOUT) === */
 
@@ -561,9 +558,12 @@
   width: 40px;
   height: 40px;
   border-radius: var(--radius-pill);
-  background: radial-gradient(circle at 30% 30%, var(--color-accent-primary), var(--color-accent-secondary));
-  box-shadow:
-    0 6px 14px rgba(148, 163, 184, 0.8),
+  background: radial-gradient(
+    circle at 30% 30%,
+    var(--color-accent-primary),
+    var(--color-accent-secondary)
+  );
+  box-shadow: 0 6px 14px rgba(148, 163, 184, 0.8),
     0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
@@ -869,9 +869,7 @@
 .landing--dark-neon .landing-nav button:hover,
 .landing--dark-neon .landing-nav a.btn--flat:hover {
   color: var(--color-neon-blue);
-  text-shadow:
-    0 0 6px rgba(56, 189, 248, 0.9),
-    0 0 14px rgba(168, 85, 247, 0.8);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9), 0 0 14px rgba(168, 85, 247, 0.8);
 }
 
 /* cards & sections background */
@@ -926,18 +924,13 @@
 
 .landing--dark-neon .hero-board__cell--match {
   background: rgba(15, 23, 42, 0.96);
-  box-shadow:
-    0 0 16px rgba(56, 189, 248, 0.9),
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.9),
     inset 0 0 0 1px rgba(56, 189, 248, 0.9);
 }
 
 /* дефолтный цвет только если нет модификатора */
-.landing--dark-neon .hero-board__gem:not(
-  .hero-board__gem--blue,
-  .hero-board__gem--pink,
-  .hero-board__gem--green,
-  .hero-board__gem--amber
-) {
+.landing--dark-neon
+  .hero-board__gem:not(.hero-board__gem--blue, .hero-board__gem--pink, .hero-board__gem--green, .hero-board__gem--amber) {
   background: radial-gradient(
     circle at 30% 30%,
     var(--color-neon-blue),
@@ -956,9 +949,7 @@
 
 .landing--dark-neon .team-card__name {
   color: var(--color-text-main-dark);
-  text-shadow:
-    0 0 6px rgba(56, 189, 248, 0.6),
-    0 0 10px rgba(88, 28, 135, 0.5);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.6), 0 0 10px rgba(88, 28, 135, 0.5);
 }
 
 .landing--dark-neon .team-card__github {
@@ -967,16 +958,16 @@
 
 .landing--dark-neon .team-card__github:hover {
   color: var(--color-neon-purple);
-  text-shadow:
-    0 0 6px rgba(56, 189, 248, 0.9),
-    0 0 12px rgba(168, 85, 247, 0.8);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9), 0 0 12px rgba(168, 85, 247, 0.8);
 }
 
 .landing--dark-neon .team-card__avatar {
-  background: radial-gradient(circle at 30% 30%, var(--color-neon-blue), var(--color-neon-purple));
-  box-shadow:
-    0 0 12px rgba(56, 189, 248, 0.8),
-    0 0 0 1px rgba(15, 23, 42, 0.9);
+  background: radial-gradient(
+    circle at 30% 30%,
+    var(--color-neon-blue),
+    var(--color-neon-purple)
+  );
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.8), 0 0 0 1px rgba(15, 23, 42, 0.9);
 }
 
 /* auth in dark theme */
@@ -999,8 +990,7 @@
 
 .landing--dark-neon .auth-form input:focus {
   border-color: var(--color-neon-blue);
-  box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.6),
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6),
     0 0 10px rgba(56, 189, 248, 0.6);
 }
 
@@ -1010,9 +1000,7 @@
 
 .landing--dark-neon .auth-link:hover {
   color: var(--color-neon-purple);
-  text-shadow:
-    0 0 6px rgba(56, 189, 248, 0.9),
-    0 0 10px rgba(168, 85, 247, 0.8);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9), 0 0 10px rgba(168, 85, 247, 0.8);
 }
 
 /* footer in dark theme */
