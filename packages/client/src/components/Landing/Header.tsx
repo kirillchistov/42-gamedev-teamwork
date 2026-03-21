@@ -1,24 +1,4 @@
-// import { Link } from 'react-router-dom'
-
-// export const Header = () => {
-//   return (
-//     <nav>
-//       <ul>
-//         <li>
-//           <Link to="/">Главная</Link>
-//         </li>
-//         <li>
-//           <Link to="/friends">Страница со списком друзей</Link>
-//         </li>
-//         <li>
-//           <Link to="/404">404</Link>
-//         </li>
-//       </ul>
-//     </nav>
-//   )
-// }
-
-// Общий хедер лендинга, который включает в себя навигацию, переключатель тем и бургер-меню
+// Хедер лендинга, который включает в себя навигацию, переключатель тем и бургер-меню
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -72,20 +52,26 @@ export const Header: React.FC = () => {
 
         {/* Desktop nav */}
         <nav className="landing-nav landing-nav--desktop">
-          <Link className="btn btn--flat" to="/game">
-            Игра
-          </Link>
-          <Link className="btn btn--flat" to="/profile">
-            Профиль
-          </Link>
-          <Link className="btn btn--flat" to="/leaderboard">
-            Лидеры
-          </Link>
-          <Link className="btn btn--flat" to="/forum">
+          <button type="button" onClick={() => scrollToSection('how-to-play')}>
+            Как играть
+          </button>
+          <button type="button" onClick={() => scrollToSection('benefits')}>
+            Преимущества
+          </button>
+          <button type="button" onClick={() => scrollToSection('forum')}>
             Форум
-          </Link>
-          <Link className="btn btn--flat" to="/login">
-            Вход
+          </button>
+          <button type="button" onClick={() => scrollToSection('leaderboard')}>
+            Лидеры
+          </button>
+          <button type="button" onClick={() => scrollToSection('team')}>
+            Команда
+          </button>
+          <button type="button" onClick={() => scrollToSection('contact')}>
+            Контакт
+          </button>
+          <Link className="btn btn--flat" to="#reg-login">
+            Вход / Регистрация
           </Link>
         </nav>
 
@@ -149,29 +135,26 @@ export const Header: React.FC = () => {
           (mobileOpen ? ' landing-nav--mobile-open' : '')
         }
         id="mobile-nav">
-        <Link className="btn btn--outline" to="/">
-          Главная
-        </Link>
-        <Link className="btn btn--outline" to="/game">
-          Игра
-        </Link>
-        <Link className="btn btn--outline" to="/profile">
-          Профиль
-        </Link>
-        <Link className="btn btn--outline" to="/leaderboard">
-          Лидеры
-        </Link>
-        <Link className="btn btn--outline" to="/forum">
+        <button type="button" onClick={() => scrollToSection('how-to-play')}>
+          Как играть
+        </button>
+        <button type="button" onClick={() => scrollToSection('forum')}>
           Форум
-        </Link>
-        <Link className="btn btn--outline" to="/forum-topic">
-          Топик
-        </Link>
+        </button>
+        <button type="button" onClick={() => scrollToSection('leaderboard')}>
+          Лидеры
+        </button>
+        <button type="button" onClick={() => scrollToSection('benefits')}>
+          Преимущества
+        </button>
+        <button type="button" onClick={() => scrollToSection('team')}>
+          Команда
+        </button>
+        <button type="button" onClick={() => scrollToSection('contact')}>
+          Контакт
+        </button>
         <Link className="btn btn--outline" to="/login">
           Вход
-        </Link>
-        <Link className="btn btn--outline" to="/signup">
-          Регистрация
         </Link>
       </nav>
     </header>
