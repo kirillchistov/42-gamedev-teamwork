@@ -10,6 +10,8 @@
     "test": "jest ./"
   },
   "dependencies": {
+    "@gravity-ui/icons": "^2.18.0",
+    "@gravity-ui/uikit": "^7.35.0",
     "@reduxjs/toolkit": "^1.9.5",
     "@types/react-helmet": "^6.1.7",
     "cookie-parser": "^1.4.6",

@@ -11,6 +11,8 @@
     "test": "jest ."
   },
   "dependencies": {
+    "@gravity-ui/icons": "^2.18.0",
+    "@gravity-ui/uikit": "^7.35.0",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.2",
