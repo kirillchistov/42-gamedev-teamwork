@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 'use strict'
 var __createBinding =
   (this && this.__createBinding) ||
