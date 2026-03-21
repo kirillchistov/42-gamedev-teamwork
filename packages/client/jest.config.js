@@ -8,4 +8,5 @@ export default {
   globals: {
     __SERVER_PORT__: process.env.SERVER_PORT,
   },
-}
+  setupFilesAfterEnv: ['@testing-library/jest-dom'],
+};
