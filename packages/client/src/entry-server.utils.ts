@@ -35,6 +35,7 @@ export const createFetchRequest = (req: ExpressRequest) => {
     method: string
     headers: Headers
     signal: AbortSignal
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     body?: any
   } = {
     method: req.method,

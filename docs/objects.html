@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Match 3 Asset Collection</title>
+    <style>
+        body { background-color: #1a1a2e; font-family: 'Segoe UI', sans-serif; color: white; text-align: center; }
+        h1 { margin-top: 40px; color: #e94560; }
+        h3 { color: #0f3460; background: #e94560; display: inline-block; padding: 5px 15px; border-radius: 15px; margin-top: 30px;}
+        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; padding: 20px; }
+        .card { background: #16213e; border-radius: 10px; padding: 10px; width: 120px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s; }
+        .card:hover { transform: scale(1.1); }
+        .label { margin-top: 10px; font-size: 12px; color: #aaa; }
+    </style>
+</head>
+<body>
+
+    <h1>Gem Collection</h1>
+    <div class="container">
+        <!-- Gem 1: Stellar Diamond (Blue) -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+                    </linearGradient>
+                    <filter id="glow"><feGaussianBlur stdDeviation="2.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                </defs>
+                <polygon points="50,10 90,50 50,90 10,50" fill="url(#blueGrad)" filter="url(#glow)" />
+                <polygon points="50,20 80,50 50,80" fill="rgba(255,255,255,0.3)" />
+            </svg>
+            <div class="label">Stellar Diamond</div>
+        </div>
+
+        <!-- Gem 2: Solar Shard (Yellow/Orange) -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="solarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#f7971e;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#ffd200;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <polygon points="50,5 61,40 95,40 68,60 79,95 50,75 21,95 32,60 5,40 39,40" fill="url(#solarGrad)" filter="url(#glow)" />
+            </svg>
+            <div class="label">Solar Shard</div>
+        </div>
+
+        <!-- Gem 3: Nebula Sphere (Purple) -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                    <radialGradient id="purpleGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                        <stop offset="0%" style="stop-color:#ff00cc;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#333399;stop-opacity:1" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="35" fill="url(#purpleGrad)" filter="url(#glow)" />
+                <ellipse cx="40" cy="40" rx="10" ry="5" fill="rgba(255,255,255,0.4)" />
+            </svg>
+            <div class="label">Nebula Sphere</div>
+        </div>
+<!-- Gem 4: Void Crystal (Green) -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#11998e;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#38ef7d;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <!-- Hexagon Shape -->
+                <polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="url(#greenGrad)" filter="url(#glow)" />
+                <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+            </svg>
+            <div class="label">Void Crystal</div>
+        </div>
+    </div>
+
+    <h3>Specials & Power-ups</h3>
+    <div class="container">
+        <!-- Bomb: Antimatter Orb -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                    <radialGradient id="bombGrad" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" style="stop-color:#ff0000;stop-opacity:1" />
+                        <stop offset="60%" style="stop-color:#4a0000;stop-opacity:1" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="55" r="30" fill="url(#bombGrad)" />
+                <!-- Fuse -->
+                <path d="M50,25 Q60,10 70,15" stroke="#aaa" stroke-width="3" fill="none" />
+                <circle cx="72" cy="16" r="5" fill="#ffaa00">
+                    <animate attributeName="opacity" values="1;0.3;1" dur="0.5s" repeatCount="indefinite" />
+                </circle>
+                <!-- Skull or Warning Icon simplified -->
+                <text x="50" y="62" font-family="Arial" font-size="20" fill="black" text-anchor="middle" font-weight="bold">!</text>
+            </svg>
+            <div class="label">Antimatter Bomb</div>
+        </div>
+
+        <!-- Flash: Hyperdrive Bolt -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <path d="M55,10 L30,45 L45,45 L25,90 L80,40 L60,40 L75,10 Z" fill="#fff" filter="url(#glow)" />
+                <path d="M55,10 L30,45 L45,45 L25,90 L80,40 L60,40 L75,10 Z" fill="none" stroke="#00f2fe" stroke-width="2" />
+            </svg>
+            <div class="label">Hyperdrive Flash</div>
+        </div>
+
+        <!-- Row/Col Clear: Laser -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <rect x="10" y="40" width="80" height="20" rx="5" fill="#ff4d4d" filter="url(#glow)" />
+                <rect x="10" y="40" width="80" height="5" fill="rgba(255,255,255,0.5)" />
+                <polygon points="90,50 80,40 80,60" fill="#ff4d4d" />
+            </svg>
+            <div class="label">Laser Beam</div>
+        </div>
+    </div>
+
+    <h3>Thematic Objects</h3>
+    <div class="container">
+        <!-- Starship -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <path d="M50,10 L70,70 L50,55 L30,70 Z" fill="#aeb0b5" stroke="#7c7d81" stroke-width="1" />
+                <path d="M35,55 L25,75 L50,60 L75,75 L65,55" fill="#cc0000" />
+                <circle cx="50" cy="35" r="5" fill="#00ffff" opacity="0.8" />
+                <path d="M45,65 L50,90 L55,65" fill="#ff6600" opacity="0.8">
+                    <animate attributeName="opacity" values="0.8;0.2;0.8" dur="0.3s" repeatCount="indefinite" />
+                </path>
+            </svg>
+            <div class="label">Starship</div>
+        </div>
+        <!-- Asteroid -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <path d="M30,40 Q20,60 30,75 Q50,85 70,75 Q85,60 70,35 Q60,20 40,25 Z" fill="#555" stroke="#333" stroke-width="2" />
+                <circle cx="40" cy="50" r="8" fill="#444" />
+                <circle cx="60" cy="65" r="5" fill="#444" />
+                <circle cx="50" cy="35" r="4" fill="#444" />
+            </svg>
+            <div class="label">Asteroid</div>
+        </div>
+
+        <!-- Comet -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="cometTail" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0" />
+                        <stop offset="100%" style="stop-color:#87ceeb;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <ellipse cx="70" cy="50" rx="50" ry="15" fill="url(#cometTail)" transform="rotate(30 50 50)" />
+                <circle cx="25" cy="25" r="15" fill="#e0e0e0" />
+                <circle cx="22" cy="22" r="5" fill="#ffffff" />
+            </svg>
+            <div class="label">Comet</div>
+        </div>
+
+        <!-- Space Hero (Helmet) -->
+        <div class="card">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <!-- Helmet Base -->
+                <path d="M25,50 Q25,20 50,20 Q75,20 75,50 L75,70 Q75,85 50,85 Q25,85 25,70 Z" fill="#2c3e50" stroke="#34495e" stroke-width="2" />
+                <!-- Visor -->
+                <path d="M30,45 Q30,30 50,30 Q70,30 70,45 L65,65 Q50,75 35,65 Z" fill="#3498db" opacity="0.8" />
+                <!-- Reflection -->
+                <path d="M35,40 Q40,35 45,40" stroke="white" stroke-width="2" fill="none" opacity="0.6" />
+            </svg>
+            <div class="label">Space Hero</div>
+        </div>
+    </div>
+
+</body>
+</html>

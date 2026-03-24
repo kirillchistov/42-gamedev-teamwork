@@ -19,6 +19,7 @@ const initialState: UserState = {
 
 export const fetchUserThunk = createAsyncThunk(
   'user/fetchUserThunk',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async (_: void) => {
     const url = `${SERVER_HOST}/user`
     return fetch(url).then(res => res.json())

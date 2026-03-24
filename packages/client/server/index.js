@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -34,7 +35,11 @@ const promises_1 = __importDefault(require("fs/promises"));
 const vite_1 = require("vite");
 const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
-const port = process.env.PORT || 80;
+// const port = process.env.PORT || 80;
+const port =
+  Number(process.env.CLIENT_PORT) ||
+  Number(process.env.PORT) ||
+  3000;
 const clientPath = path_1.default.join(__dirname, '..');
 const isDev = process.env.NODE_ENV === 'development';
 async function createServer() {
@@ -75,7 +80,7 @@ async function createServer() {
                 render = (await Promise.resolve().then(() => __importStar(require(pathToServer)))).render;
             }
             // Получаем HTML-строку из JSX
-            const { html: appHtml, initialState, helmet, styleTags } = await render(req);
+            const { html: appHtml, initialState, helmet, styleTags, } = await render(req);
             // Заменяем комментарий на сгенерированную HTML-строку
             const html = template
                 .replace('<!--ssr-styles-->', styleTags)

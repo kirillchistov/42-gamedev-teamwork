@@ -1,5 +1,6 @@
 import { useSelector } from './store'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { fetchUserThunk, selectUser } from './slices/userSlice'
 
 const App = () => {
