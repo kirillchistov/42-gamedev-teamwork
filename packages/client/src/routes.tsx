@@ -73,12 +73,22 @@ export const routes = [
     fetchData: initLeaderboardPage,
   },
   {
-    path: '*',
+    path: '/error404',
     Component: Error404Page,
     fetchData: initError404Page,
   },
   {
-    path: '*',
+    path: '/error/404',
+    Component: Error404Page,
+    fetchData: initError404Page,
+  },
+  {
+    path: '/error500',
+    Component: Error500Page,
+    fetchData: initError500Page,
+  },
+  {
+    path: '/error/500',
     Component: Error500Page,
     fetchData: initError500Page,
   },
