@@ -7,3 +7,4 @@ import './client.d'
 
 // пока используем один адрес, потом заменим на define
 export const SERVER_HOST = 'http://localhost:3000'
+export const DEFAULT_AVATAR_PATH = '/avatar-transp.png'
