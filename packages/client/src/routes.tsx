@@ -14,6 +14,7 @@ import { ForumPage, initForumPage } from './pages/ForumPage'
 import { ForumTopicPage, initForumTopicPage } from './pages/ForumTopicPage'
 import { LeaderboardPage, initLeaderboardPage } from './pages/LeaderboardPage'
 import { Error404Page, initError404Page } from './pages/Error404Page'
+import { Error500Page, initError500Page } from './pages/Error500Page'
 
 export type PageInitContext = {
   clientToken?: string
@@ -75,6 +76,11 @@ export const routes = [
     path: '*',
     Component: Error404Page,
     fetchData: initError404Page,
+  },
+  {
+    path: '*',
+    Component: Error500Page,
+    fetchData: initError500Page,
   },
 
   // исходные шаблонные роуты
