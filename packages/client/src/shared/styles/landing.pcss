@@ -1,4 +1,5 @@
 @import './variables.pcss';
+/* Отсюда большую часть стилей не про лендинг унесем в base.pcss */
 
 /* === COMMON LAYOUT === */
 
@@ -251,8 +252,14 @@
   border: 1px solid var(--color-accent-primary);
 }
 
+.landing--dark-neon .landing-logo__text {
+  background: transparent;
+  color: var(--color-accent-primary-soft);
+}
+
 .btn--outline:hover {
   background: var(--color-accent-primary-soft);
+  color: var(--color-accent-primary);
 }
 
 .btn--flat {
@@ -457,6 +464,188 @@
     opacity: 0;
     transform: scale(1.4);
     box-shadow: 0 0 0 rgba(56, 189, 248, 0);
+  }
+}
+
+/* Базовый неоновый ореол для auth‑карточек */
+.auth-card.auth-card--wide {
+  position: relative;
+  overflow: visible;
+}
+
+/* Общие параметры неоновых вспышек */
+.auth-card.auth-card--wide::before,
+.auth-card.auth-card--wide::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  filter: blur(0);
+  opacity: 0.85;
+  mix-blend-mode: screen;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+/* Слева: ромб/«гем» */
+.auth-card.auth-card--wide::before {
+  width: 60px;
+  height: 60px;
+  left: -105px;
+  top: 30%;
+  transform: translateY(-50%) rotate(45deg);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(248,250,252,0.95), transparent 55%),
+    radial-gradient(circle at 70% 80%, rgba(56,189,248,0.9), transparent 60%);
+  box-shadow:
+    0 0 22px rgba(56,189,248,0.9),
+    0 0 48px rgba(59,130,246,0.8),
+    0 0 72px rgba(129,140,248,0.8);
+  border-radius: 24px;
+}
+
+/* Справа: «комета» с хвостом */
+.auth-card.auth-card--wide::after {
+  width: 40px;
+  height: 40px;
+  right: -105px;
+  top: 70%;
+  transform: translateY(-50%) skewX(-18deg);
+  background:
+    radial-gradient(circle at 80% 50%, rgba(251,191,36,0.95), transparent 55%),
+    linear-gradient(90deg,
+      rgba(248,113,113,0.0) 0%,
+      rgba(248,113,113,0.45) 35%,
+      rgba(251,191,36,0.7) 75%,
+      rgba(252,211,77,0.0) 100%
+    );
+  box-shadow:
+    0 0 20px rgba(248,113,113,0.8),
+    -18px 0 40px rgba(248,250,252,0.4);
+  border-radius: 999px;
+}
+
+/* Ховер: лёгкое движение и пульсация */
+.auth-card.auth-card--wide:hover::before {
+  transform: translateY(-50%) rotate(45deg) translateX(-4px);
+  opacity: 1;
+}
+
+.auth-card.auth-card--wide:hover::after {
+  transform: translateY(-50%) skewX(-18deg) translateX(6px);
+  opacity: 1;
+}
+
+/* Маленькие «искры» по краям контейнера */
+.auth-card.auth-card--wide .auth-form {
+  position: relative;
+}
+
+.auth-card.auth-card--wide .auth-form::before,
+.auth-card.auth-card--wide .auth-form::after {
+  content: '✦';
+  position: absolute;
+  font-size: 15px;
+  opacity: 0.45;
+  color: rgba(226,232,240,0.85);
+  text-shadow:
+    0 0 6px rgba(129,140,248,0.9),
+    0 0 14px rgba(56,189,248,0.8);
+  pointer-events: none;
+}
+
+.auth-card.auth-card--wide .auth-form::before {
+  top: -10px;
+  right: 18px;
+}
+
+.auth-card.auth-card--wide .auth-form::after {
+  bottom: -10px;
+  left: 14px;
+}
+
+/* Предупреждения в формах */
+.auth-warning {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.auth-warning__title {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.auth-warning__text {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--color-text-subtle-light);
+}
+
+.auth-warning__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* === ИГРОВОЕ ПОЛЕ === */
+.game-board-frame {
+  position: relative;
+  padding: 8px;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 0 0, rgba(96, 165, 250, 0.45), transparent 60%),
+    radial-gradient(circle at 100% 0, rgba(244, 114, 182, 0.45), transparent 60%),
+    radial-gradient(circle at 50% 100%, rgba(56, 189, 248, 0.35), transparent 65%);
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.4),
+    0 0 18px rgba(59, 130, 246, 0.7),
+    0 0 36px rgba(129, 140, 248, 0.6);
+  overflow: visible;
+  animation: boardPulse 4.5s ease-in-out infinite alternate;
+}
+
+/* «Высоковольтное» подрагивание */
+.game-board-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 14px;
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.6),
+    0 0 0 1px rgba(148, 163, 184, 0.35);
+  animation: boardJitter 1200ms ease-in-out infinite;
+}
+
+@keyframes boardPulse {
+  0% {
+    box-shadow:
+      0 0 0 1px rgba(148, 163, 184, 0.35),
+      0 0 14px rgba(59, 130, 246, 0.55),
+      0 0 28px rgba(129, 140, 248, 0.45);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(191, 219, 254, 0.8),
+      0 0 24px rgba(96, 165, 250, 0.95),
+      0 0 45px rgba(244, 114, 182, 0.7);
+  }
+}
+
+/* Лёгкое дрожание, как защитный контур */
+@keyframes boardJitter {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(-0.6px, 0.5px, 0) scale(1.002);
+  }
+  50% {
+    transform: translate3d(0.7px, -0.4px, 0) scale(0.999);
+  }
+  75% {
+    transform: translate3d(-0.4px, -0.6px, 0) scale(1.001);
   }
 }
 
@@ -755,6 +944,12 @@
   max-width: 640px;
 }
 
+.AuthPage .auth-card {
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(56,189,248,0.07) 0, transparent 60%),
+    radial-gradient(circle at 80% 80%, rgba(168,85,247,0.06) 0, transparent 55%);
+}
+
 .auth-card h1 {
   margin: 0 0 16px;
   font-size: 24px;
@@ -824,6 +1019,98 @@
 
 .auth-link:hover {
   text-decoration: underline;
+}
+
+/* === ERROR PAGES === */
+
+.ErrorPage .error-card {
+  position: relative;
+  text-align: center;
+}
+
+/* h1 в 4 раза больше базового (~24px * 4 = 96px) */
+.ErrorPage .error-title {
+  margin: 0 0 12px;
+  font-size: 96px;
+  line-height: 1;
+  background: linear-gradient(135deg, #fbbf24, #f97316, #22d3ee);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow:
+    0 0 18px rgba(251, 191, 36, 0.7),
+    0 0 32px rgba(56, 189, 248, 0.6);
+}
+
+.ErrorPage .error-title--404 {
+  letter-spacing: 0.12em;
+}
+
+/* маленький эмодзи рядом с кодом */
+.ErrorPage .error-emoji {
+  font-size: 0.35em;
+  margin-left: 0.1em;
+  vertical-align: middle;
+}
+
+/* h2 в 2 раза больше базового (~28px * 2 = 56px) */
+.ErrorPage .error-subtitle {
+  margin: 0 0 16px;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  color: #e5e7eb;
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+}
+
+/* неоновое свечение при hover на сообщении */
+.ErrorPage .error-message {
+  transition: text-shadow 0.25s ease, color 0.25s ease;
+}
+
+.ErrorPage .error-message:hover {
+  color: #f9fafb;
+  text-shadow:
+    0 0 8px rgba(56, 189, 248, 0.8),
+    0 0 18px rgba(129, 140, 248, 0.7),
+    0 0 26px rgba(236, 72, 153, 0.7);
+}
+
+/* немного космического свечения вокруг карточки */
+.ErrorPage .error-card::before,
+.ErrorPage .error-card::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+.ErrorPage .error-card::before {
+  background: radial-gradient(
+    circle at 0 0,
+    rgba(59, 130, 246, 0.35),
+    transparent 60%
+  );
+}
+
+.ErrorPage .error-card::after {
+  background: radial-gradient(
+    circle at 100% 100%,
+    rgba(236, 72, 153, 0.35),
+    transparent 60%
+  );
+}
+
+/* в тёмной теме выше контраст */
+.landing--dark-neon .ErrorPage .error-subtitle {
+  color: #e5e7eb;
+}
+
+.landing--dark-neon .ErrorPage .error-title {
+  text-shadow:
+    0 0 20px rgba(251, 191, 36, 0.9),
+    0 0 36px rgba(56, 189, 248, 0.9);
 }
 
 /* === THEMES === */
@@ -1028,6 +1315,10 @@
   }
 
   .landing-nav--mobile {
+    display: none;
+  }
+
+  .landing-nav--mobile.landing-nav--mobile-open {
     display: flex;
   }
 
@@ -1076,5 +1367,214 @@
   .hero-board__cell {
     width: 28px;
     height: 28px;
+  }
+}
+
+/* === LEADERBOARD === */
+
+.leaderboard-card {
+  margin-bottom: 16px;
+}
+
+/* Верхняя панель: фильтры + переключатель вида */
+
+.leaderboard-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.leaderboard-toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaderboard-toolbar__status {
+  color: var(--color-text-subtle-light);
+  font-size: 12px;
+}
+
+.leaderboard-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Переключатель «таблица / плитка» */
+
+.leaderboard-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-text-subtle-light);
+}
+
+.leaderboard-view-toggle__btn {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: inherit;
+  cursor: pointer;
+  color: var(--color-text-subtle-light);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.leaderboard-view-toggle__btn.is-active {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--color-accent-primary);
+}
+
+/* Таблица */
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.45);
+  text-align: left;
+}
+
+.leaderboard-table thead th {
+  font-weight: 600;
+  color: var(--color-text-subtle-light);
+  white-space: nowrap;
+}
+
+/* кнопка сортировки в заголовке */
+
+.leaderboard-sort-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.leaderboard-sort-btn span {
+  display: inline-block;
+}
+
+.leaderboard-sort-btn--active {
+  color: var(--color-accent-primary);
+}
+
+.leaderboard-sort-btn::after {
+  content: '';
+}
+
+/* стрелки уже рисуются через текст ↑/↓; делаем их тонкими */
+.leaderboard-sort-btn {
+  font-size: 13px;
+}
+
+/* Игрок в таблице */
+
+.leaderboard-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaderboard-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.7);
+}
+
+/* Плитка в две колонки, как в макете */
+
+.leaderboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 32px;
+}
+
+.leaderboard-grid-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.leaderboard-grid-rank {
+  min-width: 20px;
+  text-align: right;
+  margin-right: 12px;
+  font-size: 16px;
+}
+
+.leaderboard-grid-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.leaderboard-avatar-large {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9);
+  flex-shrink: 0;
+}
+
+.leaderboard-grid-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.leaderboard-grid-nickname {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.leaderboard-grid-rating {
+  font-size: 13px;
+}
+
+.leaderboard-grid-meta {
+  font-size: 12px;
+  color: var(--color-text-subtle-light);
+}
+
+/* Адаптив */
+
+@media (max-width: 767px) {
+  .leaderboard-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .leaderboard-grid-item {
+    padding: 8px 0;
   }
 }
