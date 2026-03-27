@@ -4,7 +4,6 @@ import React from 'react'
 import { Helmet } from 'react-helmet'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
-import { useSelector } from '../store'
 import { selectUser, fetchUserThunk } from '../slices/userSlice'
 import { Link } from 'react-router-dom'
 import { Button, FieldError, Input } from '../shared/ui'
@@ -12,8 +11,6 @@ import Header from '../components/Header'
 
 export const SignupPage: React.FC = () => {
   usePage({ initPage: initSignupPage })
-
-  const user = useSelector(selectUser)
 
   return (
     <div className="AuthPage">
@@ -25,12 +22,6 @@ export const SignupPage: React.FC = () => {
       <main className="auth-main">
         <section className="auth-card auth-card--wide">
           <h1>Регистрация</h1>
-          {user && (
-            <p className="auth-note">
-              Вы уже авторизованы
-              {/* Вы уже авторизованы как <strong>{user.login}</strong> */}
-            </p>
-          )}
 
           <form className="auth-form auth-form--grid">
             <label>
