@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { usePage } from '../hooks/usePage'
-import { PageInitArgs } from '../routes'
+// import { PageInitArgs } from '../routes'
 
 export const GamePage: React.FC = () => {
   usePage({ initPage: initGamePage })
@@ -46,7 +46,9 @@ export const GamePage: React.FC = () => {
   )
 }
 
-export const initGamePage = (_args: PageInitArgs) => {
-  // пока без запросов к бэкенду, просто резолвим промис для демонстрации
-  return Promise.resolve()
-}
+// export const initGamePage = (_args: PageInitArgs) => {
+//   // пока без запросов к бэкенду, просто резолвим промис для демонстрации
+//   return Promise.resolve()
+// }
+
+export const initGamePage = () => Promise.resolve()
