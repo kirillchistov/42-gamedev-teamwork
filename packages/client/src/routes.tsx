@@ -13,6 +13,7 @@ import { ProfilePage, initProfilePage } from './pages/ProfilePage'
 import { ForumPage, initForumPage } from './pages/ForumPage'
 import { ForumTopicPage, initForumTopicPage } from './pages/ForumTopicPage'
 import { LeaderboardPage, initLeaderboardPage } from './pages/LeaderboardPage'
+import { Error404Page, initError404Page } from './pages/Error404Page'
 
 export type PageInitContext = {
   clientToken?: string
@@ -69,6 +70,11 @@ export const routes = [
     path: '/leaderboard',
     Component: LeaderboardPage,
     fetchData: initLeaderboardPage,
+  },
+  {
+    path: '*',
+    Component: Error404Page,
+    fetchData: initError404Page,
   },
 
   // исходные шаблонные роуты
