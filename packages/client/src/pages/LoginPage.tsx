@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { usePage } from '../hooks/usePage'
-import { PageInitArgs } from '../routes'
+// import { PageInitArgs } from '../routes'
 import { Link } from 'react-router-dom'
 import { Button, FieldError, Input } from '../shared/ui'
 
@@ -75,7 +75,9 @@ export const LoginPage: React.FC = () => {
   )
 }
 
-export const initLoginPage = (_args: PageInitArgs) => {
-  // пока без запросов к бэкенду, просто резолвим промис для демонстрации
-  return Promise.resolve()
-}
+// export const initLoginPage = (_args: PageInitArgs) => {
+//   // пока без запросов к бэкенду, просто резолвим промис для демонстрации
+//   return Promise.resolve()
+// }
+
+export const initLoginPage = () => Promise.resolve()

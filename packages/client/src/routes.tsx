@@ -43,6 +43,16 @@ export const routes = [
     fetchData: initLoginPage,
   },
   {
+    path: '/sign-in',
+    Component: LoginPage,
+    fetchData: initLoginPage,
+  },
+  {
+    path: '/signin',
+    Component: LoginPage,
+    fetchData: initLoginPage,
+  },
+  {
     path: '/signup',
     Component: SignupPage,
     fetchData: initSignupPage,
