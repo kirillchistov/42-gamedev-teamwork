@@ -1,5 +1,5 @@
 {
-  "name": "client-server-template-with-vite",
+  "name": "42-gamedev-teamwork",
   "private": true,
   "scripts": {
     "bootstrap": "yarn && node init.js && lerna clean && yarn && lerna bootstrap",
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@evilmartians/lefthook": "^1.3.9",
+    "@testing-library/jest-dom": "^6.9.1",
     "lerna": "^5.4.3"
   }
 }

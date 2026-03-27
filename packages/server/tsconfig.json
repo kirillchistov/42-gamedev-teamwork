@@ -25,5 +25,7 @@
       "*": ["types/*"]
     },
     "outDir": "dist"
-  }
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["./dist", "**/*.test.ts"]
 }
