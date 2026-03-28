@@ -7,6 +7,7 @@ import {
 import { combineReducers } from 'redux'
 import { configureStore } from '@reduxjs/toolkit'
 
+import forumReducer from './slices/forumSlice'
 import friendsReducer from './slices/friendsSlice'
 import ssrReducer from './slices/ssrSlice'
 import userReducer from './slices/userSlice'
@@ -20,6 +21,7 @@ declare global {
 }
 
 export const reducer = combineReducers({
+  forum: forumReducer,
   friends: friendsReducer,
   ssr: ssrReducer,
   user: userReducer,
