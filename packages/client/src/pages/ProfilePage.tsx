@@ -9,10 +9,10 @@ import { PageInitArgs } from '../routes'
 import { Button, Input, FieldError } from '../shared/ui'
 // import { DEFAULT_AVATAR_PATH } from '../constants'
 // при необходимости позже можно подтянуть selectUser / fetchUserThunk
-import { type ProfileFormValues } from '../shared/validation/authValidation'
+// import { type ProfileFormValues } from '../shared/validation/authValidation'
 
 import { useValidate } from '../hooks/useValidate'
-import { setPageHasBeenInitializedOnServer } from '../slices/ssrSlice'
+// import { setPageHasBeenInitializedOnServer } from '../slices/ssrSlice'
 
 export const ProfilePage: React.FC = () => {
   usePage({ initPage: initProfilePage })
@@ -233,6 +233,7 @@ export const ProfilePage: React.FC = () => {
 }
 
 export const initProfilePage = (_args: PageInitArgs) => {
+  console.log(_args)
   // позже здесь будет загрузку данных профиля из API
   return Promise.resolve()
 }
