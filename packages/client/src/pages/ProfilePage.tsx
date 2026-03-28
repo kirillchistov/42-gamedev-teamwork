@@ -1,5 +1,5 @@
 // Пока заглушка, потом будет страница профиля
-import React from 'react'
+import React, { FormEvent, useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
 
 import { Header } from '../components/Header'
@@ -9,9 +9,44 @@ import { PageInitArgs } from '../routes'
 import { Button, Input, FieldError } from '../shared/ui'
 // import { DEFAULT_AVATAR_PATH } from '../constants'
 // при необходимости позже можно подтянуть selectUser / fetchUserThunk
+import { type ProfileFormValues } from '../shared/validation/authValidation'
+
+import { useValidate } from '../hooks/useValidate'
+import { setPageHasBeenInitializedOnServer } from '../slices/ssrSlice'
 
 export const ProfilePage: React.FC = () => {
   usePage({ initPage: initProfilePage })
+
+  const initialFields = {
+    email: '',
+    password: '',
+    first_name: '',
+    second_name: '',
+    phone: '',
+    login: '',
+    nickname: '',
+  }
+
+  const { errors, doValidate, isValid } = useValidate(initialFields)
+  const [values, setValues] = useState(initialFields)
+
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = e => {
+    const { name, value } = e.target
+    setValues(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleBlur = (e: FormEvent<HTMLElement>) => {
+    e.preventDefault()
+    doValidate(values, submitForm)
+  }
+
+  const submitForm = () => {
+    console.log('ошибка или сабмит?', errors)
+  }
+
+  useEffect(() => {
+    doValidate(values, submitForm)
+  }, [])
 
   return (
     <div className="landing landing--light-flat AuthPage">
@@ -77,7 +112,7 @@ export const ProfilePage: React.FC = () => {
               <Button type="button" variant="outline">
                 Сменить аватар
               </Button>
-              <FieldError message="здесь будут ошибки" />
+              <FieldError message="" />
             </div>
           </div>
 
@@ -92,9 +127,11 @@ export const ProfilePage: React.FC = () => {
                 type="text"
                 name="first_name"
                 placeholder="Имя"
-                value="Имя"
+                value={values.first_name}
+                onChange={handleChange}
+                onBlur={e => handleBlur(e)}
               />
-              <FieldError message="здесь будут ошибки" />
+              <FieldError message={errors.first_name} />
             </label>
 
             <label>
@@ -103,9 +140,11 @@ export const ProfilePage: React.FC = () => {
                 type="text"
                 name="second_name"
                 placeholder="Фамилия"
-                value="Фамилия"
+                value={values.second_name}
+                onChange={handleChange}
+                onBlur={e => handleBlur(e)}
               />
-              <FieldError message="здесь будут ошибки" />
+              <FieldError message={errors.second_name} />
             </label>
 
             <label>
@@ -114,9 +153,11 @@ export const ProfilePage: React.FC = () => {
                 type="email"
                 name="email"
                 placeholder="user@example.com"
-                value="user@example.com"
+                value={values.email}
+                onChange={handleChange}
+                onBlur={e => handleBlur(e)}
               />
-              <FieldError message="здесь будут ошибки" />
+              <FieldError message={errors.email} />
             </label>
 
             <label>
@@ -125,9 +166,11 @@ export const ProfilePage: React.FC = () => {
                 type="tel"
                 name="phone"
                 placeholder="+7..."
-                value="+74955555555"
+                value={values.phone}
+                onChange={handleChange}
+                onBlur={e => handleBlur(e)}
               />
-              <FieldError message="здесь будут ошибки" />
+              <FieldError message={errors.phone} />
             </label>
 
             <label>
@@ -136,9 +179,11 @@ export const ProfilePage: React.FC = () => {
                 type="text"
                 name="login"
                 placeholder="login"
-                value="login"
+                value={values.login}
+                onChange={handleChange}
+                onBlur={e => handleBlur(e)}
               />
-              <FieldError message="здесь будут ошибки" />
+              <FieldError message={errors.login} />
             </label>
 
             <label>
@@ -147,24 +192,33 @@ export const ProfilePage: React.FC = () => {
                 type="text"
                 name="nickname"
                 placeholder="Никнейм"
-                value="Никнейм"
+                value={values.nickname}
+                onChange={handleChange}
+                onBlur={e => handleBlur(e)}
               />
-              <FieldError message="здесь будут ошибки" />
+              <FieldError message={errors.nickname} />
             </label>
 
             <label>
               Новый пароль
-              <Input
+              <input
                 type="password"
                 name="password"
-                placeholder="********"
-                value="********"
+                placeholder="Новый пароль"
+                value={values.password}
+                onChange={handleChange}
+                onBlur={e => handleBlur(e)}
               />
-              <FieldError message="здесь будут ошибки" />
+              <FieldError message={errors.password} />
             </label>
 
             <div className="auth-form__actions">
-              <Button type="submit" variant="primary">
+              <Button
+                type="button"
+                className={
+                  (isValid ? 'btn--disabled' : '') + ' btn btn--primary'
+                }
+                disabled={isValid}>
                 Сохранить изменения
               </Button>
             </div>
