@@ -326,6 +326,7 @@ export const ProfilePage: React.FC = () => {
 }
 
 export const initProfilePage = (_args: PageInitArgs) => {
+  console.log(_args)
   // позже здесь будет загрузку данных профиля из API
   return Promise.resolve()
 }
