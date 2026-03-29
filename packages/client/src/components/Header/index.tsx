@@ -19,7 +19,7 @@
 // }
 
 // Общий хедер лендинга, который включает в себя навигацию, переключатель тем и бургер-меню
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 type LandingTheme = 'light-flat' | 'light-3d' | 'dark-neon'
@@ -49,12 +49,12 @@ export const Header: React.FC = () => {
     root.classList.add(themeClassByValue[theme])
   }, [theme])
 
-  const scrollToSection = useCallback((id: string) => {
-    const el = document.getElementById(id)
-    if (!el) return
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    setMobileOpen(false)
-  }, [])
+  // const _scrollToSection = useCallback((id: string) => {
+  //   const el = document.getElementById(id)
+  //   if (!el) return
+  //   el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  //   setMobileOpen(false)
+  // }, [])
 
   const handleThemeClick = (value: LandingTheme) => {
     setTheme(value)
