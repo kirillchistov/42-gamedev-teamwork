@@ -24,20 +24,7 @@ export const useValidate = <T extends Record<string, string>>(
   const [errors, setErrors] = useState({ ...state })
   const [isValidateError, setIsValidateError] = useState(true)
 
-  const doValidate = useCallback(
-    (values: SignupFormValues, callback?: unknown) => {
-      setIsValidateError(true)
-      const validationErrors: object = validate(values)
-      setErrors({ ...validationErrors })
-      if (Object.keys(validationErrors).length === 0) {
-        setIsValidateError(false)
-        if (typeof callback === 'function') callback()
-      }
-    },
-    []
-  )
-
-  const validate = (values: SignupFormValues) => {
+  const validate = useCallback((values: SignupFormValues) => {
     const checkErrors: SignupFormValues = {}
 
     Object.keys(state).forEach(field => {
@@ -65,7 +52,20 @@ export const useValidate = <T extends Record<string, string>>(
       }
     })
     return checkErrors
-  }
+  }, [])
+
+  const doValidate = useCallback(
+    (values: SignupFormValues, callback?: unknown) => {
+      setIsValidateError(true)
+      const validationErrors: object = validate(values)
+      setErrors({ ...validationErrors })
+      if (Object.keys(validationErrors).length === 0) {
+        setIsValidateError(false)
+        if (typeof callback === 'function') callback()
+      }
+    },
+    []
+  )
 
   return { errors, doValidate, isValidateError }
 }

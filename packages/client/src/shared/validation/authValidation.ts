@@ -28,8 +28,8 @@ export interface ContactFormValues {
 export type ValidationErrors<T> = Partial<Record<keyof T, string>>
 
 // avatar
-const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
-const maxAvatarSize = 5 * 1024 * 1024 // 5MB
+export const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+export const maxAvatarSize = 0 * 1024 * 1024 // 5MB
 
 export interface validationRulesValues {
   patterns?: unknown[]
@@ -63,7 +63,7 @@ export const validationRules: Record<string, validationRulesValues> = {
     patterns: [/^[A-ZА-ЯЁ][A-Za-zА-Яа-яЁё-]*$/],
     notEmpty: true,
     messages: [
-      'Имя: первая буква заглавная, без пробелов и цифр, допустим дефис',
+      'Фамилия: первая буква заглавная, без пробелов и цифр, допустим дефис',
     ],
   },
   second_name: {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
+import { Avatar } from '../components/Avatar'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
 import { Button, Input, FieldError } from '../shared/ui'
@@ -10,6 +11,7 @@ import { API_RESOURCES_URL } from '../constants'
 // import { DEFAULT_AVATAR_PATH } from '../constants'
 // при необходимости позже можно подтянуть selectUser / fetchUserThunk
 import { useValidate } from '../hooks/useValidate'
+import { maxAvatarSize } from '../shared/validation/authValidation'
 
 export const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<ProfileData>({
@@ -95,7 +97,6 @@ export const ProfilePage: React.FC = () => {
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
     try {
       const updated = await userApi.updateAvatar(file)
       console.log('Ответ сервера:', updated)
@@ -139,76 +140,11 @@ export const ProfilePage: React.FC = () => {
           <h1>Профиль игрока</h1>
 
           {/* Аватар */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-              margin: '12px 0 24px',
-              flexWrap: 'wrap',
-            }}>
-            <div
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: '999px',
-                overflow: 'hidden',
-                background:
-                  'radial-gradient(circle at 30% 30%, #6366f1, #0f172a)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow:
-                  '0 10px 25px rgba(15,23,42,0.9), 0 0 0 2px rgba(148,163,184,0.7)',
-              }}>
-              {avatar ? (
-                <img
-                  src={avatar}
-                  alt="avatar"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: '999px',
-                    background:
-                      'radial-gradient(circle at 30% 30%, #38bdf8, #4c1d95)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontSize: 32,
-                  }}>
-                  👤
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Button type="button" variant="flat" onClick={handleAvatarDelete}>
-                Удалить аватар
-              </Button>
-
-              <input
-                type="file"
-                id="avatar-upload"
-                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                style={{ display: 'none' }}
-                onChange={handleAvatarChange}
-              />
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  document.getElementById('avatar-upload')?.click()
-                }>
-                Сменить аватар
-              </Button>
-            </div>
-          </div>
+          <Avatar
+            url={avatar}
+            handleAvatarChange={handleAvatarChange}
+            handleAvatarDelete={handleAvatarDelete}
+          />
 
           {/* Форма профиля */}
           <form
