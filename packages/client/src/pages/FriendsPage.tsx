@@ -7,13 +7,18 @@ import {
   selectFriends,
   selectIsLoadingFriends,
 } from '../slices/friendsSlice'
-import { fetchUserThunk, selectUser } from '../slices/userSlice'
+import {
+  fetchUserThunk,
+  selectUser,
+} from '../slices/userSlice'
 import { PageInitArgs } from '../routes'
 import { usePage } from '../hooks/usePage'
 
 export const FriendsPage = () => {
   const friends = useSelector(selectFriends)
-  const isLoading = useSelector(selectIsLoadingFriends)
+  const isLoading = useSelector(
+    selectIsLoadingFriends
+  )
   const user = useSelector(selectUser)
 
   usePage({ initPage: initFriendsPage })
@@ -32,7 +37,7 @@ export const FriendsPage = () => {
         <>
           <h3>Информация о пользователе:</h3>{' '}
           <p>
-            {user.name} {user.secondName}
+            {user.first_name} {user.second_name}
           </p>
         </>
       ) : (
@@ -53,8 +58,13 @@ export const FriendsPage = () => {
   )
 }
 
-export const initFriendsPage = ({ dispatch, state }: PageInitArgs) => {
-  const queue: Array<Promise<unknown>> = [dispatch(fetchFriendsThunk())]
+export const initFriendsPage = ({
+  dispatch,
+  state,
+}: PageInitArgs) => {
+  const queue: Array<Promise<unknown>> = [
+    dispatch(fetchFriendsThunk()),
+  ]
   if (!selectUser(state)) {
     queue.push(dispatch(fetchUserThunk()))
   }

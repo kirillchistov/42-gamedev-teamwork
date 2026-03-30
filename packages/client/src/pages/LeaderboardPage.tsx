@@ -84,21 +84,31 @@ const DEMO_LEADERBOARD: LeaderboardEntry[] = [
   },
 ]
 
-type SortKey = 'rating' | 'gamesPlayed' | 'bestScore' | 'nickname'
+type SortKey =
+  | 'rating'
+  | 'gamesPlayed'
+  | 'bestScore'
+  | 'nickname'
 type SortDir = 'asc' | 'desc'
 type ViewMode = 'table' | 'grid'
 
 export const LeaderboardPage: React.FC = () => {
   const friends = useSelector(selectFriends)
-  const isLoading = useSelector(selectIsLoadingFriends)
+  const isLoading = useSelector(
+    selectIsLoadingFriends
+  )
   const user = useSelector(selectUser)
 
   usePage({ initPage: initLeaderboardPage })
 
-  const [viewMode, setViewMode] = useState<ViewMode>('table')
-  const [sortKey, setSortKey] = useState<SortKey>('rating')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
-  const [showFriendsOnly, setShowFriendsOnly] = useState(false)
+  const [viewMode, setViewMode] =
+    useState<ViewMode>('table')
+  const [sortKey, setSortKey] =
+    useState<SortKey>('rating')
+  const [sortDir, setSortDir] =
+    useState<SortDir>('desc')
+  const [showFriendsOnly, setShowFriendsOnly] =
+    useState(false)
 
   const friendNicknames = useMemo(
     () => new Set(friends.map(f => f.name)),
@@ -108,8 +118,13 @@ export const LeaderboardPage: React.FC = () => {
   const sortedEntries = useMemo(() => {
     let list = DEMO_LEADERBOARD
 
-    if (showFriendsOnly && friendNicknames.size > 0) {
-      list = list.filter(entry => friendNicknames.has(entry.nickname))
+    if (
+      showFriendsOnly &&
+      friendNicknames.size > 0
+    ) {
+      list = list.filter(entry =>
+        friendNicknames.has(entry.nickname)
+      )
     }
 
     const copy = [...list]
@@ -119,22 +134,34 @@ export const LeaderboardPage: React.FC = () => {
         case 'rating':
           return (a.rating - b.rating) * dir
         case 'gamesPlayed':
-          return (a.gamesPlayed - b.gamesPlayed) * dir
+          return (
+            (a.gamesPlayed - b.gamesPlayed) * dir
+          )
         case 'bestScore':
           return (a.bestScore - b.bestScore) * dir
         case 'nickname':
-          return a.nickname.localeCompare(b.nickname) * dir
+          return (
+            a.nickname.localeCompare(b.nickname) *
+            dir
+          )
         default:
           return 0
       }
     })
     return copy
-  }, [sortKey, sortDir, showFriendsOnly, friendNicknames])
+  }, [
+    sortKey,
+    sortDir,
+    showFriendsOnly,
+    friendNicknames,
+  ])
 
   const handleSort = (key: SortKey) => {
     setSortKey(prevKey => {
       if (prevKey === key) {
-        setSortDir(prevDir => (prevDir === 'asc' ? 'desc' : 'asc'))
+        setSortDir(prevDir =>
+          prevDir === 'asc' ? 'desc' : 'asc'
+        )
         return prevKey
       }
       setSortDir('desc')
@@ -142,14 +169,22 @@ export const LeaderboardPage: React.FC = () => {
     })
   }
 
-  const sortLabel = (key: SortKey, label: string) => {
+  const sortLabel = (
+    key: SortKey,
+    label: string
+  ) => {
     const isActive = sortKey === key
-    const arrow = !isActive ? '' : sortDir === 'asc' ? '↑' : '↓'
+    const arrow = !isActive
+      ? ''
+      : sortDir === 'asc'
+      ? '↑'
+      : '↓'
     return (
       <button
         type="button"
         className={clsx('leaderboard-sort-btn', {
-          'leaderboard-sort-btn--active': isActive,
+          'leaderboard-sort-btn--active':
+            isActive,
         })}
         onClick={() => handleSort(key)}>
         {label} {arrow}
@@ -174,16 +209,23 @@ export const LeaderboardPage: React.FC = () => {
         <div className="auth-card auth-card--wide">
           <h1>Лидерборд</h1>
           <p className="auth-note">
-            Демо-лидерборд. В будущем данные будут через API для всех и для
-            фильтра друзей.
+            Демо-лидерборд. В будущем данные будут
+            через API для всех и для фильтра
+            друзей.
           </p>
 
           <div className="leaderboard-toolbar">
             <div className="leaderboard-toolbar__left">
               <Button
                 type="button"
-                variant={showFriendsOnly ? 'primary' : 'outline'}
-                onClick={() => setShowFriendsOnly(v => !v)}>
+                variant={
+                  showFriendsOnly
+                    ? 'primary'
+                    : 'outline'
+                }
+                onClick={() =>
+                  setShowFriendsOnly(v => !v)
+                }>
                 Друзья
               </Button>
               {isLoading && (
@@ -198,18 +240,30 @@ export const LeaderboardPage: React.FC = () => {
                 Вид:
                 <button
                   type="button"
-                  className={clsx('leaderboard-view-toggle__btn', {
-                    'is-active': viewMode === 'table',
-                  })}
-                  onClick={() => setViewMode('table')}>
+                  className={clsx(
+                    'leaderboard-view-toggle__btn',
+                    {
+                      'is-active':
+                        viewMode === 'table',
+                    }
+                  )}
+                  onClick={() =>
+                    setViewMode('table')
+                  }>
                   Таблица
                 </button>
                 <button
                   type="button"
-                  className={clsx('leaderboard-view-toggle__btn', {
-                    'is-active': viewMode === 'grid',
-                  })}
-                  onClick={() => setViewMode('grid')}>
+                  className={clsx(
+                    'leaderboard-view-toggle__btn',
+                    {
+                      'is-active':
+                        viewMode === 'grid',
+                    }
+                  )}
+                  onClick={() =>
+                    setViewMode('grid')
+                  }>
                   Плитка
                 </button>
               </span>
@@ -224,34 +278,65 @@ export const LeaderboardPage: React.FC = () => {
                   <tr>
                     <th>#</th>
                     <th>Игрок</th>
-                    <th>{sortLabel('rating', 'Рейтинг')}</th>
-                    <th>{sortLabel('gamesPlayed', 'Сыграно игр')}</th>
-                    <th>{sortLabel('bestScore', 'Рекорд')}</th>
+                    <th>
+                      {sortLabel(
+                        'rating',
+                        'Рейтинг'
+                      )}
+                    </th>
+                    <th>
+                      {sortLabel(
+                        'gamesPlayed',
+                        'Сыграно игр'
+                      )}
+                    </th>
+                    <th>
+                      {sortLabel(
+                        'bestScore',
+                        'Рекорд'
+                      )}
+                    </th>
                     <th>Дата рекорда</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedEntries.map((entry, index) => (
-                    <tr key={entry.id}>
-                      <td>{index + 1}</td>
-                      <td>
-                        <span className="leaderboard-player">
-                          <span className="leaderboard-avatar">
-                            {entry.avatarEmoji}
+                  {sortedEntries.map(
+                    (entry, index) => (
+                      <tr key={entry.id}>
+                        <td>{index + 1}</td>
+                        <td>
+                          <span className="leaderboard-player">
+                            <span className="leaderboard-avatar">
+                              {entry.avatarEmoji}
+                            </span>
+                            <span>
+                              {entry.nickname}
+                            </span>
                           </span>
-                          <span>{entry.nickname}</span>
-                        </span>
-                      </td>
-                      <td>{entry.rating.toLocaleString('ru-RU')}</td>
-                      <td>{entry.gamesPlayed}</td>
-                      <td>{entry.bestScore.toLocaleString('ru-RU')}</td>
-                      <td>
-                        {new Date(entry.bestScoreDate).toLocaleDateString(
-                          'ru-RU'
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td>
+                          {entry.rating.toLocaleString(
+                            'ru-RU'
+                          )}
+                        </td>
+                        <td>
+                          {entry.gamesPlayed}
+                        </td>
+                        <td>
+                          {entry.bestScore.toLocaleString(
+                            'ru-RU'
+                          )}
+                        </td>
+                        <td>
+                          {new Date(
+                            entry.bestScoreDate
+                          ).toLocaleDateString(
+                            'ru-RU'
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
             </div>
@@ -259,31 +344,47 @@ export const LeaderboardPage: React.FC = () => {
             <div className="extra-card leaderboard-card">
               <h3>Лучшие игроки</h3>
               <div className="leaderboard-grid">
-                {sortedEntries.map((entry, index) => (
-                  <div className="leaderboard-grid-item" key={entry.id}>
-                    <div className="leaderboard-grid-rank">{index + 1}</div>
-                    <div className="leaderboard-grid-main">
-                      <div className="leaderboard-avatar-large">
-                        {entry.avatarEmoji}
+                {sortedEntries.map(
+                  (entry, index) => (
+                    <div
+                      className="leaderboard-grid-item"
+                      key={entry.id}>
+                      <div className="leaderboard-grid-rank">
+                        {index + 1}
                       </div>
-                      <div className="leaderboard-grid-text">
-                        <div className="leaderboard-grid-nickname">
-                          {entry.nickname}
+                      <div className="leaderboard-grid-main">
+                        <div className="leaderboard-avatar-large">
+                          {entry.avatarEmoji}
                         </div>
-                        <div className="leaderboard-grid-rating">
-                          Рейтинг: {entry.rating.toLocaleString('ru-RU')}
-                        </div>
-                        <div className="leaderboard-grid-meta">
-                          Игр: {entry.gamesPlayed} • Рекорд:{' '}
-                          {entry.bestScore.toLocaleString('ru-RU')} от{' '}
-                          {new Date(entry.bestScoreDate).toLocaleDateString(
-                            'ru-RU'
-                          )}
+                        <div className="leaderboard-grid-text">
+                          <div className="leaderboard-grid-nickname">
+                            {entry.nickname}
+                          </div>
+                          <div className="leaderboard-grid-rating">
+                            Рейтинг:{' '}
+                            {entry.rating.toLocaleString(
+                              'ru-RU'
+                            )}
+                          </div>
+                          <div className="leaderboard-grid-meta">
+                            Игр:{' '}
+                            {entry.gamesPlayed} •
+                            Рекорд:{' '}
+                            {entry.bestScore.toLocaleString(
+                              'ru-RU'
+                            )}{' '}
+                            от{' '}
+                            {new Date(
+                              entry.bestScoreDate
+                            ).toLocaleDateString(
+                              'ru-RU'
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </div>
           )}
@@ -292,7 +393,8 @@ export const LeaderboardPage: React.FC = () => {
             <h3>Ваши друзья</h3>
             {user ? (
               <p>
-                Вы вошли как {user.name} {user.secondName}
+                Вы вошли как {user.first_name}{' '}
+                {user.second_name}
               </p>
             ) : (
               <p>Пользователь не найден</p>
@@ -306,7 +408,8 @@ export const LeaderboardPage: React.FC = () => {
               <ul>
                 {friends.map(friend => (
                   <li key={friend.name}>
-                    {friend.name} {friend.secondName}
+                    {friend.name}{' '}
+                    {friend.secondName}
                   </li>
                 ))}
               </ul>
@@ -328,4 +431,5 @@ export const LeaderboardPage: React.FC = () => {
 //   return Promise.all(queue)
 // }
 
-export const initLeaderboardPage = () => Promise.resolve()
+export const initLeaderboardPage = () =>
+  Promise.resolve()
