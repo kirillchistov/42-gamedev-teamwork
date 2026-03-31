@@ -75,7 +75,7 @@ async function createServer() {
                 render = (await Promise.resolve().then(() => __importStar(require(pathToServer)))).render;
             }
             // Получаем HTML-строку из JSX
-            const { html: appHtml, initialState, helmet, styleTags } = await render(req);
+            const { html: appHtml, initialState, helmet, styleTags, } = await render(req);
             // Заменяем комментарий на сгенерированную HTML-строку
             const html = template
                 .replace('<!--ssr-styles-->', styleTags)

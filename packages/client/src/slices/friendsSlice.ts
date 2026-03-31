@@ -20,6 +20,7 @@ const initialState: FriendsState = {
 
 export const fetchFriendsThunk = createAsyncThunk(
   'user/fetchFriendsThunk',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async (_: void) => {
     const url = `${SERVER_HOST}/friends`
     return fetch(url).then(res => res.json())
