@@ -1,11 +1,11 @@
-// Заглушка для игрового поля
+// packages/client/src/pages/GamePage.tsx
 import React from 'react'
 import { Helmet } from 'react-helmet'
 
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { usePage } from '../hooks/usePage'
-// import { PageInitArgs } from '../routes'
+import { Match3Screen } from '../game/match3/Match3Screen'
 
 export const GamePage: React.FC = () => {
   usePage({ initPage: initGamePage })
@@ -17,7 +17,7 @@ export const GamePage: React.FC = () => {
         <title>Cosmic Match — Игра</title>
         <meta
           name="description"
-          content="Игровое поле Cosmic Match: match‑3 в космосе."
+          content="Игровое поле Cosmic Match: match-3 в космосе."
         />
       </Helmet>
 
@@ -27,17 +27,11 @@ export const GamePage: React.FC = () => {
         <div className="auth-card auth-card--wide">
           <h1>Игровое поле Cosmic Match</h1>
           <p className="auth-note">
-            Здесь будет интеграция настоящего игрового движка. Пока это
-            демо‑страница в одном стиле с лендингом.
+            Режим match-3: собирай комбинации,
+            набирай очки, побеждай время.
           </p>
 
-          <div className="extra-card" style={{ marginTop: 8 }}>
-            <h3>Демо‑поле</h3>
-            <p>
-              Здесь будем рендерить настоящее поле 8×8, ходы и эффекты будут
-              синхронизированы с бэкендом через middleware.
-            </p>
-          </div>
+          <Match3Screen />
         </div>
       </main>
 
@@ -46,9 +40,5 @@ export const GamePage: React.FC = () => {
   )
 }
 
-// export const initGamePage = (_args: PageInitArgs) => {
-//   // пока без запросов к бэкенду, просто резолвим промис для демонстрации
-//   return Promise.resolve()
-// }
-
-export const initGamePage = () => Promise.resolve()
+export const initGamePage = () =>
+  Promise.resolve()
