@@ -1,7 +1,10 @@
 import { useSelector } from './store'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { fetchUserThunk, selectUser } from './slices/userSlice'
+import {
+  fetchUserThunk,
+  selectUser,
+} from './slices/userSlice'
 
 const App = () => {
   const user = useSelector(selectUser)
@@ -10,8 +13,8 @@ const App = () => {
     <div>
       {user ? (
         <div>
-          <p>{user.name}</p>
-          <p>{user.secondName}</p>
+          <p>{user.first_name}</p>
+          <p>{user.second_name}</p>
         </div>
       ) : (
         <p>Пользователь не найден!</p>

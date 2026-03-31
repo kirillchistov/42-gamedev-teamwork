@@ -5,7 +5,10 @@ import clsx from 'clsx'
 
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
-import { useSelector, useDispatch } from '../store'
+import {
+  useSelector,
+  useDispatch,
+} from '../store'
 import { usePage } from '../hooks/usePage'
 import { Button, TextArea } from '../shared/ui'
 import {
@@ -18,24 +21,43 @@ import {
 import { selectUser } from '../slices/userSlice'
 import type { ForumComment } from '../types/forum'
 
-const EMOJIS = ['😀', '👍', '❤️', '🔥', '🎮', '⭐', '🚀', '💡', '🤔', '😎']
+const EMOJIS = [
+  '😀',
+  '👍',
+  '❤️',
+  '🔥',
+  '🎮',
+  '⭐',
+  '🚀',
+  '💡',
+  '🤔',
+  '😎',
+]
 
 export const ForumTopicPage: React.FC = () => {
-  const { topicId } = useParams<{ topicId: string }>()
+  const { topicId } = useParams<{
+    topicId: string
+  }>()
   const dispatch = useDispatch()
   const topic = useSelector(selectCurrentTopic)
   const comments = useSelector(selectComments)
-  const isLoading = useSelector(selectIsLoadingForum)
+  const isLoading = useSelector(
+    selectIsLoadingForum
+  )
   const user = useSelector(selectUser)
 
   const [newComment, setNewComment] = useState('')
-  const [replyTo, setReplyTo] = useState<number | null>(null)
+  const [replyTo, setReplyTo] = useState<
+    number | null
+  >(null)
 
   usePage({ initPage: initForumTopicPage })
 
   useEffect(() => {
     if (topicId) {
-      dispatch(fetchTopicByIdThunk(Number(topicId)))
+      dispatch(
+        fetchTopicByIdThunk(Number(topicId))
+      )
     }
   }, [topicId, dispatch])
 
@@ -46,7 +68,7 @@ export const ForumTopicPage: React.FC = () => {
       createCommentThunk({
         topicId: Number(topicId),
         content: newComment.trim(),
-        author: user?.name || 'Аноним',
+        author: user?.first_name || 'Аноним',
         parentCommentId: replyTo ?? undefined,
       })
     )
@@ -63,7 +85,9 @@ export const ForumTopicPage: React.FC = () => {
     parentId: number | null = null,
     depth = 0
   ): React.ReactNode => {
-    const filtered = allComments.filter(c => c.parentCommentId === parentId)
+    const filtered = allComments.filter(
+      c => c.parentCommentId === parentId
+    )
     if (filtered.length === 0) return null
 
     return filtered.map(comment => (
@@ -73,9 +97,13 @@ export const ForumTopicPage: React.FC = () => {
             'forum-comment--nested': depth > 0,
           })}>
           <div className="forum-comment__header">
-            <span className="forum-comment__author">{comment.author}</span>
+            <span className="forum-comment__author">
+              {comment.author}
+            </span>
             <span className="forum-comment__date">
-              {new Date(comment.createdAt).toLocaleString('ru-RU', {
+              {new Date(
+                comment.createdAt
+              ).toLocaleString('ru-RU', {
                 day: 'numeric',
                 month: 'short',
                 hour: '2-digit',
@@ -83,54 +111,80 @@ export const ForumTopicPage: React.FC = () => {
               })}
             </span>
           </div>
-          <div className="forum-comment__text">{comment.content}</div>
+          <div className="forum-comment__text">
+            {comment.content}
+          </div>
           <button
             type="button"
             className="forum-comment__reply-btn"
-            onClick={() => setReplyTo(comment.id)}>
+            onClick={() =>
+              setReplyTo(comment.id)
+            }>
             Ответить
           </button>
         </div>
-        {renderComments(allComments, comment.id, depth + 1)}
+        {renderComments(
+          allComments,
+          comment.id,
+          depth + 1
+        )}
       </React.Fragment>
     ))
   }
 
-  const replyComment = replyTo ? comments.find(c => c.id === replyTo) : null
+  const replyComment = replyTo
+    ? comments.find(c => c.id === replyTo)
+    : null
 
   return (
-    <div className={clsx('landing', 'AuthPage')} id="landing-root">
+    <div
+      className={clsx('landing', 'AuthPage')}
+      id="landing-root">
       <Helmet>
         <meta charSet="utf-8" />
         <title>
-          {topic ? `${topic.title} — Форум` : 'Топик форума'} — Cosmic Match
+          {topic
+            ? `${topic.title} — Форум`
+            : 'Топик форума'}{' '}
+          — Cosmic Match
         </title>
-        <meta name="description" content="Обсуждение на форуме Cosmic Match" />
+        <meta
+          name="description"
+          content="Обсуждение на форуме Cosmic Match"
+        />
       </Helmet>
 
       <Header />
 
       <main className="auth-main">
         <div className="auth-card auth-card--wide">
-          <Link to="/forum" className="forum-back">
+          <Link
+            to="/forum"
+            className="forum-back">
             ← К форуму
           </Link>
 
           {isLoading && !topic ? (
             <p>Загрузка...</p>
           ) : !topic ? (
-            <div className="forum-empty">Тема не найдена</div>
+            <div className="forum-empty">
+              Тема не найдена
+            </div>
           ) : (
             <>
               <div className="forum-topic__header">
                 <h1>{topic.title}</h1>
                 <p className="forum-topic__meta">
                   {topic.author} ·{' '}
-                  {new Date(topic.createdAt).toLocaleDateString('ru-RU')}
+                  {new Date(
+                    topic.createdAt
+                  ).toLocaleDateString('ru-RU')}
                 </p>
               </div>
 
-              <div className="forum-topic__content">{topic.content}</div>
+              <div className="forum-topic__content">
+                {topic.content}
+              </div>
 
               <h2 className="forum-comments__title">
                 Комментарии ({comments.length})
@@ -139,7 +193,8 @@ export const ForumTopicPage: React.FC = () => {
               <div className="forum-comments">
                 {comments.length === 0 ? (
                   <div className="forum-empty">
-                    Комментариев пока нет. Напишите первый!
+                    Комментариев пока нет.
+                    Напишите первый!
                   </div>
                 ) : (
                   renderComments(comments)
@@ -152,11 +207,16 @@ export const ForumTopicPage: React.FC = () => {
 
                   {replyComment && (
                     <div className="forum-reply-indicator">
-                      <span>Ответ для {replyComment.author}</span>
+                      <span>
+                        Ответ для{' '}
+                        {replyComment.author}
+                      </span>
                       <button
                         type="button"
                         className="forum-reply-indicator__cancel"
-                        onClick={() => setReplyTo(null)}>
+                        onClick={() =>
+                          setReplyTo(null)
+                        }>
                         ✕
                       </button>
                     </div>
@@ -168,7 +228,9 @@ export const ForumTopicPage: React.FC = () => {
                         key={emoji}
                         type="button"
                         className="forum-emoji-bar__btn"
-                        onClick={() => handleEmojiClick(emoji)}>
+                        onClick={() =>
+                          handleEmojiClick(emoji)
+                        }>
                         {emoji}
                       </button>
                     ))}
@@ -176,13 +238,19 @@ export const ForumTopicPage: React.FC = () => {
 
                   <TextArea
                     value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
+                    onChange={e =>
+                      setNewComment(
+                        e.target.value
+                      )
+                    }
                     rows={3}
                     placeholder="Ваш комментарий..."
                   />
 
                   <div className="forum-form__actions">
-                    <Button variant="primary" onClick={handleAddComment}>
+                    <Button
+                      variant="primary"
+                      onClick={handleAddComment}>
                       Отправить
                     </Button>
                   </div>
@@ -198,4 +266,5 @@ export const ForumTopicPage: React.FC = () => {
   )
 }
 
-export const initForumTopicPage = () => Promise.resolve()
+export const initForumTopicPage = () =>
+  Promise.resolve()

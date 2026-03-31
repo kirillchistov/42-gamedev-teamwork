@@ -5,10 +5,17 @@ import clsx from 'clsx'
 
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
-import { useSelector, useDispatch } from '../store'
+import {
+  useSelector,
+  useDispatch,
+} from '../store'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
-import { Button, Input, TextArea } from '../shared/ui'
+import {
+  Button,
+  Input,
+  TextArea,
+} from '../shared/ui'
 import {
   fetchTopicsThunk,
   createTopicThunk,
@@ -20,10 +27,13 @@ import { selectUser } from '../slices/userSlice'
 export const ForumPage: React.FC = () => {
   const dispatch = useDispatch()
   const topics = useSelector(selectTopics)
-  const isLoading = useSelector(selectIsLoadingForum)
+  const isLoading = useSelector(
+    selectIsLoadingForum
+  )
   const user = useSelector(selectUser)
 
-  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showCreateForm, setShowCreateForm] =
+    useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
 
@@ -36,7 +46,7 @@ export const ForumPage: React.FC = () => {
       createTopicThunk({
         title: title.trim(),
         content: content.trim(),
-        author: user?.name || 'Аноним',
+        author: user?.first_name || 'Аноним',
       })
     )
     setTitle('')
@@ -45,7 +55,9 @@ export const ForumPage: React.FC = () => {
   }
 
   return (
-    <div className={clsx('landing', 'AuthPage')} id="landing-root">
+    <div
+      className={clsx('landing', 'AuthPage')}
+      id="landing-root">
       <Helmet>
         <meta charSet="utf-8" />
         <title>Форум Cosmic Match</title>
@@ -67,21 +79,33 @@ export const ForumPage: React.FC = () => {
 
           <div className="forum-create-btn">
             <Button
-              variant={showCreateForm ? 'outline' : 'primary'}
-              onClick={() => setShowCreateForm(v => !v)}>
-              {showCreateForm ? 'Отмена' : '+ Новая тема'}
+              variant={
+                showCreateForm
+                  ? 'outline'
+                  : 'primary'
+              }
+              onClick={() =>
+                setShowCreateForm(v => !v)
+              }>
+              {showCreateForm
+                ? 'Отмена'
+                : '+ Новая тема'}
             </Button>
           </div>
 
           {showCreateForm && (
-            <div className="extra-card" style={{ marginBottom: 16 }}>
+            <div
+              className="extra-card"
+              style={{ marginBottom: 16 }}>
               <div className="forum-form">
                 <h3>Создать тему</h3>
                 <div className="forum-form__field">
                   <label>Заголовок</label>
                   <Input
                     value={title}
-                    onChange={e => setTitle(e.target.value)}
+                    onChange={e =>
+                      setTitle(e.target.value)
+                    }
                     placeholder="Название темы"
                   />
                 </div>
@@ -89,13 +113,17 @@ export const ForumPage: React.FC = () => {
                   <label>Сообщение</label>
                   <TextArea
                     value={content}
-                    onChange={e => setContent(e.target.value)}
+                    onChange={e =>
+                      setContent(e.target.value)
+                    }
                     rows={4}
                     placeholder="Опишите вашу идею или вопрос"
                   />
                 </div>
                 <div className="forum-form__actions">
-                  <Button variant="primary" onClick={handleCreateTopic}>
+                  <Button
+                    variant="primary"
+                    onClick={handleCreateTopic}>
                     Опубликовать
                   </Button>
                 </div>
@@ -106,7 +134,9 @@ export const ForumPage: React.FC = () => {
           {isLoading ? (
             <p>Загрузка...</p>
           ) : topics.length === 0 ? (
-            <div className="forum-empty">Тем пока нет. Создайте первую!</div>
+            <div className="forum-empty">
+              Тем пока нет. Создайте первую!
+            </div>
           ) : (
             <>
               <div className="forum-list__header">
@@ -121,10 +151,16 @@ export const ForumPage: React.FC = () => {
                     key={topic.id}
                     className="forum-list__row">
                     <div>
-                      <div className="forum-list__title">{topic.title}</div>
+                      <div className="forum-list__title">
+                        {topic.title}
+                      </div>
                       <div className="forum-list__meta">
                         {topic.author} ·{' '}
-                        {new Date(topic.createdAt).toLocaleDateString('ru-RU')}
+                        {new Date(
+                          topic.createdAt
+                        ).toLocaleDateString(
+                          'ru-RU'
+                        )}
                       </div>
                     </div>
                     <span className="forum-list__count forum-list__count--accent">
@@ -146,6 +182,8 @@ export const ForumPage: React.FC = () => {
   )
 }
 
-export const initForumPage = ({ dispatch }: PageInitArgs) => {
+export const initForumPage = ({
+  dispatch,
+}: PageInitArgs) => {
   return dispatch(fetchTopicsThunk())
 }
