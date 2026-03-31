@@ -1,4 +1,3 @@
-// packages/client/src/pages/GamePage.tsx
 import React from 'react'
 import { Helmet } from 'react-helmet'
 
@@ -14,10 +13,10 @@ export const GamePage: React.FC = () => {
     <div className="landing landing--light-flat">
       <Helmet>
         <meta charSet="utf-8" />
-        <title>Cosmic Match — Игра</title>
+        <title>Cosmic Match</title>
         <meta
           name="description"
-          content="Игровое поле Cosmic Match: match-3 в космосе."
+          content="Игровое поле Cosmic Match."
         />
       </Helmet>
 
@@ -25,7 +24,7 @@ export const GamePage: React.FC = () => {
 
       <main className="auth-main">
         <div className="auth-card auth-card--wide">
-          <h1>Игровое поле Cosmic Match</h1>
+          <h1>Cosmic Match</h1>
           <p className="auth-note">
             Режим match-3: собирай комбинации,
             набирай очки, побеждай время.

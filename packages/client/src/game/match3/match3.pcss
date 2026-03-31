@@ -1,34 +1,142 @@
-/* тестовые стили для игрового поля */
 .match3 {
+  width: 100%;
+  max-width: 100%;
   margin-top: 8px;
 }
 
-.match3__hud {
+.match3__pre-hud {
+  width: 100%;
   margin-bottom: 10px;
   font-size: 14px;
+  line-height: 1.45;
+  color: #0f172a;
+  text-align: center;
+}
+
+.match3__hud {
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #0f172a;
+}
+
+.match3__hud--row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.match3__hud-sep {
+  color: #94a3b8;
+  user-select: none;
+}
+
+@media (max-width: 520px) {
+  .match3__hud--row {
+    justify-content: flex-start;
+  }
+
+  .match3__hud-sep {
+    display: none;
+  }
+}
+
+.match3__board {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .match3__canvas {
   display: block;
-  width: 400px;
-  max-width: 100%;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
   border: 1px solid #2f4d73;
   border-radius: 8px;
   background: #081226;
+  vertical-align: top;
 }
 
-.match3__settings-toggle {
-  margin-top: 10px;
-}
-
-.match3__settings {
-  margin-top: 10px;
+.match3__overlay {
+  position: absolute;
+  inset: 0;
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: rgba(5, 12, 28, 0.88);
+  backdrop-filter: blur(6px);
 }
 
-.match3__settings label {
-  display: grid;
-  gap: 4px;
+.match3__overlay--countdown {
+  cursor: default;
+}
+
+.match3__countdown {
+  font-size: clamp(72px, 18vw, 120px);
+  font-weight: 800;
+  line-height: 1;
+  color: #e0f2fe;
+  text-shadow:
+    0 0 12px rgba(56, 189, 248, 0.95),
+    0 0 28px rgba(99, 102, 241, 0.75),
+    0 0 48px rgba(168, 85, 247, 0.45);
+  animation: match3-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes match3-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.92;
+  }
+}
+
+.match3__overlay--ready .match3__play-btn {
+  min-width: 160px;
+  font-size: 16px;
+  padding: 12px 24px;
+}
+
+.match3__overlay--results {
+  text-align: center;
+  color: #e2e8f0;
+}
+
+.match3__results-title {
+  margin: 0 0 16px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #f8fafc;
+  text-shadow: 0 0 14px rgba(56, 189, 248, 0.5);
+}
+
+.match3__results-list {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.match3__results-list li {
+  margin: 0;
+}
+
+.match3__again-btn {
+  min-width: 180px;
 }
