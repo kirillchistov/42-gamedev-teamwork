@@ -2,10 +2,11 @@ import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
-  Navigate,
   useNavigate,
+  Navigate,
 } from 'react-router-dom'
 import { usePage } from '../hooks/usePage'
+import { PageInitArgs } from '../routes'
 import { Button, Input } from '../shared/ui'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import {
@@ -13,16 +14,29 @@ import {
   useSelector,
 } from '../store'
 import {
-  signupThunk,
+  fetchUserThunk,
   selectUser,
   selectUserError,
+  selectUserIsAuthChecked,
   selectUserIsLoading,
+  signupThunk,
 } from '../slices/userSlice'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
+import { AuthSessionNotice } from '../components/AuthSessionNotice'
 
-export const initSignupPage = () =>
-  Promise.resolve()
+export const initSignupPage = ({
+  dispatch,
+  state,
+}: PageInitArgs) => {
+  if (selectUserIsAuthChecked(state)) {
+    return Promise.resolve()
+  }
+
+  return dispatch(fetchUserThunk()).catch(
+    () => undefined
+  )
+}
 
 export const SignupPage: React.FC = () => {
   usePage({ initPage: initSignupPage })
@@ -31,6 +45,9 @@ export const SignupPage: React.FC = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector(selectUser)
+  const isAuthChecked = useSelector(
+    selectUserIsAuthChecked
+  )
   const isLoading = useSelector(
     selectUserIsLoading
   )
@@ -80,121 +97,129 @@ export const SignupPage: React.FC = () => {
       <Header />
 
       <main className="auth-main">
-        <section className="auth-card auth-card--wide">
-          <h1>Регистрация</h1>
+        {!isAuthChecked ? (
+          <section className="auth-card auth-card--wide">
+            <p>Проверяем текущую сессию...</p>
+          </section>
+        ) : user ? (
+          <AuthSessionNotice actionLabel="Выйти и зарегистрировать другой аккаунт" />
+        ) : (
+          <section className="auth-card auth-card--wide">
+            <h1>Регистрация</h1>
 
-          <form
-            className="auth-form auth-form--grid"
-            onSubmit={handleSubmit}
-            noValidate>
-            <label>
-              Имя
-              <Input
-                type="text"
-                placeholder="Имя"
-                value={firstName}
-                onChange={e =>
-                  setFirstName(e.target.value)
-                }
-                required
-              />
-            </label>
-            <label>
-              Фамилия
-              <Input
-                type="text"
-                placeholder="Фамилия"
-                value={secondName}
-                onChange={e =>
-                  setSecondName(e.target.value)
-                }
-                required
-              />
-            </label>
-            <label>
-              Почта
-              <Input
-                type="email"
-                placeholder="user@example.com"
-                value={email}
-                onChange={e =>
-                  setEmail(e.target.value)
-                }
-                required
-              />
-            </label>
-            <label>
-              Телефон
-              <Input
-                type="tel"
-                placeholder="+7..."
-                value={phone}
-                onChange={e =>
-                  setPhone(e.target.value)
-                }
-                required
-              />
-            </label>
-            <label>
-              Логин
-              <Input
-                type="text"
-                placeholder="login"
-                value={login}
-                onChange={e =>
-                  setLogin(e.target.value)
-                }
-                required
-                autoComplete="username"
-              />
-            </label>
-            <label>
-              Пароль
-              <Input
-                type="password"
-                placeholder="Пароль"
-                value={password}
-                onChange={e =>
-                  setPassword(e.target.value)
-                }
-                required
-                autoComplete="new-password"
-              />
-            </label>
+            <form
+              className="auth-form auth-form--grid"
+              onSubmit={handleSubmit}
+              noValidate>
+              <label>
+                Имя
+                <Input
+                  type="text"
+                  placeholder="Имя"
+                  value={firstName}
+                  onChange={e =>
+                    setFirstName(e.target.value)
+                  }
+                  required
+                />
+              </label>
+              <label>
+                Фамилия
+                <Input
+                  type="text"
+                  placeholder="Фамилия"
+                  value={secondName}
+                  onChange={e =>
+                    setSecondName(e.target.value)
+                  }
+                  required
+                />
+              </label>
+              <label>
+                Почта
+                <Input
+                  type="email"
+                  placeholder="user@example.com"
+                  value={email}
+                  onChange={e =>
+                    setEmail(e.target.value)
+                  }
+                  required
+                />
+              </label>
+              <label>
+                Телефон
+                <Input
+                  type="tel"
+                  placeholder="+7..."
+                  value={phone}
+                  onChange={e =>
+                    setPhone(e.target.value)
+                  }
+                  required
+                />
+              </label>
+              <label>
+                Логин
+                <Input
+                  type="text"
+                  placeholder="login"
+                  value={login}
+                  onChange={e =>
+                    setLogin(e.target.value)
+                  }
+                  required
+                  autoComplete="username"
+                />
+              </label>
+              <label>
+                Пароль
+                <Input
+                  type="password"
+                  placeholder="Пароль"
+                  value={password}
+                  onChange={e =>
+                    setPassword(e.target.value)
+                  }
+                  required
+                  autoComplete="new-password"
+                />
+              </label>
 
-            {error && (
-              <p
-                style={{
-                  color:
-                    'var(--color-error, #e53935)',
-                  margin: 0,
-                  gridColumn: '1 / -1',
-                }}>
-                {error}
-              </p>
-            )}
+              {error && (
+                <p
+                  style={{
+                    color:
+                      'var(--color-error, #e53935)',
+                    margin: 0,
+                    gridColumn: '1 / -1',
+                  }}>
+                  {error}
+                </p>
+              )}
 
-            <div className="auth-form__actions">
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={isLoading}>
-                {isLoading
-                  ? 'Регистрируем...'
-                  : 'Зарегистрироваться'}
-              </Button>
-            </div>
-          </form>
+              <div className="auth-form__actions">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={isLoading}>
+                  {isLoading
+                    ? 'Регистрируем...'
+                    : 'Зарегистрироваться'}
+                </Button>
+              </div>
+            </form>
 
-          <p className="auth-switch">
-            Есть аккаунт?{' '}
-            <Link
-              to="/login"
-              className="auth-link">
-              Войдите
-            </Link>
-          </p>
-        </section>
+            <p className="auth-switch">
+              Есть аккаунт?{' '}
+              <Link
+                to="/login"
+                className="auth-link">
+                Войдите
+              </Link>
+            </p>
+          </section>
+        )}
       </main>
       <Footer />
     </div>

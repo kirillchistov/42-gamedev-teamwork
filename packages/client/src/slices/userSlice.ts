@@ -246,6 +246,9 @@ export const selectUser = (state: RootState) =>
 export const selectUserIsLoading = (
   state: RootState
 ) => state.user.isLoading
+export const selectUserIsAuthChecked = (
+  state: RootState
+) => state.user.isInitialized
 export const selectUserIsInitialized = (
   state: RootState
 ) => state.user.isInitialized
