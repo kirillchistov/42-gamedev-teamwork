@@ -1,23 +1,53 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { ThemeProvider } from '@gravity-ui/uikit'
 import { store } from './store'
 import { routes } from './routes'
+import { LandingThemeProvider } from './contexts/LandingThemeContext'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import './shared/styles/normalize.pcss'
 import './shared/styles/base.pcss'
 import './shared/styles/landing.pcss'
 import '@gravity-ui/uikit/styles/fonts.css'
 import '@gravity-ui/uikit/styles/styles.css'
 
-const router = createBrowserRouter(routes)
+const PUBLIC_PATHS = new Set([
+  '/login',
+  '/signup',
+  '/register',
+  '/signin',
+  '/sign-in',
+  '*',
+])
+
+const router = createBrowserRouter(
+  routes.map(route => {
+    if (PUBLIC_PATHS.has(route.path ?? ''))
+      return route
+    const { Component, ...rest } = route
+    return {
+      ...rest,
+      element: (
+        <ProtectedRoute>
+          <Component />
+        </ProtectedRoute>
+      ),
+    }
+  })
+)
 
 ReactDOM.hydrateRoot(
   document.getElementById('root') as HTMLElement,
   <Provider store={store}>
-    <ThemeProvider theme="light">
-      <RouterProvider router={router} />
-    </ThemeProvider>
+    <LandingThemeProvider>
+      <ThemeProvider theme="light">
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </LandingThemeProvider>
   </Provider>
 )
