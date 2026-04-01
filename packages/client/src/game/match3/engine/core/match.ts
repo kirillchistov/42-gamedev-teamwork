@@ -12,13 +12,13 @@ export type CellRC = { r: number; c: number }
 function pushUnique(
   out: CellRC[],
   seen: Set<string>,
-  r: number,
-  c: number
+  rowIndex: number,
+  colIndex: number
 ) {
-  const key = `${r},${c}`
+  const key = `${rowIndex},${colIndex}`
   if (seen.has(key)) return
   seen.add(key)
-  out.push({ r, c })
+  out.push({ r: rowIndex, c: colIndex })
 }
 
 export function findMatches(

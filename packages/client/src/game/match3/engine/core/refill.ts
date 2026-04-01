@@ -12,19 +12,19 @@ function randInt(maxExclusive: number): number {
 
 function wouldFormMatch(
   board: Board,
-  r: number,
-  c: number,
-  v: number
+  rowIndex: number,
+  colIndex: number,
+  value: number
 ): boolean {
   //  По вертикали: проверяем две налево
-  const a = board[r]?.[c - 1]
-  const b = board[r]?.[c - 2]
-  if (a === v && b === v) return true
+  const a = board[rowIndex]?.[colIndex - 1]
+  const b = board[rowIndex]?.[colIndex - 2]
+  if (a === value && b === value) return true
 
   // По вертикали: проверяем две вверх
-  const x = board[r - 1]?.[c]
-  const y = board[r - 2]?.[c]
-  if (x === v && y === v) return true
+  const x = board[rowIndex - 1]?.[colIndex]
+  const y = board[rowIndex - 2]?.[colIndex]
+  if (x === value && y === value) return true
 
   return false
 }

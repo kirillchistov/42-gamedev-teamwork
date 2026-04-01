@@ -19,26 +19,28 @@ function dims(board: Board) {
 }
 
 function getCell(
-  b: Board,
-  r: number,
-  c: number
+  board: Board,
+  rowIndex: number,
+  colIndex: number
 ): number | undefined {
-  const row = b[r]
+  const row = board[rowIndex]
   if (!row) return undefined
-  if (c < 0 || c >= row.length) return undefined
-  return row[c]
+  if (colIndex < 0 || colIndex >= row.length)
+    return undefined
+  return row[colIndex]
 }
 
 function setCell(
-  b: Board,
-  r: number,
-  c: number,
-  v: number
+  board: Board,
+  rowIndex: number,
+  colIndex: number,
+  value: number
 ): void {
-  const row = b[r]
+  const row = board[rowIndex]
   if (!row) return
-  if (c < 0 || c >= row.length) return
-  row[c] = v
+  if (colIndex < 0 || colIndex >= row.length)
+    return
+  row[colIndex] = value
 }
 
 export function collapse(board: Board): void {

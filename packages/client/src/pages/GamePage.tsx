@@ -60,47 +60,16 @@ export const GamePage: React.FC = () => {
             <div
               role="status"
               aria-live="polite"
-              style={{
-                position: 'sticky',
-                top: 8,
-                zIndex: 20,
-                marginBottom: 12,
-                display: 'flex',
-                justifyContent: 'center',
-              }}>
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 10,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color:
-                    theme === 'dark-neon'
-                      ? '#e2e8f0'
-                      : '#0f172a',
-                  background:
-                    theme === 'dark-neon'
-                      ? 'rgba(15, 23, 42, 0.92)'
-                      : 'rgba(255, 255, 255, 0.94)',
-                  border:
-                    theme === 'dark-neon'
-                      ? '1px solid rgba(56, 189, 248, 0.55)'
-                      : '1px solid rgba(79, 70, 229, 0.25)',
-                  boxShadow:
-                    theme === 'dark-neon'
-                      ? '0 0 16px rgba(56, 189, 248, 0.25)'
-                      : '0 6px 18px rgba(15, 23, 42, 0.08)',
-                }}>
+              className="match3-page__toast-wrap">
+              <div className="match3-page__toast">
                 {toastMessage}
               </div>
             </div>
           )}
-          <h1 style={{ textAlign: 'center' }}>
+          <h1 className="match3-page__title">
             Cosmic Match
           </h1>
-          <p
-            className="auth-note"
-            style={{ textAlign: 'center' }}>
+          <p className="auth-note match3-page__note">
             Режим match-3: собирай комбинации,
             набирай очки, побеждай время.{' '}
             <button
@@ -108,41 +77,14 @@ export const GamePage: React.FC = () => {
               onClick={() =>
                 setShowSettings(v => !v)
               }
-              style={{
-                border: 'none',
-                background: 'transparent',
-                color:
-                  theme === 'dark-neon'
-                    ? '#7dd3fc'
-                    : 'var(--color-accent-primary)',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-                padding: 0,
-                font: 'inherit',
-                textShadow:
-                  theme === 'dark-neon'
-                    ? '0 0 10px rgba(56, 189, 248, 0.5)'
-                    : 'none',
-              }}>
+              className="match3-page__settings-btn">
               Настроить
             </button>
           </p>
 
           {showSettings && (
-            <div
-              style={{
-                margin: '12px auto 16px',
-                maxWidth: 560,
-                display: 'grid',
-                gap: 12,
-                gridTemplateColumns:
-                  'repeat(auto-fit, minmax(160px, 1fr))',
-              }}>
-              <label
-                style={{
-                  display: 'grid',
-                  gap: 4,
-                }}>
+            <div className="match3-page__settings-grid">
+              <label className="match3-page__settings-label">
                 Поле
                 <select defaultValue="8x8">
                   <option value="8x8">8x8</option>
@@ -155,11 +97,7 @@ export const GamePage: React.FC = () => {
                 </select>
               </label>
 
-              <label
-                style={{
-                  display: 'grid',
-                  gap: 4,
-                }}>
+              <label className="match3-page__settings-label">
                 Тема
                 <select defaultValue="standard">
                   <option value="standard">
@@ -174,11 +112,7 @@ export const GamePage: React.FC = () => {
                 </select>
               </label>
 
-              <label
-                style={{
-                  display: 'grid',
-                  gap: 4,
-                }}>
+              <label className="match3-page__settings-label">
                 Время
                 <select defaultValue="5">
                   <option value="5">

@@ -24,20 +24,20 @@ function makeEmptyBoard(
 
 function hasMatchAt(
   board: Board,
-  r: number,
-  c: number
+  rowIndex: number,
+  colIndex: number
 ): boolean {
-  const v = board[r]?.[c]
+  const v = board[rowIndex]?.[colIndex]
   if (typeof v !== 'number' || v < 0) return false
 
   // Проверяем по горизонтали (смотрим влево)
-  const a = board[r]?.[c - 1]
-  const b = board[r]?.[c - 2]
+  const a = board[rowIndex]?.[colIndex - 1]
+  const b = board[rowIndex]?.[colIndex - 2]
   if (a === v && b === v) return true
 
   // Проверяем по вертикали (смотрим вверх)
-  const x = board[r - 1]?.[c]
-  const y = board[r - 2]?.[c]
+  const x = board[rowIndex - 1]?.[colIndex]
+  const y = board[rowIndex - 2]?.[colIndex]
   if (x === v && y === v) return true
 
   return false
@@ -45,8 +45,8 @@ function hasMatchAt(
 
 function pickKindNoImmediateMatch(
   board: Board,
-  r: number,
-  c: number,
+  rowIndex: number,
+  colIndex: number,
   kinds: number
 ): number {
   const MAX_ATTEMPTS = Math.max(8, kinds * 2)
@@ -54,20 +54,22 @@ function pickKindNoImmediateMatch(
   let attempts = 0
 
   while (attempts < MAX_ATTEMPTS) {
-    board[r][c] = candidate
-    if (!hasMatchAt(board, r, c)) return candidate
+    board[rowIndex][colIndex] = candidate
+    if (!hasMatchAt(board, rowIndex, colIndex))
+      return candidate
     candidate = randInt(kinds)
     attempts += 1
   }
 
   // Выкидываем по возможности первый тип фишки, который не дает комбинации с ходу
   for (let k = 0; k < kinds; k += 1) {
-    board[r][c] = k
-    if (!hasMatchAt(board, r, c)) return k
+    board[rowIndex][colIndex] = k
+    if (!hasMatchAt(board, rowIndex, colIndex))
+      return k
   }
 
   // В крайнем случае
-  board[r][c] = candidate
+  board[rowIndex][colIndex] = candidate
   return candidate
 }
 

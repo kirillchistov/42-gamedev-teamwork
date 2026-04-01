@@ -22,13 +22,18 @@ function uniqCells(cells: CellRC[]): CellRC[] {
 
 function isInBounds(
   board: Board,
-  r: number,
-  c: number
+  rowIndex: number,
+  colIndex: number
 ): boolean {
   const rows = board.length
   const cols =
     rows > 0 ? board[0]?.length ?? 0 : 0
-  return r >= 0 && c >= 0 && r < rows && c < cols
+  return (
+    rowIndex >= 0 &&
+    colIndex >= 0 &&
+    rowIndex < rows &&
+    colIndex < cols
+  )
 }
 
 /**
