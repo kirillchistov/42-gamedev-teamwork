@@ -16,6 +16,8 @@ export const GamePage: React.FC = () => {
   const { theme } = useLandingTheme()
   const [showSettings, setShowSettings] =
     useState(false)
+  const [toastMessage, setToastMessage] =
+    useState('')
   const location = useLocation()
   const navigate = useNavigate()
   const notice = (
@@ -24,11 +26,20 @@ export const GamePage: React.FC = () => {
 
   useEffect(() => {
     if (!notice) return
+    setToastMessage(notice)
     navigate(location.pathname, {
       replace: true,
       state: null,
     })
   }, [notice, navigate, location.pathname])
+
+  useEffect(() => {
+    if (!toastMessage) return
+    const id = window.setTimeout(() => {
+      setToastMessage('')
+    }, 2500)
+    return () => clearTimeout(id)
+  }, [toastMessage])
 
   return (
     <div className={`landing landing--${theme}`}>
@@ -45,17 +56,44 @@ export const GamePage: React.FC = () => {
 
       <main className="auth-main">
         <div className="auth-card auth-card--wide">
-          {notice && (
-            <p
-              className="auth-note"
+          {toastMessage && (
+            <div
+              role="status"
+              aria-live="polite"
               style={{
-                marginBottom: 8,
-                color:
-                  'var(--color-accent-primary)',
-                textAlign: 'center',
+                position: 'sticky',
+                top: 8,
+                zIndex: 20,
+                marginBottom: 12,
+                display: 'flex',
+                justifyContent: 'center',
               }}>
-              {notice}
-            </p>
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color:
+                    theme === 'dark-neon'
+                      ? '#e2e8f0'
+                      : '#0f172a',
+                  background:
+                    theme === 'dark-neon'
+                      ? 'rgba(15, 23, 42, 0.92)'
+                      : 'rgba(255, 255, 255, 0.94)',
+                  border:
+                    theme === 'dark-neon'
+                      ? '1px solid rgba(56, 189, 248, 0.55)'
+                      : '1px solid rgba(79, 70, 229, 0.25)',
+                  boxShadow:
+                    theme === 'dark-neon'
+                      ? '0 0 16px rgba(56, 189, 248, 0.25)'
+                      : '0 6px 18px rgba(15, 23, 42, 0.08)',
+                }}>
+                {toastMessage}
+              </div>
+            </div>
           )}
           <h1 style={{ textAlign: 'center' }}>
             Cosmic Match
@@ -74,11 +112,17 @@ export const GamePage: React.FC = () => {
                 border: 'none',
                 background: 'transparent',
                 color:
-                  'var(--color-accent-primary)',
+                  theme === 'dark-neon'
+                    ? '#7dd3fc'
+                    : 'var(--color-accent-primary)',
                 textDecoration: 'underline',
                 cursor: 'pointer',
                 padding: 0,
                 font: 'inherit',
+                textShadow:
+                  theme === 'dark-neon'
+                    ? '0 0 10px rgba(56, 189, 248, 0.5)'
+                    : 'none',
               }}>
               Настроить
             </button>
