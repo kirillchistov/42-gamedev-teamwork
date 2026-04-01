@@ -1,12 +1,14 @@
-﻿import React, { FormEvent, useState } from 'react'
+import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
   useNavigate,
+  Navigate,
 } from 'react-router-dom'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
 import { Button, Input } from '../shared/ui'
+import { useLandingTheme } from '../contexts/LandingThemeContext'
 import {
   useDispatch,
   useSelector,
@@ -38,6 +40,7 @@ export const initSignupPage = ({
 
 export const SignupPage: React.FC = () => {
   usePage({ initPage: initSignupPage })
+  const { theme } = useLandingTheme()
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -57,6 +60,18 @@ export const SignupPage: React.FC = () => {
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
 
+  if (user) {
+    return (
+      <Navigate
+        to="/game"
+        replace
+        state={{
+          notice: 'Вы уже вошли в систему',
+        }}
+      />
+    )
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     const result = await dispatch(
@@ -70,12 +85,12 @@ export const SignupPage: React.FC = () => {
       })
     )
     if (signupThunk.fulfilled.match(result)) {
-      navigate('/', { replace: true })
+      navigate('/game', { replace: true })
     }
   }
 
   return (
-    <div className="landing landing--light-flat">
+    <div className={`landing landing--${theme}`}>
       <Helmet>
         <title>Регистрация — Cosmic Match</title>
       </Helmet>

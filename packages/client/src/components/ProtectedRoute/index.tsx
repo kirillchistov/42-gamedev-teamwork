@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
   useDispatch,
@@ -7,47 +7,38 @@ import {
 import {
   fetchUserThunk,
   selectUser,
-  selectUserIsAuthChecked,
+  selectUserIsInitialized,
   selectUserIsLoading,
 } from '../../slices/userSlice'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
-  redirectTo?: string
 }
 
 export const ProtectedRoute: React.FC<
   ProtectedRouteProps
-> = ({ children, redirectTo = '/login' }) => {
+> = ({ children }) => {
   const dispatch = useDispatch()
   const user = useSelector(selectUser)
-  const isAuthChecked = useSelector(
-    selectUserIsAuthChecked
+  const isInitialized = useSelector(
+    selectUserIsInitialized
   )
   const isLoading = useSelector(
     selectUserIsLoading
   )
 
   useEffect(() => {
-    if (!isAuthChecked && !isLoading) {
-      dispatch(fetchUserThunk())
+    if (!isInitialized && !isLoading) {
+      void dispatch(fetchUserThunk())
     }
-  }, [dispatch, isAuthChecked, isLoading])
+  }, [dispatch, isInitialized, isLoading])
 
-  if (!isAuthChecked) {
-    return (
-      <div className="landing landing--light-flat">
-        <main className="auth-main">
-          <section className="auth-card auth-card--wide">
-            <p>Проверяем авторизацию...</p>
-          </section>
-        </main>
-      </div>
-    )
+  if (!isInitialized || isLoading) {
+    return null
   }
 
   if (!user) {
-    return <Navigate to={redirectTo} replace />
+    return <Navigate to="/login" replace />
   }
 
   return <>{children}</>

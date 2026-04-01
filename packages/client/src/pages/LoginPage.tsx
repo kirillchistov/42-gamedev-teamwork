@@ -1,12 +1,14 @@
-﻿import React, { FormEvent, useState } from 'react'
+import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
   useNavigate,
+  Navigate,
 } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AuthSessionNotice } from '../components/AuthSessionNotice'
+import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
 import { Button, Input } from '../shared/ui'
@@ -25,6 +27,7 @@ import {
 
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
+  const { theme } = useLandingTheme()
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -40,18 +43,30 @@ export const LoginPage: React.FC = () => {
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
 
+  if (user) {
+    return (
+      <Navigate
+        to="/game"
+        replace
+        state={{
+          notice: 'Вы уже вошли в систему',
+        }}
+      />
+    )
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     const result = await dispatch(
       loginThunk({ login, password })
     )
     if (loginThunk.fulfilled.match(result)) {
-      navigate('/', { replace: true })
+      navigate('/game', { replace: true })
     }
   }
 
   return (
-    <div className="landing landing--light-flat">
+    <div className={`landing landing--${theme}`}>
       <Helmet>
         <meta charSet="utf-8" />
         <title>Вход — Cosmic Match</title>

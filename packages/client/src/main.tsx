@@ -8,6 +8,7 @@ import { Provider } from 'react-redux'
 import { ThemeProvider } from '@gravity-ui/uikit'
 import { store } from './store'
 import { routes } from './routes'
+import { LandingThemeProvider } from './contexts/LandingThemeContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import './shared/styles/normalize.pcss'
 import './shared/styles/base.pcss'
@@ -20,6 +21,9 @@ const PUBLIC_PATHS = new Set([
   '/sign-in',
   '/signin',
   '/signup',
+  '/register',
+  '/signin',
+  '/sign-in',
   '*',
 ])
 
@@ -42,8 +46,10 @@ const router = createBrowserRouter(
 ReactDOM.hydrateRoot(
   document.getElementById('root') as HTMLElement,
   <Provider store={store}>
-    <ThemeProvider theme="light">
-      <RouterProvider router={router} />
-    </ThemeProvider>
+    <LandingThemeProvider>
+      <ThemeProvider theme="light">
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </LandingThemeProvider>
   </Provider>
 )
