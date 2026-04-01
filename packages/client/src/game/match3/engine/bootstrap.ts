@@ -1,3 +1,9 @@
+/**
+ * bootstrap.ts связывает чистую логику match-3 с UI-слоем и жизненным циклом партии.
+ * Создаём/перезапускаем поле, запускаем таймер и обрабатываем действия юзера.
+ * Файл отвечает за фазы экрана (idle/playing/ended), пересчёт HUD и обновление рекордов.
+ * Renderer/core-модули остаются "чистыми", а bootstrap выступает оркестратором состояния.
+ */
 import type { Board } from './core/grid'
 import { createBoard } from './core/grid'
 import { findMatches } from './core/match'
@@ -102,10 +108,37 @@ export function createMatch3Game(
   let timerId: number | null = null
   let isResolving = false
   let firstPick: CellRC | null = null
+  let keyboardCursor: CellRC | null = null
+  let targetCell: CellRC | null = null
+  let targetPulse = false
+  const pressedKeys = new Set<string>()
 
   const emitHud = () => onHudChange?.({ ...hud })
 
   const scoreMult = () => SCORE_MULT[scoreMode]
+
+  const sameCell = (
+    a: CellRC | null,
+    b: CellRC | null
+  ) =>
+    Boolean(a && b && a.r === b.r && a.c === b.c)
+
+  const renderInteraction = () => {
+    const target =
+      targetCell ??
+      (firstPick &&
+      keyboardCursor &&
+      !sameCell(firstPick, keyboardCursor)
+        ? keyboardCursor
+        : null)
+
+    renderBoard(ctx, board, {
+      selected: firstPick ?? keyboardCursor,
+      target,
+      targetPulse,
+      showSwapArrow: Boolean(firstPick && target),
+    })
+  }
 
   const syncRecordsFromScore = () => {
     hud.playerRecord = updatePlayerRecord(
@@ -190,6 +223,12 @@ export function createMatch3Game(
       boardSize,
       tileKinds
     )
+    keyboardCursor = {
+      r: Math.floor(boardSize / 2),
+      c: Math.floor(boardSize / 2),
+    }
+    targetCell = null
+    targetPulse = false
     renderBoard(ctx, board)
   }
 
@@ -217,18 +256,22 @@ export function createMatch3Game(
     }, 1000)
   }
 
-  async function handlePick(ev: PointerEvent) {
+  async function handleSelectCell(cell: CellRC) {
     if (phase !== 'playing' || isResolving) return
-    const cell = pickCellAt(board, canvas, ev)
-    if (!cell) return
 
     if (!firstPick) {
       firstPick = cell
-      renderBoard(ctx, board, {
-        selected: firstPick,
-      })
+      targetCell = null
+      targetPulse = false
+      renderInteraction()
       return
     }
+
+    targetCell = cell
+    targetPulse = true
+    renderInteraction()
+    await delay(120)
+    targetPulse = false
 
     const ok = trySwap(
       board,
@@ -238,6 +281,7 @@ export function createMatch3Game(
       cell.c
     )
     firstPick = null
+    targetCell = null
 
     if (ok) {
       hud.moves += 1
@@ -249,20 +293,103 @@ export function createMatch3Game(
     emitHud()
   }
 
+  async function handlePick(ev: PointerEvent) {
+    if (phase !== 'playing' || isResolving) return
+    const cell = pickCellAt(board, canvas, ev)
+    if (!cell) return
+    keyboardCursor = cell
+    await handleSelectCell(cell)
+  }
+
+  const moveKeyboardCursor = (
+    dr: number,
+    dc: number
+  ) => {
+    if (!keyboardCursor) {
+      keyboardCursor = { r: 0, c: 0 }
+    }
+    const rows = board.length
+    const cols =
+      rows > 0 ? board[0]?.length ?? 0 : 0
+    if (rows === 0 || cols === 0) return
+    keyboardCursor = {
+      r: Math.max(
+        0,
+        Math.min(rows - 1, keyboardCursor.r + dr)
+      ),
+      c: Math.max(
+        0,
+        Math.min(cols - 1, keyboardCursor.c + dc)
+      ),
+    }
+    renderInteraction()
+  }
+
+  const selectKeyboardCursor = () => {
+    if (!keyboardCursor) return
+    void handleSelectCell(keyboardCursor)
+  }
+
+  const onKeyDown = (ev: KeyboardEvent) => {
+    if (phase !== 'playing') return
+    const code = ev.code
+    if (pressedKeys.has(code)) return
+    pressedKeys.add(code)
+
+    if (code === 'ArrowUp' || code === 'KeyW') {
+      ev.preventDefault()
+      moveKeyboardCursor(-1, 0)
+      return
+    }
+    if (code === 'ArrowDown' || code === 'KeyS') {
+      ev.preventDefault()
+      moveKeyboardCursor(1, 0)
+      return
+    }
+    if (code === 'ArrowLeft' || code === 'KeyA') {
+      ev.preventDefault()
+      moveKeyboardCursor(0, -1)
+      return
+    }
+    if (
+      code === 'ArrowRight' ||
+      code === 'KeyD'
+    ) {
+      ev.preventDefault()
+      moveKeyboardCursor(0, 1)
+      return
+    }
+    if (code === 'Enter' || code === 'Space') {
+      ev.preventDefault()
+      selectKeyboardCursor()
+    }
+  }
+
+  const onKeyUp = (ev: KeyboardEvent) => {
+    pressedKeys.delete(ev.code)
+  }
+
   const onPointerDown = (ev: PointerEvent) => {
+    canvas.focus()
     void handlePick(ev)
   }
 
+  canvas.tabIndex = 0
   canvas.addEventListener(
     'pointerdown',
     onPointerDown
   )
+  window.addEventListener('keydown', onKeyDown)
+  window.addEventListener('keyup', onKeyUp)
 
   const resetIdle = () => {
     stopTimer()
     phase = 'idle'
     board = []
     firstPick = null
+    keyboardCursor = null
+    targetCell = null
+    targetPulse = false
     hud.score = 0
     hud.moves = 0
     hud.maxCombo = 0
@@ -316,6 +443,11 @@ export function createMatch3Game(
       'pointerdown',
       onPointerDown
     )
+    window.removeEventListener(
+      'keydown',
+      onKeyDown
+    )
+    window.removeEventListener('keyup', onKeyUp)
     stopTimer()
   }
 

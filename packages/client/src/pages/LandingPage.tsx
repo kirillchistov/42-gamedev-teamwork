@@ -11,17 +11,24 @@ import { Forum } from '../components/Landing/Forum'
 import { Team } from '../components/Landing/Team'
 import { Contact } from '../components/Landing/Contact'
 import { Footer } from '../components/Footer'
-import { selectUser, fetchUserThunk } from '../slices/userSlice'
+import {
+  selectUser,
+  fetchUserThunk,
+} from '../slices/userSlice'
+import { useLandingTheme } from '../contexts/LandingThemeContext'
 // import { About } from '../components/Landing/About'
 // import { useSelector } from '../store';
 
 export const LandingPage = () => {
   usePage({ initPage: initLandingPage })
+  const { theme } = useLandingTheme()
 
   //   const user = useSelector(selectUser);
 
   return (
-    <div id="landing-root" className="landing landing--light-flat">
+    <div
+      id="landing-root"
+      className={`landing landing--${theme}`}>
       <Helmet>
         <title>Cosmic Match — главная</title>
         <meta
@@ -44,7 +51,10 @@ export const LandingPage = () => {
   )
 }
 
-export const initLandingPage = ({ dispatch, state }: PageInitArgs) => {
+export const initLandingPage = ({
+  dispatch,
+  state,
+}: PageInitArgs) => {
   const queue: Array<Promise<unknown>> = []
   // если пользователя нет в сторе — подтянем его, чтобы шапка сразу отобразила статус
   if (!selectUser(state)) {

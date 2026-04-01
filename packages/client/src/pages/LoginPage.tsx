@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
+import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { usePage } from '../hooks/usePage'
 import { Button, Input } from '../shared/ui'
 import {
@@ -22,6 +23,7 @@ import {
 
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
+  const { theme } = useLandingTheme()
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -35,7 +37,15 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('')
 
   if (user) {
-    return <Navigate to="/" replace />
+    return (
+      <Navigate
+        to="/game"
+        replace
+        state={{
+          notice: 'Вы уже вошли в систему',
+        }}
+      />
+    )
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -44,12 +54,12 @@ export const LoginPage: React.FC = () => {
       loginThunk({ login, password })
     )
     if (loginThunk.fulfilled.match(result)) {
-      navigate('/', { replace: true })
+      navigate('/game', { replace: true })
     }
   }
 
   return (
-    <div className="landing landing--light-flat">
+    <div className={`landing landing--${theme}`}>
       <Helmet>
         <meta charSet="utf-8" />
         <title>Вход — Cosmic Match</title>
