@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import ReactDOM from 'react-dom/client'
 import {
   createBrowserRouter,
@@ -18,6 +18,8 @@ import '@gravity-ui/uikit/styles/styles.css'
 
 const PUBLIC_PATHS = new Set([
   '/login',
+  '/sign-in',
+  '/signin',
   '/signup',
   '/register',
   '/signin',

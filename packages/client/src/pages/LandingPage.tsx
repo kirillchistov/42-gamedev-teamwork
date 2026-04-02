@@ -1,4 +1,3 @@
-// Пока заглушка, потом будет лендинг
 import { Helmet } from 'react-helmet'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
@@ -12,7 +11,8 @@ import { Team } from '../components/Landing/Team'
 import { Contact } from '../components/Landing/Contact'
 import { Footer } from '../components/Footer'
 import {
-  selectUser,
+  selectUserIsAuthChecked,
+  // selectUser,
   fetchUserThunk,
 } from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
@@ -23,14 +23,12 @@ export const LandingPage = () => {
   usePage({ initPage: initLandingPage })
   const { theme } = useLandingTheme()
 
-  //   const user = useSelector(selectUser);
-
   return (
     <div
       id="landing-root"
       className={`landing landing--${theme}`}>
       <Helmet>
-        <title>Cosmic Match — главная</title>
+        <title>Cosmic Match - главная</title>
         <meta
           name="description"
           content="Браузерная игра «3 в ряд» в космосе: Cosmic Match"
@@ -56,9 +54,14 @@ export const initLandingPage = ({
   state,
 }: PageInitArgs) => {
   const queue: Array<Promise<unknown>> = []
-  // если пользователя нет в сторе — подтянем его, чтобы шапка сразу отобразила статус
-  if (!selectUser(state)) {
-    queue.push(dispatch(fetchUserThunk()))
+
+  if (!selectUserIsAuthChecked(state)) {
+    queue.push(
+      dispatch(fetchUserThunk()).catch(
+        () => undefined
+      )
+    )
   }
+
   return Promise.all(queue)
 }
