@@ -6,8 +6,11 @@ export function loadHighScore(): number {
     if (!raw) return 0
     const n = Number(raw)
     return Number.isFinite(n) && n >= 0 ? n : 0
-  } catch {
-    // здесь будет console.log('').
+  } catch (error) {
+    console.warn(
+      '[match3] не удалось прочитать localStorage',
+      error
+    )
     return 0
   }
 }
@@ -22,7 +25,7 @@ export function maybeUpdateHighScore(
       localStorage.setItem(HS_KEY, String(next))
     } catch (error) {
       console.warn(
-        '[match3] localStorage read failed',
+        '[match3] не удалось прочитать localStorage',
         error
       )
     }
@@ -35,7 +38,7 @@ export function clearHighScore(): void {
     localStorage.removeItem(HS_KEY)
   } catch (error) {
     console.warn(
-      '[match3] localStorage read failed',
+      '[match3] не удалось прочитать localStorage',
       error
     )
   }

@@ -1,9 +1,9 @@
-// ============================================================
-// Цель: фишки 3+ падают вниз, освобождают место
-// ------------------------------------------------------------
-// - Гравитация опускает фишки (>=0) вниз
-// - Верхние клетки становятся -1 после гравитации
-// ============================================================
+/**
+ * collapse.ts реализует «гравитацию»: после очистки все непустые клетки падают вниз.
+ * Алгоритм проходит по каждому столбцу снизу вверх и сжимает значения без потери порядка.
+ * Освободившиеся верхние позиции заполняются -1 и ждут шага refill.
+ * Модуль не знает про очки/комбо и занимается только геометрией поля.
+ */
 
 import type { Board } from './grid'
 
@@ -19,26 +19,28 @@ function dims(board: Board) {
 }
 
 function getCell(
-  b: Board,
-  r: number,
-  c: number
+  board: Board,
+  rowIndex: number,
+  colIndex: number
 ): number | undefined {
-  const row = b[r]
+  const row = board[rowIndex]
   if (!row) return undefined
-  if (c < 0 || c >= row.length) return undefined
-  return row[c]
+  if (colIndex < 0 || colIndex >= row.length)
+    return undefined
+  return row[colIndex]
 }
 
 function setCell(
-  b: Board,
-  r: number,
-  c: number,
-  v: number
+  board: Board,
+  rowIndex: number,
+  colIndex: number,
+  value: number
 ): void {
-  const row = b[r]
+  const row = board[rowIndex]
   if (!row) return
-  if (c < 0 || c >= row.length) return
-  row[c] = v
+  if (colIndex < 0 || colIndex >= row.length)
+    return
+  row[colIndex] = value
 }
 
 export function collapse(board: Board): void {
@@ -48,7 +50,7 @@ export function collapse(board: Board): void {
   for (let c = 0; c < cols; c++) {
     let write = rows - 1 // следующая позиция снизу
 
-    // Спустить вниз все не-пустые фишки (>=0).
+    // Спустить вниз все "живые" фишки (>=0).
     for (let r = rows - 1; r >= 0; r--) {
       const v = getCell(board, r, c)
       if (typeof v === 'number' && v >= 0) {
@@ -60,7 +62,7 @@ export function collapse(board: Board): void {
       }
     }
 
-    // Заполнить оставшиеся клетки -1.
+    // Заполнить освобожденные клетки (-1).
     for (let r = write; r >= 0; r--) {
       setCell(board, r, c, -1)
     }

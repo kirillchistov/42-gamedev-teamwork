@@ -1,56 +1,75 @@
-import {
+﻿import {
   createAsyncThunk,
   createSlice,
   PayloadAction,
 } from '@reduxjs/toolkit'
-import { RootState } from '../store'
+import type { RootState } from '../store'
 import { BASE_URL } from '../constants'
+import type {
+  LoginCredentials,
+  SignupData,
+  User,
+} from '../types/user'
 
-export interface User {
-  id: number
-  first_name: string
-  second_name: string
-  login: string
-  email: string
-  phone: string
-  avatar: string | null
-}
-
-export interface UserState {
+interface UserState {
   data: User | null
   isLoading: boolean
-  isInitialized: boolean
+  isAuthChecked: boolean
   error: string | null
 }
 
 const initialState: UserState = {
   data: null,
   isLoading: false,
-  isInitialized: false,
+  isAuthChecked: false,
   error: null,
 }
 
-export const fetchUserThunk = createAsyncThunk(
-  'user/fetchUser',
-  async () => {
+const fetchCurrentUser =
+  async (): Promise<User> => {
     const res = await fetch(
       `${BASE_URL}/auth/user`,
       {
         credentials: 'include',
       }
     )
-    if (!res.ok) throw new Error('Unauthorized')
+
+    if (!res.ok) {
+      throw new Error('Unauthorized')
+    }
+
     return res.json() as Promise<User>
   }
+
+const readErrorReason = async (
+  response: Response,
+  fallback: string
+) => {
+  const data = await response
+    .json()
+    .catch(() => ({}))
+
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    'reason' in data &&
+    typeof data.reason === 'string'
+  ) {
+    return data.reason
+  }
+
+  return fallback
+}
+
+export const fetchUserThunk = createAsyncThunk(
+  'user/fetchUser',
+  async () => fetchCurrentUser()
 )
 
 export const loginThunk = createAsyncThunk(
   'user/login',
   async (
-    credentials: {
-      login: string
-      password: string
-    },
+    credentials: LoginCredentials,
     { rejectWithValue }
   ) => {
     const signinRes = await fetch(
@@ -64,36 +83,19 @@ export const loginThunk = createAsyncThunk(
         body: JSON.stringify(credentials),
       }
     )
+
     if (!signinRes.ok) {
-      const data = await signinRes
-        .json()
-        .catch(() => ({}))
       return rejectWithValue(
-        data.reason ?? 'Ошибка входа'
+        await readErrorReason(
+          signinRes,
+          'Ошибка входа'
+        )
       )
     }
-    const userRes = await fetch(
-      `${BASE_URL}/auth/user`,
-      {
-        credentials: 'include',
-      }
-    )
-    if (!userRes.ok)
-      throw new Error(
-        'Не удалось получить данные пользователя'
-      )
-    return userRes.json() as Promise<User>
+
+    return fetchCurrentUser()
   }
 )
-
-export interface SignupData {
-  first_name: string
-  second_name: string
-  login: string
-  email: string
-  password: string
-  phone: string
-}
 
 export const signupThunk = createAsyncThunk(
   'user/signup',
@@ -112,25 +114,17 @@ export const signupThunk = createAsyncThunk(
         body: JSON.stringify(data),
       }
     )
+
     if (!signupRes.ok) {
-      const err = await signupRes
-        .json()
-        .catch(() => ({}))
       return rejectWithValue(
-        err.reason ?? 'Ошибка регистрации'
+        await readErrorReason(
+          signupRes,
+          'Ошибка регистрации'
+        )
       )
     }
-    const userRes = await fetch(
-      `${BASE_URL}/auth/user`,
-      {
-        credentials: 'include',
-      }
-    )
-    if (!userRes.ok)
-      throw new Error(
-        'Не удалось получить данные пользователя'
-      )
-    return userRes.json() as Promise<User>
+
+    return fetchCurrentUser()
   }
 )
 
@@ -149,7 +143,6 @@ export const userSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: builder => {
-    // fetchUser
     builder
       .addCase(fetchUserThunk.pending, state => {
         state.isLoading = true
@@ -163,16 +156,17 @@ export const userSlice = createSlice({
         ) => {
           state.data = payload
           state.isLoading = false
-          state.isInitialized = true
+          state.isAuthChecked = true
+          state.error = null
         }
       )
       .addCase(fetchUserThunk.rejected, state => {
         state.data = null
         state.isLoading = false
-        state.isInitialized = true
+        state.isAuthChecked = true
+        state.error = null
       })
 
-    // login
     builder
       .addCase(loginThunk.pending, state => {
         state.isLoading = true
@@ -186,7 +180,7 @@ export const userSlice = createSlice({
         ) => {
           state.data = payload
           state.isLoading = false
-          state.isInitialized = true
+          state.isAuthChecked = true
           state.error = null
         }
       )
@@ -194,6 +188,7 @@ export const userSlice = createSlice({
         loginThunk.rejected,
         (state, action) => {
           state.isLoading = false
+          state.isAuthChecked = true
           state.error =
             (action.payload as string) ??
             action.error.message ??
@@ -201,7 +196,6 @@ export const userSlice = createSlice({
         }
       )
 
-    // signup
     builder
       .addCase(signupThunk.pending, state => {
         state.isLoading = true
@@ -215,7 +209,7 @@ export const userSlice = createSlice({
         ) => {
           state.data = payload
           state.isLoading = false
-          state.isInitialized = true
+          state.isAuthChecked = true
           state.error = null
         }
       )
@@ -223,6 +217,7 @@ export const userSlice = createSlice({
         signupThunk.rejected,
         (state, action) => {
           state.isLoading = false
+          state.isAuthChecked = true
           state.error =
             (action.payload as string) ??
             action.error.message ??
@@ -230,14 +225,26 @@ export const userSlice = createSlice({
         }
       )
 
-    // logout
-    builder.addCase(
-      logoutThunk.fulfilled,
-      state => {
+    builder
+      .addCase(logoutThunk.pending, state => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(logoutThunk.fulfilled, state => {
         state.data = null
-        state.isInitialized = true
-      }
-    )
+        state.isLoading = false
+        state.isAuthChecked = true
+        state.error = null
+      })
+      .addCase(
+        logoutThunk.rejected,
+        (state, action) => {
+          state.isLoading = false
+          state.isAuthChecked = true
+          state.error =
+            action.error.message ?? null
+        }
+      )
   },
 })
 
@@ -246,9 +253,12 @@ export const selectUser = (state: RootState) =>
 export const selectUserIsLoading = (
   state: RootState
 ) => state.user.isLoading
+export const selectUserIsAuthChecked = (
+  state: RootState
+) => state.user.isAuthChecked
 export const selectUserIsInitialized = (
   state: RootState
-) => state.user.isInitialized
+) => state.user.isAuthChecked
 export const selectUserError = (
   state: RootState
 ) => state.user.error

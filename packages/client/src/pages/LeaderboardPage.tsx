@@ -13,6 +13,7 @@ import {
 } from '../slices/friendsSlice'
 import { selectUser } from '../slices/userSlice'
 import { usePage } from '../hooks/usePage'
+import { useLandingTheme } from '../contexts/LandingThemeContext'
 // import { PageInitArgs } from '../routes'
 import { Button } from '../shared/ui'
 
@@ -93,6 +94,7 @@ type SortDir = 'asc' | 'desc'
 type ViewMode = 'table' | 'grid'
 
 export const LeaderboardPage: React.FC = () => {
+  const { theme } = useLandingTheme()
   const friends = useSelector(selectFriends)
   const isLoading = useSelector(
     selectIsLoadingFriends
@@ -193,7 +195,12 @@ export const LeaderboardPage: React.FC = () => {
   }
 
   return (
-    <div className={clsx('landing', 'AuthPage')}>
+    <div
+      className={clsx(
+        'landing',
+        `landing--${theme}`,
+        'AuthPage'
+      )}>
       <Helmet>
         <meta charSet="utf-8" />
         <title>Лидерборд CosMatch</title>

@@ -23,8 +23,10 @@ import {
   selectIsLoadingForum,
 } from '../slices/forumSlice'
 import { selectUser } from '../slices/userSlice'
+import { useLandingTheme } from '../contexts/LandingThemeContext'
 
 export const ForumPage: React.FC = () => {
+  const { theme } = useLandingTheme()
   const dispatch = useDispatch()
   const topics = useSelector(selectTopics)
   const isLoading = useSelector(
@@ -56,8 +58,11 @@ export const ForumPage: React.FC = () => {
 
   return (
     <div
-      className={clsx('landing', 'AuthPage')}
-      id="landing-root">
+      className={clsx(
+        'landing',
+        `landing--${theme}`,
+        'AuthPage'
+      )}>
       <Helmet>
         <meta charSet="utf-8" />
         <title>Форум Cosmic Match</title>

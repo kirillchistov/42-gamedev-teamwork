@@ -1,7 +1,9 @@
-// Цель игры: построит комбинацию из соседних фишек (по горизонтали или вертикали
-// - 3+ фишки (>0) составляют комбинацию
-// - поиск по маске и по ячейкам
-// ============================================================
+/**
+ * match.ts ищет все совпадения 3+ по горизонтали и вертикали в текущей матрице.
+ * Модуль возвращает плоский список координат, которые нужно удалить на следующем шаге.
+ * Логика не изменяет поле и не начисляет очки — она только детектирует матчи.
+ * Такой контракт делает функцию удобной для повторного вызова в каскадных проходах.
+ */
 
 import type { Board } from './grid'
 
@@ -10,13 +12,13 @@ export type CellRC = { r: number; c: number }
 function pushUnique(
   out: CellRC[],
   seen: Set<string>,
-  r: number,
-  c: number
+  rowIndex: number,
+  colIndex: number
 ) {
-  const key = `${r},${c}`
+  const key = `${rowIndex},${colIndex}`
   if (seen.has(key)) return
   seen.add(key)
-  out.push({ r, c })
+  out.push({ r: rowIndex, c: colIndex })
 }
 
 export function findMatches(

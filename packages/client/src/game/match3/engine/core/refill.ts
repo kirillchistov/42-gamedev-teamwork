@@ -1,4 +1,9 @@
-// Цель: заполнить пустые (-1) ячейка сверху случайными фишками
+/**
+ * refill.ts заполняет пустые клетки (-1) новыми случайными фишками.
+ * Для каждой вставки есть несколько попыток, чтобы не создать мгновенный матч прямо на рефилле.
+ * Это делает динамику партии более предсказуемой и уменьшает «бесплатные» каскады.
+ * Модуль вызывается сразу после collapse на каждом проходе резолва.
+ */
 import type { Board } from './grid'
 
 function randInt(maxExclusive: number): number {
@@ -7,25 +12,25 @@ function randInt(maxExclusive: number): number {
 
 function wouldFormMatch(
   board: Board,
-  r: number,
-  c: number,
-  v: number
+  rowIndex: number,
+  colIndex: number,
+  value: number
 ): boolean {
   //  По вертикали: проверяем две налево
-  const a = board[r]?.[c - 1]
-  const b = board[r]?.[c - 2]
-  if (a === v && b === v) return true
+  const a = board[rowIndex]?.[colIndex - 1]
+  const b = board[rowIndex]?.[colIndex - 2]
+  if (a === value && b === value) return true
 
   // По вертикали: проверяем две вверх
-  const x = board[r - 1]?.[c]
-  const y = board[r - 2]?.[c]
-  if (x === v && y === v) return true
+  const x = board[rowIndex - 1]?.[colIndex]
+  const y = board[rowIndex - 2]?.[colIndex]
+  if (x === value && y === value) return true
 
   return false
 }
 
 /**
- * Заполняем пустые (-1) ячейки рандомными фишками
+ * Заполняем пустые ячейки (-1) рандомными фишками
  * Стараемся не выдать сразу готовую 3+ комбинацию
  */
 export function refill(

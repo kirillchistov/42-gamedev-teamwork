@@ -1,4 +1,9 @@
-// Компонент Match3Screen для рендеринга игрового модуля
+/**
+ * Match3Screen управляет пользовательскими фазами экрана: отсчёт, готовность, игра и результаты.
+ * Компонент создаёт экземпляр игры один раз и подписывается на обновления HUD через onHudChange.
+ * В этом файле нет бизнес-логики match-3: он только связывает движок с JSX и показывает нужные оверлеи.
+ * Благодаря такой структуре UI можно менять независимо от логики в engine/bootstrap.ts.
+ */
 import React, {
   useEffect,
   useMemo,
@@ -10,7 +15,10 @@ import {
   createMatch3Game,
   type GameHudState,
 } from './engine/bootstrap'
-import { PRESTART_COUNTDOWN_SEC } from './engine/config'
+import {
+  PRESTART_COUNTDOWN_SEC,
+  BOARD_SIZE,
+} from './engine/config'
 
 type UiPhase =
   | 'countdown'
@@ -128,6 +136,29 @@ export const Match3Screen: React.FC = () => {
         uiPhase === 'ready') && (
         <div className="match3__pre-hud">
           Ваш рекорд: {hud.playerRecord}
+        </div>
+      )}
+
+      {(uiPhase === 'countdown' ||
+        uiPhase === 'ready') && (
+        <div className="match3__start-settings">
+          <span>
+            Поле: {BOARD_SIZE}x{BOARD_SIZE}
+          </span>
+          <span
+            className="match3__hud-sep"
+            aria-hidden>
+            |
+          </span>
+          <span>
+            Тема: стандарт / космос / математика
+          </span>
+          <span
+            className="match3__hud-sep"
+            aria-hidden>
+            |
+          </span>
+          <span>Время: 3 / 5 / 10 минут</span>
         </div>
       )}
 

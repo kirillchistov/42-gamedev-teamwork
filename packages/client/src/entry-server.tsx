@@ -17,13 +17,45 @@ import {
   createFetchRequest,
   createUrl,
 } from './entry-server.utils'
+import { LandingThemeProvider } from './contexts/LandingThemeContext'
 import { reducer } from './store'
 import { routes } from './routes'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import './index.css'
 import { setPageHasBeenInitializedOnServer } from './slices/ssrSlice'
 
-export const render = async (req: ExpressRequest) => {
-  const { query, dataRoutes } = createStaticHandler(routes)
+const PUBLIC_PATHS = new Set([
+  '/login',
+  '/signup',
+  '/register',
+  '/signin',
+  '/sign-in',
+  '*',
+])
+
+const guardedRoutes = routes.map(route => {
+  if (PUBLIC_PATHS.has(route.path ?? ''))
+    return route
+  type RouteWithComponent = typeof route & {
+    Component: React.ComponentType
+  }
+  const { Component, ...rest } =
+    route as RouteWithComponent
+  return {
+    ...rest,
+    element: (
+      <ProtectedRoute>
+        <Component />
+      </ProtectedRoute>
+    ),
+  }
+})
+
+export const render = async (
+  req: ExpressRequest
+) => {
+  const { query, dataRoutes } =
+    createStaticHandler(guardedRoutes)
   const fetchRequest = createFetchRequest(req)
   const context = await query(fetchRequest)
 
@@ -37,7 +69,10 @@ export const render = async (req: ExpressRequest) => {
 
   const url = createUrl(req)
 
-  const foundRoutes = matchRoutes(routes, url)
+  const foundRoutes = matchRoutes(
+    guardedRoutes,
+    url
+  )
   if (!foundRoutes) {
     throw new Error('Страница не найдена!')
   }
@@ -55,18 +90,31 @@ export const render = async (req: ExpressRequest) => {
       ctx: createContext(req),
     })
   } catch (e) {
-    console.log('Инициализация страницы произошла с ошибкой', e)
+    console.log(
+      'Инициализация страницы произошла с ошибкой',
+      e
+    )
   }
 
-  store.dispatch(setPageHasBeenInitializedOnServer(true))
+  store.dispatch(
+    setPageHasBeenInitializedOnServer(true)
+  )
 
-  const router = createStaticRouter(dataRoutes, context)
+  const router = createStaticRouter(
+    dataRoutes,
+    context
+  )
   const sheet = new ServerStyleSheet()
   try {
     const html = ReactDOM.renderToString(
       sheet.collectStyles(
         <Provider store={store}>
-          <StaticRouterProvider router={router} context={context} />
+          <LandingThemeProvider>
+            <StaticRouterProvider
+              router={router}
+              context={context}
+            />
+          </LandingThemeProvider>
         </Provider>
       )
     )

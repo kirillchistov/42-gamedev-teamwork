@@ -20,6 +20,7 @@ import {
 } from '../slices/forumSlice'
 import { selectUser } from '../slices/userSlice'
 import type { ForumComment } from '../types/forum'
+import { useLandingTheme } from '../contexts/LandingThemeContext'
 
 const EMOJIS = [
   '😀',
@@ -35,6 +36,7 @@ const EMOJIS = [
 ]
 
 export const ForumTopicPage: React.FC = () => {
+  const { theme } = useLandingTheme()
   const { topicId } = useParams<{
     topicId: string
   }>()
@@ -138,8 +140,11 @@ export const ForumTopicPage: React.FC = () => {
 
   return (
     <div
-      className={clsx('landing', 'AuthPage')}
-      id="landing-root">
+      className={clsx(
+        'landing',
+        `landing--${theme}`,
+        'AuthPage'
+      )}>
       <Helmet>
         <meta charSet="utf-8" />
         <title>
