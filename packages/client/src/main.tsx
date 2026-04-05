@@ -15,6 +15,7 @@ import './shared/styles/base.pcss'
 import './shared/styles/landing.pcss'
 import '@gravity-ui/uikit/styles/fonts.css'
 import '@gravity-ui/uikit/styles/styles.css'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 const PUBLIC_PATHS = new Set([
   '/login',
@@ -48,7 +49,9 @@ ReactDOM.hydrateRoot(
   <Provider store={store}>
     <LandingThemeProvider>
       <ThemeProvider theme="light">
-        <RouterProvider router={router} />
+        <ErrorBoundary>
+          <RouterProvider router={router} />
+        </ErrorBoundary>
       </ThemeProvider>
     </LandingThemeProvider>
   </Provider>
