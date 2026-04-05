@@ -3,8 +3,13 @@
  * 1. Почистил закомментированный код
  * 2. Добавил /logout и др. пути в навигацию
  * 3. Добавил проверку сессии и переключатель Вход/Выход
+ * 4. Поправил фон и поведение мобильного меню
  **/
-import React, { useState } from 'react'
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 import { Link } from 'react-router-dom'
 import {
   type LandingTheme,
@@ -19,13 +24,27 @@ export const Header: React.FC = () => {
   const [mobileOpen, setMobileOpen] =
     useState(false)
 
-  const closeMobile = () => setMobileOpen(false)
+  const closeMobile = useCallback(() => {
+    setMobileOpen(false)
+  }, [])
 
   const handleThemeClick = (
     value: LandingTheme
   ) => {
     setTheme(value)
+    // Закрываем выезжающее меню при переключении темы
+    if (mobileOpen) closeMobile()
   }
+
+  useEffect(() => {
+    if (!mobileOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMobile()
+    }
+    window.addEventListener('keydown', onKey)
+    return () =>
+      window.removeEventListener('keydown', onKey)
+  }, [mobileOpen, closeMobile])
 
   return (
     <header className="landing-header">
@@ -34,7 +53,8 @@ export const Header: React.FC = () => {
           <div className="landing-logo">
             <Link
               className="btn btn--flat"
-              to="/">
+              to="/"
+              onClick={closeMobile}>
               <span className="landing-logo__icon" />
               <span className="landing-logo__text">
                 Cosmic Match
@@ -153,6 +173,16 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
+      {/* Клик по затемнению — закрыть меню (см. pcss) */}
+      {mobileOpen ? (
+        <button
+          type="button"
+          className="landing-nav-backdrop"
+          aria-label="Закрыть меню"
+          onClick={closeMobile}
+        />
+      ) : null}
+
       {/* Mobile nav */}
       <nav
         className={
@@ -161,7 +191,8 @@ export const Header: React.FC = () => {
             ? ' landing-nav--mobile-open'
             : '')
         }
-        id="mobile-nav">
+        id="mobile-nav"
+        aria-hidden={!mobileOpen}>
         <Link
           className="btn btn--outline"
           to="/"

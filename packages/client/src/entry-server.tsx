@@ -1,7 +1,3 @@
-/** Изменения и починка Sprint6 Chores:
- * Добавил /logout в публичные маршруты
- **/
-
 import React from 'react'
 import ReactDOM from 'react-dom/server'
 import { Provider } from 'react-redux'
@@ -27,20 +23,10 @@ import { routes } from './routes'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import './index.css'
 import { setPageHasBeenInitializedOnServer } from './slices/ssrSlice'
-
-const PUBLIC_PATHS = new Set([
-  '/login',
-  '/logout',
-  '/signup',
-  '/register',
-  '/signin',
-  '/sign-in',
-  '*',
-])
+import { isPublicRoutePath } from './router/publicRoutePaths'
 
 const guardedRoutes = routes.map(route => {
-  if (PUBLIC_PATHS.has(route.path ?? ''))
-    return route
+  if (isPublicRoutePath(route.path)) return route
   type RouteWithComponent = typeof route & {
     Component: React.ComponentType
   }

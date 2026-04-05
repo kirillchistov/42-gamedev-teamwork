@@ -1,8 +1,4 @@
-﻿/** Изменения и починка Sprint6 Chores:
- * Публичные маршруты: без обёртки ProtectedRoute
- **/
-
-import React from 'react'
+﻿import React from 'react'
 import ReactDOM from 'react-dom/client'
 import {
   createBrowserRouter,
@@ -20,21 +16,11 @@ import './shared/styles/landing.pcss'
 import '@gravity-ui/uikit/styles/fonts.css'
 import '@gravity-ui/uikit/styles/styles.css'
 import { ErrorBoundary } from './components/ErrorBoundary'
-
-// Публичные маршруты: без ProtectedRoute
-const PUBLIC_PATHS = new Set([
-  '/login',
-  '/sign-in',
-  '/signin',
-  '/logout',
-  '/signup',
-  '/register',
-  '*',
-])
+import { isPublicRoutePath } from './router/publicRoutePaths'
 
 const router = createBrowserRouter(
   routes.map(route => {
-    if (PUBLIC_PATHS.has(route.path ?? ''))
+    if (isPublicRoutePath(route.path))
       return route
     const { Component, ...rest } = route
     return {

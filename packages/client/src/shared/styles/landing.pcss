@@ -1,6 +1,7 @@
+/* Отсюда большую часть стилей не про лендинг унесем в base.pcss */
 @import './variables.pcss';
 @import './forum.pcss';
-/* Отсюда большую часть стилей не про лендинг унесем в base.pcss */
+
 
 /* === COMMON LAYOUT === */
 
@@ -142,6 +143,41 @@
 
 .landing-nav--mobile button {
   text-align: left;
+}
+
+/* полноэкранный оверлей под выпадающим меню (≤1023px) */
+.landing-nav-backdrop {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .landing-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    /* ниже строки шапки и панели пунктов, но над контентом страницы */
+    z-index: 900;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: rgba(15, 23, 42, 0.42);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .landing--dark-neon .landing-nav-backdrop {
+    background: rgba(2, 6, 23, 0.78);
+  }
+
+  .landing-header__inner {
+    position: relative;
+    z-index: 902;
+  }
+
+  .landing-nav--mobile.landing-nav--mobile-open {
+    position: relative;
+    z-index: 901;
+  }
 }
 
 /* theme switch */
@@ -1165,6 +1201,12 @@
 .landing--dark-neon .landing-nav a.btn--flat:hover {
   color: var(--color-neon-blue);
   text-shadow: 0 0 6px rgba(56, 189, 248, 0.9), 0 0 14px rgba(168, 85, 247, 0.8);
+}
+
+/* мобильная панель навигации — тёмный фон, не «светлое пятно» */
+.landing--dark-neon .landing-nav--mobile {
+  background: rgba(15, 23, 42, 0.97);
+  border-top-color: rgba(56, 189, 248, 0.35);
 }
 
 /* cards & sections background */
