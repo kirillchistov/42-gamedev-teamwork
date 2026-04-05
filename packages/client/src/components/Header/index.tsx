@@ -1,44 +1,25 @@
-// import { Link } from 'react-router-dom'
-
-// export const Header = () => {
-//   return (
-//     <nav>
-//       <ul>
-//         <li>
-//           <Link to="/">Главная</Link>
-//         </li>
-//         <li>
-//           <Link to="/friends">Страница со списком друзей</Link>
-//         </li>
-//         <li>
-//           <Link to="/404">404</Link>
-//         </li>
-//       </ul>
-//     </nav>
-//   )
-// }
-
 // Общий хедер лендинга, который включает в себя навигацию, переключатель тем и бургер-меню
+/** Изменения и починка Sprint6 Chores:
+ * 1. Почистил закомментированный код
+ * 2. Добавил /logout и др. пути в навигацию
+ * 3. Добавил проверку сессии и переключатель Вход/Выход
+ **/
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   type LandingTheme,
   useLandingTheme,
 } from '../../contexts/LandingThemeContext'
-
-// const SCROLL_TARGETS = ['how-to-play', 'about', 'team', 'contact'] as const;
+import { useSelector } from '../../store'
+import { selectUser } from '../../slices/userSlice'
 
 export const Header: React.FC = () => {
   const { theme, setTheme } = useLandingTheme()
+  const user = useSelector(selectUser)
   const [mobileOpen, setMobileOpen] =
     useState(false)
 
-  // const _scrollToSection = useCallback((id: string) => {
-  //   const el = document.getElementById(id)
-  //   if (!el) return
-  //   el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  //   setMobileOpen(false)
-  // }, [])
+  const closeMobile = () => setMobileOpen(false)
 
   const handleThemeClick = (
     value: LandingTheme
@@ -84,11 +65,19 @@ export const Header: React.FC = () => {
             to="/forum">
             Форум
           </Link>
-          <Link
-            className="btn btn--flat"
-            to="/login">
-            Вход
-          </Link>
+          {user ? (
+            <Link
+              className="btn btn--flat"
+              to="/logout">
+              Выход
+            </Link>
+          ) : (
+            <Link
+              className="btn btn--flat"
+              to="/login">
+              Вход
+            </Link>
+          )}
         </nav>
 
         <div className="landing-header__right">
@@ -173,44 +162,65 @@ export const Header: React.FC = () => {
             : '')
         }
         id="mobile-nav">
-        <Link className="btn btn--outline" to="/">
-          Главная
+        <Link
+          className="btn btn--outline"
+          to="/"
+          onClick={closeMobile}>
+          Лендинг
         </Link>
         <Link
           className="btn btn--outline"
-          to="/game">
+          to="/game"
+          onClick={closeMobile}>
           Игра
         </Link>
         <Link
           className="btn btn--outline"
-          to="/profile">
+          to="/profile"
+          onClick={closeMobile}>
           Профиль
         </Link>
         <Link
           className="btn btn--outline"
-          to="/leaderboard">
+          to="/leaderboard"
+          onClick={closeMobile}>
           Лидеры
         </Link>
         <Link
           className="btn btn--outline"
-          to="/forum">
+          to="/forum"
+          onClick={closeMobile}>
           Форум
         </Link>
         <Link
           className="btn btn--outline"
-          to="/forum-topic">
+          to="/forum-topic"
+          onClick={closeMobile}>
           Топик
         </Link>
-        <Link
-          className="btn btn--outline"
-          to="/login">
-          Вход
-        </Link>
-        <Link
-          className="btn btn--outline"
-          to="/signup">
-          Регистрация
-        </Link>
+        {user ? (
+          <Link
+            className="btn btn--outline"
+            to="/logout"
+            onClick={closeMobile}>
+            Выход
+          </Link>
+        ) : (
+          <>
+            <Link
+              className="btn btn--outline"
+              to="/login"
+              onClick={closeMobile}>
+              Вход
+            </Link>
+            <Link
+              className="btn btn--outline"
+              to="/signup"
+              onClick={closeMobile}>
+              Регистрация
+            </Link>
+          </>
+        )}
       </nav>
     </header>
   )

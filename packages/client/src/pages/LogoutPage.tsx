@@ -1,7 +1,8 @@
-/** Изменения и починка Sprint6 Chores:
- * Сбрасываем серверную сессию при заходе на /login и перед signin,
- * чтобы починить 400 «User already in system» (см. loginThunk).
+/** Изменения и починка Sprint6 Chores
+ * /logout: на серверне и клиенте, затем /login + «Вы вышли».
+ * Аналогично LoginPage: logout перед signin.
  */
+
 import React, {
   FormEvent,
   useEffect,
@@ -31,9 +32,9 @@ import {
   selectUserIsLoading,
 } from '../slices/userSlice'
 
-// Сбрасываем серверную сессию при заходе на /login и перед signin,
-export const LoginPage: React.FC = () => {
-  usePage({ initPage: initLoginPage })
+// Разлогиниаем на серверне и клиенте, затем /login + «Вы вышли».
+export const LogoutPage: React.FC = () => {
+  usePage({ initPage: initLogoutPage })
   const { theme } = useLandingTheme()
 
   const dispatch = useDispatch()
@@ -51,6 +52,7 @@ export const LoginPage: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] =
     useState(false)
 
+  // После проверки сессии — принудительный logout
   useEffect(() => {
     if (!isAuthChecked) return
     let alive = true
@@ -80,30 +82,29 @@ export const LoginPage: React.FC = () => {
     <div className={`landing landing--${theme}`}>
       <Helmet>
         <meta charSet="utf-8" />
-        <title>Вход — Cosmic Match</title>
+        <title>Выход — Cosmic Match</title>
         <meta
           name="description"
-          content="Авторизация"
+          content="Выход из аккаунта"
         />
       </Helmet>
 
       <Header />
 
       <main className="auth-main">
-        {!isAuthChecked ? (
-          <section className="auth-card auth-card--wide">
-            <p>Проверяем текущую сессию...</p>
-          </section>
-        ) : isLoggingOut ? (
+        {!isAuthChecked || isLoggingOut ? (
           <section className="auth-card auth-card--wide">
             <p>Выходим из текущей сессии...</p>
           </section>
         ) : (
           <section className="auth-card auth-card--wide">
-            <h1>Вход</h1>
+            <h1>Вы вышли</h1>
+            <p className="auth-note">
+              Войти снова
+            </p>
             <form
               className="auth-form auth-form--grid"
-              id="login-form"
+              id="logout-login-form"
               onSubmit={handleSubmit}
               noValidate>
               <label>
@@ -174,7 +175,7 @@ export const LoginPage: React.FC = () => {
   )
 }
 
-export const initLoginPage = ({
+export const initLogoutPage = ({
   dispatch,
   state,
 }: PageInitArgs) => {

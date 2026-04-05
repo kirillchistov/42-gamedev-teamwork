@@ -1,3 +1,6 @@
+/** Изменения и починка Sprint6 Chores:
+ * Добавил /logout
+ */
 import { AppDispatch, RootState } from './store'
 
 import {
@@ -26,6 +29,10 @@ import {
   LoginPage,
   initLoginPage,
 } from './pages/LoginPage'
+import {
+  LogoutPage,
+  initLogoutPage,
+} from './pages/LogoutPage'
 import {
   SignupPage,
   initSignupPage,
@@ -90,6 +97,11 @@ export const routes = [
     path: '/signin',
     Component: LoginPage,
     fetchData: initLoginPage,
+  },
+  {
+    path: '/logout',
+    Component: LogoutPage,
+    fetchData: initLogoutPage,
   },
   {
     path: '/signup',

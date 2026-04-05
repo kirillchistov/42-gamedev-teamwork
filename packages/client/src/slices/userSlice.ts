@@ -1,4 +1,10 @@
-﻿import {
+﻿/** Изменения и починка Sprint6 Chores
+ * 1. Единый таймаут сетевых запросов авторизации -> не зависать на отвалившемся API
+ * 2. Обработка ошибки logged юзера (есть cookie) логина User already in system
+ * 3. Проверяем сессию, пробуем /auth/user
+ * 4. Если отвалилась сеть/таймаут: локально очищаем сессию'
+ **/
+import {
   createAsyncThunk,
   createSlice,
   PayloadAction,
@@ -10,6 +16,36 @@ import type {
   SignupData,
   User,
 } from '../types/user'
+import { userApi } from '../shared/api/userApi'
+
+// Единый таймаут сетевых запросов авторизации
+const AUTH_REQUEST_TIMEOUT_MS = 12_000
+
+function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {}
+): Promise<Response> {
+  const controller = new AbortController()
+  const tid = window.setTimeout(() => {
+    controller.abort()
+  }, AUTH_REQUEST_TIMEOUT_MS)
+  return fetch(url, {
+    ...init,
+    signal: controller.signal,
+  }).finally(() => {
+    window.clearTimeout(tid)
+  })
+}
+
+// Обработка ошибки logged юзера логина User already in system
+function isAlreadyLoggedInError(
+  message: string
+): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('already') && m.includes('system')
+  )
+}
 
 interface UserState {
   data: User | null
@@ -27,7 +63,7 @@ const initialState: UserState = {
 
 const fetchCurrentUser =
   async (): Promise<User> => {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${BASE_URL}/auth/user`,
       {
         credentials: 'include',
@@ -72,7 +108,7 @@ export const loginThunk = createAsyncThunk(
     credentials: LoginCredentials,
     { rejectWithValue }
   ) => {
-    const signinRes = await fetch(
+    const signinRes = await fetchWithTimeout(
       `${BASE_URL}/auth/signin`,
       {
         method: 'POST',
@@ -85,12 +121,19 @@ export const loginThunk = createAsyncThunk(
     )
 
     if (!signinRes.ok) {
-      return rejectWithValue(
-        await readErrorReason(
-          signinRes,
-          'Ошибка входа'
-        )
+      const reason = await readErrorReason(
+        signinRes,
+        'Ошибка входа'
       )
+      // Уже есть сессия — пробуем /auth/user вместо ошибки 400
+      if (isAlreadyLoggedInError(reason)) {
+        try {
+          return await fetchCurrentUser()
+        } catch {
+          return rejectWithValue(reason)
+        }
+      }
+      return rejectWithValue(reason)
     }
 
     return fetchCurrentUser()
@@ -103,7 +146,7 @@ export const signupThunk = createAsyncThunk(
     data: SignupData,
     { rejectWithValue }
   ) => {
-    const signupRes = await fetch(
+    const signupRes = await fetchWithTimeout(
       `${BASE_URL}/auth/signup`,
       {
         method: 'POST',
@@ -131,10 +174,20 @@ export const signupThunk = createAsyncThunk(
 export const logoutThunk = createAsyncThunk(
   'user/logout',
   async () => {
-    await fetch(`${BASE_URL}/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    })
+    try {
+      await Promise.race([
+        userApi.logout(),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => {
+            reject(new Error('timeout'))
+          }, AUTH_REQUEST_TIMEOUT_MS)
+        }),
+      ])
+    } catch {
+      console.log(
+        'сеть/таймаут: локально очищаем сессию'
+      )
+    }
   }
 )
 
@@ -236,15 +289,12 @@ export const userSlice = createSlice({
         state.isAuthChecked = true
         state.error = null
       })
-      .addCase(
-        logoutThunk.rejected,
-        (state, action) => {
-          state.isLoading = false
-          state.isAuthChecked = true
-          state.error =
-            action.error.message ?? null
-        }
-      )
+      .addCase(logoutThunk.rejected, state => {
+        state.data = null
+        state.isLoading = false
+        state.isAuthChecked = true
+        state.error = null
+      })
   },
 })
 

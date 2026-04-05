@@ -1,3 +1,6 @@
+/** Изменения и починка Sprint6 Chores
+  Сброс куки-сессии на сервере (против "User already in system")
+**/
 import { apiClient } from './apiClient'
 
 export interface ProfileData {
@@ -9,7 +12,8 @@ export interface ProfileData {
   login: string
 }
 
-export interface ProfileResponse extends ProfileData {
+export interface ProfileResponse
+  extends ProfileData {
   id: number
   avatar: string
 }
@@ -20,18 +24,31 @@ export interface PasswordData {
 }
 
 export const userApi = {
-  getProfile: () => apiClient.get<ProfileResponse>('/auth/user'),
+  // Сброс куки-сессии на сервере
+  logout: () =>
+    apiClient.postEmpty('/auth/logout'),
+
+  getProfile: () =>
+    apiClient.get<ProfileResponse>('/auth/user'),
 
   updateProfile: (data: ProfileData) =>
-    apiClient.put<ProfileResponse>('/user/profile', data),
+    apiClient.put<ProfileResponse>(
+      '/user/profile',
+      data
+    ),
 
-  changePassword: (data: PasswordData) => apiClient.put('/user/password', data),
+  changePassword: (data: PasswordData) =>
+    apiClient.put('/user/password', data),
 
   updateAvatar: (file: File) => {
     const formData = new FormData()
     formData.append('avatar', file)
-    return apiClient.upload<ProfileResponse>('/user/profile/avatar', formData)
+    return apiClient.upload<ProfileResponse>(
+      '/user/profile/avatar',
+      formData
+    )
   },
 
-  deleteAvatar: () => apiClient.delete('/user/profile/avatar'),
+  deleteAvatar: () =>
+    apiClient.delete('/user/profile/avatar'),
 }

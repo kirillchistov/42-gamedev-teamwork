@@ -1,3 +1,7 @@
+/** Изменения и починка Sprint6 Chores:
+ * Добавил /logout в публичные маршруты
+ **/
+
 import React from 'react'
 import ReactDOM from 'react-dom/server'
 import { Provider } from 'react-redux'
@@ -26,6 +30,7 @@ import { setPageHasBeenInitializedOnServer } from './slices/ssrSlice'
 
 const PUBLIC_PATHS = new Set([
   '/login',
+  '/logout',
   '/signup',
   '/register',
   '/signin',
@@ -91,7 +96,7 @@ export const render = async (
     })
   } catch (e) {
     console.log(
-      'Инициализация страницы произошла с ошибкой',
+      'Ошибка при инициализации страницы',
       e
     )
   }
