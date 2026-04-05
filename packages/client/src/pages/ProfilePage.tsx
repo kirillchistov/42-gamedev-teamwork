@@ -4,6 +4,10 @@
  * при ошибке инпут сбрасывается (e.target.value = '').
  * ProfilePage.handleSubmit — отправка на API только после успешной валидации
  * doValidate(profile, async () => { ... }), чтобы не уходил запрос при ошибках полей.
+ * Полный путь к аватару из API и обновление аватара с нормализацией URL
+ * Починка замены аватара и его отображения после замены
+ * Форма смены пароля после клика по ссылке "Сменить пароль"
+ * Тостер и консоль-лог при успешном сохранении профиля и аватара
  **/
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
@@ -20,8 +24,9 @@ import {
 import {
   userApi,
   ProfileData,
+  ProfileResponse,
+  resourceFileUrl,
 } from '../shared/api/userApi'
-import { API_RESOURCES_URL } from '../constants'
 // import { DEFAULT_AVATAR_PATH } from '../constants'
 import { useValidate } from '../hooks/useValidate'
 import { validateAvatarFile } from '../shared/validation/authValidation'
@@ -49,25 +54,58 @@ export const ProfilePage: React.FC = () => {
     string | null
   >(null)
   const [loading, setLoading] = useState(false)
+  const [
+    showPasswordPanel,
+    setShowPasswordPanel,
+  ] = useState(false)
+  const [toastMessage, setToastMessage] =
+    useState('')
 
   const profileValidate = useValidate()
+
+  const notifyProfileSuccess = (
+    message: string
+  ) => {
+    console.info('[Profile]', message)
+    setToastMessage(message)
+  }
+
+  useEffect(() => {
+    if (!toastMessage) return
+    const id = window.setTimeout(() => {
+      setToastMessage('')
+    }, 2800)
+    return () => window.clearTimeout(id)
+  }, [toastMessage])
   const passwordsValidate = useValidate()
+
+  const applyServerProfile = (
+    data: ProfileResponse,
+    opts?: { bustAvatar?: boolean }
+  ) => {
+    const next: ProfileData = {
+      first_name: data.first_name || '',
+      second_name: data.second_name || '',
+      display_name: data.display_name || '',
+      email: data.email || '',
+      phone: data.phone || '',
+      login: data.login || '',
+    }
+    setProfile(next)
+    const base = resourceFileUrl(data.avatar)
+    setAvatar(
+      base && opts?.bustAvatar
+        ? `${base.split('?')[0]}?v=${Date.now()}`
+        : base
+    )
+    profileValidate.doValidate(next)
+  }
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const data = await userApi.getProfile()
-        const next: ProfileData = {
-          first_name: data.first_name || '',
-          second_name: data.second_name || '',
-          display_name: data.display_name || '',
-          email: data.email || '',
-          phone: data.phone || '',
-          login: data.login || '',
-        }
-        setProfile(next)
-        setAvatar(data.avatar)
-        profileValidate.doValidate(next)
+        applyServerProfile(data)
       } catch {
         console.log(
           'Не удалось загрузить профиль'
@@ -103,9 +141,16 @@ export const ProfilePage: React.FC = () => {
         setLoading(true)
         try {
           await userApi.updateProfile(profile)
-          console.log('Профиль обновлён')
+          const fresh = await userApi.getProfile()
+          applyServerProfile(fresh)
+          notifyProfileSuccess(
+            'Изменения профиля сохранены'
+          )
         } catch {
-          console.log('Ошибка обновления профиля')
+          console.warn(
+            '[Profile]',
+            'Не удалось сохранить профиль'
+          )
         } finally {
           setLoading(false)
         }
@@ -113,25 +158,53 @@ export const ProfilePage: React.FC = () => {
     )
   }
 
-  const handlePasswordChange = async (
+  const handlePasswordChange = (
     e: React.FormEvent
   ) => {
     e.preventDefault()
-    try {
-      const { oldPassword, newPassword } =
-        passwords
-      await userApi.changePassword({
-        oldPassword,
-        newPassword,
-      })
-      console.log('Пароль изменён')
-      setPasswords({
-        oldPassword: '',
-        newPassword: '',
-      })
-    } catch {
-      console.log('Ошибка смены пароля')
-    }
+    passwordsValidate.doValidate(
+      passwords,
+      async () => {
+        const { oldPassword, newPassword } =
+          passwords
+        if (newPassword === oldPassword) return
+        try {
+          await userApi.changePassword({
+            oldPassword,
+            newPassword,
+          })
+          notifyProfileSuccess(
+            'Пароль успешно изменён'
+          )
+          setPasswords({
+            oldPassword: '',
+            newPassword: '',
+          })
+          setShowPasswordPanel(false)
+          passwordsValidate.doValidate({
+            oldPassword: '',
+            newPassword: '',
+          })
+        } catch {
+          console.warn(
+            '[Profile]',
+            'Не удалось сменить пароль'
+          )
+        }
+      }
+    )
+  }
+
+  const closePasswordPanel = () => {
+    setShowPasswordPanel(false)
+    setPasswords({
+      oldPassword: '',
+      newPassword: '',
+    })
+    passwordsValidate.doValidate({
+      oldPassword: '',
+      newPassword: '',
+    })
   }
 
   const handleAvatarChange = async (
@@ -146,16 +219,17 @@ export const ProfilePage: React.FC = () => {
       return
     }
     try {
-      const updated = await userApi.updateAvatar(
-        file
-      )
-      console.log('Ответ сервера:', updated)
-      const avatarUrl = updated.avatar
-        ? `${API_RESOURCES_URL}${updated.avatar}`
-        : null
-      setAvatar(avatarUrl)
-      alert('Аватар обновлён')
+      await userApi.updateAvatar(file)
+      const fresh = await userApi.getProfile()
+      applyServerProfile(fresh, {
+        bustAvatar: true,
+      })
+      notifyProfileSuccess('Аватар обновлён')
     } catch {
+      console.warn(
+        '[Profile]',
+        'Не удалось загрузить аватар'
+      )
       alert('Ошибка загрузки аватара')
     }
   }
@@ -163,9 +237,14 @@ export const ProfilePage: React.FC = () => {
   const handleAvatarDelete = async () => {
     try {
       await userApi.deleteAvatar()
-      setAvatar(null)
-      alert('Аватар удалён')
+      const fresh = await userApi.getProfile()
+      applyServerProfile(fresh)
+      notifyProfileSuccess('Аватар удалён')
     } catch {
+      console.warn(
+        '[Profile]',
+        'Не удалось удалить аватар'
+      )
       alert('Ошибка удаления аватара')
     }
   }
@@ -188,6 +267,16 @@ export const ProfilePage: React.FC = () => {
 
       <main className="auth-main">
         <section className="auth-card auth-card--wide">
+          {toastMessage ? (
+            <div
+              role="status"
+              aria-live="polite"
+              className="auth-page__toast-wrap">
+              <div className="auth-page__toast">
+                {toastMessage}
+              </div>
+            </div>
+          ) : null}
           <h1>Профиль игрока</h1>
 
           {/* Аватар */}
@@ -332,90 +421,123 @@ export const ProfilePage: React.FC = () => {
             </div>
           </form>
 
-          <h3>Смена пароля</h3>
-          <form
-            className="auth-form auth-form--grid"
-            onSubmit={handlePasswordChange}
-            id="password-form"
-            noValidate>
-            <label>
-              <Input
-                type="password"
-                placeholder="Старый пароль"
-                name="oldPassword"
-                value={passwords.oldPassword}
-                onChange={e =>
-                  setPasswords({
-                    ...passwords,
-                    oldPassword: e.target.value,
-                  })
-                }
-                onBlur={() =>
-                  passwordsValidate.doValidate(
-                    passwords
-                  )
-                }
-              />
-              <FieldError
-                message={
-                  passwordsValidate.errors
-                    .oldPassword
-                }
-              />
-              {!passwordsValidate.isValidateError &&
-              passwords.newPassword !==
-                passwords.oldPassword ? (
-                <FieldError message="Пароли не совпадают" />
-              ) : (
-                ''
-              )}
-            </label>
-            <label>
-              <Input
-                type="password"
-                placeholder="Новый пароль"
-                name="newPassword"
-                value={passwords.newPassword}
-                onChange={e =>
-                  setPasswords({
-                    ...passwords,
-                    newPassword: e.target.value,
-                  })
-                }
-                onBlur={() =>
-                  passwordsValidate.doValidate(
-                    passwords
-                  )
-                }
-              />
-              <FieldError
-                message={
-                  passwordsValidate.errors
-                    .newPassword
-                }
-              />
-            </label>
-
-            <div className="auth-form__actions">
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={
-                  passwordsValidate.isValidateError ||
-                  passwords.newPassword !==
-                    passwords.oldPassword
-                }
-                className={
-                  (passwordsValidate.isValidateError ||
-                  passwords.newPassword !==
-                    passwords.oldPassword
-                    ? 'btn--disabled'
-                    : '') + ' btn btn--primary'
+          {!showPasswordPanel ? (
+            <p className="auth-note profile-password-toggle">
+              <button
+                type="button"
+                className="auth-link auth-link--as-button"
+                onClick={() =>
+                  setShowPasswordPanel(true)
                 }>
                 Сменить пароль
-              </Button>
-            </div>
-          </form>
+              </button>
+            </p>
+          ) : (
+            <>
+              <h3>Смена пароля</h3>
+              <form
+                className="auth-form auth-form--grid"
+                onSubmit={handlePasswordChange}
+                id="password-form"
+                noValidate>
+                <label>
+                  Старый пароль
+                  <Input
+                    type="password"
+                    placeholder="Старый пароль"
+                    name="oldPassword"
+                    value={passwords.oldPassword}
+                    onChange={e =>
+                      setPasswords({
+                        ...passwords,
+                        oldPassword:
+                          e.target.value,
+                      })
+                    }
+                    onBlur={() =>
+                      passwordsValidate.doValidate(
+                        passwords
+                      )
+                    }
+                    autoComplete="current-password"
+                  />
+                  <FieldError
+                    message={
+                      passwordsValidate.errors
+                        .oldPassword
+                    }
+                  />
+                </label>
+                <label>
+                  Новый пароль
+                  <Input
+                    type="password"
+                    placeholder="Новый пароль"
+                    name="newPassword"
+                    value={passwords.newPassword}
+                    onChange={e =>
+                      setPasswords({
+                        ...passwords,
+                        newPassword:
+                          e.target.value,
+                      })
+                    }
+                    onBlur={() =>
+                      passwordsValidate.doValidate(
+                        passwords
+                      )
+                    }
+                    autoComplete="new-password"
+                  />
+                  <FieldError
+                    message={
+                      passwordsValidate.errors
+                        .newPassword
+                    }
+                  />
+                  {passwords.oldPassword.trim() !==
+                    '' &&
+                  passwords.newPassword.trim() !==
+                    '' &&
+                  passwords.newPassword ===
+                    passwords.oldPassword ? (
+                    <FieldError message="Новый пароль должен отличаться от текущего" />
+                  ) : null}
+                </label>
+
+                <div className="auth-form__actions auth-form__actions--split">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={closePasswordPanel}>
+                    Отмена
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={
+                      passwordsValidate.isValidateError ||
+                      passwords.newPassword ===
+                        passwords.oldPassword ||
+                      !passwords.oldPassword.trim() ||
+                      !passwords.newPassword.trim()
+                    }
+                    className={
+                      (passwordsValidate.isValidateError ||
+                      passwords.newPassword ===
+                        passwords.oldPassword ||
+                      !passwords.oldPassword.trim() ||
+                      !passwords.newPassword.trim()
+                        ? 'btn--disabled'
+                        : '') +
+                      ' btn btn--primary'
+                    }>
+                    Сохранить пароль
+                  </Button>
+                </div>
+              </form>
+            </>
+          )}
         </section>
       </main>
 
