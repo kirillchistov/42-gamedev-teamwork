@@ -17,6 +17,34 @@ export type RenderOpts = {
   showSwapArrow?: boolean
 }
 
+/** roundRect есть в современных DOM typings; в старых — только в рантайме */
+type Canvas2DWithRoundRect =
+  CanvasRenderingContext2D & {
+    roundRect?: (
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      radii: number
+    ) => void
+  }
+
+function pathRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  const c = ctx as Canvas2DWithRoundRect
+  if (typeof c.roundRect === 'function') {
+    c.roundRect(x, y, w, h, r)
+  } else {
+    ctx.rect(x, y, w, h)
+  }
+}
+
 function dims(board: Board) {
   const rows = board.length
   const cols =
@@ -132,22 +160,14 @@ function drawShape(
       break
     case 3: // Прямоугольник с антеннами
       ctx.beginPath()
-      if (typeof ctx.roundRect === 'function') {
-        ctx.roundRect(
-          cx - s * 0.9,
-          cy - s * 0.65,
-          s * 1.8,
-          s * 1.3,
-          s * 0.15
-        )
-      } else {
-        ctx.rect(
-          cx - s * 0.9,
-          cy - s * 0.65,
-          s * 1.8,
-          s * 1.3
-        )
-      }
+      pathRoundRect(
+        ctx,
+        cx - s * 0.9,
+        cy - s * 0.65,
+        s * 1.8,
+        s * 1.3,
+        s * 0.15
+      )
       ctx.fill()
       ctx.stroke()
       ctx.beginPath()

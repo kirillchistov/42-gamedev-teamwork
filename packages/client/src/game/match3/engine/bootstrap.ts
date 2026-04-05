@@ -82,12 +82,13 @@ export function createMatch3Game(
 ) {
   const { canvas, onHudChange, onGameEnd } =
     params
-  const ctx = canvas.getContext('2d')
-  if (!ctx) {
+  const ctxMaybe = canvas.getContext('2d')
+  if (!ctxMaybe) {
     throw new Error(
       'Canvas 2D context unavailable'
     )
   }
+  const ctx: CanvasRenderingContext2D = ctxMaybe
 
   canvas.style.touchAction = 'none'
 
