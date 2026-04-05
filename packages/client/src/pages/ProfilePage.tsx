@@ -1,3 +1,10 @@
+/** Изменения и починка Sprint6 Chores
+ * Avatar — вместо проверки только по размеру используем validateAvatarFile,
+ * сообщения совпадают с профилем;
+ * при ошибке инпут сбрасывается (e.target.value = '').
+ * ProfilePage.handleSubmit — отправка на API только после успешной валидации
+ * doValidate(profile, async () => { ... }), чтобы не уходил запрос при ошибках полей.
+ **/
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import { Header } from '../components/Header'
@@ -16,9 +23,8 @@ import {
 } from '../shared/api/userApi'
 import { API_RESOURCES_URL } from '../constants'
 // import { DEFAULT_AVATAR_PATH } from '../constants'
-// при необходимости позже можно подтянуть selectUser / fetchUserThunk
 import { useValidate } from '../hooks/useValidate'
-import { maxAvatarSize } from '../shared/validation/authValidation'
+import { validateAvatarFile } from '../shared/validation/authValidation'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 
 export const ProfilePage: React.FC = () => {
@@ -44,22 +50,24 @@ export const ProfilePage: React.FC = () => {
   >(null)
   const [loading, setLoading] = useState(false)
 
-  const profileValidate = useValidate(profile)
-  const passwordsValidate = useValidate(passwords)
+  const profileValidate = useValidate()
+  const passwordsValidate = useValidate()
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const data = await userApi.getProfile()
-        setProfile({
+        const next: ProfileData = {
           first_name: data.first_name || '',
           second_name: data.second_name || '',
           display_name: data.display_name || '',
           email: data.email || '',
           phone: data.phone || '',
           login: data.login || '',
-        })
+        }
+        setProfile(next)
         setAvatar(data.avatar)
+        profileValidate.doValidate(next)
       } catch {
         console.log(
           'Не удалось загрузить профиль'
@@ -67,8 +75,10 @@ export const ProfilePage: React.FC = () => {
       }
     }
     void loadProfile()
-    profileValidate.doValidate(profile)
-    passwordsValidate.doValidate(passwords)
+    passwordsValidate.doValidate({
+      oldPassword: '',
+      newPassword: '',
+    })
   }, [])
 
   const handleChange: React.ChangeEventHandler<
@@ -85,21 +95,22 @@ export const ProfilePage: React.FC = () => {
     profileValidate.doValidate(profile)
   }
 
-  const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    profileValidate.doValidate(profile)
-
-    try {
-      await userApi.updateProfile(profile)
-      console.log('Профиль обновлён')
-    } catch {
-      console.log('Ошибка обновления профиля')
-    } finally {
-      setLoading(false)
-    }
+    profileValidate.doValidate(
+      profile,
+      async () => {
+        setLoading(true)
+        try {
+          await userApi.updateProfile(profile)
+          console.log('Профиль обновлён')
+        } catch {
+          console.log('Ошибка обновления профиля')
+        } finally {
+          setLoading(false)
+        }
+      }
+    )
   }
 
   const handlePasswordChange = async (
@@ -128,6 +139,12 @@ export const ProfilePage: React.FC = () => {
   ) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const avatarErr = validateAvatarFile(file)
+    if (avatarErr) {
+      alert(avatarErr)
+      e.target.value = ''
+      return
+    }
     try {
       const updated = await userApi.updateAvatar(
         file
@@ -411,6 +428,6 @@ export const initProfilePage = (
   _args: PageInitArgs
 ) => {
   console.log(_args)
-  // позже здесь будет загрузку данных профиля из API
+  // позже здесь будет загрузка данных профиля из API
   return Promise.resolve()
 }
