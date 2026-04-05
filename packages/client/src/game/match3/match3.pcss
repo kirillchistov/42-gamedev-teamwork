@@ -211,27 +211,61 @@
   min-width: 180px;
 }
 
-.landing--dark-neon .match3__pre-hud,
-.landing--dark-neon .match3__hud {
-  color: #e2e8f0;
+/* Рамка вокруг canvas (если используется класс game-board-frame) */
+.game-board-frame {
+  position: relative;
+  padding: 8px;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 0 0, rgba(96, 165, 250, 0.45), transparent 60%),
+    radial-gradient(circle at 100% 0, rgba(244, 114, 182, 0.45), transparent 60%),
+    radial-gradient(circle at 50% 100%, rgba(56, 189, 248, 0.35), transparent 65%);
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.4),
+    0 0 18px rgba(59, 130, 246, 0.7),
+    0 0 36px rgba(129, 140, 248, 0.6);
+  overflow: visible;
+  animation: boardPulse 4.5s ease-in-out infinite alternate;
 }
 
-.landing--dark-neon .match3__start-settings {
-  color: #c7d2fe;
+.game-board-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 14px;
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.6),
+    0 0 0 1px rgba(148, 163, 184, 0.35);
+  animation: boardJitter 1200ms ease-in-out infinite;
 }
 
-.landing--dark-neon .match3__hud-sep {
-  color: #60a5fa;
+@keyframes boardPulse {
+  0% {
+    box-shadow:
+      0 0 0 1px rgba(148, 163, 184, 0.35),
+      0 0 14px rgba(59, 130, 246, 0.55),
+      0 0 28px rgba(129, 140, 248, 0.45);
+  }
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(191, 219, 254, 0.8),
+      0 0 24px rgba(96, 165, 250, 0.95),
+      0 0 45px rgba(244, 114, 182, 0.7);
+  }
 }
 
-.landing--dark-neon .match3-page__toast {
-  color: #e2e8f0;
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(56, 189, 248, 0.55);
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.25);
-}
-
-.landing--dark-neon .match3-page__settings-btn {
-  color: #7dd3fc;
-  text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+@keyframes boardJitter {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(-0.6px, 0.5px, 0) scale(1.002);
+  }
+  50% {
+    transform: translate3d(0.7px, -0.4px, 0) scale(0.999);
+  }
+  75% {
+    transform: translate3d(-0.4px, -0.6px, 0) scale(1.001);
+  }
 }

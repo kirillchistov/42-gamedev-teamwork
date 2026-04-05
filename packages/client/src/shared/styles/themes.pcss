@@ -1,0 +1,208 @@
+/* Темы оформления лендинга: light-flat, light-3d, dark-neon */
+/* === THEMES === */
+
+/* light-flat */
+
+.landing--light-flat {
+  background: var(--color-bg-page-light);
+  color: var(--color-text-main-light);
+}
+
+/* light-3d */
+
+.landing--light-3d {
+  background: radial-gradient(
+    circle at top,
+    #e0f2fe 0,
+    var(--color-bg-page-light) 55%,
+    var(--color-slate-200) 100%
+  );
+  color: var(--color-text-main-light);
+}
+
+/* dark-neon */
+
+.landing--dark-neon {
+  background: var(--color-bg-page-dark);
+  color: var(--color-text-main-dark);
+}
+
+/* Поверх темы лендинга: страницы 404/500/NotFound всегда с тёмным космосом */
+.landing.cosmic-error-page.landing--light-flat,
+.landing.cosmic-error-page.landing--light-3d,
+.landing.cosmic-error-page.landing--dark-neon {
+  background: #020617;
+  color: #e2e8f0;
+}
+
+/* header & nav */
+
+.landing--dark-neon .landing-header {
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom-color: rgba(56, 189, 248, 0.45);
+}
+
+.landing--dark-neon .landing-nav button,
+.landing--dark-neon .landing-nav a.btn--flat {
+  color: #cbd5f5;
+}
+
+.landing--dark-neon .landing-nav button:hover,
+.landing--dark-neon .landing-nav a.btn--flat:hover {
+  color: var(--color-neon-blue);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9), 0 0 14px rgba(168, 85, 247, 0.8);
+}
+
+/* мобильная панель навигации — тёмный фон, не «светлое пятно» */
+.landing--dark-neon .landing-nav--mobile {
+  background: rgba(15, 23, 42, 0.97);
+  border-top-color: rgba(56, 189, 248, 0.35);
+}
+
+/* cards & sections background */
+
+.landing--dark-neon .benefits__inner,
+.landing--dark-neon .team__inner,
+.landing--dark-neon .contact__inner,
+.landing--dark-neon .extra-card,
+.landing--dark-neon .auth-card {
+  background-color: var(--color-bg-card-dark) !important;
+  border-color: var(--color-border-subtle-dark) !important;
+  box-shadow: var(--shadow-neon-card) !important;
+}
+
+/* section subtitles and text */
+
+.landing--dark-neon .section-subtitle,
+.landing--dark-neon .hero__text p,
+.landing--dark-neon .benefits__card p,
+.landing--dark-neon .contact__inner p,
+.landing--dark-neon .extra-card p,
+.landing--dark-neon .extra-card li {
+  color: var(--color-text-subtle-dark);
+  text-shadow: none;
+}
+
+.landing--dark-neon .team-card__role {
+  color: var(--color-text-subtle-dark);
+}
+
+.landing--dark-neon .extra-card table th {
+  background: #111827;
+  color: var(--color-text-main-dark);
+}
+
+.landing--dark-neon .extra-card table td {
+  color: #cbd5f5;
+}
+
+/* hero board */
+
+.landing--dark-neon .hero-board {
+  background: radial-gradient(circle at center, #020617 0, #000 100%);
+  box-shadow: var(--shadow-neon-strong);
+  border-color: var(--color-border-subtle-dark);
+}
+
+.landing--dark-neon .hero-board__cell {
+  background: rgba(15, 23, 42, 0.96);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.5);
+}
+
+.landing--dark-neon .hero-board__cell--match {
+  background: rgba(15, 23, 42, 0.96);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.9),
+    inset 0 0 0 1px rgba(56, 189, 248, 0.9);
+}
+
+/* дефолтный цвет только если нет модификатора */
+.landing--dark-neon
+  .hero-board__gem:not(.hero-board__gem--blue, .hero-board__gem--pink, .hero-board__gem--green, .hero-board__gem--amber) {
+  background: radial-gradient(
+    circle at 30% 30%,
+    var(--color-neon-blue),
+    var(--color-neon-purple)
+  );
+}
+
+/* team cards in dark theme */
+
+.landing--dark-neon .team-card {
+  background: var(--color-bg-card-dark);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle-dark);
+  box-shadow: var(--shadow-neon-card);
+}
+
+.landing--dark-neon .team-card__name {
+  color: var(--color-text-main-dark);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.6), 0 0 10px rgba(88, 28, 135, 0.5);
+}
+
+.landing--dark-neon .team-card__github {
+  color: var(--color-neon-blue);
+}
+
+.landing--dark-neon .team-card__github:hover {
+  color: var(--color-neon-purple);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9), 0 0 12px rgba(168, 85, 247, 0.8);
+}
+
+.landing--dark-neon .team-card__avatar {
+  background: radial-gradient(
+    circle at 30% 30%,
+    var(--color-neon-blue),
+    var(--color-neon-purple)
+  );
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.8), 0 0 0 1px rgba(15, 23, 42, 0.9);
+}
+
+/* auth in dark theme */
+
+.landing--dark-neon .AuthPage {
+  background: var(--color-bg-page-dark);
+  color: var(--color-text-main-dark);
+}
+
+.landing--dark-neon .auth-note,
+.landing--dark-neon .auth-switch {
+  color: var(--color-text-subtle-dark);
+}
+
+.landing--dark-neon .auth-form input {
+  background: #020617;
+  color: var(--color-text-main-dark);
+  border-color: rgba(148, 163, 184, 0.9);
+}
+
+.landing--dark-neon .auth-form input:focus {
+  border-color: var(--color-neon-blue);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6),
+    0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+.landing--dark-neon .auth-link {
+  color: var(--color-neon-blue);
+}
+
+.landing--dark-neon .auth-link:hover {
+  color: var(--color-neon-purple);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9), 0 0 10px rgba(168, 85, 247, 0.8);
+}
+
+.landing--dark-neon .auth-page__toast {
+  color: var(--color-text-main-dark);
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow:
+    0 6px 22px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(56, 189, 248, 0.35),
+    0 0 18px rgba(56, 189, 248, 0.25);
+}
+
+/* footer in dark theme */
+
+.landing--dark-neon .landing-footer {
+  background: #020617;
+  border-top-color: var(--color-border-subtle-dark);
+}
