@@ -6,6 +6,7 @@ on:
       - main
       - dev
       - sprint_6
+      - sprint_7
   workflow_dispatch:
 
 permissions:
