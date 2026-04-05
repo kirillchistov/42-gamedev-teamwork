@@ -1,3 +1,13 @@
+/** Изменения и починка Sprint6 Chores
+ * Состояние формы — один объект SignupFormValues со всеми полями, как в профиле
+ * Выравнил под validationRules.
+ * Подключил useValidate(): те же правила и тексты, что в authValidation.ts.
+ * onBlur → doValidate(form) — показ ошибок по полям, как в профиле.
+ * handleSubmit — запрос уходит только если валидация прошла.
+ * Под каждым полем FieldError с signupValidate.errors.*.
+ * У инпутов name совпадает с ключами формы; проверка через noValidate и общие правила.
+ * Кнопка «Зарегистрироваться» блокируется только isLoading.
+ **/
 import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
@@ -7,7 +17,13 @@ import {
 } from 'react-router-dom'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
-import { Button, Input } from '../shared/ui'
+import {
+  Button,
+  Input,
+  FieldError,
+} from '../shared/ui'
+import { useValidate } from '../hooks/useValidate'
+import type { SignupFormValues } from '../shared/validation/authValidation'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import {
   useDispatch,
@@ -53,12 +69,30 @@ export const SignupPage: React.FC = () => {
   )
   const error = useSelector(selectUserError)
 
-  const [firstName, setFirstName] = useState('')
-  const [secondName, setSecondName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [login, setLogin] = useState('')
-  const [password, setPassword] = useState('')
+  const signupValidate = useValidate()
+  const [form, setForm] =
+    useState<SignupFormValues>({
+      first_name: '',
+      second_name: '',
+      email: '',
+      phone: '',
+      login: '',
+      password: '',
+    })
+
+  const handleChange: React.ChangeEventHandler<
+    HTMLInputElement
+  > = e => {
+    const { name, value } = e.target
+    setForm(prev => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleBlur = () => {
+    signupValidate.doValidate(form)
+  }
 
   if (user) {
     return (
@@ -72,21 +106,23 @@ export const SignupPage: React.FC = () => {
     )
   }
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    const result = await dispatch(
-      signupThunk({
-        first_name: firstName,
-        second_name: secondName,
-        email,
-        phone,
-        login,
-        password,
-      })
-    )
-    if (signupThunk.fulfilled.match(result)) {
-      navigate('/game', { replace: true })
-    }
+    signupValidate.doValidate(form, async () => {
+      const result = await dispatch(
+        signupThunk({
+          first_name: form.first_name ?? '',
+          second_name: form.second_name ?? '',
+          email: form.email ?? '',
+          phone: form.phone ?? '',
+          login: form.login ?? '',
+          password: form.password ?? '',
+        })
+      )
+      if (signupThunk.fulfilled.match(result)) {
+        navigate('/game', { replace: true })
+      }
+    })
   }
 
   return (
@@ -115,12 +151,17 @@ export const SignupPage: React.FC = () => {
                 Имя
                 <Input
                   type="text"
+                  name="first_name"
                   placeholder="Имя"
-                  value={firstName}
-                  onChange={e =>
-                    setFirstName(e.target.value)
+                  value={form.first_name ?? ''}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                />
+                <FieldError
+                  message={
+                    signupValidate.errors
+                      .first_name
                   }
-                  required
                 />
               </label>
               <label>
@@ -128,61 +169,81 @@ export const SignupPage: React.FC = () => {
                 <Input
                   type="text"
                   placeholder="Фамилия"
-                  value={secondName}
-                  onChange={e =>
-                    setSecondName(e.target.value)
+                  value={form.second_name ?? ''}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                />
+                <FieldError
+                  message={
+                    signupValidate.errors
+                      .second_name
                   }
-                  required
                 />
               </label>
               <label>
                 Почта
                 <Input
                   type="email"
+                  name="email"
                   placeholder="user@example.com"
-                  value={email}
-                  onChange={e =>
-                    setEmail(e.target.value)
+                  value={form.email ?? ''}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                />
+                <FieldError
+                  message={
+                    signupValidate.errors.email
                   }
-                  required
                 />
               </label>
               <label>
                 Телефон
                 <Input
                   type="tel"
+                  name="phone"
                   placeholder="+7..."
-                  value={phone}
-                  onChange={e =>
-                    setPhone(e.target.value)
+                  value={form.phone ?? ''}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                />
+                <FieldError
+                  message={
+                    signupValidate.errors.phone
                   }
-                  required
                 />
               </label>
               <label>
                 Логин
                 <Input
                   type="text"
+                  name="login"
                   placeholder="login"
-                  value={login}
-                  onChange={e =>
-                    setLogin(e.target.value)
-                  }
-                  required
+                  value={form.login ?? ''}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   autoComplete="username"
+                />
+                <FieldError
+                  message={
+                    signupValidate.errors.login
+                  }
                 />
               </label>
               <label>
                 Пароль
                 <Input
                   type="password"
+                  name="password"
                   placeholder="Пароль"
-                  value={password}
-                  onChange={e =>
-                    setPassword(e.target.value)
-                  }
-                  required
+                  value={form.password ?? ''}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
                   autoComplete="new-password"
+                />
+                <FieldError
+                  message={
+                    signupValidate.errors.password
+                  }
                 />
               </label>
 
