@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
   useDispatch,
@@ -15,6 +15,10 @@ interface ProtectedRouteProps {
   children: React.ReactNode
 }
 
+/**
+ * Защита маршрутов: один запрос /auth/user до проверки isInitialized,
+ * затем редирект на /login.
+ */
 export const ProtectedRoute: React.FC<
   ProtectedRouteProps
 > = ({ children }) => {
@@ -27,14 +31,31 @@ export const ProtectedRoute: React.FC<
     selectUserIsLoading
   )
 
+  const authRequestSent = useRef(false)
+
   useEffect(() => {
-    if (!isInitialized && !isLoading) {
-      void dispatch(fetchUserThunk())
+    if (isInitialized) {
+      authRequestSent.current = false
+      return
     }
+    if (isLoading) return
+    if (authRequestSent.current) return
+    authRequestSent.current = true
+    void dispatch(fetchUserThunk())
   }, [dispatch, isInitialized, isLoading])
 
   if (!isInitialized || isLoading) {
-    return null
+    return (
+      <div
+        className="protected-route__loading"
+        role="status"
+        aria-live="polite"
+        aria-busy="true">
+        <p className="protected-route__loading-text">
+          Проверяем авторизацию…
+        </p>
+      </div>
+    )
   }
 
   if (!user) {

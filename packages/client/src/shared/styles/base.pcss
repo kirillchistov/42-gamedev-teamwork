@@ -39,4 +39,19 @@ button {
     display: none;
 }
 
+/* Ожидание fetchUser в ProtectedRoute (п.3: не пустой экран при заходе в закрытый раздел) */
+.protected-route__loading {
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.protected-route__loading-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-subtle-light, #64748b);
+}
+
 /* Сюда перетащим стили из landing.pcss */

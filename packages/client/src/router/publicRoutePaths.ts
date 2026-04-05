@@ -1,21 +1,16 @@
 /**
- * Публичные маршруты без ProtectedRoute: лендинг, логин, регистрацию и страницы ошибок
- * Иигру, форум, лидеров и профиль только после входа).
+ * Публичные маршруты без ProtectedRoute.
+ * Профиль, друзья и шаблонные страницы — только после входа.
  */
 export const PUBLIC_ROUTE_PATHS: readonly string[] =
   [
     '/',
-    // '/game',
     '/login',
     '/sign-in',
     '/signin',
-    // '/logout',
+    '/logout',
     '/signup',
     '/register',
-    // '/leaderboard',
-    // '/forum',
-    // '/forum-topic',
-    // '/forum/:topicId',
     '/error404',
     '/error/404',
     '/error500',
