@@ -1,45 +1,43 @@
-// Ошибка 5xx - проблема на сервере
-import { Helmet } from 'react-helmet'
-import clsx from 'clsx'
+import { useNavigate } from 'react-router-dom'
 
-import { Header } from '../components/Header'
-import { Footer } from '../components/Footer'
+import { Button } from '../shared/ui'
 import { usePage } from '../hooks/usePage'
+import { CosmicErrorLayout } from '../components/CosmicErrorLayout'
 
 export const Error500Page = () => {
   usePage({ initPage: initError500Page })
+  const navigate = useNavigate()
 
   return (
-    <div className={clsx('landing', 'ErrorPage')}>
-      <Helmet>
-        <meta charSet="utf-8" />
-        <title>Ошибка 500 — CosMatch</title>
-        <meta name="description" content="Серверная ошибка 500" />
-      </Helmet>
-
-      <Header />
-
-      <main className="auth-main">
-        <div className="auth-card auth-card--wide error-card">
-          <h1 className="error-title">
-            500{' '}
-            <span className="error-emoji" aria-hidden>
-              🛠️
-            </span>
-          </h1>
-          <h2 className="error-subtitle">Космическая турбулентность</h2>
-          <p className="section-subtitle error-message">
-            Что-то сломалось на сервере — сигнал потерян.
-          </p>
-          <p className="section-subtitle error-message">
-            Мы уже чиним ретранслятор. Попробуйте обновить страницу позже.
-          </p>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
+    <CosmicErrorLayout
+      title="Ошибка 500 — Cosmic Match"
+      description="Внутренняя ошибка сервера">
+      <h1 className="error-title cosmic-error-page__code cosmic-error-page__code--500">
+        500{' '}
+        <span className="error-emoji" aria-hidden>
+          🛠️
+        </span>
+      </h1>
+      <h2 className="error-subtitle cosmic-error-page__subtitle">
+        Космическая турбулентность
+      </h2>
+      <p className="section-subtitle error-message cosmic-error-page__text">
+        На борту сервера что-то перегрелось —
+        сигнал оборвался посреди гиперпрыжка.
+      </p>
+      <p className="section-subtitle error-message cosmic-error-page__text">
+        Мы уже чиним ретранслятор. Загляните чуть
+        позже или вернитесь на базу.
+      </p>
+      <Button
+        type="button"
+        variant="primary"
+        onClick={() => navigate('/')}>
+        На главную
+      </Button>
+    </CosmicErrorLayout>
   )
 }
 
-export const initError500Page = () => Promise.resolve()
+export const initError500Page = () =>
+  Promise.resolve()

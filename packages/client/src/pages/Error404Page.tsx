@@ -1,50 +1,40 @@
-// Ошибка 404 - страница не найдена
-import { Helmet } from 'react-helmet'
-import clsx from 'clsx'
+// Ошибка 404 — /error404, /error/404)
 import { useNavigate } from 'react-router-dom'
 
-import { Header } from '../components/Header'
-import { Footer } from '../components/Footer'
 import { Button } from '../shared/ui'
 import { usePage } from '../hooks/usePage'
+import { CosmicErrorLayout } from '../components/CosmicErrorLayout'
 
 export const Error404Page = () => {
   usePage({ initPage: initError404Page })
   const navigate = useNavigate()
 
-  const handleBackHome = () => navigate('/')
-
   return (
-    <div className={clsx('landing', 'ErrorPage')}>
-      <Helmet>
-        <meta charSet="utf-8" />
-        <title>Ошибка 404 — CosMatch</title>
-        <meta name="description" content="Страница не найдена 404" />
-      </Helmet>
-
-      <Header />
-
-      <main className="auth-main">
-        <div className="auth-card auth-card--wide error-card">
-          <h1 className="error-title error-title--404">
-            404{' '}
-            <span className="error-emoji" aria-hidden>
-              🛰️
-            </span>
-          </h1>
-          <h2 className="error-subtitle">Космическая пустота</h2>
-          <p className="section-subtitle error-message">
-            К сожалению, запрашиваемая страница потерялась где-то в туманности.
-          </p>
-          <Button type="button" variant="primary" onClick={handleBackHome}>
-            Вернуться на главную
-          </Button>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
+    <CosmicErrorLayout
+      title="Ошибка 404 — Cosmic Match"
+      description="Страница не найдена">
+      <h1 className="error-title error-title--404 cosmic-error-page__code">
+        404{' '}
+        <span className="error-emoji" aria-hidden>
+          🛰️
+        </span>
+      </h1>
+      <h2 className="error-subtitle cosmic-error-page__subtitle">
+        Космическая пустота
+      </h2>
+      <p className="section-subtitle error-message cosmic-error-page__text">
+        Запрашиваемая страница потерялась в
+        туманности — ни одного пикселя на радарах.
+      </p>
+      <Button
+        type="button"
+        variant="primary"
+        onClick={() => navigate('/')}>
+        Вернуться на главную
+      </Button>
+    </CosmicErrorLayout>
   )
 }
 
-export const initError404Page = () => Promise.resolve()
+export const initError404Page = () =>
+  Promise.resolve()
