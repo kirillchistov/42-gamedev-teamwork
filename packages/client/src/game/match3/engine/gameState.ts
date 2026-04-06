@@ -1,3 +1,9 @@
+/**
+ * 6.1.1 Улучшить ядро игры: отделить логику от визуала
+ * gameState - модуль состояния игры: здесь типы и чистые правила состояния:
+ * GameHudState, Phase, ScoreMode, createInitialHud, resetHudForIdle / resetHudForPlay,
+ * tileKindsForBoardSize, scoreMultiplier, createPlayableBoard
+ */
 import type { Board } from './core/grid'
 import { createBoard } from './core/grid'
 import {
