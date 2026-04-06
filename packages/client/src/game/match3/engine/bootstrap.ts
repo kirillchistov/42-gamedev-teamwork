@@ -23,6 +23,10 @@
  * После resolve: сбрасываю currentCombo, maxCombo фиксируем как лучший
  * При reset/start HUD получает актуальную цель (goalScore)
  * 6.1.6 Спец фишки: Фазы highlight → clear → fall → refill уже работают
+ * 6.1.7 Поиск возможных ходов и выход из тупика:
+ * После завершения resolveBoard() проверяю наличие ходов
+ * при тупике вызываю shuffleBoardUntilPlayable
+ * если shuffle не собрал валидную доску, пересдаем поле rebuildBoard()
  */
 
 import type { Board } from './core/grid'
@@ -32,6 +36,10 @@ import { collapse } from './core/collapse'
 import { refill } from './core/refill'
 import { trySwap } from './core/swap'
 import { clearAndScore } from './core/scoring'
+import {
+  findPossibleMoves,
+  shuffleBoardUntilPlayable,
+} from './core/possibleMoves'
 import {
   pickCellAt,
   type RenderOpts,
@@ -219,6 +227,17 @@ export function createMatch3Game(
       hud.currentCombo = 0
       syncGoalProgress(hud)
       syncRecordsFromScore()
+
+      const hasAnyMoves =
+        findPossibleMoves(board).length > 0
+      if (!hasAnyMoves) {
+        const shuffled =
+          shuffleBoardUntilPlayable(board)
+        if (!shuffled) {
+          rebuildBoard()
+        }
+      }
+
       drawBoard()
       emitHud()
     } finally {
