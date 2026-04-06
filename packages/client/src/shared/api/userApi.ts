@@ -1,7 +1,6 @@
 /** Изменения и починка Sprint6 Chores
  * Сброс куки-сессии на сервере (против "User already in system")
  * Полный URL файла с API и нормализация ответа из API
- *
  **/
 import { API_RESOURCES_URL } from '../../constants'
 import { apiClient } from './apiClient'

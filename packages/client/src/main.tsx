@@ -27,6 +27,12 @@ import '@gravity-ui/uikit/styles/styles.css'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { isPublicRoutePath } from './router/publicRoutePaths'
 
+const routerBasename = (() => {
+  const base = import.meta.env.BASE_URL || '/'
+  const trimmed = base.replace(/\/+$/, '')
+  return trimmed === '' ? undefined : trimmed
+})()
+
 const router = createBrowserRouter(
   routes.map(route => {
     if (isPublicRoutePath(route.path))
@@ -40,7 +46,10 @@ const router = createBrowserRouter(
         </ProtectedRoute>
       ),
     }
-  })
+  }),
+  routerBasename
+    ? { basename: routerBasename }
+    : {}
 )
 
 ReactDOM.hydrateRoot(
