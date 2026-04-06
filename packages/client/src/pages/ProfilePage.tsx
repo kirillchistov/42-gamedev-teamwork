@@ -8,8 +8,16 @@
  * Починка замены аватара и его отображения после замены
  * Форма смены пароля после клика по ссылке "Сменить пароль"
  * Тостер и консоль-лог при успешном сохранении профиля и аватара
+ * Поля смены пароля в профиле валидируются отдельно от других
+ * Убран стартовый doValidate для паролей из useEffect.
+ * Для профиля handleBlur валидирует profileRef.current, (актуальное состояние после ввода).
+ * Кнопка "Сохранить изменения" активируется только после валидации
  **/
-import React, { useEffect, useState } from 'react'
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { Helmet } from 'react-helmet'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
@@ -31,6 +39,20 @@ import {
 import { useValidate } from '../hooks/useValidate'
 import { validateAvatarFile } from '../shared/validation/authValidation'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
+
+function profilesEqual(
+  a: ProfileData,
+  b: ProfileData
+): boolean {
+  return (
+    a.first_name === b.first_name &&
+    a.second_name === b.second_name &&
+    a.display_name === b.display_name &&
+    a.email === b.email &&
+    a.phone === b.phone &&
+    a.login === b.login
+  )
+}
 
 export const ProfilePage: React.FC = () => {
   const { theme } = useLandingTheme()
@@ -60,6 +82,18 @@ export const ProfilePage: React.FC = () => {
   ] = useState(false)
   const [toastMessage, setToastMessage] =
     useState('')
+  const [savedProfile, setSavedProfile] =
+    useState<ProfileData | null>(null)
+  const [pwdFieldBlurred, setPwdFieldBlurred] =
+    useState({
+      oldPassword: false,
+      newPassword: false,
+    })
+
+  const passwordsRef = useRef(passwords)
+  passwordsRef.current = passwords
+  const profileRef = useRef(profile)
+  profileRef.current = profile
 
   const profileValidate = useValidate()
 
@@ -92,6 +126,7 @@ export const ProfilePage: React.FC = () => {
       login: data.login || '',
     }
     setProfile(next)
+    setSavedProfile({ ...next })
     const base = resourceFileUrl(data.avatar)
     setAvatar(
       base && opts?.bustAvatar
@@ -113,10 +148,6 @@ export const ProfilePage: React.FC = () => {
       }
     }
     void loadProfile()
-    passwordsValidate.doValidate({
-      oldPassword: '',
-      newPassword: '',
-    })
   }, [])
 
   const handleChange: React.ChangeEventHandler<
@@ -130,8 +161,78 @@ export const ProfilePage: React.FC = () => {
   }
 
   const handleBlur = () => {
-    profileValidate.doValidate(profile)
+    profileValidate.doValidate(profileRef.current)
   }
+
+  const isProfileDirty =
+    savedProfile !== null &&
+    !profilesEqual(profile, savedProfile)
+
+  const canSaveProfile =
+    isProfileDirty &&
+    !loading &&
+    !profileValidate.isValidateError
+
+  const handlePasswordFieldBlur = (
+    field: 'oldPassword' | 'newPassword'
+  ) => {
+    setPwdFieldBlurred(prev => ({
+      ...prev,
+      [field]: true,
+    }))
+    passwordsValidate.doValidate(
+      passwordsRef.current
+    )
+  }
+
+  const handleOldPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = e.target.value
+    setPasswords(prev => {
+      const next = { ...prev, oldPassword: value }
+      passwordsRef.current = next
+      return next
+    })
+    if (pwdFieldBlurred.oldPassword) {
+      queueMicrotask(() => {
+        passwordsValidate.doValidate(
+          passwordsRef.current
+        )
+      })
+    }
+  }
+
+  const handleNewPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = e.target.value
+    setPasswords(prev => {
+      const next = { ...prev, newPassword: value }
+      passwordsRef.current = next
+      return next
+    })
+    if (pwdFieldBlurred.newPassword) {
+      queueMicrotask(() => {
+        passwordsValidate.doValidate(
+          passwordsRef.current
+        )
+      })
+    }
+  }
+
+  const hasPasswordValidationErrors =
+    Object.keys(passwordsValidate.errors).length >
+    0
+
+  const canSubmitPassword =
+    Boolean(
+      passwords.oldPassword.trim() &&
+        passwords.newPassword.trim()
+    ) &&
+    passwords.newPassword !==
+      passwords.oldPassword &&
+    !hasPasswordValidationErrors
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -181,10 +282,11 @@ export const ProfilePage: React.FC = () => {
             newPassword: '',
           })
           setShowPasswordPanel(false)
-          passwordsValidate.doValidate({
-            oldPassword: '',
-            newPassword: '',
+          setPwdFieldBlurred({
+            oldPassword: false,
+            newPassword: false,
           })
+          passwordsValidate.resetValidation()
         } catch {
           console.warn(
             '[Profile]',
@@ -201,10 +303,20 @@ export const ProfilePage: React.FC = () => {
       oldPassword: '',
       newPassword: '',
     })
-    passwordsValidate.doValidate({
-      oldPassword: '',
-      newPassword: '',
+    setPwdFieldBlurred({
+      oldPassword: false,
+      newPassword: false,
     })
+    passwordsValidate.resetValidation()
+  }
+
+  const openPasswordPanel = () => {
+    setPwdFieldBlurred({
+      oldPassword: false,
+      newPassword: false,
+    })
+    passwordsValidate.resetValidation()
+    setShowPasswordPanel(true)
   }
 
   const handleAvatarChange = async (
@@ -401,16 +513,23 @@ export const ProfilePage: React.FC = () => {
               />
             </label>
 
-            <div className="auth-form__actions">
+            <div className="auth-form__actions auth-form__actions--profile-footer">
+              <div className="auth-form__profile-footer-left">
+                {!showPasswordPanel ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={openPasswordPanel}>
+                    Сменить пароль
+                  </Button>
+                ) : null}
+              </div>
               <Button
                 type="submit"
                 variant="primary"
-                disabled={
-                  loading ||
-                  profileValidate.isValidateError
-                }
+                disabled={!canSaveProfile}
                 className={
-                  (profileValidate.isValidateError
+                  (!canSaveProfile
                     ? 'btn--disabled'
                     : '') + ' btn btn--primary'
                 }>
@@ -421,18 +540,7 @@ export const ProfilePage: React.FC = () => {
             </div>
           </form>
 
-          {!showPasswordPanel ? (
-            <p className="auth-note profile-password-toggle">
-              <button
-                type="button"
-                className="auth-link auth-link--as-button"
-                onClick={() =>
-                  setShowPasswordPanel(true)
-                }>
-                Сменить пароль
-              </button>
-            </p>
-          ) : (
+          {showPasswordPanel ? (
             <>
               <h3>Смена пароля</h3>
               <form
@@ -447,16 +555,12 @@ export const ProfilePage: React.FC = () => {
                     placeholder="Старый пароль"
                     name="oldPassword"
                     value={passwords.oldPassword}
-                    onChange={e =>
-                      setPasswords({
-                        ...passwords,
-                        oldPassword:
-                          e.target.value,
-                      })
+                    onChange={
+                      handleOldPasswordChange
                     }
                     onBlur={() =>
-                      passwordsValidate.doValidate(
-                        passwords
+                      handlePasswordFieldBlur(
+                        'oldPassword'
                       )
                     }
                     autoComplete="current-password"
@@ -475,16 +579,12 @@ export const ProfilePage: React.FC = () => {
                     placeholder="Новый пароль"
                     name="newPassword"
                     value={passwords.newPassword}
-                    onChange={e =>
-                      setPasswords({
-                        ...passwords,
-                        newPassword:
-                          e.target.value,
-                      })
+                    onChange={
+                      handleNewPasswordChange
                     }
                     onBlur={() =>
-                      passwordsValidate.doValidate(
-                        passwords
+                      handlePasswordFieldBlur(
+                        'newPassword'
                       )
                     }
                     autoComplete="new-password"
@@ -495,7 +595,9 @@ export const ProfilePage: React.FC = () => {
                         .newPassword
                     }
                   />
-                  {passwords.oldPassword.trim() !==
+                  {pwdFieldBlurred.oldPassword &&
+                  pwdFieldBlurred.newPassword &&
+                  passwords.oldPassword.trim() !==
                     '' &&
                   passwords.newPassword.trim() !==
                     '' &&
@@ -515,19 +617,9 @@ export const ProfilePage: React.FC = () => {
                   <Button
                     type="submit"
                     variant="primary"
-                    disabled={
-                      passwordsValidate.isValidateError ||
-                      passwords.newPassword ===
-                        passwords.oldPassword ||
-                      !passwords.oldPassword.trim() ||
-                      !passwords.newPassword.trim()
-                    }
+                    disabled={!canSubmitPassword}
                     className={
-                      (passwordsValidate.isValidateError ||
-                      passwords.newPassword ===
-                        passwords.oldPassword ||
-                      !passwords.oldPassword.trim() ||
-                      !passwords.newPassword.trim()
+                      (!canSubmitPassword
                         ? 'btn--disabled'
                         : '') +
                       ' btn btn--primary'
@@ -537,7 +629,7 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </form>
             </>
-          )}
+          ) : null}
         </section>
       </main>
 

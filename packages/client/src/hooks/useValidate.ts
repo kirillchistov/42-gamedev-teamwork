@@ -2,6 +2,8 @@
  * Ошибки полей + doValidate(values, onValid).
  * Валидация по ключам из `values` и validationRules
  * Убрал устаревшее замыкание на первый render.
+ * Поля смены пароля в профиле валидируются отдельно от других:
+ * Убран стартовый doValidate для паролей из useEffect.
  **/
 import { useCallback, useState } from 'react'
 import {
@@ -103,9 +105,15 @@ export const useValidate = () => {
     [validate]
   )
 
+  const resetValidation = useCallback(() => {
+    setErrors({})
+    setIsValidateError(true)
+  }, [])
+
   return {
     errors,
     doValidate,
     isValidateError,
+    resetValidation,
   }
 }

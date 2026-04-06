@@ -5,6 +5,32 @@
 	margin: 12px 0 24px;
 	flex-wrap: wrap;
 }
+
+.avatar-container__aside {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+	flex: 1 1 200px;
+}
+
+.avatar-container__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+@media (max-width: 420px) {
+	.avatar-container__actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.avatar-container__actions .btn {
+		width: 100%;
+	}
+}
 .avatar-container__image-circle {
     position: relative;
     width: 96px;

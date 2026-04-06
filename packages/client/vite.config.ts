@@ -1,5 +1,5 @@
 /** Изменения и починка Sprint6 Chores
- * GitHub Pages: запуск подкаталоге /repo-name/
+ * GitHub Pages: https://kirillchistov.github.io/42-gamedev-teamwork/
  **/
 
 import { defineConfig } from 'vite'

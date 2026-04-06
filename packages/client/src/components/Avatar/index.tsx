@@ -55,19 +55,7 @@ export const Avatar: React.FC<AvatarProps> = ({
         )}
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-        }}>
-        <Button
-          type="button"
-          variant="flat"
-          onClick={handleAvatarDelete}>
-          Удалить аватар
-        </Button>
-
+      <div className="avatar-container__aside">
         <input
           type="file"
           id="avatar-upload"
@@ -76,16 +64,24 @@ export const Avatar: React.FC<AvatarProps> = ({
           onChange={handlechange}
         />
 
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() =>
-            document
-              .getElementById('avatar-upload')
-              ?.click()
-          }>
-          Сменить аватар
-        </Button>
+        <div className="avatar-container__actions">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              document
+                .getElementById('avatar-upload')
+                ?.click()
+            }>
+            Сменить аватар
+          </Button>
+          <Button
+            type="button"
+            variant="flat"
+            onClick={handleAvatarDelete}>
+            Удалить аватар
+          </Button>
+        </div>
 
         <FieldError
           message={error ? error : ''}
