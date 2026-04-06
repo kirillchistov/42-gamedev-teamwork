@@ -27,6 +27,20 @@
  * После завершения resolveBoard() проверяю наличие ходов
  * при тупике вызываю shuffleBoardUntilPlayable
  * если shuffle не собрал валидную доску, пересдаем поле rebuildBoard()
+ * 6.1.8 Таймер бездействия и подсказка хода
+ * Таймер бездействия HINT_IDLE_MS = 4000
+ * Состояние подсказки: hintMove (пара клеток для подсветки), hintTimeoutId
+ * Логика: scheduleHint() — ставит таймер,
+ * showHintIfIdle() — через 4с ищет первый возможный ход (findPossibleMoves) и подсвечивает
+ * markPlayerActivity() — сбрасывает подсказку и перезапускает таймер stopHintTimer() / clearHint()
+ * при любом действии (pointer/keyboard/select/move курсора) вызывается markPlayerActivity()
+ * после resolveBoard() таймер перезапускается, при resetIdle(), startPlay(), destroy() таймер очищается
+ * 6.1.9 Экран результата уровня
+ * Добавил типы: GameEndReason = 'goalReached' | 'timeOut' и GameEndPayload = { reason, snapshot }
+ * onGameEnd теперь возвращает не только snapshot, но и reason.
+ * Добавил finishGame(reason): завершает партию, останавливает таймер/подсказки,
+ * фиксирует HUD и отправляет payload в UI.
+ * Логика завершения: при достижении цели уровня (score >= goalScore) — goalReached, при timeOut
  */
 
 import type { Board } from './core/grid'
