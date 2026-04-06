@@ -29,6 +29,8 @@ export type RenderOpts = {
   target?: CellRC | null
   targetPulse?: boolean
   showSwapArrow?: boolean
+  hintFrom?: CellRC | null
+  hintTo?: CellRC | null
   theme?: GameThemeOption
 }
 
@@ -604,6 +606,41 @@ export function renderBoard(
         ctx.fill()
         ctx.restore()
       }
+    }
+  }
+
+  // Подсказка возможного хода при бездействии
+  if (opts?.hintFrom && opts?.hintTo) {
+    const a = opts.hintFrom
+    const b = opts.hintTo
+    const inBounds = (p: CellRC) =>
+      p.r >= 0 &&
+      p.c >= 0 &&
+      p.r < rows &&
+      p.c < cols
+    if (inBounds(a) && inBounds(b)) {
+      const drawHintCell = (p: CellRC) => {
+        const x = ox + p.c * cell
+        const y = oy + p.r * cell
+        ctx.save()
+        ctx.lineWidth = 3
+        ctx.setLineDash([4, 4])
+        ctx.strokeStyle =
+          'rgba(250, 204, 21, 0.95)'
+        ctx.shadowColor =
+          'rgba(250, 204, 21, 0.7)'
+        ctx.shadowBlur = 8
+        ctx.strokeRect(
+          x + 2,
+          y + 2,
+          cell - 4,
+          cell - 4
+        )
+        ctx.setLineDash([])
+        ctx.restore()
+      }
+      drawHintCell(a)
+      drawHintCell(b)
     }
   }
 }

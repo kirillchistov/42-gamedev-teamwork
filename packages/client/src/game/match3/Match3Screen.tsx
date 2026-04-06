@@ -25,6 +25,7 @@ import React, {
 import './match3.pcss'
 import {
   createMatch3Game,
+  type GameEndPayload,
   type GameHudState,
 } from './engine/bootstrap'
 import { PRESTART_COUNTDOWN_SEC } from './engine/config'
@@ -65,6 +66,10 @@ export const Match3Screen: React.FC = () => {
     useState(PRESTART_COUNTDOWN_SEC)
   const [resultSnapshot, setResultSnapshot] =
     useState<GameHudState | null>(null)
+  const [gameEndReason, setGameEndReason] =
+    useState<GameEndPayload['reason'] | null>(
+      null
+    )
   const [selectedLevelId, setSelectedLevelId] =
     useState(DEFAULT_MATCH3_LEVEL_ID)
 
@@ -75,8 +80,9 @@ export const Match3Screen: React.FC = () => {
     const game = createMatch3Game({
       canvas,
       onHudChange: setHud,
-      onGameEnd: snapshot => {
-        setResultSnapshot(snapshot)
+      onGameEnd: payload => {
+        setResultSnapshot(payload.snapshot)
+        setGameEndReason(payload.reason)
         setUiPhase('results')
       },
     })
@@ -129,10 +135,40 @@ export const Match3Screen: React.FC = () => {
 
   const handlePlayAgain = () => {
     setResultSnapshot(null)
+    setGameEndReason(null)
     setCountdownVal(PRESTART_COUNTDOWN_SEC)
     setUiPhase('countdown')
     gameRef.current?.resetIdle()
   }
+
+  const resultStats = useMemo(() => {
+    if (!resultSnapshot) return null
+    const isWin =
+      gameEndReason === 'goalReached' ||
+      (resultSnapshot.goalScore > 0 &&
+        resultSnapshot.score >=
+          resultSnapshot.goalScore)
+    const goalRemain = Math.max(
+      0,
+      resultSnapshot.goalScore -
+        resultSnapshot.score
+    )
+    const comboBonus =
+      resultSnapshot.maxCombo * 25
+    const timeBonus =
+      resultSnapshot.timeLeftSec * 2
+    const totalWithBonus =
+      resultSnapshot.score +
+      comboBonus +
+      timeBonus
+    return {
+      isWin,
+      goalRemain,
+      comboBonus,
+      timeBonus,
+      totalWithBonus,
+    }
+  }, [resultSnapshot, gameEndReason])
 
   return (
     <section className="match3">
@@ -304,11 +340,29 @@ export const Match3Screen: React.FC = () => {
         {uiPhase === 'results' && resultSnapshot && (
           <div className="match3__overlay match3__overlay--results">
             <h3 className="match3__results-title">
-              Партия завершена
+              {resultStats?.isWin
+                ? 'Победа!'
+                : 'Поражение'}
             </h3>
+            <p
+              className={
+                'match3__results-verdict ' +
+                (resultStats?.isWin
+                  ? 'is-win'
+                  : 'is-lose')
+              }>
+              {resultStats?.isWin
+                ? 'Цель уровня выполнена'
+                : gameEndReason === 'timeOut'
+                ? 'Время вышло, цель не достигнута'
+                : 'Цель не достигнута'}
+            </p>
             <ul className="match3__results-list">
               <li>
                 Счёт: {resultSnapshot.score}
+              </li>
+              <li>
+                Цель: {resultSnapshot.goalScore}
               </li>
               <li>
                 Ходов: {resultSnapshot.moves}
@@ -318,8 +372,24 @@ export const Match3Screen: React.FC = () => {
                 {resultSnapshot.goalProgressPct}%
               </li>
               <li>
+                Осталось до цели:{' '}
+                {resultStats?.goalRemain ?? 0}
+              </li>
+              <li>
                 Лучшее комбо: x
                 {resultSnapshot.maxCombo}
+              </li>
+              <li>
+                Бонус за комбо: +
+                {resultStats?.comboBonus ?? 0}
+              </li>
+              <li>
+                Бонус за время: +
+                {resultStats?.timeBonus ?? 0}
+              </li>
+              <li>
+                Итог с бонусами:{' '}
+                {resultStats?.totalWithBonus ?? 0}
               </li>
               <li>
                 Ваш рекорд:{' '}

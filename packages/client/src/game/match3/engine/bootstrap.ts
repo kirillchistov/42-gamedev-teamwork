@@ -72,11 +72,22 @@ import {
 
 export type { GameHudState }
 
+export type GameEndReason =
+  | 'goalReached'
+  | 'timeOut'
+
+export type GameEndPayload = {
+  reason: GameEndReason
+  snapshot: GameHudState
+}
+
 type CreateParams = {
   canvas: HTMLCanvasElement
   onHudChange?: (next: GameHudState) => void
-  onGameEnd?: (snapshot: GameHudState) => void
+  onGameEnd?: (payload: GameEndPayload) => void
 }
+
+const HINT_IDLE_MS = 4000
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => {
@@ -116,6 +127,11 @@ export function createMatch3Game(
   let keyboardCursor: CellRC | null = null
   let targetCell: CellRC | null = null
   let targetPulse = false
+  let hintMove: {
+    from: CellRC
+    to: CellRC
+  } | null = null
+  let hintTimeoutId: number | null = null
   const pressedKeys = new Set<string>()
 
   const emitHud = () => onHudChange?.({ ...hud })
@@ -125,8 +141,60 @@ export function createMatch3Game(
 
   const drawBoard = (opts?: RenderOpts) => {
     renderBoard(ctx, board, {
+      hintFrom: hintMove?.from ?? null,
+      hintTo: hintMove?.to ?? null,
       ...opts,
       theme: gameTheme,
+    })
+  }
+
+  const clearHint = () => {
+    hintMove = null
+  }
+
+  const stopHintTimer = () => {
+    if (hintTimeoutId !== null) {
+      window.clearTimeout(hintTimeoutId)
+      hintTimeoutId = null
+    }
+  }
+
+  const showHintIfIdle = () => {
+    if (phase !== 'playing' || isResolving) return
+    if (firstPick || targetCell) return
+    const candidate = findPossibleMoves(board)[0]
+    if (!candidate) return
+    hintMove = candidate
+    drawBoard()
+  }
+
+  const scheduleHint = () => {
+    stopHintTimer()
+    hintTimeoutId = window.setTimeout(() => {
+      showHintIfIdle()
+    }, HINT_IDLE_MS)
+  }
+
+  const markPlayerActivity = () => {
+    const hadHint = Boolean(hintMove)
+    clearHint()
+    if (phase === 'playing') {
+      if (hadHint) drawBoard()
+      scheduleHint()
+    }
+  }
+
+  const finishGame = (reason: GameEndReason) => {
+    phase = 'ended'
+    stopTimer()
+    stopHintTimer()
+    clearHint()
+    syncGoalProgress(hud)
+    syncRecordsFromScore()
+    emitHud()
+    onGameEnd?.({
+      reason,
+      snapshot: { ...hud },
     })
   }
 
@@ -213,6 +281,7 @@ export function createMatch3Game(
 
         collapse(board)
         refill(board, tileKinds)
+        clearHint()
         drawBoard()
         chain += 1
         await delay(45)
@@ -231,6 +300,7 @@ export function createMatch3Game(
       const hasAnyMoves =
         findPossibleMoves(board).length > 0
       if (!hasAnyMoves) {
+        clearHint()
         const shuffled =
           shuffleBoardUntilPlayable(board)
         if (!shuffled) {
@@ -238,8 +308,17 @@ export function createMatch3Game(
         }
       }
 
+      if (
+        gameGoalScore > 0 &&
+        hud.score >= gameGoalScore
+      ) {
+        finishGame('goalReached')
+        return
+      }
+
       drawBoard()
       emitHud()
+      scheduleHint()
     } finally {
       isResolving = false
     }
@@ -276,17 +355,14 @@ export function createMatch3Game(
       hud.timeLeftSec -= 1
       emitHud()
       if (hud.timeLeftSec === 0) {
-        phase = 'ended'
-        syncRecordsFromScore()
-        stopTimer()
-        emitHud()
-        onGameEnd?.({ ...hud })
+        finishGame('timeOut')
       }
     }, 1000)
   }
 
   async function handleSelectCell(cell: CellRC) {
     if (phase !== 'playing' || isResolving) return
+    markPlayerActivity()
 
     if (!firstPick) {
       firstPick = cell
@@ -324,6 +400,7 @@ export function createMatch3Game(
 
   async function handlePick(ev: PointerEvent) {
     if (phase !== 'playing' || isResolving) return
+    markPlayerActivity()
     const cell = pickCellAt(board, canvas, ev)
     if (!cell) return
     keyboardCursor = cell
@@ -334,6 +411,7 @@ export function createMatch3Game(
     dr: number,
     dc: number
   ) => {
+    markPlayerActivity()
     if (!keyboardCursor) {
       keyboardCursor = { r: 0, c: 0 }
     }
@@ -361,6 +439,7 @@ export function createMatch3Game(
 
   const onKeyDown = (ev: KeyboardEvent) => {
     if (phase !== 'playing') return
+    markPlayerActivity()
     const code = ev.code
     if (pressedKeys.has(code)) return
     pressedKeys.add(code)
@@ -413,6 +492,8 @@ export function createMatch3Game(
 
   const resetIdle = () => {
     stopTimer()
+    stopHintTimer()
+    clearHint()
     phase = 'idle'
     board = []
     firstPick = null
@@ -431,6 +512,8 @@ export function createMatch3Game(
 
   const startPlay = () => {
     stopTimer()
+    stopHintTimer()
+    clearHint()
     phase = 'playing'
     resetHudForPlay(hud, {
       durationSec: gameDurationSec,
@@ -444,6 +527,7 @@ export function createMatch3Game(
     void resolveBoard().then(() => {
       startGameTimer()
       emitHud()
+      scheduleHint()
     })
     emitHud()
   }
@@ -517,6 +601,7 @@ export function createMatch3Game(
     )
     window.removeEventListener('keyup', onKeyUp)
     stopTimer()
+    stopHintTimer()
   }
 
   resetIdle()
