@@ -1,3 +1,8 @@
+/* 
+ * 6.1.2 Игровые настройки перед стартом:
+ * Добавлены стили для настроек и селектов (match3__setting) 
+*/
+
 .match3 {
   width: 100%;
   max-width: 100%;
@@ -77,6 +82,21 @@
   gap: 6px 10px;
   font-size: 13px;
   color: #334155;
+}
+
+.match3__setting {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.match3__setting select {
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  padding: 2px 6px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 13px;
 }
 
 .match3__hud {

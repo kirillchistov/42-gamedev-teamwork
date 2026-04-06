@@ -3,6 +3,12 @@
  * Компонент создаёт экземпляр игры один раз и подписывается на обновления HUD через onHudChange.
  * В этом файле нет бизнес-логики match-3: он только связывает движок с JSX и показывает нужные оверлеи.
  * Благодаря такой структуре UI можно менять независимо от логики в engine/bootstrap.ts.
+ * 6.1.2 Игровые настройки перед стартом:
+ * Вместо текстовой заглушки добавлены рабочие контролы:
+ * Размер поля (select: 8/12/16/20)
+ * Тема (select: Стандарт/Космос/Математика)
+ * Время (select: 3/5/10 мин)
+ * Через useEffect настройки прокидываются в движок: setBoardSize, setDuration, setTheme
  */
 import React, {
   useEffect,
@@ -16,8 +22,15 @@ import {
   type GameHudState,
 } from './engine/bootstrap'
 import {
-  PRESTART_COUNTDOWN_SEC,
+  BOARD_SIZE_OPTIONS,
+  GAME_DURATION_OPTIONS,
+  GAME_THEME_OPTIONS,
+  GAME_DURATION_SEC,
   BOARD_SIZE,
+  PRESTART_COUNTDOWN_SEC,
+  type BoardSizeOption,
+  type GameDurationOption,
+  type GameThemeOption,
 } from './engine/config'
 
 type UiPhase =
@@ -48,6 +61,14 @@ export const Match3Screen: React.FC = () => {
     useState(PRESTART_COUNTDOWN_SEC)
   const [resultSnapshot, setResultSnapshot] =
     useState<GameHudState | null>(null)
+  const [boardSize, setBoardSize] =
+    useState<BoardSizeOption>(BOARD_SIZE)
+  const [durationSec, setDurationSec] =
+    useState<GameDurationOption>(
+      GAME_DURATION_SEC
+    )
+  const [theme, setTheme] =
+    useState<GameThemeOption>('standard')
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -81,6 +102,24 @@ export const Match3Screen: React.FC = () => {
     }, 1000)
     return () => clearTimeout(id)
   }, [uiPhase, countdownVal])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setBoardSize(boardSize)
+  }, [boardSize])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setDuration(durationSec)
+  }, [durationSec])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setTheme(theme)
+  }, [theme])
 
   const timeLabel = useMemo(() => {
     const mm = String(
@@ -143,7 +182,24 @@ export const Match3Screen: React.FC = () => {
         uiPhase === 'ready') && (
         <div className="match3__start-settings">
           <span>
-            Поле: {BOARD_SIZE}x{BOARD_SIZE}
+            <label className="match3__setting">
+              Поле:{' '}
+              <select
+                value={String(boardSize)}
+                onChange={e =>
+                  setBoardSize(
+                    Number(
+                      e.target.value
+                    ) as BoardSizeOption
+                  )
+                }>
+                {BOARD_SIZE_OPTIONS.map(size => (
+                  <option key={size} value={size}>
+                    {size}x{size}
+                  </option>
+                ))}
+              </select>
+            </label>
           </span>
           <span
             className="match3__hud-sep"
@@ -151,14 +207,57 @@ export const Match3Screen: React.FC = () => {
             |
           </span>
           <span>
-            Тема: стандарт / космос / математика
+            <label className="match3__setting">
+              Тема:{' '}
+              <select
+                value={theme}
+                onChange={e =>
+                  setTheme(
+                    e.target
+                      .value as GameThemeOption
+                  )
+                }>
+                {GAME_THEME_OPTIONS.map(item => (
+                  <option key={item} value={item}>
+                    {item === 'standard'
+                      ? 'Стандарт'
+                      : item === 'space'
+                      ? 'Космос'
+                      : 'Математика'}
+                  </option>
+                ))}
+              </select>
+            </label>
           </span>
           <span
             className="match3__hud-sep"
             aria-hidden>
             |
           </span>
-          <span>Время: 3 / 5 / 10 минут</span>
+          <span>
+            <label className="match3__setting">
+              Время:{' '}
+              <select
+                value={String(durationSec)}
+                onChange={e =>
+                  setDurationSec(
+                    Number(
+                      e.target.value
+                    ) as GameDurationOption
+                  )
+                }>
+                {GAME_DURATION_OPTIONS.map(
+                  item => (
+                    <option
+                      key={item}
+                      value={item}>
+                      {item / 60} мин
+                    </option>
+                  )
+                )}
+              </select>
+            </label>
+          </span>
         </div>
       )}
 

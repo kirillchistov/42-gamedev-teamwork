@@ -6,6 +6,11 @@
  * 6.1.1 Улучшить ядро игры: отделить логику от визуала:
  * оставил в bootstrap только оркестрацию партии, таймеров, ввода и вызовов рендера;
  * GameHudState теперь реэкспортится из gameState, чтобы внешний API не ломать.
+ * 6.1.2 Игровые настройки перед стартом:
+ * Добавил параметры партии в runtime: gameDurationSec, gameTheme
+ * Добавил методы API игры: setDuration(durationSec), setTheme(theme)
+ * Обновил рендер через единый drawBoard(...), чтобы тема применялась везде
+ * resetIdle / startPlay теперь используют выбранную длительность, а не только дефолт
  */
 
 import type { Board } from './core/grid'
@@ -17,9 +22,13 @@ import { trySwap } from './core/swap'
 import { clearAndScore } from './core/scoring'
 import {
   pickCellAt,
+  type RenderOpts,
   renderBoard,
 } from './renderer'
-import { GAME_DURATION_SEC } from './config'
+import {
+  GAME_DURATION_SEC,
+  type GameThemeOption,
+} from './config'
 import {
   createInitialHud,
   createPlayableBoard,
@@ -73,6 +82,8 @@ export function createMatch3Game(
   let board: Board = []
   let boardSize = 8
   let tileKinds = tileKindsForBoardSize(boardSize)
+  let gameDurationSec = GAME_DURATION_SEC
+  let gameTheme: GameThemeOption = 'standard'
   let scoreMode: ScoreMode = 'x1'
   let phase: Phase = 'idle'
   let timerId: number | null = null
@@ -87,6 +98,13 @@ export function createMatch3Game(
 
   const scoreMult = () =>
     scoreMultiplier(scoreMode)
+
+  const drawBoard = (opts?: RenderOpts) => {
+    renderBoard(ctx, board, {
+      ...opts,
+      theme: gameTheme,
+    })
+  }
 
   const sameCell = (
     a: CellRC | null,
@@ -103,7 +121,7 @@ export function createMatch3Game(
         ? keyboardCursor
         : null)
 
-    renderBoard(ctx, board, {
+    drawBoard({
       selected: firstPick ?? keyboardCursor,
       target,
       targetPulse,
@@ -132,7 +150,7 @@ export function createMatch3Game(
         )
         const alpha =
           0.4 + 0.6 * Math.sin(t * Math.PI * 3)
-        renderBoard(ctx, board, {
+        drawBoard({
           highlight: matches,
           alpha,
         })
@@ -168,7 +186,7 @@ export function createMatch3Game(
 
         collapse(board)
         refill(board, tileKinds)
-        renderBoard(ctx, board)
+        drawBoard()
         chain += 1
         await delay(45)
       }
@@ -180,7 +198,7 @@ export function createMatch3Game(
         )
       }
       syncRecordsFromScore()
-      renderBoard(ctx, board)
+      drawBoard()
       emitHud()
     } finally {
       isResolving = false
@@ -197,7 +215,7 @@ export function createMatch3Game(
     }
     targetCell = null
     targetPulse = false
-    renderBoard(ctx, board)
+    drawBoard()
   }
 
   const stopTimer = () => {
@@ -253,10 +271,10 @@ export function createMatch3Game(
 
     if (ok) {
       hud.moves += 1
-      renderBoard(ctx, board)
+      drawBoard()
       await resolveBoard()
     } else {
-      renderBoard(ctx, board)
+      drawBoard()
     }
     emitHud()
   }
@@ -359,11 +377,11 @@ export function createMatch3Game(
     targetCell = null
     targetPulse = false
     resetHudForIdle(hud, {
-      durationSec: GAME_DURATION_SEC,
+      durationSec: gameDurationSec,
       playerRecord: loadPlayerRecord(),
       dailyRecord: loadDailyRecord(),
     })
-    renderBoard(ctx, board)
+    drawBoard()
     emitHud()
   }
 
@@ -371,7 +389,7 @@ export function createMatch3Game(
     stopTimer()
     phase = 'playing'
     resetHudForPlay(hud, {
-      durationSec: GAME_DURATION_SEC,
+      durationSec: gameDurationSec,
       playerRecord: loadPlayerRecord(),
       dailyRecord: loadDailyRecord(),
     })
@@ -394,9 +412,28 @@ export function createMatch3Game(
       void resolveBoard().then(() => emitHud())
     } else {
       rebuildBoard()
-      renderBoard(ctx, board)
+      drawBoard()
       emitHud()
     }
+  }
+
+  const setDuration = (durationSec: number) => {
+    if (
+      !Number.isInteger(durationSec) ||
+      durationSec <= 0
+    ) {
+      return
+    }
+    gameDurationSec = durationSec
+    if (phase !== 'playing') {
+      hud.timeLeftSec = gameDurationSec
+      emitHud()
+    }
+  }
+
+  const setTheme = (theme: GameThemeOption) => {
+    gameTheme = theme
+    drawBoard()
   }
 
   const setScoreMode = (mode: ScoreMode) => {
@@ -423,6 +460,8 @@ export function createMatch3Game(
     resetIdle,
     startPlay,
     setBoardSize,
+    setDuration,
+    setTheme,
     setScoreMode,
     destroy,
   }

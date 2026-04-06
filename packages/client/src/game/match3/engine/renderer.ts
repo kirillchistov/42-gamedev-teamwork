@@ -3,10 +3,17 @@
  * Он не хранит состояние партии и не знает ничего о таймерах, очках или правилах обмена.
  * На вход подаётся текущая матрица поля и опции подсветки, на выходе — кадр на canvas.
  * Такой разнос позволяет безопасно улучшать визуал, не ломая core-логику игры.
+ * 6.1.2 Игровые настройки перед стартом:
+ * renderBoard теперь принимает theme в RenderOpts
+ * Цвета фишек берутся из TILE_COLORS_BY_THEME по выбранной теме
  */
 
 import type { Board } from './core/grid'
 import type { CellRC } from './core/match'
+import {
+  TILE_COLORS_BY_THEME,
+  type GameThemeOption,
+} from './config'
 
 export type RenderOpts = {
   highlight?: CellRC[]
@@ -15,6 +22,7 @@ export type RenderOpts = {
   target?: CellRC | null
   targetPulse?: boolean
   showSwapArrow?: boolean
+  theme?: GameThemeOption
 }
 
 /** roundRect есть в современных DOM typings; в старых — только в рантайме */
@@ -71,20 +79,15 @@ function polygonPath(
   ctx.closePath()
 }
 
-function colorForKind(kind: number): string {
-  // безопасная палитра (можно заменить в config.ts проекта)
-  const COLORS = [
-    '#ff4d6d',
-    '#ffd166',
-    '#06d6a0',
-    '#4cc9f0',
-    '#b517ff',
-    '#f72585',
-    '#a8dadc',
-    '#9b5de5',
-  ]
-  const idx = Math.abs(kind) % COLORS.length
-  return COLORS[idx] ?? '#888'
+function colorForKind(
+  kind: number,
+  theme: GameThemeOption = 'standard'
+): string {
+  const colors =
+    TILE_COLORS_BY_THEME[theme] ??
+    TILE_COLORS_BY_THEME.standard
+  const idx = Math.abs(kind) % colors.length
+  return colors[idx] ?? '#888'
 }
 
 function drawShape(
@@ -312,6 +315,8 @@ export function renderBoard(
   board: Board,
   opts?: RenderOpts
 ): void {
+  const theme = opts?.theme ?? 'standard'
+
   const { rows, cols } = dims(board)
   const W = ctx.canvas.width
   const H = ctx.canvas.height
@@ -362,7 +367,7 @@ export function renderBoard(
       const v = row[c]
       if (typeof v !== 'number' || v < 0) continue
 
-      const color = colorForKind(v)
+      const color = colorForKind(v, theme)
       drawShape(ctx, v, x, y, cell, color)
     }
   }
