@@ -22,6 +22,7 @@
  * Во время каскада: обновляю currentCombo, пересчитываю goalProgressPct
  * После resolve: сбрасываю currentCombo, maxCombo фиксируем как лучший
  * При reset/start HUD получает актуальную цель (goalScore)
+ * 6.1.6 Спец фишки: Фазы highlight → clear → fall → refill уже работают
  */
 
 import type { Board } from './core/grid'

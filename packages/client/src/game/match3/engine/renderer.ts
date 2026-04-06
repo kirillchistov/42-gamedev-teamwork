@@ -6,10 +6,17 @@
  * 6.1.2 Игровые настройки перед стартом:
  * renderBoard теперь принимает theme в RenderOpts
  * Цвета фишек берутся из TILE_COLORS_BY_THEME по выбранной теме
+ * 6.1.6 Спец-фишки:
+ * у спец-клеток рисуются отличительные маркеры поверх базовой фигуры
+ * визуально сразу видно, что это “особая” фишка
  */
 
 import type { Board } from './core/grid'
 import type { CellRC } from './core/match'
+import {
+  getLineOrientation,
+  getSpecialType,
+} from './core/cell'
 import {
   TILE_COLORS_BY_THEME,
   type GameThemeOption,
@@ -262,6 +269,68 @@ function drawShape(
   ctx.restore()
 }
 
+function drawSpecialMarker(
+  ctx: CanvasRenderingContext2D,
+  value: number,
+  x: number,
+  y: number,
+  cell: number
+) {
+  const specialType = getSpecialType(value)
+  if (!specialType) return
+  const cx = x + cell / 2
+  const cy = y + cell / 2
+  ctx.save()
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.68)'
+  ctx.lineWidth = Math.max(1.5, cell * 0.06)
+
+  if (specialType === 'line') {
+    const orientation = getLineOrientation(value)
+    if (orientation === 'row') {
+      const h = Math.max(3, cell * 0.12)
+      ctx.beginPath()
+      pathRoundRect(
+        ctx,
+        x + cell * 0.18,
+        cy - h / 2,
+        cell * 0.64,
+        h,
+        h / 2
+      )
+      ctx.fill()
+      ctx.stroke()
+    } else {
+      const w = Math.max(3, cell * 0.12)
+      ctx.beginPath()
+      pathRoundRect(
+        ctx,
+        cx - w / 2,
+        y + cell * 0.18,
+        w,
+        cell * 0.64,
+        w / 2
+      )
+      ctx.fill()
+      ctx.stroke()
+    }
+  } else {
+    const radius = Math.max(5, cell * 0.18)
+    ctx.beginPath()
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(cx, cy - radius - cell * 0.08)
+    ctx.lineTo(cx, cy + radius + cell * 0.08)
+    ctx.moveTo(cx - radius - cell * 0.08, cy)
+    ctx.lineTo(cx + radius + cell * 0.08, cy)
+    ctx.stroke()
+  }
+
+  ctx.restore()
+}
+
 function getClientXY(
   ev: MouseEvent | PointerEvent | TouchEvent
 ): {
@@ -369,6 +438,7 @@ export function renderBoard(
 
       const color = colorForKind(v, theme)
       drawShape(ctx, v, x, y, cell, color)
+      drawSpecialMarker(ctx, v, x, y, cell)
     }
   }
 

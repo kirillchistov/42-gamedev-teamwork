@@ -11,10 +11,23 @@
  * “пересечения” (rowRun>=3 && colRun>=3) как признак T/L-формы
  * Финальный clearAndScore возвращает: baseScore (cells * 10) + shapeBonus
  * Каскадный множитель (chain * scoreMode) остался в bootstrap и накладывается поверх этого score.
+ * 6.1.6 Спец-фишки:
+ * при 4+ и сложных группах создаются спец-фишки: 4 в линию → line, * 5+ или T/L-форма → bomb,
+ * при попадании спец-фишки в матч: line очищает всю строку/колонку, bomb - область 3x3
+ * поддержан цепной триггер спецов (если в зону попал другой спец объект)
  */
 
 import type { Board } from './grid'
 import type { CellRC } from './match'
+import {
+  encodeBombCell,
+  encodeLineCell,
+  getCellKind,
+  getLineOrientation,
+  getSpecialType,
+  isEmptyCell,
+  type LineOrientation,
+} from './cell'
 
 const SCORE_PER_CELL = 10
 const BONUS_LINE_4 = 40
@@ -181,6 +194,154 @@ function shapeBonusForGroup(
   return bonus
 }
 
+type SpawnSpec = {
+  cell: CellRC
+  type: 'line' | 'bomb'
+  orientation?: LineOrientation
+}
+
+function specForGroup(
+  group: CellRC[]
+): SpawnSpec | null {
+  if (group.length < 4) return null
+  const groupKeys = new Set(group.map(cellKey))
+  let maxRowRun = 0
+  let maxColRun = 0
+  let hasCross = false
+  let anchor: CellRC | null = null
+
+  for (const cell of group) {
+    const rowRun = collectRowRunLength(
+      groupKeys,
+      cell.r,
+      cell.c
+    )
+    const colRun = collectColRunLength(
+      groupKeys,
+      cell.r,
+      cell.c
+    )
+    if (rowRun >= 3 && colRun >= 3) {
+      hasCross = true
+      anchor = cell
+    }
+    maxRowRun = Math.max(maxRowRun, rowRun)
+    maxColRun = Math.max(maxColRun, colRun)
+  }
+
+  if (!anchor) anchor = group[0] ?? null
+  if (!anchor) return null
+
+  if (hasCross || group.length >= 5) {
+    return { cell: anchor, type: 'bomb' }
+  }
+  if (Math.max(maxRowRun, maxColRun) >= 4) {
+    return {
+      cell: anchor,
+      type: 'line',
+      orientation:
+        maxRowRun >= maxColRun ? 'row' : 'col',
+    }
+  }
+  return null
+}
+
+function pushUniqueCell(
+  out: CellRC[],
+  seen: Set<string>,
+  r: number,
+  c: number
+) {
+  const key = `${r},${c}`
+  if (seen.has(key)) return
+  seen.add(key)
+  out.push({ r, c })
+}
+
+function expandBySpecialEffects(
+  board: Board,
+  initial: CellRC[]
+): CellRC[] {
+  const expanded: CellRC[] = []
+  const seen = new Set<string>()
+  const queue = [...initial]
+
+  for (const cell of initial) {
+    pushUniqueCell(expanded, seen, cell.r, cell.c)
+  }
+
+  while (queue.length > 0) {
+    const cell = queue.shift()
+    if (!cell) continue
+    if (!isInBounds(board, cell.r, cell.c))
+      continue
+    const value = board[cell.r]?.[cell.c]
+    if (
+      typeof value !== 'number' ||
+      isEmptyCell(value)
+    )
+      continue
+    const specialType = getSpecialType(value)
+    if (!specialType) continue
+
+    if (specialType === 'line') {
+      const orientation =
+        getLineOrientation(value)
+      if (orientation === 'row') {
+        const cols = board[0]?.length ?? 0
+        for (let c = 0; c < cols; c += 1) {
+          const next = { r: cell.r, c }
+          const key = cellKey(next)
+          if (seen.has(key)) continue
+          pushUniqueCell(
+            expanded,
+            seen,
+            next.r,
+            next.c
+          )
+          queue.push(next)
+        }
+      } else {
+        const rows = board.length
+        for (let r = 0; r < rows; r += 1) {
+          const next = { r, c: cell.c }
+          const key = cellKey(next)
+          if (seen.has(key)) continue
+          pushUniqueCell(
+            expanded,
+            seen,
+            next.r,
+            next.c
+          )
+          queue.push(next)
+        }
+      }
+    } else if (specialType === 'bomb') {
+      for (let dr = -1; dr <= 1; dr += 1) {
+        for (let dc = -1; dc <= 1; dc += 1) {
+          const next = {
+            r: cell.r + dr,
+            c: cell.c + dc,
+          }
+          if (!isInBounds(board, next.r, next.c))
+            continue
+          const key = cellKey(next)
+          if (seen.has(key)) continue
+          pushUniqueCell(
+            expanded,
+            seen,
+            next.r,
+            next.c
+          )
+          queue.push(next)
+        }
+      }
+    }
+  }
+
+  return expanded
+}
+
 /**
  * Убирает комбинации (присвивает -1) и возвращает очки.
  */
@@ -194,16 +355,43 @@ export function clearAndScore(
   for (const group of groups) {
     shapeBonus += shapeBonusForGroup(group)
   }
+  const spawnSpecs = groups
+    .map(specForGroup)
+    .filter(Boolean) as SpawnSpec[]
+  const spawnCellKeys = new Set(
+    spawnSpecs.map(spec => cellKey(spec.cell))
+  )
+  const expandedToClear = expandBySpecialEffects(
+    board,
+    unique
+  )
 
   let cleared = 0
 
-  for (const m of unique) {
+  for (const m of expandedToClear) {
     if (!isInBounds(board, m.r, m.c)) continue
     const row = board[m.r]
     if (!row) continue
-    if (row[m.c] === -1) continue
+    if (spawnCellKeys.has(cellKey(m))) continue
+    if (isEmptyCell(row[m.c] as number)) continue
     row[m.c] = -1
     cleared += 1
+  }
+
+  for (const spec of spawnSpecs) {
+    const row = board[spec.cell.r]
+    if (!row) continue
+    const prev = row[spec.cell.c]
+    if (typeof prev !== 'number') continue
+    const kind = getCellKind(prev)
+    if (kind < 0) continue
+    row[spec.cell.c] =
+      spec.type === 'bomb'
+        ? encodeBombCell(kind)
+        : encodeLineCell(
+            kind,
+            spec.orientation ?? 'row'
+          )
   }
 
   const baseScore = cleared * SCORE_PER_CELL
