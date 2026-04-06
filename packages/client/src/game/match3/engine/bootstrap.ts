@@ -11,6 +11,11 @@
  * Добавил методы API игры: setDuration(durationSec), setTheme(theme)
  * Обновил рендер через единый drawBoard(...), чтобы тема применялась везде
  * resetIdle / startPlay теперь используют выбранную длительность, а не только дефолт
+ * 6.1.3 Модели уровней:
+ * Добавлен метод setLevel(level: LevelConfig) — применяет параметры уровня одним вызовом
+ * Добавлена поддержка принудительного tileKinds из уровня
+ * При выборе уровня до старта обновляются: размер поля, длительность, тема, число типов фишек
+ * Если уровень меняется во время игры — поле перестраивается
  */
 
 import type { Board } from './core/grid'
@@ -40,6 +45,7 @@ import {
   type Phase,
   type ScoreMode,
 } from './gameState'
+import type { LevelConfig } from './levels'
 import { maybeUpdateHighScore } from '../systems/highscore'
 import {
   loadDailyRecord,
@@ -82,6 +88,7 @@ export function createMatch3Game(
   let board: Board = []
   let boardSize = 8
   let tileKinds = tileKindsForBoardSize(boardSize)
+  let forcedTileKinds: number | null = null
   let gameDurationSec = GAME_DURATION_SEC
   let gameTheme: GameThemeOption = 'standard'
   let scoreMode: ScoreMode = 'x1'
@@ -206,7 +213,10 @@ export function createMatch3Game(
   }
 
   const rebuildBoard = () => {
-    const next = createPlayableBoard(boardSize)
+    const next = createPlayableBoard(
+      boardSize,
+      forcedTileKinds ?? undefined
+    )
     tileKinds = next.tileKinds
     board = next.board
     keyboardCursor = {
@@ -436,6 +446,23 @@ export function createMatch3Game(
     drawBoard()
   }
 
+  const setLevel = (level: LevelConfig) => {
+    boardSize = level.boardSize
+    gameDurationSec = level.durationSec
+    gameTheme = level.theme
+    forcedTileKinds = level.tileKinds
+
+    if (phase === 'playing') {
+      rebuildBoard()
+      void resolveBoard().then(() => emitHud())
+      return
+    }
+
+    hud.timeLeftSec = gameDurationSec
+    rebuildBoard()
+    emitHud()
+  }
+
   const setScoreMode = (mode: ScoreMode) => {
     scoreMode = mode
     emitHud()
@@ -462,6 +489,7 @@ export function createMatch3Game(
     setBoardSize,
     setDuration,
     setTheme,
+    setLevel,
     setScoreMode,
     destroy,
   }

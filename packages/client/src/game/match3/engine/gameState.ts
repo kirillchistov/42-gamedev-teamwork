@@ -3,6 +3,8 @@
  * gameState - модуль состояния игры: здесь типы и чистые правила состояния:
  * GameHudState, Phase, ScoreMode, createInitialHud, resetHudForIdle / resetHudForPlay,
  * tileKindsForBoardSize, scoreMultiplier, createPlayableBoard
+ * 6.1.3 Модели уровней:
+ * createPlayableBoard теперь умеет принимать forcedTileKinds
  */
 import type { Board } from './core/grid'
 import { createBoard } from './core/grid'
@@ -97,9 +99,15 @@ export function resetHudForPlay(
 }
 
 export function createPlayableBoard(
-  size: number
+  size: number,
+  forcedTileKinds?: number
 ): { board: Board; tileKinds: number } {
-  const tileKinds = tileKindsForBoardSize(size)
+  const tileKinds =
+    typeof forcedTileKinds === 'number' &&
+    Number.isInteger(forcedTileKinds) &&
+    forcedTileKinds > 1
+      ? forcedTileKinds
+      : tileKindsForBoardSize(size)
   return {
     tileKinds,
     board: createBoard(size, size, tileKinds),
