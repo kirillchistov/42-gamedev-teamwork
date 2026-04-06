@@ -16,6 +16,12 @@
  * Добавлена поддержка принудительного tileKinds из уровня
  * При выборе уровня до старта обновляются: размер поля, длительность, тема, число типов фишек
  * Если уровень меняется во время игры — поле перестраивается
+ * 6.1.4 Улучшение HUD:
+ * Добавил runtime-параметр gameGoalScore
+ * В setLevel теперь прокидываю goalValue из уровня
+ * Во время каскада: обновляю currentCombo, пересчитываю goalProgressPct
+ * После resolve: сбрасываю currentCombo, maxCombo фиксируем как лучший
+ * При reset/start HUD получает актуальную цель (goalScore)
  */
 
 import type { Board } from './core/grid'
@@ -40,6 +46,7 @@ import {
   resetHudForIdle,
   resetHudForPlay,
   scoreMultiplier,
+  syncGoalProgress,
   tileKindsForBoardSize,
   type GameHudState,
   type Phase,
@@ -90,6 +97,7 @@ export function createMatch3Game(
   let tileKinds = tileKindsForBoardSize(boardSize)
   let forcedTileKinds: number | null = null
   let gameDurationSec = GAME_DURATION_SEC
+  let gameGoalScore = 0
   let gameTheme: GameThemeOption = 'standard'
   let scoreMode: ScoreMode = 'x1'
   let phase: Phase = 'idle'
@@ -189,6 +197,9 @@ export function createMatch3Game(
           base * chain * scoreMult()
         )
         hud.score += gained
+        hud.currentCombo = chain
+        syncGoalProgress(hud)
+        emitHud()
         maxChain = Math.max(maxChain, chain)
 
         collapse(board)
@@ -204,6 +215,8 @@ export function createMatch3Game(
           maxChain
         )
       }
+      hud.currentCombo = 0
+      syncGoalProgress(hud)
       syncRecordsFromScore()
       drawBoard()
       emitHud()
@@ -390,6 +403,7 @@ export function createMatch3Game(
       durationSec: gameDurationSec,
       playerRecord: loadPlayerRecord(),
       dailyRecord: loadDailyRecord(),
+      goalScore: gameGoalScore,
     })
     drawBoard()
     emitHud()
@@ -402,6 +416,7 @@ export function createMatch3Game(
       durationSec: gameDurationSec,
       playerRecord: loadPlayerRecord(),
       dailyRecord: loadDailyRecord(),
+      goalScore: gameGoalScore,
     })
     firstPick = null
 
@@ -449,6 +464,7 @@ export function createMatch3Game(
   const setLevel = (level: LevelConfig) => {
     boardSize = level.boardSize
     gameDurationSec = level.durationSec
+    gameGoalScore = level.goalValue
     gameTheme = level.theme
     forcedTileKinds = level.tileKinds
 
@@ -459,6 +475,8 @@ export function createMatch3Game(
     }
 
     hud.timeLeftSec = gameDurationSec
+    hud.goalScore = gameGoalScore
+    syncGoalProgress(hud)
     rebuildBoard()
     emitHud()
   }

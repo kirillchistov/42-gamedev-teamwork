@@ -10,7 +10,10 @@
  * Время (select: 3/5/10 мин)
  * Через useEffect настройки прокидываются в движок: setBoardSize, setDuration, setTheme
  * 6.1.3 Модели уровней:
- * Вместо разрозненных настроек — выбор уровня. На экране старта видно: цель, поле, тему, время, # фишек
+ * Объединил настройки в выбор уровня. На старте видно: цель, поле, тему, время, # фишек
+ * 6.1.4 Улучшение HUD:
+ * В HUD в фазе playing добавил: goalProgressPct, currentCombo, maxCombo
+ * В results-оверлей добавил: прогресс цели и лучший комбо
  */
 
 import React, {
@@ -47,9 +50,12 @@ export const Match3Screen: React.FC = () => {
   const [hud, setHud] = useState<GameHudState>({
     score: 0,
     moves: 0,
+    currentCombo: 0,
     maxCombo: 0,
     playerRecord: 0,
     dailyRecord: 0,
+    goalScore: 0,
+    goalProgressPct: 0,
     timeLeftSec: 300,
   })
 
@@ -139,6 +145,33 @@ export const Match3Screen: React.FC = () => {
             |
           </span>
           <span>Ходов: {hud.moves}</span>
+          <span
+            className="match3__hud-sep"
+            aria-hidden>
+            |
+          </span>
+          <span>
+            Цель:{' '}
+            {hud.goalScore > 0
+              ? `${hud.goalProgressPct}%`
+              : '—'}
+          </span>
+          <span
+            className="match3__hud-sep"
+            aria-hidden>
+            |
+          </span>
+          <span>
+            Комбо: x{hud.currentCombo || 1}
+          </span>
+          <span
+            className="match3__hud-sep"
+            aria-hidden>
+            |
+          </span>
+          <span>
+            Лучшее комбо: x{hud.maxCombo}
+          </span>
           <span
             className="match3__hud-sep"
             aria-hidden>
@@ -279,6 +312,14 @@ export const Match3Screen: React.FC = () => {
               </li>
               <li>
                 Ходов: {resultSnapshot.moves}
+              </li>
+              <li>
+                Прогресс цели:{' '}
+                {resultSnapshot.goalProgressPct}%
+              </li>
+              <li>
+                Лучшее комбо: x
+                {resultSnapshot.maxCombo}
               </li>
               <li>
                 Ваш рекорд:{' '}
