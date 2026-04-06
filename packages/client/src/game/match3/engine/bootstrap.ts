@@ -5,7 +5,6 @@
  * Renderer/core-модули остаются "чистыми", а bootstrap выступает оркестратором состояния.
  */
 import type { Board } from './core/grid'
-import { createBoard } from './core/grid'
 import { findMatches } from './core/match'
 import type { CellRC } from './core/match'
 import { collapse } from './core/collapse'
@@ -16,12 +15,18 @@ import {
   pickCellAt,
   renderBoard,
 } from './renderer'
+import { GAME_DURATION_SEC } from './config'
 import {
-  BOARD_SIZE_OPTIONS,
-  GAME_DURATION_SEC,
-  TILE_KINDS_BY_BOARD_SIZE,
-  type BoardSizeOption,
-} from './config'
+  createInitialHud,
+  createPlayableBoard,
+  resetHudForIdle,
+  resetHudForPlay,
+  scoreMultiplier,
+  tileKindsForBoardSize,
+  type GameHudState,
+  type Phase,
+  type ScoreMode,
+} from './gameState'
 import { maybeUpdateHighScore } from '../systems/highscore'
 import {
   loadDailyRecord,
@@ -30,45 +35,12 @@ import {
   updatePlayerRecord,
 } from '../systems/records'
 
-export type GameHudState = {
-  score: number
-  moves: number
-  maxCombo: number
-  playerRecord: number
-  dailyRecord: number
-  timeLeftSec: number
-}
-
-type ScoreMode = 'x1' | 'x2' | 'x3'
-
-type Phase = 'idle' | 'playing' | 'ended'
+export type { GameHudState }
 
 type CreateParams = {
   canvas: HTMLCanvasElement
   onHudChange?: (next: GameHudState) => void
   onGameEnd?: (snapshot: GameHudState) => void
-}
-
-const SCORE_MULT: Record<ScoreMode, number> = {
-  x1: 1,
-  x2: 2,
-  x3: 3,
-}
-
-function isBoardSize(
-  n: number
-): n is BoardSizeOption {
-  return (
-    BOARD_SIZE_OPTIONS as readonly number[]
-  ).includes(n)
-}
-
-function tileKindsForBoardSize(
-  size: number
-): number {
-  if (isBoardSize(size))
-    return TILE_KINDS_BY_BOARD_SIZE[size]
-  return TILE_KINDS_BY_BOARD_SIZE[8]
 }
 
 function delay(ms: number): Promise<void> {
@@ -92,14 +64,7 @@ export function createMatch3Game(
 
   canvas.style.touchAction = 'none'
 
-  const hud: GameHudState = {
-    score: 0,
-    moves: 0,
-    maxCombo: 0,
-    playerRecord: 0,
-    dailyRecord: 0,
-    timeLeftSec: GAME_DURATION_SEC,
-  }
+  const hud = createInitialHud()
 
   let board: Board = []
   let boardSize = 8
@@ -116,7 +81,8 @@ export function createMatch3Game(
 
   const emitHud = () => onHudChange?.({ ...hud })
 
-  const scoreMult = () => SCORE_MULT[scoreMode]
+  const scoreMult = () =>
+    scoreMultiplier(scoreMode)
 
   const sameCell = (
     a: CellRC | null,
@@ -218,12 +184,9 @@ export function createMatch3Game(
   }
 
   const rebuildBoard = () => {
-    tileKinds = tileKindsForBoardSize(boardSize)
-    board = createBoard(
-      boardSize,
-      boardSize,
-      tileKinds
-    )
+    const next = createPlayableBoard(boardSize)
+    tileKinds = next.tileKinds
+    board = next.board
     keyboardCursor = {
       r: Math.floor(boardSize / 2),
       c: Math.floor(boardSize / 2),
@@ -391,12 +354,11 @@ export function createMatch3Game(
     keyboardCursor = null
     targetCell = null
     targetPulse = false
-    hud.score = 0
-    hud.moves = 0
-    hud.maxCombo = 0
-    hud.timeLeftSec = GAME_DURATION_SEC
-    hud.playerRecord = loadPlayerRecord()
-    hud.dailyRecord = loadDailyRecord()
+    resetHudForIdle(hud, {
+      durationSec: GAME_DURATION_SEC,
+      playerRecord: loadPlayerRecord(),
+      dailyRecord: loadDailyRecord(),
+    })
     renderBoard(ctx, board)
     emitHud()
   }
@@ -404,12 +366,11 @@ export function createMatch3Game(
   const startPlay = () => {
     stopTimer()
     phase = 'playing'
-    hud.score = 0
-    hud.moves = 0
-    hud.maxCombo = 0
-    hud.timeLeftSec = GAME_DURATION_SEC
-    hud.playerRecord = loadPlayerRecord()
-    hud.dailyRecord = loadDailyRecord()
+    resetHudForPlay(hud, {
+      durationSec: GAME_DURATION_SEC,
+      playerRecord: loadPlayerRecord(),
+      dailyRecord: loadDailyRecord(),
+    })
     firstPick = null
 
     rebuildBoard()
