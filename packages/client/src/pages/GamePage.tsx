@@ -25,6 +25,7 @@ import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { usePage } from '../hooks/usePage'
 import { Match3Screen } from '../game/match3/Match3Screen'
+import cosmicBadgeWinUrl from '@match3-public/icons/cosmic9.png?url'
 import type {
   GameEndPayload,
   GameHudState,
@@ -645,7 +646,24 @@ export const GamePage: React.FC = () => {
           {isFinishRoute && (
             <section className="match3">
               <div className="match3__arena">
-                <div className="match3__overlay match3__overlay--results">
+                <div
+                  className={
+                    'match3__overlay match3__overlay--results ' +
+                    (finishStats?.isWin
+                      ? 'is-win'
+                      : 'is-lose')
+                  }>
+                  {finishStats?.isWin ? (
+                    <img
+                      src={cosmicBadgeWinUrl}
+                      alt="Победа"
+                      className="match3__results-badge match3__results-badge--win"
+                    />
+                  ) : (
+                    <div className="match3__results-badge">
+                      LOSE
+                    </div>
+                  )}
                   <h3 className="match3__results-title">
                     {finishStats?.isWin
                       ? 'Победа!'
@@ -720,8 +738,10 @@ export const GamePage: React.FC = () => {
                       </li>
                       <li>
                         Итог с бонусами:{' '}
-                        {finishStats?.totalWithBonus ??
-                          0}
+                        <strong className="match3__results-total">
+                          {finishStats?.totalWithBonus ??
+                            0}
+                        </strong>
                       </li>
                     </ul>
                   ) : (
