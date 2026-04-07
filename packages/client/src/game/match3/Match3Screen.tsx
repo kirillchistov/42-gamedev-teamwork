@@ -23,6 +23,7 @@
  * 6.3.1 VFX при матче (частицы + вспышка):
  * Второй canvas (match3__canvas--fx) поверх поля, pointer-events: none
  * createMatch3Game({ canvas, fxCanvas }) — тот же размер 480×480, общий стек match3__board--stack
+ * 6.3.3 Улучшенный HUD (сбоку на ПК, компактная шапка в мобильной версии)
  */
 
 import React, {
@@ -55,6 +56,32 @@ type UiPhase =
   | 'playing'
   | 'results'
 
+function IconSettings() {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      aria-hidden
+      fill="currentColor">
+      <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.25 7.25 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.49-.42h-3.84a.5.5 0 0 0-.49.42l-.36 2.54c-.58.22-1.13.53-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.41 1.05.72 1.63.94l.36 2.54c.05.24.25.42.49.42h3.84c.24 0 .44-.18.49-.42l.36-2.54c.58-.22 1.13-.53 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z" />
+    </svg>
+  )
+}
+
+function IconRestart() {
+  return (
+    <svg
+      width={15}
+      height={15}
+      viewBox="0 0 24 24"
+      aria-hidden
+      fill="currentColor">
+      <path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5a5 5 0 0 1-9.9 1h-2.02A7 7 0 1 0 12 6z" />
+    </svg>
+  )
+}
+
 type Match3ScreenProps = {
   selectedLevelId?: string
   goalType?: LevelGoalType
@@ -63,6 +90,7 @@ type Match3ScreenProps = {
   durationSec?: GameDurationOption
   tileKinds?: number
   hintIdleMs?: number
+  onOpenSettings?: () => void
 }
 
 export const Match3Screen: React.FC<
@@ -75,6 +103,7 @@ export const Match3Screen: React.FC<
   durationSec,
   tileKinds,
   hintIdleMs,
+  onOpenSettings,
 }) => {
   const canvasRef =
     useRef<HTMLCanvasElement | null>(null)
@@ -200,6 +229,14 @@ export const Match3Screen: React.FC<
     setUiPhase('countdown')
     gameRef.current?.resetIdle()
   }
+  const handleRestartFromHud = () => {
+    if (uiPhase !== 'playing') return
+    setResultSnapshot(null)
+    setGameEndReason(null)
+    setCountdownVal(PRESTART_COUNTDOWN_SEC)
+    setUiPhase('countdown')
+    gameRef.current?.resetIdle()
+  }
 
   const resultStats = useMemo(() => {
     if (!resultSnapshot) return null
@@ -229,167 +266,145 @@ export const Match3Screen: React.FC<
       totalWithBonus,
     }
   }, [resultSnapshot, gameEndReason])
+  const goalPct =
+    hud.goalScore > 0
+      ? `${hud.goalProgressPct}%`
+      : '—'
+  const isStartPhase =
+    uiPhase === 'countdown' || uiPhase === 'ready'
 
   return (
-    <section className="match3">
-      {uiPhase === 'playing' && (
-        <div className="match3__hud match3__hud--row">
-          <span>Счёт: {hud.score}</span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>Ходов: {hud.moves}</span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Цель:{' '}
-            {hud.goalScore > 0
-              ? `${hud.goalProgressPct}%`
-              : '—'}
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Комбо: x{hud.currentCombo || 1}
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Лучшее комбо: x{hud.maxCombo}
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Ваш рекорд: {hud.playerRecord}
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>Время: {timeLabel}</span>
-        </div>
-      )}
-
-      {(uiPhase === 'countdown' ||
-        uiPhase === 'ready') && (
-        <div className="match3__pre-hud">
-          Ваш рекорд: {hud.playerRecord}
-        </div>
-      )}
-
-      {(uiPhase === 'countdown' ||
-        uiPhase === 'ready') && (
-        <div className="match3__start-settings">
-          <span>
-            Уровень: {appliedLevel.title}
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Цель:{' '}
-            {goalType === 'score'
-              ? `набрать ${appliedLevel.goalValue} очков`
-              : '—'}
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Поле: {appliedLevel.boardSize}x
-            {appliedLevel.boardSize}
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Тема:{' '}
-            {appliedLevel.theme === 'standard'
-              ? 'Стандарт'
-              : appliedLevel.theme === 'space'
-              ? 'Космос'
-              : 'Математика'}
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Время: {appliedLevel.durationSec / 60}{' '}
-            мин
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Типов фишек: {appliedLevel.tileKinds}
-          </span>
-        </div>
-      )}
-
-      <div className="match3__board match3__board--stack">
-        <canvas
-          ref={canvasRef}
-          className="match3__canvas match3__canvas--board"
-          width={480}
-          height={480}
-          aria-label="Игровое поле match-3"
-        />
-        <canvas
-          ref={fxCanvasRef}
-          className="match3__canvas match3__canvas--fx"
-          width={480}
-          height={480}
-          aria-hidden
-        />
-
-        {uiPhase === 'countdown' &&
-          countdownVal > 0 && (
-            <div
-              className="match3__overlay match3__overlay--countdown"
-              aria-live="polite">
-              <div className="match3__countdown">
-                {countdownVal}
-              </div>
+    <section
+      className={
+        'match3' +
+        (isStartPhase ? ' match3--start' : '')
+      }>
+      <div className="match3__arena">
+        {uiPhase === 'playing' && (
+          <div className="match3__hud-top">
+            <div className="match3__hud-mobile-item">
+              <span>Счёт</span>
+              <strong>{hud.score}</strong>
             </div>
-          )}
-
-        {uiPhase === 'ready' && (
-          <div className="match3__overlay match3__overlay--ready">
-            <p className="match3__start-glow-note">
-              Режим match-3: собирай комбинации,
-              набирай очки, побеждай время
-            </p>
+            <div className="match3__hud-mobile-item">
+              <span>Ходов</span>
+              <strong>{hud.moves}</strong>
+            </div>
+            <div className="match3__hud-mobile-item">
+              <span>Цель</span>
+              <strong>{goalPct}</strong>
+            </div>
+            <div className="match3__hud-mobile-item">
+              <span>Время</span>
+              <strong>{timeLabel}</strong>
+            </div>
             <button
               type="button"
-              className="btn btn--primary match3__play-btn"
-              onClick={handlePlay}>
-              Играть
+              className="match3__hud-restart"
+              onClick={handleRestartFromHud}
+              aria-label="Начать заново"
+              title="Начать заново">
+              <IconRestart />
+              <span>Начать заново</span>
             </button>
+          </div>
+        )}
+
+        {uiPhase !== 'results' && (
+          <div
+            className={
+              'match3__board match3__board--stack' +
+              (uiPhase === 'countdown' ||
+              uiPhase === 'ready'
+                ? ' is-overlay-only'
+                : '')
+            }>
+            <canvas
+              ref={canvasRef}
+              className="match3__canvas match3__canvas--board"
+              width={480}
+              height={480}
+              aria-label="Игровое поле match-3"
+            />
+            <canvas
+              ref={fxCanvasRef}
+              className="match3__canvas match3__canvas--fx"
+              width={480}
+              height={480}
+              aria-hidden
+            />
+
+            {uiPhase === 'countdown' &&
+              countdownVal > 0 && (
+                <div
+                  className="match3__overlay match3__overlay--countdown"
+                  aria-live="polite">
+                  <div className="match3__countdown">
+                    {countdownVal}
+                  </div>
+                </div>
+              )}
+
+            {uiPhase === 'ready' && (
+              <div className="match3__overlay match3__overlay--ready">
+                <p className="match3__start-glow-note">
+                  Cosmic Match: комбинируй,
+                  набирай очки, побеждай время!
+                </p>
+                <div className="match3__start-info">
+                  <div>
+                    Уровень: {appliedLevel.title}
+                  </div>
+                  <div>
+                    Цель:{' '}
+                    {goalType === 'score'
+                      ? `${appliedLevel.goalValue} очков`
+                      : '—'}
+                  </div>
+                  <div>
+                    Поле: {appliedLevel.boardSize}
+                    x{appliedLevel.boardSize}
+                  </div>
+                  <div>
+                    Тема:{' '}
+                    {appliedLevel.theme ===
+                    'standard'
+                      ? 'Стандарт'
+                      : appliedLevel.theme ===
+                        'space'
+                      ? 'Космос'
+                      : 'Математика'}
+                  </div>
+                  <div>
+                    Время:{' '}
+                    {appliedLevel.durationSec /
+                      60}{' '}
+                    мин
+                  </div>
+                  <div>
+                    Типов фишек:{' '}
+                    {appliedLevel.tileKinds}
+                  </div>
+                </div>
+                <div className="match3__start-actions">
+                  <button
+                    type="button"
+                    className="btn btn--outline match3__settings-play-btn"
+                    onClick={() =>
+                      onOpenSettings?.()
+                    }>
+                    <IconSettings />
+                    Настройки
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--primary match3__play-btn"
+                    onClick={handlePlay}>
+                    Играть
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

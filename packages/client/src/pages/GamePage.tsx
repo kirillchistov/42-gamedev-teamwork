@@ -152,8 +152,8 @@ export const GamePage: React.FC = () => {
         }
       />
 
-      <main className="auth-main">
-        <div className="auth-card auth-card--wide">
+      <main className="auth-main match3-page__main">
+        <div className="auth-card auth-card--wide match3-page__card">
           {toastMessage && (
             <div
               role="status"
@@ -376,6 +376,9 @@ export const GamePage: React.FC = () => {
             durationSec={durationSec}
             tileKinds={tileKinds}
             hintIdleMs={hintIdleMs}
+            onOpenSettings={() =>
+              setShowSettings(true)
+            }
           />
         </div>
       </main>
