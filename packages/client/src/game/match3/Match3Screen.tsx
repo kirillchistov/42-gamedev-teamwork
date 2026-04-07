@@ -37,11 +37,16 @@ import {
   type GameEndPayload,
   type GameHudState,
 } from './engine/bootstrap'
-import { PRESTART_COUNTDOWN_SEC } from './engine/config'
+import {
+  PRESTART_COUNTDOWN_SEC,
+  type BoardSizeOption,
+  type GameDurationOption,
+  type GameThemeOption,
+} from './engine/config'
 import {
   DEFAULT_MATCH3_LEVEL_ID,
   getMatch3LevelById,
-  MATCH3_LEVELS,
+  type LevelGoalType,
 } from './engine/levels'
 
 type UiPhase =
@@ -50,7 +55,27 @@ type UiPhase =
   | 'playing'
   | 'results'
 
-export const Match3Screen: React.FC = () => {
+type Match3ScreenProps = {
+  selectedLevelId?: string
+  goalType?: LevelGoalType
+  boardSize?: BoardSizeOption
+  themeOption?: GameThemeOption
+  durationSec?: GameDurationOption
+  tileKinds?: number
+  hintIdleMs?: number
+}
+
+export const Match3Screen: React.FC<
+  Match3ScreenProps
+> = ({
+  selectedLevelId = DEFAULT_MATCH3_LEVEL_ID,
+  goalType = 'score',
+  boardSize,
+  themeOption,
+  durationSec,
+  tileKinds,
+  hintIdleMs,
+}) => {
   const canvasRef =
     useRef<HTMLCanvasElement | null>(null)
   const fxCanvasRef =
@@ -81,9 +106,6 @@ export const Match3Screen: React.FC = () => {
     useState<GameEndPayload['reason'] | null>(
       null
     )
-  const [selectedLevelId, setSelectedLevelId] =
-    useState(DEFAULT_MATCH3_LEVEL_ID)
-
   useEffect(() => {
     const canvas = canvasRef.current
     const fxCanvas = fxCanvasRef.current
@@ -124,12 +146,37 @@ export const Match3Screen: React.FC = () => {
     () => getMatch3LevelById(selectedLevelId),
     [selectedLevelId]
   )
+  const appliedLevel = useMemo(
+    () => ({
+      ...selectedLevel,
+      boardSize:
+        boardSize ?? selectedLevel.boardSize,
+      theme: themeOption ?? selectedLevel.theme,
+      durationSec:
+        durationSec ?? selectedLevel.durationSec,
+      tileKinds:
+        tileKinds ?? selectedLevel.tileKinds,
+    }),
+    [
+      selectedLevel,
+      boardSize,
+      themeOption,
+      durationSec,
+      tileKinds,
+    ]
+  )
 
   useEffect(() => {
     const game = gameRef.current
     if (!game) return
-    game.setLevel(selectedLevel)
-  }, [selectedLevel])
+    game.setLevel(appliedLevel)
+  }, [appliedLevel])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game || !hintIdleMs) return
+    game.setHintIdleMs(hintIdleMs)
+  }, [hintIdleMs])
 
   const timeLabel = useMemo(() => {
     const mm = String(
@@ -249,24 +296,7 @@ export const Match3Screen: React.FC = () => {
         uiPhase === 'ready') && (
         <div className="match3__start-settings">
           <span>
-            <label className="match3__setting">
-              Уровень:{' '}
-              <select
-                value={selectedLevelId}
-                onChange={e =>
-                  setSelectedLevelId(
-                    e.target.value
-                  )
-                }>
-                {MATCH3_LEVELS.map(level => (
-                  <option
-                    key={level.id}
-                    value={level.id}>
-                    {level.title}
-                  </option>
-                ))}
-              </select>
-            </label>
+            Уровень: {appliedLevel.title}
           </span>
           <span
             className="match3__hud-sep"
@@ -274,8 +304,10 @@ export const Match3Screen: React.FC = () => {
             |
           </span>
           <span>
-            Цель: набрать{' '}
-            {selectedLevel.goalValue} очков
+            Цель:{' '}
+            {goalType === 'score'
+              ? `набрать ${appliedLevel.goalValue} очков`
+              : '—'}
           </span>
           <span
             className="match3__hud-sep"
@@ -283,8 +315,8 @@ export const Match3Screen: React.FC = () => {
             |
           </span>
           <span>
-            Поле: {selectedLevel.boardSize}x
-            {selectedLevel.boardSize}
+            Поле: {appliedLevel.boardSize}x
+            {appliedLevel.boardSize}
           </span>
           <span
             className="match3__hud-sep"
@@ -293,9 +325,9 @@ export const Match3Screen: React.FC = () => {
           </span>
           <span>
             Тема:{' '}
-            {selectedLevel.theme === 'standard'
+            {appliedLevel.theme === 'standard'
               ? 'Стандарт'
-              : selectedLevel.theme === 'space'
+              : appliedLevel.theme === 'space'
               ? 'Космос'
               : 'Математика'}
           </span>
@@ -305,8 +337,8 @@ export const Match3Screen: React.FC = () => {
             |
           </span>
           <span>
-            Время:{' '}
-            {selectedLevel.durationSec / 60} мин
+            Время: {appliedLevel.durationSec / 60}{' '}
+            мин
           </span>
           <span
             className="match3__hud-sep"
@@ -314,7 +346,7 @@ export const Match3Screen: React.FC = () => {
             |
           </span>
           <span>
-            Типов фишек: {selectedLevel.tileKinds}
+            Типов фишек: {appliedLevel.tileKinds}
           </span>
         </div>
       )}
@@ -348,6 +380,10 @@ export const Match3Screen: React.FC = () => {
 
         {uiPhase === 'ready' && (
           <div className="match3__overlay match3__overlay--ready">
+            <p className="match3__start-glow-note">
+              Режим match-3: собирай комбинации,
+              набирай очки, побеждай время
+            </p>
             <button
               type="button"
               className="btn btn--primary match3__play-btn"

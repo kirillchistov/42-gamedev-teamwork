@@ -111,7 +111,7 @@ type CreateParams = {
   onGameEnd?: (payload: GameEndPayload) => void
 }
 
-const HINT_IDLE_MS = 10000
+const DEFAULT_HINT_IDLE_MS = 10000
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => {
@@ -206,6 +206,7 @@ export function createMatch3Game(
     from: CellRC
     to: CellRC
   } | null = null
+  let hintIdleMs = DEFAULT_HINT_IDLE_MS
   let hintTimeoutId: number | null = null
   const pressedKeys = new Set<string>()
 
@@ -247,7 +248,7 @@ export function createMatch3Game(
     stopHintTimer()
     hintTimeoutId = window.setTimeout(() => {
       showHintIfIdle()
-    }, HINT_IDLE_MS)
+    }, hintIdleMs)
   }
 
   const markPlayerActivity = () => {
@@ -681,6 +682,14 @@ export function createMatch3Game(
     emitHud()
   }
 
+  const setHintIdleMs = (ms: number) => {
+    if (!Number.isFinite(ms) || ms < 1000) return
+    hintIdleMs = Math.floor(ms)
+    if (phase === 'playing') {
+      scheduleHint()
+    }
+  }
+
   const destroy = () => {
     canvas.removeEventListener(
       'pointerdown',
@@ -707,6 +716,7 @@ export function createMatch3Game(
     setTheme,
     setLevel,
     setScoreMode,
+    setHintIdleMs,
     destroy,
   }
 }

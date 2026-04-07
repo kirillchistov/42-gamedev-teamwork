@@ -53,7 +53,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
   },
   {
     id: 'professor',
-    title: 'Профессор',
+    title: 'Асс',
     description:
       'Сложный режим с большим полем и высоким порогом выигрыша.',
     goalType: 'score',
