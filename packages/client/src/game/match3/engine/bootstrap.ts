@@ -678,6 +678,15 @@ export function createMatch3Game(
         emitHud()
         maxChain = Math.max(maxChain, chain)
         playSound(chain > 1 ? 'cascade' : 'match')
+        if (matchFx) {
+          matchFx.burstScoreText(
+            board,
+            matches,
+            gained,
+            chain
+          )
+          ensureFxLoop()
+        }
 
         const beforeFall = cloneBoard(board)
         collapse(board)

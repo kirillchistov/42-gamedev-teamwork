@@ -27,6 +27,17 @@ type Particle = {
   color: string
 }
 
+type FloatingText = {
+  x: number
+  y: number
+  vy: number
+  life: number
+  maxLife: number
+  text: string
+  color: string
+  size: number
+}
+
 function colorForTileKind(
   kind: number,
   theme: GameThemeOption
@@ -42,6 +53,7 @@ export function createMatchFx(
   ctx: CanvasRenderingContext2D
 ) {
   let particles: Particle[] = []
+  let texts: FloatingText[] = []
   let flash = 0
   type CelebrationStyle =
     | 'normal'
@@ -204,6 +216,44 @@ export function createMatchFx(
     )
   }
 
+  function burstScoreText(
+    board: Board,
+    cells: CellRC[],
+    score: number,
+    chain: number
+  ) {
+    const L = boardLayout(
+      board,
+      ctx.canvas.width,
+      ctx.canvas.height
+    )
+    if (!L || cells.length === 0 || score <= 0)
+      return
+    const { cell, ox, oy } = L
+    let sumX = 0
+    let sumY = 0
+    for (const c of cells) {
+      sumX += ox + c.c * cell + cell / 2
+      sumY += oy + c.r * cell + cell / 2
+    }
+    const cx = sumX / cells.length
+    const cy = sumY / cells.length
+    const combo = chain > 1 ? `  x${chain}` : ''
+    texts.push({
+      x: cx,
+      y: cy - cell * 0.08,
+      vy: -(0.38 + Math.min(0.3, chain * 0.06)),
+      life: 0,
+      maxLife: 760,
+      text: `+${score}${combo}`,
+      color: chain > 1 ? '#fde68a' : '#bfdbfe',
+      size: Math.max(
+        14,
+        Math.min(24, Math.floor(cell * 0.31))
+      ),
+    })
+  }
+
   function step(dtMs: number) {
     const k = Math.min(3, dtMs / 16.67)
     flash *= Math.pow(0.92, k)
@@ -218,6 +268,11 @@ export function createMatchFx(
       p.x += p.vx * k
       p.y += p.vy * k
       return p.life < p.maxLife
+    })
+    texts = texts.filter(t => {
+      t.life += dtMs
+      t.y += t.vy * k * 2.1
+      return t.life < t.maxLife
     })
   }
 
@@ -310,14 +365,35 @@ export function createMatchFx(
       }
       ctx.restore()
     }
+    if (texts.length > 0) {
+      ctx.save()
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      for (const t of texts) {
+        const k = t.life / t.maxLife
+        const fade = 1 - k
+        ctx.globalAlpha = Math.max(0, fade * 0.95)
+        ctx.font = `800 ${t.size}px system-ui, sans-serif`
+        ctx.fillStyle = t.color
+        ctx.shadowColor = 'rgba(15,23,42,0.85)'
+        ctx.shadowBlur = 8
+        ctx.fillText(t.text, t.x, t.y)
+      }
+      ctx.restore()
+    }
   }
 
   function isActive() {
-    return particles.length > 0 || flash > 0.02
+    return (
+      particles.length > 0 ||
+      texts.length > 0 ||
+      flash > 0.02
+    )
   }
 
   function reset() {
     particles = []
+    texts = []
     flash = 0
     ctx.clearRect(
       0,
@@ -330,6 +406,7 @@ export function createMatchFx(
   return {
     burstFromMatches,
     burstCelebration,
+    burstScoreText,
     step,
     draw,
     isActive,
