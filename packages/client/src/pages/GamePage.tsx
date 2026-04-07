@@ -1,4 +1,17 @@
-import React, { useEffect, useState } from 'react'
+/**
+ * Страница /game: Cosmic Match (match-3), тосты, настройки-заглушки, оболочка под тему лендинга.
+ * 6.3.2 Оболочка страницы игры (полноэкран, компактная шапка, луна/солнце) — цель коммита:
+ * Больше места под поле и удобство игры: компактный Header, полноэкран по кнопке и клавише F.
+ * Этот файл: ref game-page-shell на корневой div; Header variant="game" + fullscreenTargetRef;
+ * useEffect — hotkey F вызывает toggleFullscreen(pageShellRef) вне input/textarea/select.
+ * См. также: utils/fullscreen.ts, Header/index.tsx, LandingThemeContext (toggleColorMode),
+ * shared/styles variables.pcss / base.pcss / themes.pcss.
+ */
+import React, {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { Helmet } from 'react-helmet'
 import {
   useLocation,
@@ -10,10 +23,13 @@ import { Footer } from '../components/Footer'
 import { usePage } from '../hooks/usePage'
 import { Match3Screen } from '../game/match3/Match3Screen'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
+import { toggleFullscreen } from '../utils/fullscreen'
 
 export const GamePage: React.FC = () => {
   usePage({ initPage: initGamePage })
   const { theme } = useLandingTheme()
+  const pageShellRef =
+    useRef<HTMLDivElement | null>(null)
   const [showSettings, setShowSettings] =
     useState(false)
   const [toastMessage, setToastMessage] =
@@ -41,8 +57,33 @@ export const GamePage: React.FC = () => {
     return () => clearTimeout(id)
   }, [toastMessage])
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'f' && e.key !== 'F') return
+      if (e.ctrlKey || e.metaKey || e.altKey)
+        return
+      const el = e.target as HTMLElement | null
+      if (
+        el &&
+        (el.tagName === 'INPUT' ||
+          el.tagName === 'TEXTAREA' ||
+          el.tagName === 'SELECT' ||
+          el.isContentEditable)
+      ) {
+        return
+      }
+      e.preventDefault()
+      void toggleFullscreen(pageShellRef.current)
+    }
+    window.addEventListener('keydown', onKey)
+    return () =>
+      window.removeEventListener('keydown', onKey)
+  }, [])
+
   return (
-    <div className={`landing landing--${theme}`}>
+    <div
+      ref={pageShellRef}
+      className={`landing landing--${theme} game-page-shell`}>
       <Helmet>
         <meta charSet="utf-8" />
         <title>Cosmic Match</title>
@@ -52,7 +93,10 @@ export const GamePage: React.FC = () => {
         />
       </Helmet>
 
-      <Header />
+      <Header
+        variant="game"
+        fullscreenTargetRef={pageShellRef}
+      />
 
       <main className="auth-main">
         <div className="auth-card auth-card--wide">

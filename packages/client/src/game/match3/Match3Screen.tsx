@@ -20,6 +20,9 @@
  * Добавил итоговые показатели: цель, прогресс, сколько осталось до цели,
  * бонус за комбо (maxCombo * 25),  * бонус за оставшееся время (timeLeftSec * 2)
  * итог с бонусами
+ * 6.3.1 VFX при матче (частицы + вспышка):
+ * Второй canvas (match3__canvas--fx) поверх поля, pointer-events: none
+ * createMatch3Game({ canvas, fxCanvas }) — тот же размер 480×480, общий стек match3__board--stack
  */
 
 import React, {
@@ -49,6 +52,8 @@ type UiPhase =
 
 export const Match3Screen: React.FC = () => {
   const canvasRef =
+    useRef<HTMLCanvasElement | null>(null)
+  const fxCanvasRef =
     useRef<HTMLCanvasElement | null>(null)
   const gameRef = useRef<ReturnType<
     typeof createMatch3Game
@@ -81,10 +86,12 @@ export const Match3Screen: React.FC = () => {
 
   useEffect(() => {
     const canvas = canvasRef.current
+    const fxCanvas = fxCanvasRef.current
     if (!canvas) return
 
     const game = createMatch3Game({
       canvas,
+      fxCanvas: fxCanvas ?? undefined,
       onHudChange: setHud,
       onGameEnd: payload => {
         setResultSnapshot(payload.snapshot)
@@ -312,13 +319,20 @@ export const Match3Screen: React.FC = () => {
         </div>
       )}
 
-      <div className="match3__board">
+      <div className="match3__board match3__board--stack">
         <canvas
           ref={canvasRef}
-          className="match3__canvas"
+          className="match3__canvas match3__canvas--board"
           width={480}
           height={480}
           aria-label="Игровое поле match-3"
+        />
+        <canvas
+          ref={fxCanvasRef}
+          className="match3__canvas match3__canvas--fx"
+          width={480}
+          height={480}
+          aria-hidden
         />
 
         {uiPhase === 'countdown' &&

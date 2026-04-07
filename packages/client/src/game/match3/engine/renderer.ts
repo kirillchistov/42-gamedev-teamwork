@@ -12,6 +12,9 @@
  * 6.1.8 Таймер бездействия и подсказка хода
  * Расширил RenderOpts: hintFrom, hintTo
  * Добавил отрисовку подсказки: пунктирная желтая рамка на клетках возможного свопа
+ * 6.3.1 VFX при матче (частицы + вспышка):
+ * Экспорт boardLayout(board, canvasW, canvasH) — общая геометрия клетки и отступов
+ * renderBoard и pickCellAt используют boardLayout, чтобы matchFx совпадал с отрисовкой
  */
 
 import type { Board } from './core/grid'
@@ -70,6 +73,35 @@ function dims(board: Board) {
   const cols =
     rows > 0 ? board[0]?.length ?? 0 : 0
   return { rows, cols }
+}
+
+/** Геометрия поля в пикселях канваса (как в renderBoard / pickCellAt). */
+export function boardLayout(
+  board: Board,
+  canvasWidth: number,
+  canvasHeight: number
+): {
+  rows: number
+  cols: number
+  cell: number
+  ox: number
+  oy: number
+} | null {
+  const { rows, cols } = dims(board)
+  if (rows === 0 || cols === 0) return null
+  const cell = Math.floor(
+    Math.min(
+      canvasWidth / cols,
+      canvasHeight / rows
+    )
+  )
+  const ox = Math.floor(
+    (canvasWidth - cols * cell) / 2
+  )
+  const oy = Math.floor(
+    (canvasHeight - rows * cell) / 2
+  )
+  return { rows, cols, cell, ox, oy }
 }
 
 function polygonPath(
@@ -371,11 +403,9 @@ export function pickCellAt(
 
   const W = canvas.width
   const H = canvas.height
-  const cell = Math.floor(
-    Math.min(W / cols, H / rows)
-  )
-  const ox = Math.floor((W - cols * cell) / 2)
-  const oy = Math.floor((H - rows * cell) / 2)
+  const layout = boardLayout(board, W, H)
+  if (!layout) return null
+  const { cell, ox, oy } = layout
 
   const c = Math.floor((px - ox) / cell)
   const r = Math.floor((py - oy) / cell)
@@ -398,11 +428,9 @@ export function renderBoard(
   ctx.clearRect(0, 0, W, H)
   if (rows === 0 || cols === 0) return
 
-  const cell = Math.floor(
-    Math.min(W / cols, H / rows)
-  )
-  const ox = Math.floor((W - cols * cell) / 2)
-  const oy = Math.floor((H - rows * cell) / 2)
+  const layout = boardLayout(board, W, H)
+  if (!layout) return
+  const { cell, ox, oy } = layout
 
   // frame
   ctx.save()

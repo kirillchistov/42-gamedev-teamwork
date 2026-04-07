@@ -1,4 +1,7 @@
-/* Глобальные стили приложения: переменные, shell, шапка, подвал, кнопки */
+/* Глобальные стили приложения: переменные, shell, шапка, подвал, кнопки
+ * 6.3.2 Оболочка страницы игры: .landing-header--game (компактная высота), .landing-theme-toggle,
+ * .landing-fullscreen-btn, .game-page-shell:fullscreen / :-webkit-full-screen
+ */
 @import './variables.pcss';
 
 :root {
@@ -267,6 +270,100 @@ button {
   box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.35);
 }
 
+/* /game: низкая шапка */
+.landing-header--game {
+  height: var(--header-height-game);
+  min-height: var(--header-height-game);
+}
+
+.landing-header--game .landing-header__inner {
+  gap: 10px;
+  padding: 0 14px;
+}
+
+.landing-header--game .landing-logo {
+  font-size: 14px;
+  gap: 8px;
+}
+
+.landing-header--game .landing-logo__icon {
+  width: var(--game-logo-icon);
+  height: var(--game-logo-icon);
+}
+
+.landing-header--game .landing-logo__icon::before,
+.landing-header--game .landing-logo__icon::after {
+  width: 3px;
+  height: 3px;
+}
+
+.landing-header--game .landing-logo__icon::before {
+  top: 3px;
+  left: 8px;
+}
+
+.landing-header--game .landing-logo__icon::after {
+  bottom: 4px;
+  right: 5px;
+}
+
+.landing-header--game .landing-nav {
+  font-size: 13px;
+  gap: 12px;
+}
+
+.landing-header--game .landing-header__right {
+  gap: 8px;
+}
+
+.landing-theme-toggle {
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: rgba(255, 255, 255, 0.85);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.landing-theme-toggle__glyph {
+  font-size: 17px;
+  display: block;
+  transform: translateY(0.5px);
+}
+
+.landing-fullscreen-btn {
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: rgba(255, 255, 255, 0.85);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: var(--color-text-subtle-light);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.landing-fullscreen-btn:hover {
+  color: var(--color-text-main-light);
+  border-color: rgba(79, 70, 229, 0.45);
+}
+
+.game-page-shell:fullscreen,
+.game-page-shell:-webkit-full-screen {
+  min-height: 100vh;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
 /* burger */
 
 .landing-burger {
@@ -300,6 +397,20 @@ button {
 
 .landing-burger.is-open span:nth-child(3) {
   transform: translateY(-5px) rotate(-45deg);
+}
+
+.landing-header--game .landing-burger {
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+}
+
+.landing-header--game .landing-burger.is-open span:nth-child(1) {
+  transform: translateY(4px) rotate(45deg);
+}
+
+.landing-header--game .landing-burger.is-open span:nth-child(3) {
+  transform: translateY(-4px) rotate(-45deg);
 }
 
 /* === BUTTONS === */

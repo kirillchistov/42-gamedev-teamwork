@@ -3,6 +3,9 @@
  * Добавил стили для настроек и селектов (match3__setting) 
  * 6.1.9 Экран результата уровня
  * Добавил стили для вердикта результата (is-win / is-lose).
+ * 6.3.1 VFX при матче (частицы + вспышка):
+ * Добавил grid для двух canvas-ов: match3__board--stack — ; 
+ * match3__canvas--board с рамкой, --fx без рамки, прозрачный фон
 */
 
 .match3 {
@@ -144,15 +147,36 @@
   margin: 0 auto;
 }
 
+.match3__board--stack {
+  display: grid;
+  grid-template: 1fr / 1fr;
+  align-items: stretch;
+  justify-items: stretch;
+}
+
+.match3__board--stack > .match3__canvas {
+  grid-area: 1 / 1;
+}
+
 .match3__canvas {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 1;
-  border: 1px solid #2f4d73;
   border-radius: 8px;
-  background: #081226;
   vertical-align: top;
+}
+
+.match3__canvas--board {
+  border: 1px solid #2f4d73;
+  background: #081226;
+}
+
+.match3__canvas--fx {
+  pointer-events: none;
+  z-index: 1;
+  border: none;
+  background: transparent;
 }
 
 .match3__overlay {

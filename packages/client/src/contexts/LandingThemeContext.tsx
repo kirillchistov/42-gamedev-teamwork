@@ -1,3 +1,11 @@
+/**
+ * Тема лендинга (light-flat, light-3d, dark-neon): хранение в localStorage, класс на body.
+ * 6.3.2 Оболочка /game:
+ * Одна кнопка «луна/солнце» на /game переключает dark-neon ↔ последняя светлая тема.
+ * Реализовал: LAST_LIGHT_THEME_KEY, readLastLightTheme, запись при setTheme(light-*),
+ * toggleColorMode в контексте; инициализация last-light при первом чтении темы.
+ * Потребитель: Header variant=game. Остальные страницы по-прежнему вызывают setTheme напрямую.
+ */
 import React, {
   createContext,
   useCallback,
@@ -14,6 +22,26 @@ export type LandingTheme =
 
 const STORAGE_KEY =
   'cosmic-match.landing-theme.v1'
+
+const LAST_LIGHT_THEME_KEY =
+  'cosmic-match.last-light-theme.v1'
+
+function readLastLightTheme():
+  | 'light-flat'
+  | 'light-3d' {
+  try {
+    const v = localStorage.getItem(
+      LAST_LIGHT_THEME_KEY
+    )
+    if (v === 'light-flat' || v === 'light-3d')
+      return v
+  } catch {
+    console.log(
+      '[Private: readLastLightTheme]: ошибка'
+    )
+  }
+  return 'light-flat'
+}
 
 export const LANDING_THEME_CLASS: Record<
   LandingTheme,
@@ -34,7 +62,9 @@ function readStoredTheme(): LandingTheme {
     )
       return v
   } catch {
-    /* private mode */
+    console.log(
+      '[Private: readStoredTheme]: ошибка'
+    )
   }
   return 'light-flat'
 }
@@ -42,6 +72,8 @@ function readStoredTheme(): LandingTheme {
 type LandingThemeContextValue = {
   theme: LandingTheme
   setTheme: (t: LandingTheme) => void
+  /** Светлая ↔ тёмная (возврат на последнюю светлую flat/3d). */
+  toggleColorMode: () => void
 }
 
 const LandingThemeContext =
@@ -56,7 +88,20 @@ export const LandingThemeProvider: React.FC<{
     useState<LandingTheme>('light-flat')
 
   useLayoutEffect(() => {
-    setThemeState(readStoredTheme())
+    const t = readStoredTheme()
+    setThemeState(t)
+    if (t === 'light-flat' || t === 'light-3d') {
+      try {
+        localStorage.setItem(
+          LAST_LIGHT_THEME_KEY,
+          t
+        )
+      } catch {
+        console.log(
+          '[Private: useLayoutEffect]: ошибка'
+        )
+      }
+    }
   }, [])
 
   useLayoutEffect(() => {
@@ -76,16 +121,55 @@ export const LandingThemeProvider: React.FC<{
       setThemeState(t)
       try {
         localStorage.setItem(STORAGE_KEY, t)
+        if (
+          t === 'light-flat' ||
+          t === 'light-3d'
+        ) {
+          localStorage.setItem(
+            LAST_LIGHT_THEME_KEY,
+            t
+          )
+        }
       } catch {
-        /* ignore */
+        console.log('[Private: setTheme]: ошибка')
       }
     },
     []
   )
 
+  const toggleColorMode = useCallback(() => {
+    setThemeState(prev => {
+      const next =
+        prev === 'dark-neon'
+          ? readLastLightTheme()
+          : 'dark-neon'
+      try {
+        localStorage.setItem(STORAGE_KEY, next)
+        if (
+          next === 'light-flat' ||
+          next === 'light-3d'
+        ) {
+          localStorage.setItem(
+            LAST_LIGHT_THEME_KEY,
+            next
+          )
+        }
+      } catch {
+        console.log(
+          '[Private: toggleColorMode]: ошибка'
+        )
+      }
+      return next
+    })
+  }, [])
+
   const value = useMemo(
-    () => ({ theme, setTheme }),
-    [theme, setTheme]
+    () => ({
+      theme,
+      setTheme,
+      toggleColorMode,
+    }),
+    [theme, setTheme, toggleColorMode]
   )
 
   return (

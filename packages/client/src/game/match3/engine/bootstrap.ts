@@ -41,6 +41,10 @@
  * Добавил finishGame(reason): завершает партию, останавливает таймер/подсказки,
  * фиксирует HUD и отправляет payload в UI.
  * Логика завершения: при достижении цели уровня (score >= goalScore) — goalReached, при timeOut
+ * 6.3.1 VFX при матче (частицы + вспышка):
+ * Опциональный параметр createMatch3Game({ fxCanvas }) и createMatchFx(ctx)
+ * В flashMatches: burstFromMatches + ensureFxLoop; цикл requestAnimationFrame пока isActive
+ * Сброс слоя: cancelFxLoop + matchFx.reset в resetIdle и destroy
  */
 
 import type { Board } from './core/grid'
@@ -83,6 +87,10 @@ import {
   updateDailyRecord,
   updatePlayerRecord,
 } from '../systems/records'
+import {
+  createMatchFx,
+  type MatchFxApi,
+} from './matchFx'
 
 export type { GameHudState }
 
@@ -97,11 +105,13 @@ export type GameEndPayload = {
 
 type CreateParams = {
   canvas: HTMLCanvasElement
+  /** Опционально: второй canvas (поверх поля) для частиц и вспышки. */
+  fxCanvas?: HTMLCanvasElement
   onHudChange?: (next: GameHudState) => void
   onGameEnd?: (payload: GameEndPayload) => void
 }
 
-const HINT_IDLE_MS = 4000
+const HINT_IDLE_MS = 10000
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => {
@@ -112,8 +122,12 @@ function delay(ms: number): Promise<void> {
 export function createMatch3Game(
   params: CreateParams
 ) {
-  const { canvas, onHudChange, onGameEnd } =
-    params
+  const {
+    canvas,
+    fxCanvas,
+    onHudChange,
+    onGameEnd,
+  } = params
   const ctxMaybe = canvas.getContext('2d')
   if (!ctxMaybe) {
     throw new Error(
@@ -121,6 +135,53 @@ export function createMatch3Game(
     )
   }
   const ctx: CanvasRenderingContext2D = ctxMaybe
+
+  let matchFx: MatchFxApi | null = null
+  let fxRafId: number | null = null
+  let fxLastTs = 0
+
+  if (fxCanvas) {
+    const fxCtxMaybe = fxCanvas.getContext('2d')
+    if (fxCtxMaybe) {
+      matchFx = createMatchFx(fxCtxMaybe)
+    }
+  }
+
+  const cancelFxLoop = () => {
+    if (fxRafId !== null) {
+      window.cancelAnimationFrame(fxRafId)
+      fxRafId = null
+    }
+    fxLastTs = 0
+  }
+
+  const fxLoop = (now: number) => {
+    if (!matchFx) {
+      fxRafId = null
+      return
+    }
+    const dt = fxLastTs
+      ? Math.min(48, now - fxLastTs)
+      : 16
+    fxLastTs = now
+    matchFx.step(dt)
+    matchFx.draw()
+    if (matchFx.isActive()) {
+      fxRafId =
+        window.requestAnimationFrame(fxLoop)
+    } else {
+      fxRafId = null
+      fxLastTs = 0
+      matchFx.draw()
+    }
+  }
+
+  const ensureFxLoop = () => {
+    if (!matchFx) return
+    if (fxRafId !== null) return
+    fxLastTs = 0
+    fxRafId = window.requestAnimationFrame(fxLoop)
+  }
 
   canvas.style.touchAction = 'none'
 
@@ -245,11 +306,22 @@ export function createMatch3Game(
 
   function flashMatches(
     matches: CellRC[],
-    durationMs = 200
+    opts?: { durationMs?: number; chain?: number }
   ): Promise<void> {
+    const durationMs = opts?.durationMs ?? 200
+    const chain = Math.max(1, opts?.chain ?? 1)
+    if (matchFx && matches.length > 0) {
+      matchFx.burstFromMatches(
+        board,
+        matches,
+        gameTheme,
+        chain
+      )
+      ensureFxLoop()
+    }
     return new Promise(resolve => {
       const start = performance.now()
-      const step = (now: number) => {
+      const stepAnim = (now: number) => {
         const t = Math.min(
           1,
           (now - start) / durationMs
@@ -261,9 +333,9 @@ export function createMatch3Game(
           alpha,
         })
         if (t >= 1) resolve()
-        else requestAnimationFrame(step)
+        else requestAnimationFrame(stepAnim)
       }
-      requestAnimationFrame(step)
+      requestAnimationFrame(stepAnim)
     })
   }
 
@@ -282,7 +354,10 @@ export function createMatch3Game(
         const matches = findMatches(board)
         if (matches.length === 0) break
 
-        await flashMatches(matches, 220)
+        await flashMatches(matches, {
+          durationMs: 220,
+          chain,
+        })
         const base = clearAndScore(board, matches)
         const gained = Math.floor(
           base * chain * scoreMult()
@@ -508,6 +583,8 @@ export function createMatch3Game(
     stopTimer()
     stopHintTimer()
     clearHint()
+    cancelFxLoop()
+    matchFx?.reset()
     phase = 'idle'
     board = []
     firstPick = null
@@ -616,6 +693,8 @@ export function createMatch3Game(
     window.removeEventListener('keyup', onKeyUp)
     stopTimer()
     stopHintTimer()
+    cancelFxLoop()
+    matchFx?.reset()
   }
 
   resetIdle()

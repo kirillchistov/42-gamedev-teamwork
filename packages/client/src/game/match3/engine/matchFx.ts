@@ -1,0 +1,247 @@
+/**
+ * Слой VFX для match-3: частицы при срыве матча и короткая радиальная вспышка.
+ * Рисуется на отдельном canvas поверх поля; ядро игры не зависит от этого модуля.
+ * 6.3.1 VFX при матче (частицы + вспышка):
+ * Заметная обратная связь при очистке матча без изменения core match-3.
+ * Релизовал createMatchFx — burstFromMatches, step, draw, isActive, reset;
+ * цвета из TILE_COLORS_BY_THEME; геометрия центров клеток через boardLayout из renderer.
+ * См. также: bootstrap.ts (подключение fxCanvas и rAF), Match3Screen.tsx + match3.pcss (второй canvas).
+ */
+
+import type { Board } from './core/grid'
+import type { CellRC } from './core/match'
+import {
+  TILE_COLORS_BY_THEME,
+  type GameThemeOption,
+} from './config'
+import { boardLayout } from './renderer'
+
+type Particle = {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  life: number
+  maxLife: number
+  size: number
+  color: string
+}
+
+function colorForTileKind(
+  kind: number,
+  theme: GameThemeOption
+): string {
+  const colors =
+    TILE_COLORS_BY_THEME[theme] ??
+    TILE_COLORS_BY_THEME.standard
+  const idx = Math.abs(kind) % colors.length
+  return colors[idx] ?? '#ffffff'
+}
+
+export function createMatchFx(
+  ctx: CanvasRenderingContext2D
+) {
+  let particles: Particle[] = []
+  let flash = 0
+
+  function burstFromMatches(
+    board: Board,
+    matches: CellRC[],
+    theme: GameThemeOption,
+    chain: number
+  ) {
+    const L = boardLayout(
+      board,
+      ctx.canvas.width,
+      ctx.canvas.height
+    )
+    if (!L || matches.length === 0) return
+
+    const { cell, ox, oy } = L
+    const boost = Math.min(
+      2.15,
+      0.88 + chain * 0.14
+    )
+    const baseN = Math.min(
+      26,
+      10 + Math.floor(matches.length * 1.05)
+    )
+
+    for (const m of matches) {
+      const row = board[m.r]
+      const v =
+        row && typeof row[m.c] === 'number'
+          ? row[m.c]
+          : 0
+      if (typeof v !== 'number' || v < 0) continue
+
+      const color = colorForTileKind(v, theme)
+      const cx = ox + m.c * cell + cell / 2
+      const cy = oy + m.r * cell + cell / 2
+      const n = Math.floor(baseN * boost)
+
+      for (let i = 0; i < n; i += 1) {
+        const a = Math.random() * Math.PI * 2
+        const sp =
+          (2.4 + Math.random() * 7) *
+          (0.58 + boost * 0.32)
+        particles.push({
+          x:
+            cx +
+            (Math.random() - 0.5) * cell * 0.42,
+          y:
+            cy +
+            (Math.random() - 0.5) * cell * 0.42,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp - 1.4,
+          life: 0,
+          maxLife: 320 + Math.random() * 300,
+          size: 2.4 + Math.random() * 5.2,
+          color,
+        })
+      }
+    }
+
+    flash = Math.min(
+      1,
+      0.42 +
+        Math.min(matches.length, 24) * 0.024 +
+        (chain - 1) * 0.1
+    )
+  }
+
+  function step(dtMs: number) {
+    const k = Math.min(3, dtMs / 16.67)
+    flash *= Math.pow(0.92, k)
+
+    const g = 0.11 * k
+    const drag = Math.pow(0.984, k)
+
+    particles = particles.filter(p => {
+      p.life += dtMs
+      p.vx *= drag
+      p.vy = p.vy * drag + g
+      p.x += p.vx * k
+      p.y += p.vy * k
+      return p.life < p.maxLife
+    })
+  }
+
+  function draw() {
+    const w = ctx.canvas.width
+    const h = ctx.canvas.height
+    ctx.clearRect(0, 0, w, h)
+
+    const hasParticles = particles.length > 0
+    const hasFlash = flash > 0.02
+
+    if (hasFlash) {
+      const cx = w / 2
+      const cy = h / 2
+      const diag = Math.hypot(w, h)
+      const a = flash * 0.58
+
+      const core = ctx.createRadialGradient(
+        cx,
+        cy,
+        0,
+        cx,
+        cy,
+        diag * 0.22
+      )
+      core.addColorStop(
+        0,
+        `rgba(255, 255, 248, ${a * 0.55})`
+      )
+      core.addColorStop(
+        1,
+        'rgba(255, 250, 220, 0)'
+      )
+      ctx.fillStyle = core
+      ctx.fillRect(0, 0, w, h)
+
+      const r = diag * 0.62
+      const grad = ctx.createRadialGradient(
+        cx,
+        cy,
+        0,
+        cx,
+        cy,
+        r
+      )
+      grad.addColorStop(
+        0,
+        `rgba(255, 252, 230, ${a * 0.95})`
+      )
+      grad.addColorStop(
+        0.28,
+        `rgba(255, 238, 190, ${a * 0.45})`
+      )
+      grad.addColorStop(
+        0.55,
+        `rgba(255, 220, 160, ${a * 0.18})`
+      )
+      grad.addColorStop(
+        1,
+        'rgba(255, 255, 255, 0)'
+      )
+      ctx.fillStyle = grad
+      ctx.fillRect(0, 0, w, h)
+    }
+
+    if (hasParticles) {
+      ctx.save()
+      ctx.globalCompositeOperation = 'lighter'
+      for (const p of particles) {
+        const t = p.life / p.maxLife
+        const fade = 1 - t
+        const alpha =
+          fade * fade * 0.95 + fade * 0.08
+        const rad = p.size * (1 - t * 0.35)
+        ctx.globalAlpha = alpha * 0.22
+        ctx.fillStyle = p.color
+        ctx.beginPath()
+        ctx.arc(
+          p.x,
+          p.y,
+          rad * 2.1,
+          0,
+          Math.PI * 2
+        )
+        ctx.fill()
+        ctx.globalAlpha = alpha
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, rad, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      ctx.restore()
+    }
+  }
+
+  function isActive() {
+    return particles.length > 0 || flash > 0.02
+  }
+
+  function reset() {
+    particles = []
+    flash = 0
+    ctx.clearRect(
+      0,
+      0,
+      ctx.canvas.width,
+      ctx.canvas.height
+    )
+  }
+
+  return {
+    burstFromMatches,
+    step,
+    draw,
+    isActive,
+    reset,
+  }
+}
+
+export type MatchFxApi = ReturnType<
+  typeof createMatchFx
+>
