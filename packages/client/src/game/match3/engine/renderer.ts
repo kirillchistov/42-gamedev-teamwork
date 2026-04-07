@@ -31,21 +31,10 @@ import {
   type GameIconThemeOption,
   type GameThemeOption,
 } from './config'
-
-/** Файлы из `packages/client/public/` — URL с учётом Vite `base` (в т.ч. GitHub Pages). */
-function publicAssetUrl(
-  pathFromPublicRoot: string
-): string {
-  const base = import.meta.env.BASE_URL ?? '/'
-  const withSlash = base.endsWith('/')
-    ? base
-    : `${base}/`
-  const rel = pathFromPublicRoot.replace(
-    /^\//,
-    ''
-  )
-  return `${withSlash}${rel}`
-}
+import {
+  MATCH3_COSMIC_ICON_URLS,
+  MATCH3_FOOD_ICON_URLS,
+} from './match3IconUrls'
 
 export type RenderOpts = {
   highlight?: CellRC[]
@@ -61,26 +50,10 @@ export type RenderOpts = {
 }
 
 const COSMIC_ICON_PATHS = [
-  publicAssetUrl('iconset/cosmic/battery.png'),
-  publicAssetUrl('iconset/cosmic/crystal.png'),
-  publicAssetUrl('iconset/cosmic/compass.png'),
-  publicAssetUrl('iconset/cosmic/alieneyes.png'),
-  publicAssetUrl('iconset/cosmic/bonus.png'),
-  publicAssetUrl('iconset/cosmic/cash.png'),
-  publicAssetUrl('iconset/cosmic/drops.png'),
-  publicAssetUrl('iconset/cosmic/heart.png'),
+  ...MATCH3_COSMIC_ICON_URLS,
 ]
 
-const FOOD_ICON_PATHS = [
-  publicAssetUrl('iconset/food/burger.svg'),
-  publicAssetUrl('iconset/food/pizza.svg'),
-  publicAssetUrl('iconset/food/donut.svg'),
-  publicAssetUrl('iconset/food/cupcake.svg'),
-  publicAssetUrl('iconset/food/icecream.svg'),
-  publicAssetUrl('iconset/food/sushi.svg'),
-  publicAssetUrl('iconset/food/fries.svg'),
-  publicAssetUrl('iconset/food/cake.svg'),
-]
+const FOOD_ICON_PATHS = [...MATCH3_FOOD_ICON_URLS]
 
 const iconCache: Partial<
   Record<GameIconThemeOption, HTMLImageElement[]>
@@ -530,7 +503,7 @@ export function renderBoard(
   opts?: RenderOpts
 ): void {
   const theme = opts?.theme ?? 'standard'
-  const iconTheme = opts?.iconTheme ?? 'standard'
+  const iconTheme = opts?.iconTheme ?? 'cosmic'
   const themeIcons = iconsForTheme(iconTheme)
 
   const { rows, cols } = dims(board)

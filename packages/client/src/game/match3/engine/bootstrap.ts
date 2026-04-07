@@ -197,7 +197,7 @@ export function createMatch3Game(
   let gameGoalScore = 0
   let gameTheme: GameThemeOption = 'standard'
   let gameIconTheme: GameIconThemeOption =
-    'standard'
+    'cosmic'
   let scoreMode: ScoreMode = 'x1'
   let phase: Phase = 'idle'
   let timerId: number | null = null

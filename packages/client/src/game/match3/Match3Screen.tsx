@@ -108,7 +108,7 @@ export const Match3Screen: React.FC<
   themeOption,
   durationSec,
   tileKinds,
-  iconThemeOption = 'standard',
+  iconThemeOption = 'cosmic',
   hintIdleMs,
   onOpenSettings,
   forcePlayMode = false,

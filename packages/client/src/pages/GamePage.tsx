@@ -76,7 +76,7 @@ export const GamePage: React.FC = () => {
       initialLevel.durationSec
     )
   const [iconThemeOption, setIconThemeOption] =
-    useState<GameIconThemeOption>('standard')
+    useState<GameIconThemeOption>('cosmic')
   const [tileKinds, setTileKinds] = useState(
     initialLevel.tileKinds
   )
