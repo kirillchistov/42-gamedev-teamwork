@@ -43,6 +43,10 @@ export function createMatchFx(
 ) {
   let particles: Particle[] = []
   let flash = 0
+  type CelebrationStyle =
+    | 'normal'
+    | 'line4plus'
+    | 'tOrL'
 
   function burstFromMatches(
     board: Board,
@@ -107,6 +111,96 @@ export function createMatchFx(
       0.42 +
         Math.min(matches.length, 24) * 0.024 +
         (chain - 1) * 0.1
+    )
+  }
+
+  function burstCelebration(
+    board: Board,
+    cells: CellRC[],
+    theme: GameThemeOption,
+    style: CelebrationStyle
+  ) {
+    const L = boardLayout(
+      board,
+      ctx.canvas.width,
+      ctx.canvas.height
+    )
+    if (!L || cells.length === 0) return
+
+    const styleScale =
+      style === 'tOrL'
+        ? 1.95
+        : style === 'line4plus'
+        ? 1.45
+        : 1
+    const baseChain =
+      style === 'tOrL'
+        ? 3
+        : style === 'line4plus'
+        ? 2
+        : 1
+
+    burstFromMatches(
+      board,
+      cells,
+      theme,
+      baseChain
+    )
+
+    const { cell, ox, oy } = L
+    const extraN =
+      style === 'tOrL'
+        ? 92
+        : style === 'line4plus'
+        ? 56
+        : 26
+
+    for (let i = 0; i < extraN; i += 1) {
+      const pivot =
+        cells[
+          Math.floor(Math.random() * cells.length)
+        ]
+      if (!pivot) continue
+      const value =
+        board[pivot.r]?.[pivot.c] ??
+        Math.floor(Math.random() * 8)
+      const color = colorForTileKind(
+        Number(value) || 0,
+        theme
+      )
+      const cx = ox + pivot.c * cell + cell / 2
+      const cy = oy + pivot.r * cell + cell / 2
+      const a = Math.random() * Math.PI * 2
+      const sp =
+        (3.4 + Math.random() * 10.5) * styleScale
+      particles.push({
+        x:
+          cx +
+          (Math.random() - 0.5) * cell * 0.55,
+        y:
+          cy +
+          (Math.random() - 0.5) * cell * 0.55,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 1.8,
+        life: 0,
+        maxLife:
+          260 +
+          Math.random() * 280 +
+          styleScale * 110,
+        size:
+          2.2 + Math.random() * 4.8 * styleScale,
+        color,
+      })
+    }
+
+    flash = Math.min(
+      1,
+      flash +
+        (style === 'tOrL'
+          ? 0.82
+          : style === 'line4plus'
+          ? 0.62
+          : 0.35)
     )
   }
 
@@ -235,6 +329,7 @@ export function createMatchFx(
 
   return {
     burstFromMatches,
+    burstCelebration,
     step,
     draw,
     isActive,

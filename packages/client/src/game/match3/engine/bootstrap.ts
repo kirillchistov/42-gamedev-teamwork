@@ -209,6 +209,12 @@ export function createMatch3Game(
   let hintIdleMs = DEFAULT_HINT_IDLE_MS
   let hintTimeoutId: number | null = null
   const pressedKeys = new Set<string>()
+  let dragPointerId: number | null = null
+  let dragStartCell: CellRC | null = null
+  let dragPreviewCell: CellRC | null = null
+  let dragStartX = 0
+  let dragStartY = 0
+  const DRAG_SWAP_THRESHOLD_PX = 12
 
   const emitHud = () => onHudChange?.({ ...hud })
 
@@ -340,6 +346,71 @@ export function createMatch3Game(
     })
   }
 
+  const celebrateSwap = (
+    a: CellRC,
+    b: CellRC,
+    style: 'normal' | 'line4plus' | 'tOrL',
+    matches: CellRC[]
+  ) => {
+    if (!matchFx) return
+    matchFx.burstCelebration(
+      board,
+      matches.length > 0 ? matches : [a, b],
+      gameTheme,
+      style
+    )
+    ensureFxLoop()
+  }
+
+  const classifySwapCelebration = (
+    matches: CellRC[]
+  ): 'normal' | 'line4plus' | 'tOrL' => {
+    if (matches.length < 3) return 'normal'
+    const keySet = new Set(
+      matches.map(m => `${m.r},${m.c}`)
+    )
+    let hasTL = false
+    let longestLine = 0
+    for (const cell of matches) {
+      let rowRun = 1
+      let c = cell.c - 1
+      while (keySet.has(`${cell.r},${c}`)) {
+        rowRun += 1
+        c -= 1
+      }
+      c = cell.c + 1
+      while (keySet.has(`${cell.r},${c}`)) {
+        rowRun += 1
+        c += 1
+      }
+
+      let colRun = 1
+      let r = cell.r - 1
+      while (keySet.has(`${r},${cell.c}`)) {
+        colRun += 1
+        r -= 1
+      }
+      r = cell.r + 1
+      while (keySet.has(`${r},${cell.c}`)) {
+        colRun += 1
+        r += 1
+      }
+
+      if (rowRun >= 3 && colRun >= 3) {
+        hasTL = true
+      }
+      longestLine = Math.max(
+        longestLine,
+        rowRun,
+        colRun
+      )
+    }
+
+    if (hasTL) return 'tOrL'
+    if (longestLine >= 4) return 'line4plus'
+    return 'normal'
+  }
+
   async function resolveBoard(): Promise<void> {
     if (isResolving) return
     isResolving = true
@@ -468,10 +539,11 @@ export function createMatch3Game(
     await delay(120)
     targetPulse = false
 
+    const source = firstPick
     const ok = trySwap(
       board,
-      firstPick.r,
-      firstPick.c,
+      source.r,
+      source.c,
       cell.r,
       cell.c
     )
@@ -479,6 +551,16 @@ export function createMatch3Game(
     targetCell = null
 
     if (ok) {
+      const immediateMatches = findMatches(board)
+      const style = classifySwapCelebration(
+        immediateMatches
+      )
+      celebrateSwap(
+        source,
+        cell,
+        style,
+        immediateMatches
+      )
       hud.moves += 1
       drawBoard()
       await resolveBoard()
@@ -495,6 +577,14 @@ export function createMatch3Game(
     if (!cell) return
     keyboardCursor = cell
     await handleSelectCell(cell)
+  }
+
+  const clearDragState = () => {
+    dragPointerId = null
+    dragStartCell = null
+    dragPreviewCell = null
+    dragStartX = 0
+    dragStartY = 0
   }
 
   const moveKeyboardCursor = (
@@ -569,13 +659,145 @@ export function createMatch3Game(
 
   const onPointerDown = (ev: PointerEvent) => {
     canvas.focus()
+    dragPointerId = ev.pointerId
+    dragStartX = ev.clientX
+    dragStartY = ev.clientY
+    dragStartCell = pickCellAt(board, canvas, ev)
+    if (dragStartCell) {
+      keyboardCursor = dragStartCell
+    }
+    if (canvas.setPointerCapture) {
+      canvas.setPointerCapture(ev.pointerId)
+    }
     void handlePick(ev)
+  }
+
+  const onPointerMove = (ev: PointerEvent) => {
+    if (
+      dragPointerId === null ||
+      ev.pointerId !== dragPointerId
+    ) {
+      return
+    }
+    if (
+      phase !== 'playing' ||
+      isResolving ||
+      !dragStartCell
+    ) {
+      return
+    }
+
+    const dx = ev.clientX - dragStartX
+    const dy = ev.clientY - dragStartY
+    const absDx = Math.abs(dx)
+    const absDy = Math.abs(dy)
+    const distance = Math.hypot(dx, dy)
+    if (distance < DRAG_SWAP_THRESHOLD_PX) {
+      if (dragPreviewCell) {
+        dragPreviewCell = null
+        targetCell = null
+        targetPulse = false
+        renderInteraction()
+      }
+      return
+    }
+
+    const rows = board.length
+    const cols =
+      rows > 0 ? board[0]?.length ?? 0 : 0
+    if (rows === 0 || cols === 0) return
+
+    const preferHorizontal = absDx >= absDy
+    const target: CellRC = preferHorizontal
+      ? {
+          r: dragStartCell.r,
+          c: Math.max(
+            0,
+            Math.min(
+              cols - 1,
+              dragStartCell.c + (dx > 0 ? 1 : -1)
+            )
+          ),
+        }
+      : {
+          r: Math.max(
+            0,
+            Math.min(
+              rows - 1,
+              dragStartCell.r + (dy > 0 ? 1 : -1)
+            )
+          ),
+          c: dragStartCell.c,
+        }
+
+    if (
+      target.r === dragStartCell.r &&
+      target.c === dragStartCell.c
+    ) {
+      return
+    }
+
+    if (
+      dragPreviewCell &&
+      dragPreviewCell.r === target.r &&
+      dragPreviewCell.c === target.c
+    ) {
+      return
+    }
+
+    dragPreviewCell = target
+    targetCell = target
+    targetPulse = false
+    renderInteraction()
+  }
+
+  const onPointerUpOrCancel = (
+    ev: PointerEvent
+  ) => {
+    const isTrackedPointer =
+      dragPointerId !== null &&
+      ev.pointerId === dragPointerId
+    const previewTarget = dragPreviewCell
+    if (
+      isTrackedPointer &&
+      canvas.releasePointerCapture
+    ) {
+      try {
+        canvas.releasePointerCapture(ev.pointerId)
+      } catch {
+        // ignore release errors if capture was already lost
+      }
+    }
+    clearDragState()
+    if (
+      isTrackedPointer &&
+      ev.type === 'pointerup' &&
+      previewTarget
+    ) {
+      void handleSelectCell(previewTarget)
+    } else if (targetCell) {
+      targetCell = null
+      targetPulse = false
+      renderInteraction()
+    }
   }
 
   canvas.tabIndex = 0
   canvas.addEventListener(
     'pointerdown',
     onPointerDown
+  )
+  canvas.addEventListener(
+    'pointermove',
+    onPointerMove
+  )
+  canvas.addEventListener(
+    'pointerup',
+    onPointerUpOrCancel
+  )
+  canvas.addEventListener(
+    'pointercancel',
+    onPointerUpOrCancel
   )
   window.addEventListener('keydown', onKeyDown)
   window.addEventListener('keyup', onKeyUp)
@@ -586,6 +808,7 @@ export function createMatch3Game(
     clearHint()
     cancelFxLoop()
     matchFx?.reset()
+    clearDragState()
     phase = 'idle'
     board = []
     firstPick = null
@@ -606,6 +829,7 @@ export function createMatch3Game(
     stopTimer()
     stopHintTimer()
     clearHint()
+    clearDragState()
     phase = 'playing'
     resetHudForPlay(hud, {
       durationSec: gameDurationSec,
@@ -694,6 +918,18 @@ export function createMatch3Game(
     canvas.removeEventListener(
       'pointerdown',
       onPointerDown
+    )
+    canvas.removeEventListener(
+      'pointermove',
+      onPointerMove
+    )
+    canvas.removeEventListener(
+      'pointerup',
+      onPointerUpOrCancel
+    )
+    canvas.removeEventListener(
+      'pointercancel',
+      onPointerUpOrCancel
     )
     window.removeEventListener(
       'keydown',
