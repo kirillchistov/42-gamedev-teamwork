@@ -82,6 +82,8 @@ export const GamePage: React.FC = () => {
   )
   const [hintIdleMs, setHintIdleMs] =
     useState(4000)
+  const [soundEnabled, setSoundEnabled] =
+    useState(true)
   const [toastMessage, setToastMessage] =
     useState('')
   const [startCountdown, setStartCountdown] =
@@ -472,6 +474,27 @@ export const GamePage: React.FC = () => {
                     />
                   </label>
                   <label className="match3-page__settings-label">
+                    Звук
+                    <select
+                      value={
+                        soundEnabled
+                          ? 'on'
+                          : 'off'
+                      }
+                      onChange={e => {
+                        setSoundEnabled(
+                          e.target.value === 'on'
+                        )
+                      }}>
+                      <option value="on">
+                        Включен
+                      </option>
+                      <option value="off">
+                        Выключен
+                      </option>
+                    </select>
+                  </label>
+                  <label className="match3-page__settings-label">
                     Таймаут подсказки
                     <select
                       value={hintIdleMs}
@@ -609,6 +632,7 @@ export const GamePage: React.FC = () => {
               durationSec={durationSec}
               tileKinds={tileKinds}
               iconThemeOption={iconThemeOption}
+              soundEnabled={soundEnabled}
               hintIdleMs={hintIdleMs}
               onOpenSettings={() =>
                 setShowSettings(true)

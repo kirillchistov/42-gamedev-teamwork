@@ -114,13 +114,20 @@ type CreateParams = {
 }
 
 const DEFAULT_HINT_IDLE_MS = 10000
-const SWAP_ANIM_MS = 120
-const FALL_ANIM_MS = 170
+const SWAP_ANIM_MS = 140
+const FALL_ANIM_MS = 190
 
 type TileMotion = {
   from: CellRC
   to: CellRC
 }
+
+type SoundFx =
+  | 'swap'
+  | 'match'
+  | 'cascade'
+  | 'win'
+  | 'lose'
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => {
@@ -205,6 +212,7 @@ export function createMatch3Game(
   let gameTheme: GameThemeOption = 'standard'
   let gameIconTheme: GameIconThemeOption =
     'cosmic'
+  let soundEnabled = true
   let scoreMode: ScoreMode = 'x1'
   let phase: Phase = 'idle'
   let isAnimating = false
@@ -244,12 +252,140 @@ export function createMatch3Game(
     })
   }
 
+  let audioCtx: AudioContext | null = null
+  const ensureAudio = () => {
+    if (!soundEnabled) return null
+    const Ctx = window.AudioContext
+    if (!Ctx) return null
+    if (!audioCtx) {
+      audioCtx = new Ctx()
+    }
+    if (audioCtx.state === 'suspended') {
+      void audioCtx.resume()
+    }
+    return audioCtx
+  }
+
+  const playSound = (fx: SoundFx) => {
+    if (!soundEnabled) return
+    const ac = ensureAudio()
+    if (!ac) return
+    const now = ac.currentTime
+    const makeTone = (
+      freq: number,
+      dur: number,
+      type: OscillatorType,
+      gainFrom: number,
+      gainTo: number,
+      when = 0
+    ) => {
+      const osc = ac.createOscillator()
+      const gain = ac.createGain()
+      osc.type = type
+      osc.frequency.setValueAtTime(
+        freq,
+        now + when
+      )
+      gain.gain.setValueAtTime(
+        gainFrom,
+        now + when
+      )
+      gain.gain.exponentialRampToValueAtTime(
+        Math.max(0.0001, gainTo),
+        now + when + dur
+      )
+      osc.connect(gain)
+      gain.connect(ac.destination)
+      osc.start(now + when)
+      osc.stop(now + when + dur)
+    }
+
+    if (fx === 'swap') {
+      makeTone(
+        360,
+        0.05,
+        'triangle',
+        0.04,
+        0.0001
+      )
+      return
+    }
+    if (fx === 'match') {
+      makeTone(520, 0.08, 'sine', 0.06, 0.0001)
+      makeTone(
+        680,
+        0.09,
+        'sine',
+        0.04,
+        0.0001,
+        0.03
+      )
+      return
+    }
+    if (fx === 'cascade') {
+      makeTone(
+        420,
+        0.07,
+        'triangle',
+        0.05,
+        0.0001
+      )
+      makeTone(
+        620,
+        0.09,
+        'triangle',
+        0.04,
+        0.0001,
+        0.03
+      )
+      makeTone(
+        820,
+        0.1,
+        'triangle',
+        0.03,
+        0.0001,
+        0.06
+      )
+      return
+    }
+    if (fx === 'win') {
+      makeTone(523, 0.09, 'sine', 0.07, 0.0001)
+      makeTone(
+        659,
+        0.11,
+        'sine',
+        0.06,
+        0.0001,
+        0.06
+      )
+      makeTone(
+        784,
+        0.14,
+        'sine',
+        0.05,
+        0.0001,
+        0.12
+      )
+      return
+    }
+    makeTone(240, 0.12, 'sawtooth', 0.06, 0.0001)
+    makeTone(
+      180,
+      0.12,
+      'sawtooth',
+      0.05,
+      0.0001,
+      0.06
+    )
+  }
+
   const cloneBoard = (src: Board): Board =>
     src.map(row => [...row])
 
   const animateTileMotions = (
     motions: TileMotion[],
-    durationMs: number
+    durationMs: number,
+    opts?: { overshoot?: boolean }
   ): Promise<void> => {
     if (!motions.length || durationMs <= 0) {
       drawBoard()
@@ -263,7 +399,13 @@ export function createMatch3Game(
           1,
           (now - start) / durationMs
         )
-        const eased = 1 - Math.pow(1 - t, 3)
+        const eased = opts?.overshoot
+          ? (() => {
+              const s = 1.25
+              const x = t - 1
+              return x * x * ((s + 1) * x + s) + 1
+            })()
+          : 1 - Math.pow(1 - t, 3)
         drawBoard({
           tileMotions: motions,
           motionProgress: eased,
@@ -360,6 +502,9 @@ export function createMatch3Game(
   }
 
   const finishGame = (reason: GameEndReason) => {
+    playSound(
+      reason === 'goalReached' ? 'win' : 'lose'
+    )
     phase = 'ended'
     stopTimer()
     stopHintTimer()
@@ -532,6 +677,7 @@ export function createMatch3Game(
         syncGoalProgress(hud)
         emitHud()
         maxChain = Math.max(maxChain, chain)
+        playSound(chain > 1 ? 'cascade' : 'match')
 
         const beforeFall = cloneBoard(board)
         collapse(board)
@@ -543,7 +689,8 @@ export function createMatch3Game(
         clearHint()
         await animateTileMotions(
           fallMotions,
-          FALL_ANIM_MS
+          FALL_ANIM_MS,
+          { overshoot: true }
         )
         chain += 1
         await delay(24)
@@ -657,6 +804,7 @@ export function createMatch3Game(
     targetCell = null
 
     if (ok) {
+      playSound('swap')
       await animateTileMotions(
         [
           { from: source, to: cell },
@@ -767,6 +915,7 @@ export function createMatch3Game(
     }
     if (code === 'Enter' || code === 'Space') {
       ev.preventDefault()
+      ensureAudio()
       selectKeyboardCursor()
     }
   }
@@ -776,6 +925,7 @@ export function createMatch3Game(
   }
 
   const onPointerDown = (ev: PointerEvent) => {
+    ensureAudio()
     canvas.focus()
     dragPointerId = ev.pointerId
     dragStartX = ev.clientX
@@ -1045,6 +1195,13 @@ export function createMatch3Game(
     }
   }
 
+  const setSoundEnabled = (enabled: boolean) => {
+    soundEnabled = Boolean(enabled)
+    if (soundEnabled) {
+      ensureAudio()
+    }
+  }
+
   const destroy = () => {
     canvas.removeEventListener(
       'pointerdown',
@@ -1072,6 +1229,10 @@ export function createMatch3Game(
     stopIconThemeRedraw()
     cancelFxLoop()
     matchFx?.reset()
+    if (audioCtx) {
+      void audioCtx.close()
+      audioCtx = null
+    }
   }
 
   resetIdle()
@@ -1083,6 +1244,7 @@ export function createMatch3Game(
     setDuration,
     setTheme,
     setIconTheme,
+    setSoundEnabled,
     setLevel,
     setScoreMode,
     setHintIdleMs,

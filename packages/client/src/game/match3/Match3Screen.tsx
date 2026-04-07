@@ -91,6 +91,7 @@ type Match3ScreenProps = {
   durationSec?: GameDurationOption
   tileKinds?: number
   iconThemeOption?: GameIconThemeOption
+  soundEnabled?: boolean
   hintIdleMs?: number
   onOpenSettings?: () => void
   forcePlayMode?: boolean
@@ -109,6 +110,7 @@ export const Match3Screen: React.FC<
   durationSec,
   tileKinds,
   iconThemeOption = 'cosmic',
+  soundEnabled = true,
   hintIdleMs,
   onOpenSettings,
   forcePlayMode = false,
@@ -230,6 +232,12 @@ export const Match3Screen: React.FC<
     if (!game) return
     game.setIconTheme(iconThemeOption)
   }, [iconThemeOption])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setSoundEnabled(soundEnabled)
+  }, [soundEnabled])
 
   const timeLabel = useMemo(() => {
     const mm = String(
