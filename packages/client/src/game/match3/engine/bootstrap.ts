@@ -114,6 +114,13 @@ type CreateParams = {
 }
 
 const DEFAULT_HINT_IDLE_MS = 10000
+const SWAP_ANIM_MS = 120
+const FALL_ANIM_MS = 170
+
+type TileMotion = {
+  from: CellRC
+  to: CellRC
+}
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => {
@@ -200,6 +207,7 @@ export function createMatch3Game(
     'cosmic'
   let scoreMode: ScoreMode = 'x1'
   let phase: Phase = 'idle'
+  let isAnimating = false
   let timerId: number | null = null
   let isResolving = false
   let firstPick: CellRC | null = null
@@ -234,6 +242,78 @@ export function createMatch3Game(
       theme: gameTheme,
       iconTheme: gameIconTheme,
     })
+  }
+
+  const cloneBoard = (src: Board): Board =>
+    src.map(row => [...row])
+
+  const animateTileMotions = (
+    motions: TileMotion[],
+    durationMs: number
+  ): Promise<void> => {
+    if (!motions.length || durationMs <= 0) {
+      drawBoard()
+      return Promise.resolve()
+    }
+    isAnimating = true
+    return new Promise(resolve => {
+      const start = performance.now()
+      const tick = (now: number) => {
+        const t = Math.min(
+          1,
+          (now - start) / durationMs
+        )
+        const eased = 1 - Math.pow(1 - t, 3)
+        drawBoard({
+          tileMotions: motions,
+          motionProgress: eased,
+        })
+        if (t >= 1) {
+          isAnimating = false
+          drawBoard()
+          resolve()
+          return
+        }
+        window.requestAnimationFrame(tick)
+      }
+      window.requestAnimationFrame(tick)
+    })
+  }
+
+  const buildFallMotions = (
+    before: Board,
+    after: Board
+  ): TileMotion[] => {
+    const rows = after.length
+    const cols =
+      rows > 0 ? after[0]?.length ?? 0 : 0
+    const motions: TileMotion[] = []
+    for (let c = 0; c < cols; c += 1) {
+      const sourceRows: number[] = []
+      for (let r = rows - 1; r >= 0; r -= 1) {
+        const v = before[r]?.[c]
+        if (typeof v === 'number' && v >= 0) {
+          sourceRows.push(r)
+        }
+      }
+      let sourceIdx = 0
+      let spawnIdx = 0
+      for (let r = rows - 1; r >= 0; r -= 1) {
+        const v = after[r]?.[c]
+        if (typeof v !== 'number' || v < 0)
+          continue
+        const fromR =
+          sourceIdx < sourceRows.length
+            ? sourceRows[sourceIdx++]
+            : -1 - spawnIdx++
+        if (fromR === r) continue
+        motions.push({
+          from: { r: fromR, c },
+          to: { r, c },
+        })
+      }
+    }
+    return motions
   }
 
   const clearHint = () => {
@@ -453,12 +533,20 @@ export function createMatch3Game(
         emitHud()
         maxChain = Math.max(maxChain, chain)
 
+        const beforeFall = cloneBoard(board)
         collapse(board)
         refill(board, tileKinds)
+        const fallMotions = buildFallMotions(
+          beforeFall,
+          board
+        )
         clearHint()
-        drawBoard()
+        await animateTileMotions(
+          fallMotions,
+          FALL_ANIM_MS
+        )
         chain += 1
-        await delay(45)
+        await delay(24)
       }
 
       if (maxChain > 0) {
@@ -535,7 +623,12 @@ export function createMatch3Game(
   }
 
   async function handleSelectCell(cell: CellRC) {
-    if (phase !== 'playing' || isResolving) return
+    if (
+      phase !== 'playing' ||
+      isResolving ||
+      isAnimating
+    )
+      return
     markPlayerActivity()
 
     if (!firstPick) {
@@ -564,6 +657,13 @@ export function createMatch3Game(
     targetCell = null
 
     if (ok) {
+      await animateTileMotions(
+        [
+          { from: source, to: cell },
+          { from: cell, to: source },
+        ],
+        SWAP_ANIM_MS
+      )
       const immediateMatches = findMatches(board)
       const style = classifySwapCelebration(
         immediateMatches
@@ -584,7 +684,12 @@ export function createMatch3Game(
   }
 
   async function handlePick(ev: PointerEvent) {
-    if (phase !== 'playing' || isResolving) return
+    if (
+      phase !== 'playing' ||
+      isResolving ||
+      isAnimating
+    )
+      return
     markPlayerActivity()
     const cell = pickCellAt(board, canvas, ev)
     if (!cell) return
@@ -631,7 +736,7 @@ export function createMatch3Game(
   }
 
   const onKeyDown = (ev: KeyboardEvent) => {
-    if (phase !== 'playing') return
+    if (phase !== 'playing' || isAnimating) return
     markPlayerActivity()
     const code = ev.code
     if (pressedKeys.has(code)) return
@@ -695,6 +800,7 @@ export function createMatch3Game(
     if (
       phase !== 'playing' ||
       isResolving ||
+      isAnimating ||
       !dragStartCell
     ) {
       return

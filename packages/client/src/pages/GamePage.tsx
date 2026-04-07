@@ -40,8 +40,6 @@ import {
 import {
   BOARD_SIZE_OPTIONS,
   GAME_DURATION_OPTIONS,
-  GAME_ICON_THEME_OPTIONS,
-  GAME_THEME_OPTIONS,
   TILE_KINDS_BY_BOARD_SIZE,
   type BoardSizeOption,
   type GameDurationOption,
@@ -69,14 +67,16 @@ export const GamePage: React.FC = () => {
     useState<BoardSizeOption>(
       initialLevel.boardSize
     )
-  const [themeOption, setThemeOption] =
-    useState<GameThemeOption>(initialLevel.theme)
+  const themeOption: GameThemeOption = 'space'
   const [durationSec, setDurationSec] =
     useState<GameDurationOption>(
       initialLevel.durationSec
     )
-  const [iconThemeOption, setIconThemeOption] =
-    useState<GameIconThemeOption>('cosmic')
+  const iconThemeOption: GameIconThemeOption =
+    'cosmic'
+  const [rankingMode, setRankingMode] = useState<
+    'yes' | 'friends' | 'no'
+  >('yes')
   const [tileKinds, setTileKinds] = useState(
     initialLevel.tileKinds
   )
@@ -344,9 +344,6 @@ export const GamePage: React.FC = () => {
                         setBoardSize(
                           preset.boardSize
                         )
-                        setThemeOption(
-                          preset.theme
-                        )
                         setDurationSec(
                           preset.durationSec
                         )
@@ -393,54 +390,41 @@ export const GamePage: React.FC = () => {
                   </label>
                   <label className="match3-page__settings-label">
                     Тематика
-                    <select
-                      value={themeOption}
-                      onChange={e => {
-                        setThemeOption(
-                          e.target
-                            .value as GameThemeOption
-                        )
-                      }}>
-                      {GAME_THEME_OPTIONS.map(
-                        theme => (
-                          <option
-                            key={theme}
-                            value={theme}>
-                            {theme === 'standard'
-                              ? 'Стандарт'
-                              : theme === 'space'
-                              ? 'Космос'
-                              : 'Продуктовая'}
-                          </option>
-                        )
-                      )}
-                    </select>
+                    <input
+                      value="Космос"
+                      readOnly
+                    />
                   </label>
                   <label className="match3-page__settings-label">
                     Иконки
+                    <input
+                      value="Космос"
+                      readOnly
+                    />
+                  </label>
+                  <label className="match3-page__settings-label">
+                    Участвовать в рейтинге
                     <select
-                      value={iconThemeOption}
+                      value={rankingMode}
                       onChange={e => {
-                        setIconThemeOption(
-                          e.target
-                            .value as GameIconThemeOption
+                        setRankingMode(
+                          e.target.value as
+                            | 'yes'
+                            | 'friends'
+                            | 'no'
                         )
                       }}>
-                      {GAME_ICON_THEME_OPTIONS.map(
-                        iconTheme => (
-                          <option
-                            key={iconTheme}
-                            value={iconTheme}>
-                            {iconTheme ===
-                            'standard'
-                              ? 'Стандартная'
-                              : iconTheme ===
-                                'cosmic'
-                              ? 'Космос'
-                              : 'Продукты'}
-                          </option>
-                        )
-                      )}
+                      <option value="yes">
+                        Да
+                      </option>
+                      <option
+                        value="friends"
+                        disabled>
+                        С друзьями (скоро)
+                      </option>
+                      <option value="no" disabled>
+                        Нет (скоро)
+                      </option>
                     </select>
                   </label>
                   <label className="match3-page__settings-label">
@@ -580,16 +564,7 @@ export const GamePage: React.FC = () => {
                         {appliedLevel.boardSize}x
                         {appliedLevel.boardSize}
                       </div>
-                      <div>
-                        Тема:{' '}
-                        {appliedLevel.theme ===
-                        'standard'
-                          ? 'Стандарт'
-                          : appliedLevel.theme ===
-                            'space'
-                          ? 'Космос'
-                          : 'Продуктовая'}
-                      </div>
+                      <div>Тема: Космос</div>
                       <div>
                         Время:{' '}
                         {appliedLevel.durationSec /
@@ -732,7 +707,7 @@ export const GamePage: React.FC = () => {
                   )}
                   <button
                     type="button"
-                    className="btn btn--primary match3__again-btn"
+                    className="btn btn--outline match3__again-btn"
                     onClick={() =>
                       navigate('/game/play')
                     }>

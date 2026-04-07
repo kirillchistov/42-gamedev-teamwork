@@ -37,6 +37,11 @@ import {
 } from './match3IconUrls'
 
 export type RenderOpts = {
+  tileMotions?: {
+    from: CellRC
+    to: CellRC
+  }[]
+  motionProgress?: number
   highlight?: CellRC[]
   alpha?: number
   selected?: CellRC | null
@@ -516,6 +521,18 @@ export function renderBoard(
   const layout = boardLayout(board, W, H)
   if (!layout) return
   const { cell, ox, oy } = layout
+  const motionProgress = Math.max(
+    0,
+    Math.min(1, opts?.motionProgress ?? 1)
+  )
+  const motionByDest = new Map<
+    string,
+    { from: CellRC; to: CellRC }
+  >()
+  for (const m of opts?.tileMotions ?? []) {
+    if (!m) continue
+    motionByDest.set(`${m.to.r},${m.to.c}`, m)
+  }
 
   // frame
   ctx.save()
@@ -553,6 +570,21 @@ export function renderBoard(
 
       const v = row[c]
       if (typeof v !== 'number' || v < 0) continue
+      const motion = motionByDest.get(`${r},${c}`)
+      const drawX = motion
+        ? ox +
+          (motion.from.c +
+            (motion.to.c - motion.from.c) *
+              motionProgress) *
+            cell
+        : x
+      const drawY = motion
+        ? oy +
+          (motion.from.r +
+            (motion.to.r - motion.from.r) *
+              motionProgress) *
+            cell
+        : y
 
       const icon =
         themeIcons?.[
@@ -576,17 +608,30 @@ export function renderBoard(
         )
         ctx.drawImage(
           icon,
-          x + pad,
-          y + pad,
+          drawX + pad,
+          drawY + pad,
           cell - pad * 2,
           cell - pad * 2
         )
         ctx.restore()
       } else {
         const color = colorForKind(v, theme)
-        drawShape(ctx, v, x, y, cell, color)
+        drawShape(
+          ctx,
+          v,
+          drawX,
+          drawY,
+          cell,
+          color
+        )
       }
-      drawSpecialMarker(ctx, v, x, y, cell)
+      drawSpecialMarker(
+        ctx,
+        v,
+        drawX,
+        drawY,
+        cell
+      )
     }
   }
 
