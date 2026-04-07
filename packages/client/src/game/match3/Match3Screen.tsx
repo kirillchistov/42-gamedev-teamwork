@@ -91,6 +91,10 @@ type Match3ScreenProps = {
   tileKinds?: number
   hintIdleMs?: number
   onOpenSettings?: () => void
+  forcePlayMode?: boolean
+  onGameFinished?: (
+    payload: GameEndPayload
+  ) => void
 }
 
 export const Match3Screen: React.FC<
@@ -104,6 +108,8 @@ export const Match3Screen: React.FC<
   tileKinds,
   hintIdleMs,
   onOpenSettings,
+  forcePlayMode = false,
+  onGameFinished,
 }) => {
   const canvasRef =
     useRef<HTMLCanvasElement | null>(null)
@@ -125,8 +131,9 @@ export const Match3Screen: React.FC<
     timeLeftSec: 300,
   })
 
-  const [uiPhase, setUiPhase] =
-    useState<UiPhase>('countdown')
+  const [uiPhase, setUiPhase] = useState<UiPhase>(
+    forcePlayMode ? 'playing' : 'countdown'
+  )
   const [countdownVal, setCountdownVal] =
     useState(PRESTART_COUNTDOWN_SEC)
   const [resultSnapshot, setResultSnapshot] =
@@ -145,6 +152,10 @@ export const Match3Screen: React.FC<
       fxCanvas: fxCanvas ?? undefined,
       onHudChange: setHud,
       onGameEnd: payload => {
+        if (forcePlayMode && onGameFinished) {
+          onGameFinished(payload)
+          return
+        }
         setResultSnapshot(payload.snapshot)
         setGameEndReason(payload.reason)
         setUiPhase('results')
@@ -152,15 +163,19 @@ export const Match3Screen: React.FC<
     })
 
     gameRef.current = game
+    if (forcePlayMode) {
+      game.startPlay()
+    }
 
     return () => {
       game.destroy()
       gameRef.current = null
     }
-  }, [])
+  }, [forcePlayMode, onGameFinished])
 
   useEffect(() => {
-    if (uiPhase !== 'countdown') return
+    if (forcePlayMode || uiPhase !== 'countdown')
+      return
     if (countdownVal <= 0) {
       setUiPhase('ready')
       return
@@ -169,7 +184,7 @@ export const Match3Screen: React.FC<
       setCountdownVal(c => c - 1)
     }, 1000)
     return () => clearTimeout(id)
-  }, [uiPhase, countdownVal])
+  }, [forcePlayMode, uiPhase, countdownVal])
 
   const selectedLevel = useMemo(
     () => getMatch3LevelById(selectedLevelId),
@@ -231,11 +246,15 @@ export const Match3Screen: React.FC<
   }
   const handleRestartFromHud = () => {
     if (uiPhase !== 'playing') return
+    gameRef.current?.resetIdle()
+    if (forcePlayMode) {
+      gameRef.current?.startPlay()
+      return
+    }
     setResultSnapshot(null)
     setGameEndReason(null)
     setCountdownVal(PRESTART_COUNTDOWN_SEC)
     setUiPhase('countdown')
-    gameRef.current?.resetIdle()
   }
 
   const resultStats = useMemo(() => {
@@ -272,6 +291,7 @@ export const Match3Screen: React.FC<
       : '—'
   const isStartPhase =
     uiPhase === 'countdown' || uiPhase === 'ready'
+  const showBoard = forcePlayMode || !isStartPhase
 
   return (
     <section
@@ -310,7 +330,7 @@ export const Match3Screen: React.FC<
           </div>
         )}
 
-        {uiPhase !== 'results' && (
+        {showBoard && uiPhase !== 'results' && (
           <div
             className={
               'match3__board match3__board--stack' +
@@ -412,8 +432,8 @@ export const Match3Screen: React.FC<
           <div className="match3__overlay match3__overlay--results">
             <h3 className="match3__results-title">
               {resultStats?.isWin
-                ? 'Победа!'
-                : 'Поражение'}
+                ? 'Вы выиграли!'
+                : 'Можно лучше'}
             </h3>
             <p
               className={

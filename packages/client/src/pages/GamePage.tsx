@@ -11,6 +11,7 @@
  */
 import React, {
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -24,6 +25,10 @@ import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { usePage } from '../hooks/usePage'
 import { Match3Screen } from '../game/match3/Match3Screen'
+import type {
+  GameEndPayload,
+  GameHudState,
+} from '../game/match3/engine/bootstrap'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { toggleFullscreen } from '../utils/fullscreen'
 import {
@@ -41,6 +46,8 @@ import {
   type GameDurationOption,
   type GameThemeOption,
 } from '../game/match3/engine/config'
+
+const LAST_RESULT_KEY = 'match3:last-result'
 
 export const GamePage: React.FC = () => {
   usePage({ initPage: initGamePage })
@@ -73,11 +80,37 @@ export const GamePage: React.FC = () => {
     useState(4000)
   const [toastMessage, setToastMessage] =
     useState('')
+  const [startCountdown, setStartCountdown] =
+    useState(3)
+  const [lastResult, setLastResult] = useState<{
+    snapshot: GameHudState
+    reason: GameEndPayload['reason']
+  } | null>(null)
   const location = useLocation()
   const navigate = useNavigate()
   const notice = (
     location.state as { notice?: string } | null
   )?.notice
+
+  useEffect(() => {
+    const raw = window.localStorage.getItem(
+      LAST_RESULT_KEY
+    )
+    if (!raw) return
+    try {
+      const parsed = JSON.parse(raw) as {
+        snapshot: GameHudState
+        reason: GameEndPayload['reason']
+      }
+      if (parsed?.snapshot && parsed?.reason) {
+        setLastResult(parsed)
+      }
+    } catch {
+      window.localStorage.removeItem(
+        LAST_RESULT_KEY
+      )
+    }
+  }, [])
 
   useEffect(() => {
     if (!notice) return
@@ -130,6 +163,96 @@ export const GamePage: React.FC = () => {
     return () =>
       window.removeEventListener('keydown', onKey)
   }, [showSettings])
+
+  const isStartRoute =
+    location.pathname === '/game/start'
+  const isPlayRoute =
+    location.pathname === '/game/play'
+  const isFinishRoute =
+    location.pathname === '/game/finish'
+
+  useEffect(() => {
+    if (location.pathname === '/game') {
+      navigate('/game/start', {
+        replace: true,
+      })
+    }
+  }, [location.pathname, navigate])
+
+  useEffect(() => {
+    if (!isStartRoute) return
+    setStartCountdown(3)
+  }, [isStartRoute])
+
+  useEffect(() => {
+    if (!isStartRoute || startCountdown <= 0)
+      return
+    const id = window.setTimeout(() => {
+      setStartCountdown(v => v - 1)
+    }, 1000)
+    return () => clearTimeout(id)
+  }, [isStartRoute, startCountdown])
+
+  const selectedLevel = useMemo(
+    () => getMatch3LevelById(selectedLevelId),
+    [selectedLevelId]
+  )
+
+  const appliedLevel = useMemo(
+    () => ({
+      ...selectedLevel,
+      boardSize,
+      theme: themeOption,
+      durationSec,
+      tileKinds,
+    }),
+    [
+      selectedLevel,
+      boardSize,
+      themeOption,
+      durationSec,
+      tileKinds,
+    ]
+  )
+
+  const finishStats = useMemo(() => {
+    if (!lastResult) return null
+    const { snapshot, reason } = lastResult
+    const isWin =
+      reason === 'goalReached' ||
+      (snapshot.goalScore > 0 &&
+        snapshot.score >= snapshot.goalScore)
+    const goalRemain = Math.max(
+      0,
+      snapshot.goalScore - snapshot.score
+    )
+    const comboBonus = snapshot.maxCombo * 25
+    const timeBonus = snapshot.timeLeftSec * 2
+    const totalWithBonus =
+      snapshot.score + comboBonus + timeBonus
+    return {
+      isWin,
+      goalRemain,
+      comboBonus,
+      timeBonus,
+      totalWithBonus,
+    }
+  }, [lastResult])
+
+  const handleGameFinished = (
+    payload: GameEndPayload
+  ) => {
+    const next = {
+      snapshot: payload.snapshot,
+      reason: payload.reason,
+    }
+    setLastResult(next)
+    window.localStorage.setItem(
+      LAST_RESULT_KEY,
+      JSON.stringify(next)
+    )
+    navigate('/game/finish')
+  }
 
   return (
     <div
@@ -368,18 +491,199 @@ export const GamePage: React.FC = () => {
             </div>
           )}
 
-          <Match3Screen
-            selectedLevelId={selectedLevelId}
-            goalType={goalType}
-            boardSize={boardSize}
-            themeOption={themeOption}
-            durationSec={durationSec}
-            tileKinds={tileKinds}
-            hintIdleMs={hintIdleMs}
-            onOpenSettings={() =>
-              setShowSettings(true)
-            }
-          />
+          {isStartRoute && (
+            <section className="match3 match3--start">
+              <div className="match3__arena">
+                {startCountdown > 0 ? (
+                  <div className="match3__overlay match3__overlay--results">
+                    <div className="match3__countdown">
+                      {startCountdown}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="match3__overlay match3__overlay--results">
+                    <p className="match3__start-glow-note">
+                      Cosmic Match: комбинируй,
+                      набирай очки, побеждай
+                      время!
+                    </p>
+                    <div className="match3__start-info">
+                      <div>
+                        Уровень:{' '}
+                        {appliedLevel.title}
+                      </div>
+                      <div>
+                        Цель:{' '}
+                        {goalType === 'score'
+                          ? `${appliedLevel.goalValue} очков`
+                          : '—'}
+                      </div>
+                      <div>
+                        Поле:{' '}
+                        {appliedLevel.boardSize}x
+                        {appliedLevel.boardSize}
+                      </div>
+                      <div>
+                        Тема:{' '}
+                        {appliedLevel.theme ===
+                        'standard'
+                          ? 'Стандарт'
+                          : appliedLevel.theme ===
+                            'space'
+                          ? 'Космос'
+                          : 'Математика'}
+                      </div>
+                      <div>
+                        Время:{' '}
+                        {appliedLevel.durationSec /
+                          60}{' '}
+                        мин
+                      </div>
+                      <div>
+                        Типов фишек:{' '}
+                        {appliedLevel.tileKinds}
+                      </div>
+                    </div>
+                    <div className="match3__start-actions">
+                      <button
+                        type="button"
+                        className="btn btn--outline match3__settings-play-btn"
+                        onClick={() =>
+                          setShowSettings(true)
+                        }>
+                        Настройки
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--primary match3__play-btn"
+                        onClick={() =>
+                          navigate('/game/play')
+                        }>
+                        Играть
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {isPlayRoute && (
+            <Match3Screen
+              selectedLevelId={selectedLevelId}
+              goalType={goalType}
+              boardSize={boardSize}
+              themeOption={themeOption}
+              durationSec={durationSec}
+              tileKinds={tileKinds}
+              hintIdleMs={hintIdleMs}
+              onOpenSettings={() =>
+                setShowSettings(true)
+              }
+              forcePlayMode
+              onGameFinished={handleGameFinished}
+            />
+          )}
+
+          {isFinishRoute && (
+            <section className="match3">
+              <div className="match3__arena">
+                <div className="match3__overlay match3__overlay--results">
+                  <h3 className="match3__results-title">
+                    {finishStats?.isWin
+                      ? 'Победа!'
+                      : 'Поражение'}
+                  </h3>
+                  <p
+                    className={
+                      'match3__results-verdict ' +
+                      (finishStats?.isWin
+                        ? 'is-win'
+                        : 'is-lose')
+                    }>
+                    {finishStats?.isWin
+                      ? 'Цель уровня выполнена'
+                      : lastResult?.reason ===
+                        'timeOut'
+                      ? 'Время вышло, цель не достигнута'
+                      : 'Цель не достигнута'}
+                  </p>
+                  {lastResult ? (
+                    <ul className="match3__results-list">
+                      <li>
+                        Счёт:{' '}
+                        {
+                          lastResult.snapshot
+                            .score
+                        }
+                      </li>
+                      <li>
+                        Цель:{' '}
+                        {
+                          lastResult.snapshot
+                            .goalScore
+                        }
+                      </li>
+                      <li>
+                        Ходов:{' '}
+                        {
+                          lastResult.snapshot
+                            .moves
+                        }
+                      </li>
+                      <li>
+                        Прогресс цели:{' '}
+                        {
+                          lastResult.snapshot
+                            .goalProgressPct
+                        }
+                        %
+                      </li>
+                      <li>
+                        Осталось до цели:{' '}
+                        {finishStats?.goalRemain ??
+                          0}
+                      </li>
+                      <li>
+                        Лучшее комбо: x
+                        {
+                          lastResult.snapshot
+                            .maxCombo
+                        }
+                      </li>
+                      <li>
+                        Бонус за комбо: +
+                        {finishStats?.comboBonus ??
+                          0}
+                      </li>
+                      <li>
+                        Бонус за время: +
+                        {finishStats?.timeBonus ??
+                          0}
+                      </li>
+                      <li>
+                        Итог с бонусами:{' '}
+                        {finishStats?.totalWithBonus ??
+                          0}
+                      </li>
+                    </ul>
+                  ) : (
+                    <p className="match3__results-verdict">
+                      Нет данных о последней игре
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn--primary match3__again-btn"
+                    onClick={() =>
+                      navigate('/game/play')
+                    }>
+                    Сыграть снова
+                  </button>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
       </main>
 
