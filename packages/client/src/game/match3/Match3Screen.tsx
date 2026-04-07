@@ -42,6 +42,7 @@ import {
   PRESTART_COUNTDOWN_SEC,
   type BoardSizeOption,
   type GameDurationOption,
+  type GameIconThemeOption,
   type GameThemeOption,
 } from './engine/config'
 import {
@@ -89,6 +90,7 @@ type Match3ScreenProps = {
   themeOption?: GameThemeOption
   durationSec?: GameDurationOption
   tileKinds?: number
+  iconThemeOption?: GameIconThemeOption
   hintIdleMs?: number
   onOpenSettings?: () => void
   forcePlayMode?: boolean
@@ -106,6 +108,7 @@ export const Match3Screen: React.FC<
   themeOption,
   durationSec,
   tileKinds,
+  iconThemeOption = 'standard',
   hintIdleMs,
   onOpenSettings,
   forcePlayMode = false,
@@ -221,6 +224,12 @@ export const Match3Screen: React.FC<
     if (!game || !hintIdleMs) return
     game.setHintIdleMs(hintIdleMs)
   }, [hintIdleMs])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setIconTheme(iconThemeOption)
+  }, [iconThemeOption])
 
   const timeLabel = useMemo(() => {
     const mm = String(
@@ -393,7 +402,7 @@ export const Match3Screen: React.FC<
                       : appliedLevel.theme ===
                         'space'
                       ? 'Космос'
-                      : 'Математика'}
+                      : 'Продуктовая'}
                   </div>
                   <div>
                     Время:{' '}

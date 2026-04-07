@@ -40,10 +40,12 @@ import {
 import {
   BOARD_SIZE_OPTIONS,
   GAME_DURATION_OPTIONS,
+  GAME_ICON_THEME_OPTIONS,
   GAME_THEME_OPTIONS,
   TILE_KINDS_BY_BOARD_SIZE,
   type BoardSizeOption,
   type GameDurationOption,
+  type GameIconThemeOption,
   type GameThemeOption,
 } from '../game/match3/engine/config'
 
@@ -73,6 +75,8 @@ export const GamePage: React.FC = () => {
     useState<GameDurationOption>(
       initialLevel.durationSec
     )
+  const [iconThemeOption, setIconThemeOption] =
+    useState<GameIconThemeOption>('standard')
   const [tileKinds, setTileKinds] = useState(
     initialLevel.tileKinds
   )
@@ -170,6 +174,14 @@ export const GamePage: React.FC = () => {
     location.pathname === '/game/play'
   const isFinishRoute =
     location.pathname === '/game/finish'
+
+  const restartFromStartScreen = () => {
+    setShowSettings(false)
+    setStartCountdown(3)
+    if (location.pathname !== '/game/start') {
+      navigate('/game/start')
+    }
+  }
 
   useEffect(() => {
     if (location.pathname === '/game') {
@@ -383,12 +395,12 @@ export const GamePage: React.FC = () => {
                     Тематика
                     <select
                       value={themeOption}
-                      onChange={e =>
+                      onChange={e => {
                         setThemeOption(
                           e.target
                             .value as GameThemeOption
                         )
-                      }>
+                      }}>
                       {GAME_THEME_OPTIONS.map(
                         theme => (
                           <option
@@ -398,7 +410,34 @@ export const GamePage: React.FC = () => {
                               ? 'Стандарт'
                               : theme === 'space'
                               ? 'Космос'
-                              : 'Математика'}
+                              : 'Продуктовая'}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+                  <label className="match3-page__settings-label">
+                    Иконки
+                    <select
+                      value={iconThemeOption}
+                      onChange={e => {
+                        setIconThemeOption(
+                          e.target
+                            .value as GameIconThemeOption
+                        )
+                      }}>
+                      {GAME_ICON_THEME_OPTIONS.map(
+                        iconTheme => (
+                          <option
+                            key={iconTheme}
+                            value={iconTheme}>
+                            {iconTheme ===
+                            'standard'
+                              ? 'Стандартная'
+                              : iconTheme ===
+                                'cosmic'
+                              ? 'Космос'
+                              : 'Продукты'}
                           </option>
                         )
                       )}
@@ -408,13 +447,13 @@ export const GamePage: React.FC = () => {
                     Время
                     <select
                       value={durationSec}
-                      onChange={e =>
+                      onChange={e => {
                         setDurationSec(
                           Number(
                             e.target.value
                           ) as GameDurationOption
                         )
-                      }>
+                      }}>
                       {GAME_DURATION_OPTIONS.map(
                         sec => (
                           <option
@@ -433,7 +472,7 @@ export const GamePage: React.FC = () => {
                       min={4}
                       max={12}
                       value={tileKinds}
-                      onChange={e =>
+                      onChange={e => {
                         setTileKinds(
                           Math.max(
                             4,
@@ -445,18 +484,18 @@ export const GamePage: React.FC = () => {
                             )
                           )
                         )
-                      }
+                      }}
                     />
                   </label>
                   <label className="match3-page__settings-label">
                     Таймаут подсказки
                     <select
                       value={hintIdleMs}
-                      onChange={e =>
+                      onChange={e => {
                         setHintIdleMs(
                           Number(e.target.value)
                         )
-                      }>
+                      }}>
                       <option value={2000}>
                         2 сек
                       </option>
@@ -475,17 +514,35 @@ export const GamePage: React.FC = () => {
                     Тип цели
                     <select
                       value={goalType}
-                      onChange={e =>
+                      onChange={e => {
                         setGoalType(
                           e.target
                             .value as LevelGoalType
                         )
-                      }>
+                      }}>
                       <option value="score">
                         Набрать очки
                       </option>
                     </select>
                   </label>
+                </div>
+                <div className="match3-page__settings-head">
+                  <button
+                    type="button"
+                    className="btn btn--outline"
+                    onClick={() =>
+                      setShowSettings(false)
+                    }>
+                    Отмена
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={
+                      restartFromStartScreen
+                    }>
+                    Применить и перезапустить
+                  </button>
                 </div>
               </div>
             </div>
@@ -531,7 +588,7 @@ export const GamePage: React.FC = () => {
                           : appliedLevel.theme ===
                             'space'
                           ? 'Космос'
-                          : 'Математика'}
+                          : 'Продуктовая'}
                       </div>
                       <div>
                         Время:{' '}
@@ -576,6 +633,7 @@ export const GamePage: React.FC = () => {
               themeOption={themeOption}
               durationSec={durationSec}
               tileKinds={tileKinds}
+              iconThemeOption={iconThemeOption}
               hintIdleMs={hintIdleMs}
               onOpenSettings={() =>
                 setShowSettings(true)

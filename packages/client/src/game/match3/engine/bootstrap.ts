@@ -60,11 +60,13 @@ import {
 } from './core/possibleMoves'
 import {
   pickCellAt,
+  preloadIconTheme,
   type RenderOpts,
   renderBoard,
 } from './renderer'
 import {
   GAME_DURATION_SEC,
+  type GameIconThemeOption,
   type GameThemeOption,
 } from './config'
 import {
@@ -194,6 +196,8 @@ export function createMatch3Game(
   let gameDurationSec = GAME_DURATION_SEC
   let gameGoalScore = 0
   let gameTheme: GameThemeOption = 'standard'
+  let gameIconTheme: GameIconThemeOption =
+    'standard'
   let scoreMode: ScoreMode = 'x1'
   let phase: Phase = 'idle'
   let timerId: number | null = null
@@ -208,6 +212,7 @@ export function createMatch3Game(
   } | null = null
   let hintIdleMs = DEFAULT_HINT_IDLE_MS
   let hintTimeoutId: number | null = null
+  let iconThemeRedrawId: number | null = null
   const pressedKeys = new Set<string>()
   let dragPointerId: number | null = null
   let dragStartCell: CellRC | null = null
@@ -227,6 +232,7 @@ export function createMatch3Game(
       hintTo: hintMove?.to ?? null,
       ...opts,
       theme: gameTheme,
+      iconTheme: gameIconTheme,
     })
   }
 
@@ -238,6 +244,13 @@ export function createMatch3Game(
     if (hintTimeoutId !== null) {
       window.clearTimeout(hintTimeoutId)
       hintTimeoutId = null
+    }
+  }
+
+  const stopIconThemeRedraw = () => {
+    if (iconThemeRedrawId !== null) {
+      window.clearInterval(iconThemeRedrawId)
+      iconThemeRedrawId = null
     }
   }
 
@@ -881,6 +894,18 @@ export function createMatch3Game(
     drawBoard()
   }
 
+  const setIconTheme = (
+    iconTheme: GameIconThemeOption
+  ) => {
+    gameIconTheme = iconTheme
+    drawBoard()
+    stopIconThemeRedraw()
+    void preloadIconTheme(iconTheme).then(() => {
+      if (phase === 'ended') return
+      drawBoard()
+    })
+  }
+
   const setLevel = (level: LevelConfig) => {
     boardSize = level.boardSize
     gameDurationSec = level.durationSec
@@ -938,6 +963,7 @@ export function createMatch3Game(
     window.removeEventListener('keyup', onKeyUp)
     stopTimer()
     stopHintTimer()
+    stopIconThemeRedraw()
     cancelFxLoop()
     matchFx?.reset()
   }
@@ -950,6 +976,7 @@ export function createMatch3Game(
     setBoardSize,
     setDuration,
     setTheme,
+    setIconTheme,
     setLevel,
     setScoreMode,
     setHintIdleMs,

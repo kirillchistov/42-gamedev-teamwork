@@ -3,6 +3,7 @@
  * Добавлены опции: GAME_DURATION_OPTIONS (3/5/10 минут)
  * GAME_THEME_OPTIONS (standard | space | math)
  * Добавлены палитры: TILE_COLORS_BY_THEME
+ * 6.3.5 Добавлен выбор тематики фишек
  */
 
 // Цвета на поле
@@ -57,6 +58,14 @@ export const GAME_THEME_OPTIONS = [
 ] as const
 export type GameThemeOption =
   typeof GAME_THEME_OPTIONS[number]
+
+export const GAME_ICON_THEME_OPTIONS = [
+  'standard',
+  'cosmic',
+  'food',
+] as const
+export type GameIconThemeOption =
+  typeof GAME_ICON_THEME_OPTIONS[number]
 
 export const TILE_COLORS_BY_THEME: Record<
   GameThemeOption,

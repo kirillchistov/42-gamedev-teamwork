@@ -15,6 +15,9 @@
  * 6.3.1 VFX при матче (частицы + вспышка):
  * Экспорт boardLayout(board, canvasW, canvasH) — общая геометрия клетки и отступов
  * renderBoard и pickCellAt используют boardLayout, чтобы matchFx совпадал с отрисовкой
+ * 6.3.3 Улучшенный HUD (сбоку на ПК, компактная шапка в мобильной версии)
+ * 6.3.4 Улучшенная геометрия поля (ширина поля на 20% больше высоты)
+ * 6.3.5 Добавлен выбор тематики фишек
  */
 
 import type { Board } from './core/grid'
@@ -25,8 +28,24 @@ import {
 } from './core/cell'
 import {
   TILE_COLORS_BY_THEME,
+  type GameIconThemeOption,
   type GameThemeOption,
 } from './config'
+
+/** Файлы из `packages/client/public/` — URL с учётом Vite `base` (в т.ч. GitHub Pages). */
+function publicAssetUrl(
+  pathFromPublicRoot: string
+): string {
+  const base = import.meta.env.BASE_URL ?? '/'
+  const withSlash = base.endsWith('/')
+    ? base
+    : `${base}/`
+  const rel = pathFromPublicRoot.replace(
+    /^\//,
+    ''
+  )
+  return `${withSlash}${rel}`
+}
 
 export type RenderOpts = {
   highlight?: CellRC[]
@@ -38,7 +57,34 @@ export type RenderOpts = {
   hintFrom?: CellRC | null
   hintTo?: CellRC | null
   theme?: GameThemeOption
+  iconTheme?: GameIconThemeOption
 }
+
+const COSMIC_ICON_PATHS = [
+  publicAssetUrl('iconset/cosmic/battery.png'),
+  publicAssetUrl('iconset/cosmic/crystal.png'),
+  publicAssetUrl('iconset/cosmic/compass.png'),
+  publicAssetUrl('iconset/cosmic/alieneyes.png'),
+  publicAssetUrl('iconset/cosmic/bonus.png'),
+  publicAssetUrl('iconset/cosmic/cash.png'),
+  publicAssetUrl('iconset/cosmic/drops.png'),
+  publicAssetUrl('iconset/cosmic/heart.png'),
+]
+
+const FOOD_ICON_PATHS = [
+  publicAssetUrl('iconset/food/burger.svg'),
+  publicAssetUrl('iconset/food/pizza.svg'),
+  publicAssetUrl('iconset/food/donut.svg'),
+  publicAssetUrl('iconset/food/cupcake.svg'),
+  publicAssetUrl('iconset/food/icecream.svg'),
+  publicAssetUrl('iconset/food/sushi.svg'),
+  publicAssetUrl('iconset/food/fries.svg'),
+  publicAssetUrl('iconset/food/cake.svg'),
+]
+
+const iconCache: Partial<
+  Record<GameIconThemeOption, HTMLImageElement[]>
+> = {}
 
 /** roundRect есть в современных DOM typings; в старых — только в рантайме */
 type Canvas2DWithRoundRect =
@@ -132,6 +178,70 @@ function colorForKind(
     TILE_COLORS_BY_THEME.standard
   const idx = Math.abs(kind) % colors.length
   return colors[idx] ?? '#888'
+}
+
+function loadIcons(
+  paths: string[]
+): HTMLImageElement[] {
+  return paths.map(path => {
+    const img = new Image()
+    img.src = path
+    return img
+  })
+}
+
+function iconsForTheme(
+  theme: GameIconThemeOption
+): HTMLImageElement[] | null {
+  if (theme === 'standard') return null
+  const cached = iconCache[theme]
+  if (cached?.length) {
+    const allFailed = cached.every(
+      im => im.complete && im.naturalWidth <= 0
+    )
+    if (!allFailed) return cached
+    delete iconCache[theme]
+  }
+  const paths =
+    theme === 'cosmic'
+      ? COSMIC_ICON_PATHS
+      : FOOD_ICON_PATHS
+  const icons = loadIcons(paths)
+  iconCache[theme] = icons
+  return icons
+}
+
+function waitForImage(
+  img: HTMLImageElement
+): Promise<void> {
+  if (img.complete && img.naturalWidth > 0) {
+    return Promise.resolve()
+  }
+  return new Promise(resolve => {
+    const done = () => {
+      img.removeEventListener('load', done)
+      img.removeEventListener('error', done)
+      resolve()
+    }
+    img.addEventListener('load', done, {
+      once: true,
+    })
+    img.addEventListener('error', done, {
+      once: true,
+    })
+  })
+}
+
+export function preloadIconTheme(
+  theme: GameIconThemeOption
+): Promise<void> {
+  const icons = iconsForTheme(theme)
+  if (!icons || icons.length === 0) {
+    return Promise.resolve()
+  }
+  return Promise.all(
+    icons.map(waitForImage)
+  ).then(() => undefined)
 }
 
 function drawShape(
@@ -420,6 +530,8 @@ export function renderBoard(
   opts?: RenderOpts
 ): void {
   const theme = opts?.theme ?? 'standard'
+  const iconTheme = opts?.iconTheme ?? 'standard'
+  const themeIcons = iconsForTheme(iconTheme)
 
   const { rows, cols } = dims(board)
   const W = ctx.canvas.width
@@ -469,8 +581,38 @@ export function renderBoard(
       const v = row[c]
       if (typeof v !== 'number' || v < 0) continue
 
-      const color = colorForKind(v, theme)
-      drawShape(ctx, v, x, y, cell, color)
+      const icon =
+        themeIcons?.[
+          Math.abs(v) % themeIcons.length
+        ]
+      if (
+        icon &&
+        typeof icon.naturalWidth === 'number' &&
+        icon.naturalWidth > 0
+      ) {
+        const pad = Math.max(
+          4,
+          Math.floor(cell * 0.14)
+        )
+        ctx.save()
+        ctx.shadowColor =
+          'rgba(148, 163, 184, 0.45)'
+        ctx.shadowBlur = Math.max(
+          4,
+          Math.floor(cell * 0.12)
+        )
+        ctx.drawImage(
+          icon,
+          x + pad,
+          y + pad,
+          cell - pad * 2,
+          cell - pad * 2
+        )
+        ctx.restore()
+      } else {
+        const color = colorForKind(v, theme)
+        drawShape(ctx, v, x, y, cell, color)
+      }
       drawSpecialMarker(ctx, v, x, y, cell)
     }
   }
