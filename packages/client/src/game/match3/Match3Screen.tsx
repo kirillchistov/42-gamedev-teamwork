@@ -3,8 +3,32 @@
  * Компонент создаёт экземпляр игры один раз и подписывается на обновления HUD через onHudChange.
  * В этом файле нет бизнес-логики match-3: он только связывает движок с JSX и показывает нужные оверлеи.
  * Благодаря такой структуре UI можно менять независимо от логики в engine/bootstrap.ts.
+ * 6.1.2 Игровые настройки перед стартом:
+ * Вместо текстовой заглушки добавлены рабочие контролы:
+ * Размер поля (select: 8/12/16/20)
+ * Тема (select: Стандарт/Космос/Математика)
+ * Время (select: 3/5/10 мин)
+ * Через useEffect настройки прокидываются в движок: setBoardSize, setDuration, setTheme
+ * 6.1.3 Модели уровней:
+ * Объединил настройки в выбор уровня. На старте видно: цель, поле, тему, время, # фишек
+ * 6.1.4 Улучшение HUD:
+ * В HUD в фазе playing добавил: goalProgressPct, currentCombo, maxCombo
+ * В results-оверлей добавил: прогресс цели и лучший комбо
+ * 6.1.9 Экран результата уровня
+ * Сохраняю gameEndReason. В results-оверлее: заголовок: Победа! / Поражение,
+ * текст-вердикт: “Цель уровня выполнена” или “Время вышло, цель не достигнута”
+ * Добавил итоговые показатели: цель, прогресс, сколько осталось до цели,
+ * бонус за комбо (maxCombo * 25),  * бонус за оставшееся время (timeLeftSec * 2)
+ * итог с бонусами
+ * 6.3.1 VFX при матче (частицы + вспышка):
+ * Второй canvas (match3__canvas--fx) поверх поля, pointer-events: none
+ * createMatch3Game({ canvas, fxCanvas, onComboShake }) — тот же размер 480×480, общий стек match3__board--stack;
+ * при крупном каскаде (chain ≥ 3) — лёгкий screen shake контейнера поля
+ * 6.3.3 Улучшенный HUD (сбоку на ПК, компактная шапка в мобильной версии)
  */
+
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -13,12 +37,22 @@ import React, {
 import './match3.pcss'
 import {
   createMatch3Game,
+  type GameEndPayload,
   type GameHudState,
 } from './engine/bootstrap'
 import {
   PRESTART_COUNTDOWN_SEC,
-  BOARD_SIZE,
+  type BoardSizeOption,
+  type GameDurationOption,
+  type GameIconThemeOption,
+  type GameThemeOption,
+  type GameVfxQualityOption,
 } from './engine/config'
+import {
+  DEFAULT_MATCH3_LEVEL_ID,
+  getMatch3LevelById,
+  type LevelGoalType,
+} from './engine/levels'
 
 type UiPhase =
   | 'countdown'
@@ -26,8 +60,110 @@ type UiPhase =
   | 'playing'
   | 'results'
 
-export const Match3Screen: React.FC = () => {
+const BORDER_SPARK_COUNT = 34
+const BORDER_SPARK_STEP_MS = 42
+const BORDER_SPARK_CLEAR_MS =
+  BORDER_SPARK_COUNT * BORDER_SPARK_STEP_MS + 400
+
+function buildBorderSparkPositions(
+  n: number
+): { left: string; top: string }[] {
+  const out: { left: string; top: string }[] = []
+  for (let i = 0; i < n; i += 1) {
+    const u = (i / n) * 4
+    if (u < 1) {
+      out.push({
+        left: `${(u / 1) * 100}%`,
+        top: '0%',
+      })
+    } else if (u < 2) {
+      out.push({
+        left: '100%',
+        top: `${((u - 1) / 1) * 100}%`,
+      })
+    } else if (u < 3) {
+      out.push({
+        left: `${(1 - (u - 2) / 1) * 100}%`,
+        top: '100%',
+      })
+    } else {
+      out.push({
+        left: '0%',
+        top: `${(1 - (u - 3) / 1) * 100}%`,
+      })
+    }
+  }
+  return out
+}
+
+const BORDER_SPARK_POSITIONS =
+  buildBorderSparkPositions(BORDER_SPARK_COUNT)
+
+function IconSettings() {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      aria-hidden
+      fill="currentColor">
+      <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.25 7.25 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.49-.42h-3.84a.5.5 0 0 0-.49.42l-.36 2.54c-.58.22-1.13.53-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.41 1.05.72 1.63.94l.36 2.54c.05.24.25.42.49.42h3.84c.24 0 .44-.18.49-.42l.36-2.54c.58-.22 1.13-.53 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z" />
+    </svg>
+  )
+}
+
+function IconRestart() {
+  return (
+    <svg
+      width={15}
+      height={15}
+      viewBox="0 0 24 24"
+      aria-hidden
+      fill="currentColor">
+      <path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5a5 5 0 0 1-9.9 1h-2.02A7 7 0 1 0 12 6z" />
+    </svg>
+  )
+}
+
+type Match3ScreenProps = {
+  selectedLevelId?: string
+  goalType?: LevelGoalType
+  boardSize?: BoardSizeOption
+  themeOption?: GameThemeOption
+  durationSec?: GameDurationOption
+  tileKinds?: number
+  iconThemeOption?: GameIconThemeOption
+  soundEnabled?: boolean
+  /** Полный VFX или упрощённый (без частиц, тряски и «петард» по контуру). */
+  vfxQuality?: GameVfxQualityOption
+  hintIdleMs?: number
+  onOpenSettings?: () => void
+  forcePlayMode?: boolean
+  onGameFinished?: (
+    payload: GameEndPayload
+  ) => void
+}
+
+export const Match3Screen: React.FC<
+  Match3ScreenProps
+> = ({
+  selectedLevelId = DEFAULT_MATCH3_LEVEL_ID,
+  goalType = 'score',
+  boardSize,
+  themeOption,
+  durationSec,
+  tileKinds,
+  iconThemeOption = 'cosmic',
+  soundEnabled = true,
+  vfxQuality = 'full',
+  hintIdleMs,
+  onOpenSettings,
+  forcePlayMode = false,
+  onGameFinished,
+}) => {
   const canvasRef =
+    useRef<HTMLCanvasElement | null>(null)
+  const fxCanvasRef =
     useRef<HTMLCanvasElement | null>(null)
   const gameRef = useRef<ReturnType<
     typeof createMatch3Game
@@ -36,42 +172,136 @@ export const Match3Screen: React.FC = () => {
   const [hud, setHud] = useState<GameHudState>({
     score: 0,
     moves: 0,
+    currentCombo: 0,
     maxCombo: 0,
     playerRecord: 0,
     dailyRecord: 0,
+    goalScore: 0,
+    goalProgressPct: 0,
+    goalTargetsTotal: 0,
+    goalTargetsLeft: 0,
     timeLeftSec: 300,
   })
 
-  const [uiPhase, setUiPhase] =
-    useState<UiPhase>('countdown')
+  const [uiPhase, setUiPhase] = useState<UiPhase>(
+    forcePlayMode ? 'playing' : 'countdown'
+  )
   const [countdownVal, setCountdownVal] =
     useState(PRESTART_COUNTDOWN_SEC)
   const [resultSnapshot, setResultSnapshot] =
     useState<GameHudState | null>(null)
+  const [gameEndReason, setGameEndReason] =
+    useState<GameEndPayload['reason'] | null>(
+      null
+    )
+  const [boardShakeLevel, setBoardShakeLevel] =
+    useState<'off' | 'light' | 'strong'>('off')
+  const [borderSpark, setBorderSpark] = useState<
+    'off' | 'line4plus' | 'tOrL'
+  >('off')
+  const [sparkBurstId, setSparkBurstId] =
+    useState(0)
+  const shakeResetRef = useRef<number | null>(
+    null
+  )
+  const sparkResetRef = useRef<number | null>(
+    null
+  )
+
+  const onComboShake = useCallback(
+    (chain: number) => {
+      if (chain < 3) return
+      if (shakeResetRef.current !== null) {
+        window.clearTimeout(shakeResetRef.current)
+      }
+      setBoardShakeLevel(
+        chain >= 5 ? 'strong' : 'light'
+      )
+      shakeResetRef.current = window.setTimeout(
+        () => {
+          setBoardShakeLevel('off')
+          shakeResetRef.current = null
+        },
+        480
+      )
+    },
+    []
+  )
+
+  const onPremiumMatchBorder = useCallback(
+    (shape: 'line4plus' | 'tOrL') => {
+      if (sparkResetRef.current !== null) {
+        window.clearTimeout(sparkResetRef.current)
+      }
+      setBorderSpark(shape)
+      setSparkBurstId(v => v + 1)
+      sparkResetRef.current = window.setTimeout(
+        () => {
+          setBorderSpark('off')
+          sparkResetRef.current = null
+        },
+        BORDER_SPARK_CLEAR_MS
+      )
+    },
+    []
+  )
 
   useEffect(() => {
     const canvas = canvasRef.current
+    const fxCanvas = fxCanvasRef.current
     if (!canvas) return
 
     const game = createMatch3Game({
       canvas,
+      fxCanvas: fxCanvas ?? undefined,
+      vfxQuality,
       onHudChange: setHud,
-      onGameEnd: snapshot => {
-        setResultSnapshot(snapshot)
+      onComboShake,
+      onPremiumMatchBorder,
+      onGameEnd: payload => {
+        if (forcePlayMode && onGameFinished) {
+          onGameFinished(payload)
+          return
+        }
+        setResultSnapshot(payload.snapshot)
+        setGameEndReason(payload.reason)
         setUiPhase('results')
       },
     })
 
     gameRef.current = game
+    if (forcePlayMode) {
+      game.startPlay()
+    }
 
     return () => {
+      if (shakeResetRef.current !== null) {
+        window.clearTimeout(shakeResetRef.current)
+        shakeResetRef.current = null
+      }
+      if (sparkResetRef.current !== null) {
+        window.clearTimeout(sparkResetRef.current)
+        sparkResetRef.current = null
+      }
       game.destroy()
       gameRef.current = null
     }
-  }, [])
+  }, [
+    forcePlayMode,
+    onGameFinished,
+    onComboShake,
+    onPremiumMatchBorder,
+  ])
 
   useEffect(() => {
-    if (uiPhase !== 'countdown') return
+    const game = gameRef.current
+    if (!game) return
+    game.setVfxQuality(vfxQuality)
+  }, [vfxQuality])
+
+  useEffect(() => {
+    if (forcePlayMode || uiPhase !== 'countdown')
+      return
     if (countdownVal <= 0) {
       setUiPhase('ready')
       return
@@ -80,7 +310,55 @@ export const Match3Screen: React.FC = () => {
       setCountdownVal(c => c - 1)
     }, 1000)
     return () => clearTimeout(id)
-  }, [uiPhase, countdownVal])
+  }, [forcePlayMode, uiPhase, countdownVal])
+
+  const selectedLevel = useMemo(
+    () => getMatch3LevelById(selectedLevelId),
+    [selectedLevelId]
+  )
+  const appliedLevel = useMemo(
+    () => ({
+      ...selectedLevel,
+      boardSize:
+        boardSize ?? selectedLevel.boardSize,
+      theme: themeOption ?? selectedLevel.theme,
+      durationSec:
+        durationSec ?? selectedLevel.durationSec,
+      tileKinds:
+        tileKinds ?? selectedLevel.tileKinds,
+    }),
+    [
+      selectedLevel,
+      boardSize,
+      themeOption,
+      durationSec,
+      tileKinds,
+    ]
+  )
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setLevel(appliedLevel)
+  }, [appliedLevel])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game || !hintIdleMs) return
+    game.setHintIdleMs(hintIdleMs)
+  }, [hintIdleMs])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setIconTheme(iconThemeOption)
+  }, [iconThemeOption])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setSoundEnabled(soundEnabled)
+  }, [soundEnabled])
 
   const timeLabel = useMemo(() => {
     const mm = String(
@@ -99,111 +377,322 @@ export const Match3Screen: React.FC = () => {
 
   const handlePlayAgain = () => {
     setResultSnapshot(null)
+    setGameEndReason(null)
     setCountdownVal(PRESTART_COUNTDOWN_SEC)
     setUiPhase('countdown')
     gameRef.current?.resetIdle()
   }
+  const handleRestartFromHud = () => {
+    if (uiPhase !== 'playing') return
+    gameRef.current?.resetIdle()
+    if (forcePlayMode) {
+      gameRef.current?.startPlay()
+      return
+    }
+    setResultSnapshot(null)
+    setGameEndReason(null)
+    setCountdownVal(PRESTART_COUNTDOWN_SEC)
+    setUiPhase('countdown')
+  }
+
+  const resultStats = useMemo(() => {
+    if (!resultSnapshot) return null
+    const isWin =
+      gameEndReason === 'goalReached' ||
+      (resultSnapshot.goalScore > 0 &&
+        resultSnapshot.score >=
+          resultSnapshot.goalScore &&
+        resultSnapshot.goalTargetsLeft <= 0)
+    const goalRemain = Math.max(
+      0,
+      resultSnapshot.goalScore -
+        resultSnapshot.score
+    )
+    const comboBonus =
+      resultSnapshot.maxCombo * 25
+    const timeBonus =
+      resultSnapshot.timeLeftSec * 2
+    const totalWithBonus =
+      resultSnapshot.score +
+      comboBonus +
+      timeBonus
+    return {
+      isWin,
+      goalRemain,
+      targetsRemain:
+        resultSnapshot.goalTargetsLeft,
+      comboBonus,
+      timeBonus,
+      totalWithBonus,
+    }
+  }, [resultSnapshot, gameEndReason])
+  const goalPct =
+    hud.goalScore > 0
+      ? `${hud.goalProgressPct}%`
+      : '—'
+  const isStartPhase =
+    uiPhase === 'countdown' || uiPhase === 'ready'
+  const showBoard = forcePlayMode || !isStartPhase
 
   return (
-    <section className="match3">
-      {uiPhase === 'playing' && (
-        <div className="match3__hud match3__hud--row">
-          <span>Счёт: {hud.score}</span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>Ходов: {hud.moves}</span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Ваш рекорд: {hud.playerRecord}
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>Время: {timeLabel}</span>
-        </div>
-      )}
-
-      {(uiPhase === 'countdown' ||
-        uiPhase === 'ready') && (
-        <div className="match3__pre-hud">
-          Ваш рекорд: {hud.playerRecord}
-        </div>
-      )}
-
-      {(uiPhase === 'countdown' ||
-        uiPhase === 'ready') && (
-        <div className="match3__start-settings">
-          <span>
-            Поле: {BOARD_SIZE}x{BOARD_SIZE}
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>
-            Тема: стандарт / космос / математика
-          </span>
-          <span
-            className="match3__hud-sep"
-            aria-hidden>
-            |
-          </span>
-          <span>Время: 3 / 5 / 10 минут</span>
-        </div>
-      )}
-
-      <div className="match3__board">
-        <canvas
-          ref={canvasRef}
-          className="match3__canvas"
-          width={480}
-          height={480}
-          aria-label="Игровое поле match-3"
-        />
-
-        {uiPhase === 'countdown' &&
-          countdownVal > 0 && (
-            <div
-              className="match3__overlay match3__overlay--countdown"
-              aria-live="polite">
-              <div className="match3__countdown">
-                {countdownVal}
-              </div>
+    <section
+      className={
+        'match3' +
+        (isStartPhase ? ' match3--start' : '')
+      }>
+      <div
+        className={
+          'match3__arena' +
+          (uiPhase === 'playing'
+            ? ' match3__arena--playing'
+            : '')
+        }>
+        {uiPhase === 'playing' && (
+          <div className="match3__hud-top">
+            <div className="match3__hud-mobile-item">
+              <span>Счёт</span>
+              <strong>{hud.score}</strong>
             </div>
-          )}
-
-        {uiPhase === 'ready' && (
-          <div className="match3__overlay match3__overlay--ready">
+            <div className="match3__hud-mobile-item">
+              <span>Ходов</span>
+              <strong>{hud.moves}</strong>
+            </div>
+            <div className="match3__hud-mobile-item">
+              <span>Цель</span>
+              <strong>{goalPct}</strong>
+            </div>
+            {hud.goalTargetsTotal > 0 && (
+              <div className="match3__hud-mobile-item">
+                <span>Метки</span>
+                <strong>
+                  {hud.goalTargetsTotal -
+                    hud.goalTargetsLeft}
+                  /{hud.goalTargetsTotal}
+                </strong>
+              </div>
+            )}
+            <div className="match3__hud-mobile-item">
+              <span>Время</span>
+              <strong>{timeLabel}</strong>
+            </div>
             <button
               type="button"
-              className="btn btn--primary match3__play-btn"
-              onClick={handlePlay}>
-              Играть
+              className="match3__hud-restart"
+              onClick={handleRestartFromHud}
+              aria-label="Начать заново"
+              title="Начать заново">
+              <IconRestart />
+              <span>Начать заново</span>
             </button>
+          </div>
+        )}
+
+        {showBoard && uiPhase !== 'results' && (
+          <div className="match3__board-wrap">
+            <div
+              className={
+                'match3__board match3__board--stack' +
+                (uiPhase === 'countdown' ||
+                uiPhase === 'ready'
+                  ? ' is-overlay-only'
+                  : '') +
+                (boardShakeLevel === 'light'
+                  ? ' match3__board--shake-light'
+                  : boardShakeLevel === 'strong'
+                  ? ' match3__board--shake-strong'
+                  : '')
+              }>
+              <canvas
+                ref={canvasRef}
+                className="match3__canvas match3__canvas--board"
+                width={480}
+                height={480}
+                aria-label="Игровое поле match-3"
+              />
+              <canvas
+                ref={fxCanvasRef}
+                className="match3__canvas match3__canvas--fx"
+                width={480}
+                height={480}
+                aria-hidden
+              />
+
+              {uiPhase === 'countdown' &&
+                countdownVal > 0 && (
+                  <div
+                    className="match3__overlay match3__overlay--countdown"
+                    aria-live="polite">
+                    <div className="match3__countdown">
+                      {countdownVal}
+                    </div>
+                  </div>
+                )}
+
+              {uiPhase === 'ready' && (
+                <div className="match3__overlay match3__overlay--ready">
+                  <p className="match3__start-glow-note">
+                    Cosmic Match: комбинируй,
+                    набирай очки, побеждай время!
+                  </p>
+                  <div className="match3__start-info">
+                    <div>
+                      Уровень:{' '}
+                      {appliedLevel.title}
+                    </div>
+                    <div>
+                      Цель:{' '}
+                      {goalType === 'score'
+                        ? `${appliedLevel.goalValue} очков`
+                        : '—'}
+                    </div>
+                    {appliedLevel.targetCells &&
+                      appliedLevel.targetCells >
+                        0 && (
+                        <div>
+                          Меток для бомб:{' '}
+                          {
+                            appliedLevel.targetCells
+                          }
+                        </div>
+                      )}
+                    <div>
+                      Поле:{' '}
+                      {appliedLevel.boardSize}x
+                      {appliedLevel.boardSize}
+                    </div>
+                    <div>
+                      Тема:{' '}
+                      {appliedLevel.theme ===
+                      'standard'
+                        ? 'Стандарт'
+                        : appliedLevel.theme ===
+                          'space'
+                        ? 'Космос'
+                        : 'Продуктовая'}
+                    </div>
+                    <div>
+                      Время:{' '}
+                      {appliedLevel.durationSec /
+                        60}{' '}
+                      мин
+                    </div>
+                    <div>
+                      Типов фишек:{' '}
+                      {appliedLevel.tileKinds}
+                    </div>
+                  </div>
+                  <div className="match3__start-actions">
+                    <button
+                      type="button"
+                      className="btn btn--outline match3__settings-play-btn"
+                      onClick={() =>
+                        onOpenSettings?.()
+                      }>
+                      <IconSettings />
+                      Настройки
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--primary match3__play-btn"
+                      onClick={handlePlay}>
+                      Играть
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            {borderSpark !== 'off' && (
+              <div
+                key={sparkBurstId}
+                className="match3__board-sparks"
+                aria-hidden>
+                {BORDER_SPARK_POSITIONS.map(
+                  (pos, i) => (
+                    <span
+                      key={i}
+                      className={
+                        'match3__spark-dot ' +
+                        (borderSpark ===
+                        'line4plus'
+                          ? 'match3__spark-dot--line4'
+                          : 'match3__spark-dot--tl')
+                      }
+                      style={{
+                        left: pos.left,
+                        top: pos.top,
+                        animationDelay: `${
+                          i * BORDER_SPARK_STEP_MS
+                        }ms`,
+                      }}
+                    />
+                  )
+                )}
+              </div>
+            )}
           </div>
         )}
 
         {uiPhase === 'results' && resultSnapshot && (
           <div className="match3__overlay match3__overlay--results">
             <h3 className="match3__results-title">
-              Партия завершена
+              {resultStats?.isWin
+                ? 'Вы выиграли!'
+                : 'Можно лучше'}
             </h3>
+            <p
+              className={
+                'match3__results-verdict ' +
+                (resultStats?.isWin
+                  ? 'is-win'
+                  : 'is-lose')
+              }>
+              {resultStats?.isWin
+                ? 'Цель уровня выполнена'
+                : gameEndReason === 'timeOut'
+                ? 'Время вышло, цель не достигнута'
+                : 'Цель не достигнута'}
+            </p>
             <ul className="match3__results-list">
               <li>
                 Счёт: {resultSnapshot.score}
               </li>
               <li>
+                Цель: {resultSnapshot.goalScore}
+              </li>
+              <li>
                 Ходов: {resultSnapshot.moves}
+              </li>
+              <li>
+                Прогресс цели:{' '}
+                {resultSnapshot.goalProgressPct}%
+              </li>
+              <li>
+                Осталось до цели:{' '}
+                {resultStats?.goalRemain ?? 0}
+              </li>
+              {resultSnapshot.goalTargetsTotal >
+                0 && (
+                <li>
+                  Осталось меток:{' '}
+                  {resultStats?.targetsRemain ??
+                    0}
+                </li>
+              )}
+              <li>
+                Лучшее комбо: x
+                {resultSnapshot.maxCombo}
+              </li>
+              <li>
+                Бонус за комбо: +
+                {resultStats?.comboBonus ?? 0}
+              </li>
+              <li>
+                Бонус за время: +
+                {resultStats?.timeBonus ?? 0}
+              </li>
+              <li>
+                Итог с бонусами:{' '}
+                {resultStats?.totalWithBonus ?? 0}
               </li>
               <li>
                 Ваш рекорд:{' '}

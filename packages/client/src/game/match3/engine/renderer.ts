@@ -3,19 +3,68 @@
  * Он не хранит состояние партии и не знает ничего о таймерах, очках или правилах обмена.
  * На вход подаётся текущая матрица поля и опции подсветки, на выходе — кадр на canvas.
  * Такой разнос позволяет безопасно улучшать визуал, не ломая core-логику игры.
+ * 6.1.2 Игровые настройки перед стартом:
+ * renderBoard теперь принимает theme в RenderOpts
+ * Цвета фишек берутся из TILE_COLORS_BY_THEME по выбранной теме
+ * 6.1.6 Спец-фишки:
+ * у спец-клеток рисуются отличительные маркеры поверх базовой фигуры
+ * визуально сразу видно, что это “особая” фишка
+ * 6.1.8 Таймер бездействия и подсказка хода
+ * Расширил RenderOpts: hintFrom, hintTo
+ * Добавил отрисовку подсказки: пунктирная желтая рамка на клетках возможного свопа
+ * 6.3.1 VFX при матче (частицы + вспышка):
+ * Экспорт boardLayout(board, canvasW, canvasH) — общая геометрия клетки и отступов
+ * renderBoard и pickCellAt используют boardLayout, чтобы matchFx совпадал с отрисовкой
+ * 6.3.3 Улучшенный HUD (сбоку на ПК, компактная шапка в мобильной версии)
+ * 6.3.4 Улучшенная геометрия поля (ширина поля на 20% больше высоты)
+ * 6.3.5 Добавлен выбор тематики фишек
  */
 
 import type { Board } from './core/grid'
 import type { CellRC } from './core/match'
+import {
+  getLineOrientation,
+  getSpecialType,
+} from './core/cell'
+import {
+  TILE_COLORS_BY_THEME,
+  type GameIconThemeOption,
+  type GameThemeOption,
+} from './config'
+import {
+  MATCH3_COSMIC_ICON_URLS,
+  MATCH3_FOOD_ICON_URLS,
+} from './match3IconUrls'
 
 export type RenderOpts = {
+  tileMotions?: {
+    from: CellRC
+    to: CellRC
+  }[]
+  motionProgress?: number
   highlight?: CellRC[]
   alpha?: number
   selected?: CellRC | null
   target?: CellRC | null
   targetPulse?: boolean
   showSwapArrow?: boolean
+  hintFrom?: CellRC | null
+  hintTo?: CellRC | null
+  theme?: GameThemeOption
+  iconTheme?: GameIconThemeOption
+  iceGrid?: number[][]
+  goalGrid?: number[][]
 }
+
+const COSMIC_ICON_PATHS = [
+  ...MATCH3_COSMIC_ICON_URLS,
+]
+
+const FOOD_ICON_PATHS = [...MATCH3_FOOD_ICON_URLS]
+
+const iconCache: Partial<
+  Record<GameIconThemeOption, HTMLImageElement[]>
+> = {}
 
 /** roundRect есть в современных DOM typings; в старых — только в рантайме */
 type Canvas2DWithRoundRect =
@@ -52,6 +101,35 @@ function dims(board: Board) {
   return { rows, cols }
 }
 
+/** Геометрия поля в пикселях канваса (как в renderBoard / pickCellAt). */
+export function boardLayout(
+  board: Board,
+  canvasWidth: number,
+  canvasHeight: number
+): {
+  rows: number
+  cols: number
+  cell: number
+  ox: number
+  oy: number
+} | null {
+  const { rows, cols } = dims(board)
+  if (rows === 0 || cols === 0) return null
+  const cell = Math.floor(
+    Math.min(
+      canvasWidth / cols,
+      canvasHeight / rows
+    )
+  )
+  const ox = Math.floor(
+    (canvasWidth - cols * cell) / 2
+  )
+  const oy = Math.floor(
+    (canvasHeight - rows * cell) / 2
+  )
+  return { rows, cols, cell, ox, oy }
+}
+
 function polygonPath(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -71,20 +149,79 @@ function polygonPath(
   ctx.closePath()
 }
 
-function colorForKind(kind: number): string {
-  // безопасная палитра (можно заменить в config.ts проекта)
-  const COLORS = [
-    '#ff4d6d',
-    '#ffd166',
-    '#06d6a0',
-    '#4cc9f0',
-    '#b517ff',
-    '#f72585',
-    '#a8dadc',
-    '#9b5de5',
-  ]
-  const idx = Math.abs(kind) % COLORS.length
-  return COLORS[idx] ?? '#888'
+function colorForKind(
+  kind: number,
+  theme: GameThemeOption = 'standard'
+): string {
+  const colors =
+    TILE_COLORS_BY_THEME[theme] ??
+    TILE_COLORS_BY_THEME.standard
+  const idx = Math.abs(kind) % colors.length
+  return colors[idx] ?? '#888'
+}
+
+function loadIcons(
+  paths: string[]
+): HTMLImageElement[] {
+  return paths.map(path => {
+    const img = new Image()
+    img.src = path
+    return img
+  })
+}
+
+function iconsForTheme(
+  theme: GameIconThemeOption
+): HTMLImageElement[] | null {
+  if (theme === 'standard') return null
+  const cached = iconCache[theme]
+  if (cached?.length) {
+    const allFailed = cached.every(
+      im => im.complete && im.naturalWidth <= 0
+    )
+    if (!allFailed) return cached
+    delete iconCache[theme]
+  }
+  const paths =
+    theme === 'cosmic'
+      ? COSMIC_ICON_PATHS
+      : FOOD_ICON_PATHS
+  const icons = loadIcons(paths)
+  iconCache[theme] = icons
+  return icons
+}
+
+function waitForImage(
+  img: HTMLImageElement
+): Promise<void> {
+  if (img.complete && img.naturalWidth > 0) {
+    return Promise.resolve()
+  }
+  return new Promise(resolve => {
+    const done = () => {
+      img.removeEventListener('load', done)
+      img.removeEventListener('error', done)
+      resolve()
+    }
+    img.addEventListener('load', done, {
+      once: true,
+    })
+    img.addEventListener('error', done, {
+      once: true,
+    })
+  })
+}
+
+export function preloadIconTheme(
+  theme: GameIconThemeOption
+): Promise<void> {
+  const icons = iconsForTheme(theme)
+  if (!icons || icons.length === 0) {
+    return Promise.resolve()
+  }
+  return Promise.all(
+    icons.map(waitForImage)
+  ).then(() => undefined)
 }
 
 function drawShape(
@@ -259,6 +396,138 @@ function drawShape(
   ctx.restore()
 }
 
+function drawSpecialMarker(
+  ctx: CanvasRenderingContext2D,
+  value: number,
+  x: number,
+  y: number,
+  cell: number
+) {
+  const specialType = getSpecialType(value)
+  if (!specialType) return
+  const cx = x + cell / 2
+  const cy = y + cell / 2
+  ctx.save()
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)'
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.68)'
+  ctx.lineWidth = Math.max(1.5, cell * 0.06)
+
+  if (specialType === 'line') {
+    const orientation = getLineOrientation(value)
+    if (orientation === 'row') {
+      const h = Math.max(3, cell * 0.12)
+      ctx.beginPath()
+      pathRoundRect(
+        ctx,
+        x + cell * 0.18,
+        cy - h / 2,
+        cell * 0.64,
+        h,
+        h / 2
+      )
+      ctx.fill()
+      ctx.stroke()
+    } else {
+      const w = Math.max(3, cell * 0.12)
+      ctx.beginPath()
+      pathRoundRect(
+        ctx,
+        cx - w / 2,
+        y + cell * 0.18,
+        w,
+        cell * 0.64,
+        w / 2
+      )
+      ctx.fill()
+      ctx.stroke()
+    }
+  } else {
+    const radius = Math.max(5, cell * 0.18)
+    ctx.beginPath()
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(cx, cy - radius - cell * 0.08)
+    ctx.lineTo(cx, cy + radius + cell * 0.08)
+    ctx.moveTo(cx - radius - cell * 0.08, cy)
+    ctx.lineTo(cx + radius + cell * 0.08, cy)
+    ctx.stroke()
+  }
+
+  ctx.restore()
+}
+
+function drawIceOverlay(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  hp: number
+) {
+  const alpha =
+    hp >= 3 ? 0.46 : hp === 2 ? 0.34 : 0.24
+  ctx.save()
+  ctx.fillStyle = `rgba(167, 243, 255, ${alpha})`
+  ctx.strokeStyle = 'rgba(226, 248, 255, 0.75)'
+  ctx.lineWidth = Math.max(1, cell * 0.04)
+  const inset = Math.max(1, cell * 0.06)
+  ctx.beginPath()
+  pathRoundRect(
+    ctx,
+    x + inset,
+    y + inset,
+    cell - inset * 2,
+    cell - inset * 2,
+    Math.max(3, cell * 0.15)
+  )
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)'
+  ctx.lineWidth = Math.max(1, cell * 0.025)
+  ctx.beginPath()
+  ctx.moveTo(x + cell * 0.28, y + cell * 0.35)
+  ctx.lineTo(x + cell * 0.72, y + cell * 0.5)
+  if (hp >= 2) {
+    ctx.moveTo(x + cell * 0.52, y + cell * 0.2)
+    ctx.lineTo(x + cell * 0.36, y + cell * 0.68)
+  }
+  if (hp >= 3) {
+    ctx.moveTo(x + cell * 0.22, y + cell * 0.58)
+    ctx.lineTo(x + cell * 0.64, y + cell * 0.3)
+  }
+  ctx.stroke()
+  ctx.restore()
+}
+
+function drawGoalOverlay(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number
+) {
+  const cx = x + cell / 2
+  const cy = y + cell / 2
+  const r = Math.max(4, cell * 0.2)
+  ctx.save()
+  ctx.lineWidth = Math.max(1.4, cell * 0.05)
+  ctx.strokeStyle = 'rgba(251, 191, 36, 0.95)'
+  ctx.fillStyle = 'rgba(120, 53, 15, 0.2)'
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.strokeStyle = 'rgba(254, 240, 138, 0.9)'
+  ctx.beginPath()
+  ctx.moveTo(cx - r * 0.55, cy)
+  ctx.lineTo(cx + r * 0.55, cy)
+  ctx.moveTo(cx, cy - r * 0.55)
+  ctx.lineTo(cx, cy + r * 0.55)
+  ctx.stroke()
+  ctx.restore()
+}
+
 function getClientXY(
   ev: MouseEvent | PointerEvent | TouchEvent
 ): {
@@ -294,11 +563,9 @@ export function pickCellAt(
 
   const W = canvas.width
   const H = canvas.height
-  const cell = Math.floor(
-    Math.min(W / cols, H / rows)
-  )
-  const ox = Math.floor((W - cols * cell) / 2)
-  const oy = Math.floor((H - rows * cell) / 2)
+  const layout = boardLayout(board, W, H)
+  if (!layout) return null
+  const { cell, ox, oy } = layout
 
   const c = Math.floor((px - ox) / cell)
   const r = Math.floor((py - oy) / cell)
@@ -312,6 +579,10 @@ export function renderBoard(
   board: Board,
   opts?: RenderOpts
 ): void {
+  const theme = opts?.theme ?? 'standard'
+  const iconTheme = opts?.iconTheme ?? 'cosmic'
+  const themeIcons = iconsForTheme(iconTheme)
+
   const { rows, cols } = dims(board)
   const W = ctx.canvas.width
   const H = ctx.canvas.height
@@ -319,11 +590,21 @@ export function renderBoard(
   ctx.clearRect(0, 0, W, H)
   if (rows === 0 || cols === 0) return
 
-  const cell = Math.floor(
-    Math.min(W / cols, H / rows)
+  const layout = boardLayout(board, W, H)
+  if (!layout) return
+  const { cell, ox, oy } = layout
+  const motionProgress = Math.max(
+    0,
+    Math.min(1, opts?.motionProgress ?? 1)
   )
-  const ox = Math.floor((W - cols * cell) / 2)
-  const oy = Math.floor((H - rows * cell) / 2)
+  const motionByDest = new Map<
+    string,
+    { from: CellRC; to: CellRC }
+  >()
+  for (const m of opts?.tileMotions ?? []) {
+    if (!m) continue
+    motionByDest.set(`${m.to.r},${m.to.c}`, m)
+  }
 
   // frame
   ctx.save()
@@ -361,9 +642,83 @@ export function renderBoard(
 
       const v = row[c]
       if (typeof v !== 'number' || v < 0) continue
+      const motion = motionByDest.get(`${r},${c}`)
+      const drawX = motion
+        ? ox +
+          (motion.from.c +
+            (motion.to.c - motion.from.c) *
+              motionProgress) *
+            cell
+        : x
+      const drawY = motion
+        ? oy +
+          (motion.from.r +
+            (motion.to.r - motion.from.r) *
+              motionProgress) *
+            cell
+        : y
 
-      const color = colorForKind(v)
-      drawShape(ctx, v, x, y, cell, color)
+      const icon =
+        themeIcons?.[
+          Math.abs(v) % themeIcons.length
+        ]
+      if (
+        icon &&
+        typeof icon.naturalWidth === 'number' &&
+        icon.naturalWidth > 0
+      ) {
+        const pad = Math.max(
+          4,
+          Math.floor(cell * 0.14)
+        )
+        ctx.save()
+        ctx.shadowColor =
+          'rgba(148, 163, 184, 0.45)'
+        ctx.shadowBlur = Math.max(
+          4,
+          Math.floor(cell * 0.12)
+        )
+        ctx.drawImage(
+          icon,
+          drawX + pad,
+          drawY + pad,
+          cell - pad * 2,
+          cell - pad * 2
+        )
+        ctx.restore()
+      } else {
+        const color = colorForKind(v, theme)
+        drawShape(
+          ctx,
+          v,
+          drawX,
+          drawY,
+          cell,
+          color
+        )
+      }
+      drawSpecialMarker(
+        ctx,
+        v,
+        drawX,
+        drawY,
+        cell
+      )
+      const iceHp = opts?.iceGrid?.[r]?.[c] ?? 0
+      if (iceHp > 0) {
+        drawIceOverlay(
+          ctx,
+          drawX,
+          drawY,
+          cell,
+          iceHp
+        )
+      }
+      const hasGoal =
+        (opts?.goalGrid?.[r]?.[c] ?? 0) > 0
+      if (hasGoal) {
+        drawGoalOverlay(ctx, drawX, drawY, cell)
+      }
     }
   }
 
@@ -529,6 +884,41 @@ export function renderBoard(
         ctx.fill()
         ctx.restore()
       }
+    }
+  }
+
+  // Подсказка возможного хода при бездействии
+  if (opts?.hintFrom && opts?.hintTo) {
+    const a = opts.hintFrom
+    const b = opts.hintTo
+    const inBounds = (p: CellRC) =>
+      p.r >= 0 &&
+      p.c >= 0 &&
+      p.r < rows &&
+      p.c < cols
+    if (inBounds(a) && inBounds(b)) {
+      const drawHintCell = (p: CellRC) => {
+        const x = ox + p.c * cell
+        const y = oy + p.r * cell
+        ctx.save()
+        ctx.lineWidth = 3
+        ctx.setLineDash([4, 4])
+        ctx.strokeStyle =
+          'rgba(250, 204, 21, 0.95)'
+        ctx.shadowColor =
+          'rgba(250, 204, 21, 0.7)'
+        ctx.shadowBlur = 8
+        ctx.strokeRect(
+          x + 2,
+          y + 2,
+          cell - 4,
+          cell - 4
+        )
+        ctx.setLineDash([])
+        ctx.restore()
+      }
+      drawHintCell(a)
+      drawHintCell(b)
     }
   }
 }

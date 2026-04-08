@@ -1,4 +1,6 @@
-/* Темы оформления лендинга: light-flat, light-3d, dark-neon */
+/* Темы оформления лендинга: light-flat, light-3d, dark-neon
+ * 6.3.2 Оболочка страницы игры: .landing-theme-toggle и .landing-fullscreen-btn в dark-neon
+ */
 /* === THEMES === */
 
 /* light-flat */
@@ -57,6 +59,20 @@
 .landing--dark-neon .landing-nav--mobile {
   background: rgba(15, 23, 42, 0.97);
   border-top-color: rgba(56, 189, 248, 0.35);
+}
+
+.landing--dark-neon .landing-theme-toggle,
+.landing--dark-neon .landing-settings-btn,
+.landing--dark-neon .landing-fullscreen-btn {
+  background: rgba(30, 41, 59, 0.92);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #e2e8f0;
+}
+
+.landing--dark-neon .landing-settings-btn:hover,
+.landing--dark-neon .landing-fullscreen-btn:hover {
+  color: var(--color-neon-blue);
+  border-color: rgba(56, 189, 248, 0.75);
 }
 
 /* cards & sections background */
