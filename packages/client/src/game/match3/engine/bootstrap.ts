@@ -55,6 +55,10 @@ import { refill } from './core/refill'
 import { trySwap } from './core/swap'
 import { clearAndScore } from './core/scoring'
 import {
+  getLineOrientation,
+  getSpecialType,
+} from './core/cell'
+import {
   findPossibleMoves,
   shuffleBoardUntilPlayable,
 } from './core/possibleMoves'
@@ -120,6 +124,11 @@ const FALL_ANIM_MS = 190
 type TileMotion = {
   from: CellRC
   to: CellRC
+}
+type SpecialActivation = {
+  cell: CellRC
+  type: 'line' | 'bomb'
+  orientation?: 'row' | 'col'
 }
 
 type SoundFx =
@@ -458,6 +467,78 @@ export function createMatch3Game(
     return motions
   }
 
+  const collectSpecialActivations = (
+    snapshot: Board,
+    initial: CellRC[]
+  ): SpecialActivation[] => {
+    const rows = snapshot.length
+    const cols =
+      rows > 0 ? snapshot[0]?.length ?? 0 : 0
+    if (rows === 0 || cols === 0) return []
+    const inBounds = (r: number, c: number) =>
+      r >= 0 && c >= 0 && r < rows && c < cols
+    const key = (r: number, c: number) =>
+      `${r},${c}`
+    const seen = new Set<string>()
+    const queue = [...initial]
+    const activations: SpecialActivation[] = []
+    for (const m of initial) {
+      seen.add(key(m.r, m.c))
+    }
+    while (queue.length > 0) {
+      const cell = queue.shift()
+      if (!cell || !inBounds(cell.r, cell.c))
+        continue
+      const value = snapshot[cell.r]?.[cell.c]
+      if (
+        typeof value !== 'number' ||
+        value < 0
+      ) {
+        continue
+      }
+      const special = getSpecialType(value)
+      if (!special) continue
+      if (special === 'line') {
+        const orientation =
+          getLineOrientation(value) ?? 'row'
+        activations.push({
+          cell,
+          type: 'line',
+          orientation,
+        })
+        if (orientation === 'row') {
+          for (let c = 0; c < cols; c += 1) {
+            const k = key(cell.r, c)
+            if (seen.has(k)) continue
+            seen.add(k)
+            queue.push({ r: cell.r, c })
+          }
+        } else {
+          for (let r = 0; r < rows; r += 1) {
+            const k = key(r, cell.c)
+            if (seen.has(k)) continue
+            seen.add(k)
+            queue.push({ r, c: cell.c })
+          }
+        }
+      } else {
+        activations.push({ cell, type: 'bomb' })
+        for (let dr = -1; dr <= 1; dr += 1) {
+          for (let dc = -1; dc <= 1; dc += 1) {
+            const rr = cell.r + dr
+            const cc = cell.c + dc
+            if (!inBounds(rr, cc)) continue
+            const k = key(rr, cc)
+            if (seen.has(k)) continue
+            seen.add(k)
+            queue.push({ r: rr, c: cc })
+          }
+        }
+      }
+    }
+    return activations
+  }
+
   const clearHint = () => {
     hintMove = null
   }
@@ -663,6 +744,12 @@ export function createMatch3Game(
         pass += 1
         const matches = findMatches(board)
         if (matches.length === 0) break
+        const boardBeforeClear = cloneBoard(board)
+        const specialActivations =
+          collectSpecialActivations(
+            boardBeforeClear,
+            matches
+          )
 
         await flashMatches(matches, {
           durationMs: 220,
@@ -679,6 +766,11 @@ export function createMatch3Game(
         maxChain = Math.max(maxChain, chain)
         playSound(chain > 1 ? 'cascade' : 'match')
         if (matchFx) {
+          matchFx.burstSpecialActivations(
+            boardBeforeClear,
+            specialActivations,
+            gameTheme
+          )
           matchFx.burstScoreText(
             board,
             matches,

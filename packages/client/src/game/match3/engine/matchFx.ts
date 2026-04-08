@@ -15,6 +15,7 @@ import {
   type GameThemeOption,
 } from './config'
 import { boardLayout } from './renderer'
+import type { LineOrientation } from './core/cell'
 
 type Particle = {
   x: number
@@ -36,6 +37,12 @@ type FloatingText = {
   text: string
   color: string
   size: number
+}
+
+type SpecialActivationFx = {
+  cell: CellRC
+  type: 'line' | 'bomb'
+  orientation?: LineOrientation
 }
 
 function colorForTileKind(
@@ -254,6 +261,76 @@ export function createMatchFx(
     })
   }
 
+  function burstSpecialActivations(
+    board: Board,
+    activations: SpecialActivationFx[],
+    theme: GameThemeOption
+  ) {
+    const L = boardLayout(
+      board,
+      ctx.canvas.width,
+      ctx.canvas.height
+    )
+    if (!L || activations.length === 0) return
+    const { cell, ox, oy } = L
+    for (const a of activations) {
+      const cx = ox + a.cell.c * cell + cell / 2
+      const cy = oy + a.cell.r * cell + cell / 2
+      if (a.type === 'line') {
+        const n = 62
+        for (let i = 0; i < n; i += 1) {
+          const t = (Math.random() - 0.5) * 2
+          const along =
+            (Math.random() - 0.5) *
+            cell *
+            (a.orientation === 'row' ? 7.6 : 7)
+          const jitter =
+            (Math.random() - 0.5) * cell * 0.6
+          const isRow = a.orientation !== 'col'
+          particles.push({
+            x: isRow ? cx + along : cx + jitter,
+            y: isRow ? cy + jitter : cy + along,
+            vx: isRow ? t * 8 : t * 1.7,
+            vy: isRow ? t * 1.7 : t * 8,
+            life: 0,
+            maxLife: 240 + Math.random() * 180,
+            size: 1.8 + Math.random() * 3.4,
+            color:
+              theme === 'space'
+                ? '#a5f3fc'
+                : '#dbeafe',
+          })
+        }
+        continue
+      }
+      const n = 84
+      for (let i = 0; i < n; i += 1) {
+        const angle = Math.random() * Math.PI * 2
+        const dist =
+          Math.random() * cell * 1.6 + cell * 0.2
+        const sp = 2.2 + Math.random() * 9.5
+        particles.push({
+          x: cx + Math.cos(angle) * dist * 0.18,
+          y: cy + Math.sin(angle) * dist * 0.18,
+          vx: Math.cos(angle) * sp,
+          vy: Math.sin(angle) * sp,
+          life: 0,
+          maxLife: 260 + Math.random() * 220,
+          size: 2 + Math.random() * 4.6,
+          color:
+            theme === 'space'
+              ? '#fca5a5'
+              : '#fef3c7',
+        })
+      }
+    }
+    flash = Math.min(
+      1,
+      flash +
+        Math.min(0.9, activations.length * 0.2)
+    )
+  }
+
   function step(dtMs: number) {
     const k = Math.min(3, dtMs / 16.67)
     flash *= Math.pow(0.92, k)
@@ -407,6 +484,7 @@ export function createMatchFx(
     burstFromMatches,
     burstCelebration,
     burstScoreText,
+    burstSpecialActivations,
     step,
     draw,
     isActive,
