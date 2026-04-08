@@ -259,6 +259,7 @@ export function createMatch3Game(
   } | null = null
   let hintIdleMs = DEFAULT_HINT_IDLE_MS
   let hintTimeoutId: number | null = null
+  let inputBlocked = false
   let iconThemeRedrawId: number | null = null
   const pressedKeys = new Set<string>()
   let dragPointerId: number | null = null
@@ -580,7 +581,12 @@ export function createMatch3Game(
   }
 
   const showHintIfIdle = () => {
-    if (phase !== 'playing' || isResolving) return
+    if (
+      phase !== 'playing' ||
+      isResolving ||
+      inputBlocked
+    )
+      return
     if (firstPick || targetCell) return
     const candidate = findPossibleMoves(board)[0]
     if (!candidate) return
@@ -590,6 +596,8 @@ export function createMatch3Game(
 
   const scheduleHint = () => {
     stopHintTimer()
+    if (phase !== 'playing' || inputBlocked)
+      return
     hintTimeoutId = window.setTimeout(() => {
       showHintIfIdle()
     }, hintIdleMs)
@@ -913,6 +921,7 @@ export function createMatch3Game(
     stopTimer()
     timerId = window.setInterval(() => {
       if (phase !== 'playing') return
+      if (inputBlocked) return
       if (hud.timeLeftSec <= 0) return
       hud.timeLeftSec -= 1
       emitHud()
@@ -926,7 +935,8 @@ export function createMatch3Game(
     if (
       phase !== 'playing' ||
       isResolving ||
-      isAnimating
+      isAnimating ||
+      inputBlocked
     )
       return
     markPlayerActivity()
@@ -988,7 +998,8 @@ export function createMatch3Game(
     if (
       phase !== 'playing' ||
       isResolving ||
-      isAnimating
+      isAnimating ||
+      inputBlocked
     )
       return
     markPlayerActivity()
@@ -1010,6 +1021,7 @@ export function createMatch3Game(
     dr: number,
     dc: number
   ) => {
+    if (inputBlocked) return
     markPlayerActivity()
     if (!keyboardCursor) {
       keyboardCursor = { r: 0, c: 0 }
@@ -1032,12 +1044,18 @@ export function createMatch3Game(
   }
 
   const selectKeyboardCursor = () => {
+    if (inputBlocked) return
     if (!keyboardCursor) return
     void handleSelectCell(keyboardCursor)
   }
 
   const onKeyDown = (ev: KeyboardEvent) => {
-    if (phase !== 'playing' || isAnimating) return
+    if (
+      phase !== 'playing' ||
+      isAnimating ||
+      inputBlocked
+    )
+      return
     markPlayerActivity()
     const code = ev.code
     if (pressedKeys.has(code)) return
@@ -1078,6 +1096,14 @@ export function createMatch3Game(
   }
 
   const onPointerDown = (ev: PointerEvent) => {
+    if (
+      phase !== 'playing' ||
+      isResolving ||
+      isAnimating ||
+      inputBlocked
+    ) {
+      return
+    }
     ensureAudio()
     canvas.focus()
     dragPointerId = ev.pointerId
@@ -1104,6 +1130,7 @@ export function createMatch3Game(
       phase !== 'playing' ||
       isResolving ||
       isAnimating ||
+      inputBlocked ||
       !dragStartCell
     ) {
       return
@@ -1365,6 +1392,23 @@ export function createMatch3Game(
     }
   }
 
+  const setInputBlocked = (blocked: boolean) => {
+    inputBlocked = Boolean(blocked)
+    if (inputBlocked) {
+      clearDragState()
+      firstPick = null
+      targetCell = null
+      targetPulse = false
+      clearHint()
+      stopHintTimer()
+      drawBoard()
+      return
+    }
+    if (phase === 'playing') {
+      scheduleHint()
+    }
+  }
+
   const destroy = () => {
     canvas.removeEventListener(
       'pointerdown',
@@ -1409,6 +1453,7 @@ export function createMatch3Game(
     setIconTheme,
     setSoundEnabled,
     setVfxQuality,
+    setInputBlocked,
     setLevel,
     setScoreMode,
     setHintIdleMs,

@@ -136,7 +136,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const headerClass =
     'landing-header' +
-    (isGameVariant ? ' landing-header--game' : '')
+    (isGameVariant
+      ? ' landing-header--game'
+      : '') +
+    (isGameVariant && pageFs ? ' is-fs' : '')
 
   return (
     <header className={headerClass}>
@@ -366,6 +369,18 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={closeMobile}>
           Игра
         </Link>
+        {user && onOpenSettings ? (
+          <Link
+            type="button"
+            className="btn btn--outline"
+            to="/game/settings"
+            onClick={() => {
+              onOpenSettings()
+              closeMobile()
+            }}>
+            Настройки
+          </Link>
+        ) : null}
         <Link
           className="btn btn--outline"
           to="/profile"

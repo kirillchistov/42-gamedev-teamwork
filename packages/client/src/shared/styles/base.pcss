@@ -312,6 +312,10 @@ button {
   gap: 12px;
 }
 
+.landing-header--game.is-fs .landing-nav--desktop {
+  display: none;
+}
+
 .landing-header--game .landing-header__right {
   gap: 8px;
 }
@@ -405,6 +409,16 @@ button {
   width: 28px;
   height: 28px;
   padding: 5px;
+}
+
+.landing-header--game.is-fs .landing-burger {
+  display: flex;
+}
+
+.landing-header--game.is-fs .landing-nav--mobile.landing-nav--mobile-open {
+  display: flex;
+  position: relative;
+  z-index: 901;
 }
 
 .landing-header--game .landing-burger.is-open span:nth-child(1) {

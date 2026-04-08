@@ -13,12 +13,26 @@
   width: 100%;
   max-width: 100%;
   margin-top: 8px;
-  --m3-gap: clamp(8px, 1vw, 14px);
-  --m3-safe-w: calc(100dvw - 36px);
-  --m3-safe-h: calc(100dvh - var(--header-height-game) - 122px);
+  /* Каскад размеров: viewport -> main/card paddings -> HUD -> board */
+  --m3-main-pad-y: clamp(8px, 1.1vh, 14px);
+  --m3-card-pad-x: clamp(12px, 1.3vw, 16px);
+  --m3-card-pad-y: clamp(10px, 1.2vh, 16px);
+  --m3-arena-inset: clamp(8px, 1.2vmin, 14px);
+  --m3-gap: clamp(8px, 1vh, 12px);
+  --m3-hud-row-h: clamp(52px, 8.4vh, 74px);
+  --m3-safe-w: calc(
+    100% - (var(--m3-arena-inset) * 2)
+  );
+  --m3-safe-h: calc(
+    100dvh - var(--header-height-game) -
+      (var(--m3-main-pad-y) * 2) -
+      (var(--m3-card-pad-y) * 2) -
+      (var(--m3-arena-inset) * 2) -
+      var(--m3-hud-row-h) - var(--m3-gap)
+  );
   --m3-board-size: min(
-    calc(var(--m3-safe-w) * 0.78),
-    calc(var(--m3-safe-h) * 0.78)
+    calc(var(--m3-safe-w) * 0.92),
+    calc(var(--m3-safe-h) * 0.98)
   );
   --m3-results-font: clamp(13px, 1.45vw, 16px);
   --m3-results-title: clamp(20px, 2.8vw, 38px);
@@ -30,13 +44,35 @@
     calc(100dvw - (var(--layout-padding-x) * 2))
   );
   max-width: none;
-  padding: 12px 14px 16px;
+  padding: var(--m3-card-pad-y) var(--m3-card-pad-x)
+    calc(var(--m3-card-pad-y) + 2px);
+}
+
+.game-page-shell:fullscreen .match3-page__card,
+.game-page-shell:-webkit-full-screen .match3-page__card {
+  /* В fullscreen рамка шире, чтобы поле занимало полезное пространство */
+  width: min(
+    calc(100dvw - (var(--layout-padding-x) * 1.2)),
+    94%
+  );
+}
+
+.game-page-shell:fullscreen .match3,
+.game-page-shell:-webkit-full-screen .match3 {
+  /* Чуть более агрессивно отдаем ширину под поле в fullscreen */
+  --m3-safe-w: calc(
+    100% - (var(--m3-arena-inset) * 2)
+  );
+  --m3-board-size: min(
+    calc(var(--m3-safe-w) * 0.985),
+    calc(var(--m3-safe-h) * 0.995)
+  );
 }
 
 .match3-page__main {
   align-items: center;
-  padding-top: 10px;
-  padding-bottom: 14px;
+  padding-top: var(--m3-main-pad-y);
+  padding-bottom: var(--m3-main-pad-y);
 }
 
 .match3-page__toast-wrap {
@@ -218,12 +254,31 @@
   margin-inline: auto;
 }
 
+.match3__arena--playing {
+  /* HUD наверху: гармоничные равные отступы сверху и по бокам */
+  justify-content: flex-start;
+  align-items: center;
+  padding: var(--m3-arena-inset);
+  box-sizing: border-box;
+  gap: var(--m3-gap);
+}
+
 .match3__hud-top {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   width: min(820px, 98%);
   margin: 0 auto 6px;
+}
+
+.match3__arena--playing .match3__hud-top {
+  width: 100%;
+  margin: 0;
+}
+
+.match3__arena--playing .match3__board-wrap {
+  /* Центрируем поле между HUD и нижним краем контейнера */
+  margin: auto;
 }
 
 .match3__hud-mobile-item {
@@ -285,17 +340,21 @@
 }
 
 @media (max-width: 520px) {
-  .match3__arena {
-    --m3-safe-w: calc(100dvw - 22px);
-    --m3-safe-h: calc(
-      100dvh - var(--header-height-game) - 152px
-    );
+  .match3 {
+    --m3-main-pad-y: clamp(6px, 1vh, 10px);
+    --m3-card-pad-x: clamp(8px, 2.6vw, 12px);
+    --m3-card-pad-y: clamp(8px, 1vh, 11px);
+    --m3-arena-inset: clamp(6px, 1vmin, 10px);
+    --m3-gap: clamp(6px, 0.9vh, 9px);
+    --m3-hud-row-h: clamp(82px, 14vh, 112px);
     --m3-board-size: min(
-      calc(var(--m3-safe-w) * 0.8),
-      calc(var(--m3-safe-h) * 0.8)
+      calc(var(--m3-safe-w) * 0.96),
+      calc(var(--m3-safe-h) * 0.98)
     );
+  }
+
+  .match3__arena {
     width: 100%;
-    gap: 8px;
   }
 
   .match3__hud-top {

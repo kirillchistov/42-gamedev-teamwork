@@ -435,7 +435,13 @@ export const Match3Screen: React.FC<
         'match3' +
         (isStartPhase ? ' match3--start' : '')
       }>
-      <div className="match3__arena">
+      <div
+        className={
+          'match3__arena' +
+          (uiPhase === 'playing'
+            ? ' match3__arena--playing'
+            : '')
+        }>
         {uiPhase === 'playing' && (
           <div className="match3__hud-top">
             <div className="match3__hud-mobile-item">
