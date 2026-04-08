@@ -72,6 +72,7 @@ import {
   GAME_DURATION_SEC,
   type GameIconThemeOption,
   type GameThemeOption,
+  type GameVfxQualityOption,
 } from './config'
 import {
   createInitialHud,
@@ -126,6 +127,8 @@ type CreateParams = {
   onPremiumMatchBorder?: (
     shape: 'line4plus' | 'tOrL'
   ) => void
+  /** По умолчанию `full`: частицы и вспышка на fx-canvas. `simple` — только лёгкая подсветка матчей. */
+  vfxQuality?: GameVfxQualityOption
 }
 
 const DEFAULT_HINT_IDLE_MS = 10000
@@ -167,6 +170,7 @@ export function createMatch3Game(
     onGameEnd,
     onComboShake,
     onPremiumMatchBorder,
+    vfxQuality: initialVfxQuality,
   } = params
   const ctxMaybe = canvas.getContext('2d')
   if (!ctxMaybe) {
@@ -186,6 +190,9 @@ export function createMatch3Game(
       matchFx = createMatchFx(fxCtxMaybe)
     }
   }
+
+  let gameVfxQuality: GameVfxQualityOption =
+    initialVfxQuality ?? 'full'
 
   const cancelFxLoop = () => {
     if (fxRafId !== null) {
@@ -649,9 +656,16 @@ export function createMatch3Game(
     matches: CellRC[],
     opts?: { durationMs?: number; chain?: number }
   ): Promise<void> {
-    const durationMs = opts?.durationMs ?? 200
+    const fullVfx = gameVfxQuality === 'full'
+    const durationMs = fullVfx
+      ? opts?.durationMs ?? 200
+      : Math.min(opts?.durationMs ?? 220, 140)
     const chain = Math.max(1, opts?.chain ?? 1)
-    if (matchFx && matches.length > 0) {
+    if (
+      matchFx &&
+      matches.length > 0 &&
+      fullVfx
+    ) {
       matchFx.burstFromMatches(
         board,
         matches,
@@ -667,8 +681,9 @@ export function createMatch3Game(
           1,
           (now - start) / durationMs
         )
-        const alpha =
-          0.4 + 0.6 * Math.sin(t * Math.PI * 3)
+        const alpha = fullVfx
+          ? 0.4 + 0.6 * Math.sin(t * Math.PI * 3)
+          : 0.5 + 0.45 * Math.sin(t * Math.PI)
         drawBoard({
           highlight: matches,
           alpha,
@@ -686,7 +701,8 @@ export function createMatch3Game(
     style: 'normal' | 'line4plus' | 'tOrL',
     matches: CellRC[]
   ) => {
-    if (!matchFx) return
+    if (!matchFx || gameVfxQuality !== 'full')
+      return
     matchFx.burstCelebration(
       board,
       matches.length > 0 ? matches : [a, b],
@@ -769,8 +785,9 @@ export function createMatch3Game(
         const matchClusterStyle =
           classifySwapCelebration(matches)
         if (
-          matchClusterStyle === 'line4plus' ||
-          matchClusterStyle === 'tOrL'
+          gameVfxQuality === 'full' &&
+          (matchClusterStyle === 'line4plus' ||
+            matchClusterStyle === 'tOrL')
         ) {
           onPremiumMatchBorder?.(
             matchClusterStyle
@@ -790,11 +807,17 @@ export function createMatch3Game(
         syncGoalProgress(hud)
         emitHud()
         maxChain = Math.max(maxChain, chain)
-        if (chain >= COMBO_SHAKE_MIN_CHAIN) {
+        if (
+          chain >= COMBO_SHAKE_MIN_CHAIN &&
+          gameVfxQuality === 'full'
+        ) {
           onComboShake?.(chain)
         }
         playSound(chain > 1 ? 'cascade' : 'match')
-        if (matchFx) {
+        if (
+          matchFx &&
+          gameVfxQuality === 'full'
+        ) {
           matchFx.burstSpecialActivations(
             boardBeforeClear,
             specialActivations,
@@ -1332,6 +1355,16 @@ export function createMatch3Game(
     }
   }
 
+  const setVfxQuality = (
+    q: GameVfxQualityOption
+  ) => {
+    gameVfxQuality = q
+    if (q === 'simple') {
+      cancelFxLoop()
+      matchFx?.reset()
+    }
+  }
+
   const destroy = () => {
     canvas.removeEventListener(
       'pointerdown',
@@ -1375,6 +1408,7 @@ export function createMatch3Game(
     setTheme,
     setIconTheme,
     setSoundEnabled,
+    setVfxQuality,
     setLevel,
     setScoreMode,
     setHintIdleMs,

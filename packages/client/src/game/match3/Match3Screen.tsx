@@ -46,6 +46,7 @@ import {
   type GameDurationOption,
   type GameIconThemeOption,
   type GameThemeOption,
+  type GameVfxQualityOption,
 } from './engine/config'
 import {
   DEFAULT_MATCH3_LEVEL_ID,
@@ -133,6 +134,8 @@ type Match3ScreenProps = {
   tileKinds?: number
   iconThemeOption?: GameIconThemeOption
   soundEnabled?: boolean
+  /** Полный VFX или упрощённый (без частиц, тряски и «петард» по контуру). */
+  vfxQuality?: GameVfxQualityOption
   hintIdleMs?: number
   onOpenSettings?: () => void
   forcePlayMode?: boolean
@@ -152,6 +155,7 @@ export const Match3Screen: React.FC<
   tileKinds,
   iconThemeOption = 'cosmic',
   soundEnabled = true,
+  vfxQuality = 'full',
   hintIdleMs,
   onOpenSettings,
   forcePlayMode = false,
@@ -248,6 +252,7 @@ export const Match3Screen: React.FC<
     const game = createMatch3Game({
       canvas,
       fxCanvas: fxCanvas ?? undefined,
+      vfxQuality,
       onHudChange: setHud,
       onComboShake,
       onPremiumMatchBorder,
@@ -285,6 +290,12 @@ export const Match3Screen: React.FC<
     onComboShake,
     onPremiumMatchBorder,
   ])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setVfxQuality(vfxQuality)
+  }, [vfxQuality])
 
   useEffect(() => {
     if (forcePlayMode || uiPhase !== 'countdown')

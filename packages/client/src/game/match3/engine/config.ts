@@ -67,6 +67,14 @@ export const GAME_ICON_THEME_OPTIONS = [
 export type GameIconThemeOption =
   typeof GAME_ICON_THEME_OPTIONS[number]
 
+/** Полный VFX (частицы, вспышка, тряска) или упрощённый (только подсветка на поле). */
+export const GAME_VFX_QUALITY_OPTIONS = [
+  'full',
+  'simple',
+] as const
+export type GameVfxQualityOption =
+  typeof GAME_VFX_QUALITY_OPTIONS[number]
+
 export const TILE_COLORS_BY_THEME: Record<
   GameThemeOption,
   string[]

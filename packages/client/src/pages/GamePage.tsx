@@ -46,6 +46,7 @@ import {
   type GameDurationOption,
   type GameIconThemeOption,
   type GameThemeOption,
+  type GameVfxQualityOption,
 } from '../game/match3/engine/config'
 
 const LAST_RESULT_KEY = 'match3:last-result'
@@ -85,6 +86,8 @@ export const GamePage: React.FC = () => {
     useState(4000)
   const [soundEnabled, setSoundEnabled] =
     useState(true)
+  const [vfxQuality, setVfxQuality] =
+    useState<GameVfxQualityOption>('full')
   const [toastMessage, setToastMessage] =
     useState('')
   const [startCountdown, setStartCountdown] =
@@ -496,6 +499,24 @@ export const GamePage: React.FC = () => {
                     </select>
                   </label>
                   <label className="match3-page__settings-label">
+                    Графика (эффекты)
+                    <select
+                      value={vfxQuality}
+                      onChange={e => {
+                        setVfxQuality(
+                          e.target
+                            .value as GameVfxQualityOption
+                        )
+                      }}>
+                      <option value="full">
+                        Полная
+                      </option>
+                      <option value="simple">
+                        Упрощённая
+                      </option>
+                    </select>
+                  </label>
+                  <label className="match3-page__settings-label">
                     Таймаут подсказки
                     <select
                       value={hintIdleMs}
@@ -634,6 +655,7 @@ export const GamePage: React.FC = () => {
               tileKinds={tileKinds}
               iconThemeOption={iconThemeOption}
               soundEnabled={soundEnabled}
+              vfxQuality={vfxQuality}
               hintIdleMs={hintIdleMs}
               onOpenSettings={() =>
                 setShowSettings(true)
