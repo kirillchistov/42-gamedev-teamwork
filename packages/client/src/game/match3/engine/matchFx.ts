@@ -331,6 +331,47 @@ export function createMatchFx(
     )
   }
 
+  function burstGoalHits(
+    board: Board,
+    cells: CellRC[],
+    theme: GameThemeOption
+  ) {
+    const L = boardLayout(
+      board,
+      ctx.canvas.width,
+      ctx.canvas.height
+    )
+    if (!L || cells.length === 0) return
+    const { cell, ox, oy } = L
+    for (const hit of cells) {
+      const cx = ox + hit.c * cell + cell / 2
+      const cy = oy + hit.r * cell + cell / 2
+      const n = 46
+      for (let i = 0; i < n; i += 1) {
+        const angle = Math.random() * Math.PI * 2
+        const speed = 2 + Math.random() * 8.5
+        particles.push({
+          x:
+            cx +
+            (Math.random() - 0.5) * cell * 0.16,
+          y:
+            cy +
+            (Math.random() - 0.5) * cell * 0.16,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 0,
+          maxLife: 220 + Math.random() * 180,
+          size: 1.8 + Math.random() * 3.4,
+          color:
+            theme === 'space'
+              ? '#fde68a'
+              : '#fbbf24',
+        })
+      }
+    }
+    flash = Math.min(1, flash + 0.5)
+  }
+
   function step(dtMs: number) {
     const k = Math.min(3, dtMs / 16.67)
     flash *= Math.pow(0.92, k)
@@ -485,6 +526,7 @@ export function createMatchFx(
     burstCelebration,
     burstScoreText,
     burstSpecialActivations,
+    burstGoalHits,
     step,
     draw,
     isActive,

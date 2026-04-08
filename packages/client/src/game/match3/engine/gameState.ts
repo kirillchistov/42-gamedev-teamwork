@@ -28,6 +28,8 @@ export type GameHudState = {
   dailyRecord: number
   goalScore: number
   goalProgressPct: number
+  goalTargetsTotal: number
+  goalTargetsLeft: number
   timeLeftSec: number
 }
 
@@ -75,6 +77,8 @@ export function createInitialHud(
     dailyRecord: 0,
     goalScore: 0,
     goalProgressPct: 0,
+    goalTargetsTotal: 0,
+    goalTargetsLeft: 0,
     timeLeftSec: durationSec,
   }
 }
@@ -86,6 +90,8 @@ export function resetHudForIdle(
     playerRecord: number
     dailyRecord: number
     goalScore?: number
+    goalTargetsTotal?: number
+    goalTargetsLeft?: number
   }
 ): void {
   const durationSec =
@@ -101,6 +107,15 @@ export function resetHudForIdle(
     0,
     params.goalScore ?? hud.goalScore
   )
+  hud.goalTargetsTotal = Math.max(
+    0,
+    params.goalTargetsTotal ??
+      hud.goalTargetsTotal
+  )
+  hud.goalTargetsLeft = Math.max(
+    0,
+    params.goalTargetsLeft ?? hud.goalTargetsLeft
+  )
   hud.goalProgressPct = 0
 }
 
@@ -111,6 +126,8 @@ export function resetHudForPlay(
     playerRecord: number
     dailyRecord: number
     goalScore?: number
+    goalTargetsTotal?: number
+    goalTargetsLeft?: number
   }
 ): void {
   resetHudForIdle(hud, params)
@@ -119,11 +136,18 @@ export function resetHudForPlay(
 export function syncGoalProgress(
   hud: GameHudState
 ): void {
-  if (hud.goalScore <= 0) {
-    hud.goalProgressPct = 0
-    return
-  }
-  const raw = (hud.score / hud.goalScore) * 100
+  const scorePct =
+    hud.goalScore > 0
+      ? (hud.score / hud.goalScore) * 100
+      : 100
+  const targetsPct =
+    hud.goalTargetsTotal > 0
+      ? ((hud.goalTargetsTotal -
+          hud.goalTargetsLeft) /
+          hud.goalTargetsTotal) *
+        100
+      : 100
+  const raw = Math.min(scorePct, targetsPct)
   hud.goalProgressPct = Math.max(
     0,
     Math.min(100, Math.floor(raw))

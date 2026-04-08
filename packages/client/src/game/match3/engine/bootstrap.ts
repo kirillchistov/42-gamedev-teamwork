@@ -136,6 +136,8 @@ const FALL_ANIM_MS = 190
 const ICE_HP = 1
 const ICE_SCORE_PER_DAMAGE = 10
 const ICE_SCORE_BREAK_BONUS = 40
+const TARGET_HP = 1
+const TARGET_SCORE_PER_HIT = 60
 /** Номер каскада в resolve, с которого дергаем screen shake в UI. */
 const COMBO_SHAKE_MIN_CHAIN = 3
 
@@ -149,6 +151,7 @@ type SpecialActivation = {
   orientation?: 'row' | 'col'
 }
 type IceGrid = number[][]
+type GoalGrid = number[][]
 
 type SoundFx =
   | 'swap'
@@ -239,6 +242,7 @@ export function createMatch3Game(
 
   let board: Board = []
   let iceGrid: IceGrid = []
+  let goalGrid: GoalGrid = []
   let boardSize = 8
   let tileKinds = tileKindsForBoardSize(boardSize)
   let forcedTileKinds: number | null = null
@@ -250,6 +254,7 @@ export function createMatch3Game(
   let soundEnabled = true
   let scoreMode: ScoreMode = 'x1'
   let gameIceMultiplier: 1 | 2 | 4 = 1
+  let gameTargetCells = 0
   let phase: Phase = 'idle'
   let isAnimating = false
   let timerId: number | null = null
@@ -284,6 +289,7 @@ export function createMatch3Game(
       hintFrom: hintMove?.from ?? null,
       hintTo: hintMove?.to ?? null,
       iceGrid,
+      goalGrid,
       ...opts,
       theme: gameTheme,
       iconTheme: gameIconTheme,
@@ -422,6 +428,9 @@ export function createMatch3Game(
 
   const cloneIceGrid = (src: IceGrid): IceGrid =>
     src.map(row => [...row])
+  const cloneGoalGrid = (
+    src: GoalGrid
+  ): GoalGrid => src.map(row => [...row])
 
   const inBounds = (r: number, c: number) =>
     r >= 0 &&
@@ -562,6 +571,52 @@ export function createMatch3Game(
     return grid
   }
 
+  const createGoalGrid = (
+    srcBoard: Board,
+    count: number,
+    hp: number
+  ): GoalGrid => {
+    const rows = srcBoard.length
+    const cols =
+      rows > 0 ? srcBoard[0]?.length ?? 0 : 0
+    const grid: GoalGrid = Array.from(
+      { length: rows },
+      () => Array.from({ length: cols }, () => 0)
+    )
+    const capped = Math.max(
+      0,
+      Math.min(rows * cols, Math.floor(count))
+    )
+    if (capped <= 0) return grid
+    const candidates: CellRC[] = []
+    for (let r = 0; r < rows; r += 1) {
+      for (let c = 0; c < cols; c += 1) {
+        if ((srcBoard[r]?.[c] ?? -1) < 0) continue
+        candidates.push({ r, c })
+      }
+    }
+    for (
+      let i = candidates.length - 1;
+      i > 0;
+      i -= 1
+    ) {
+      const j = Math.floor(
+        Math.random() * (i + 1)
+      )
+      const tmp = candidates[i]
+      candidates[i] = candidates[j] as CellRC
+      candidates[j] = tmp as CellRC
+    }
+    for (let i = 0; i < capped; i += 1) {
+      const cell = candidates[i]
+      if (!cell) break
+      const row = grid[cell.r]
+      if (!row) continue
+      row[cell.c] = hp
+    }
+    return grid
+  }
+
   const collectClearedCells = (
     matches: CellRC[],
     activations: SpecialActivation[]
@@ -641,6 +696,59 @@ export function createMatch3Game(
       damageHits * ICE_SCORE_PER_DAMAGE +
       breaks * ICE_SCORE_BREAK_BONUS
     return Math.floor(raw * chain * scoreMult())
+  }
+
+  const applyGoalDamageFromBombs = (
+    activations: SpecialActivation[],
+    chain: number
+  ): { score: number; hits: CellRC[] } => {
+    const nextGoal = cloneGoalGrid(goalGrid)
+    const hits: CellRC[] = []
+    const seen = new Set<string>()
+    const touch = (r: number, c: number) => {
+      if (!inBounds(r, c)) return
+      const hp = nextGoal[r]?.[c] ?? 0
+      if (hp <= 0) return
+      const row = nextGoal[r]
+      if (!row) return
+      row[c] = Math.max(0, hp - 1)
+      if (row[c] === 0) {
+        const key = `${r},${c}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          hits.push({ r, c })
+        }
+      }
+    }
+    for (const a of activations) {
+      if (a.type !== 'bomb') continue
+      for (let dr = -1; dr <= 1; dr += 1) {
+        for (let dc = -1; dc <= 1; dc += 1) {
+          touch(a.cell.r + dr, a.cell.c + dc)
+        }
+      }
+    }
+    goalGrid = nextGoal
+    hud.goalTargetsLeft = nextGoal.reduce(
+      (acc, row) =>
+        acc +
+        row.reduce(
+          (rowAcc, value) =>
+            rowAcc + (value > 0 ? 1 : 0),
+          0
+        ),
+      0
+    )
+    syncGoalProgress(hud)
+    return {
+      score: Math.floor(
+        hits.length *
+          TARGET_SCORE_PER_HIT *
+          chain *
+          scoreMult()
+      ),
+      hits,
+    }
   }
 
   const animateTileMotions = (
@@ -1055,10 +1163,16 @@ export function createMatch3Game(
           clearedCells,
           chain
         )
+        const goalDamage =
+          applyGoalDamageFromBombs(
+            specialActivations,
+            chain
+          )
         const gained = Math.floor(
           base * chain * scoreMult()
         )
-        hud.score += gained + iceBonus
+        hud.score +=
+          gained + iceBonus + goalDamage.score
         hud.currentCombo = chain
         syncGoalProgress(hud)
         emitHud()
@@ -1079,10 +1193,17 @@ export function createMatch3Game(
             specialActivations,
             gameTheme
           )
+          if (goalDamage.hits.length > 0) {
+            matchFx.burstGoalHits(
+              board,
+              goalDamage.hits,
+              gameTheme
+            )
+          }
           matchFx.burstScoreText(
             board,
             matches,
-            gained + iceBonus,
+            gained + iceBonus + goalDamage.score,
             chain
           )
           ensureFxLoop()
@@ -1129,7 +1250,8 @@ export function createMatch3Game(
 
       if (
         gameGoalScore > 0 &&
-        hud.score >= gameGoalScore
+        hud.score >= gameGoalScore &&
+        hud.goalTargetsLeft <= 0
       ) {
         finishGame('goalReached')
         return
@@ -1151,6 +1273,23 @@ export function createMatch3Game(
     tileKinds = next.tileKinds
     board = next.board
     iceGrid = createIceGrid(board, ICE_HP)
+    goalGrid = createGoalGrid(
+      board,
+      gameTargetCells,
+      TARGET_HP
+    )
+    hud.goalTargetsTotal = gameTargetCells
+    hud.goalTargetsLeft = goalGrid.reduce(
+      (acc, row) =>
+        acc +
+        row.reduce(
+          (rowAcc, value) =>
+            rowAcc + (value > 0 ? 1 : 0),
+          0
+        ),
+      0
+    )
+    syncGoalProgress(hud)
     keyboardCursor = {
       r: Math.floor(boardSize / 2),
       c: Math.floor(boardSize / 2),
@@ -1511,6 +1650,7 @@ export function createMatch3Game(
     phase = 'idle'
     board = []
     iceGrid = []
+    goalGrid = []
     firstPick = null
     keyboardCursor = null
     targetCell = null
@@ -1520,6 +1660,8 @@ export function createMatch3Game(
       playerRecord: loadPlayerRecord(),
       dailyRecord: loadDailyRecord(),
       goalScore: gameGoalScore,
+      goalTargetsTotal: gameTargetCells,
+      goalTargetsLeft: gameTargetCells,
     })
     drawBoard()
     emitHud()
@@ -1536,6 +1678,8 @@ export function createMatch3Game(
       playerRecord: loadPlayerRecord(),
       dailyRecord: loadDailyRecord(),
       goalScore: gameGoalScore,
+      goalTargetsTotal: gameTargetCells,
+      goalTargetsLeft: gameTargetCells,
     })
     firstPick = null
 
@@ -1600,6 +1744,10 @@ export function createMatch3Game(
     gameTheme = level.theme
     forcedTileKinds = level.tileKinds
     gameIceMultiplier = level.iceMultiplier ?? 1
+    gameTargetCells = Math.max(
+      0,
+      level.targetCells ?? 0
+    )
 
     if (phase === 'playing') {
       rebuildBoard()
@@ -1609,6 +1757,8 @@ export function createMatch3Game(
 
     hud.timeLeftSec = gameDurationSec
     hud.goalScore = gameGoalScore
+    hud.goalTargetsTotal = gameTargetCells
+    hud.goalTargetsLeft = gameTargetCells
     syncGoalProgress(hud)
     rebuildBoard()
     emitHud()

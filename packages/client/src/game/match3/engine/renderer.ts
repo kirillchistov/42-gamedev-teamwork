@@ -53,6 +53,7 @@ export type RenderOpts = {
   theme?: GameThemeOption
   iconTheme?: GameIconThemeOption
   iceGrid?: number[][]
+  goalGrid?: number[][]
 }
 
 const COSMIC_ICON_PATHS = [
@@ -500,6 +501,33 @@ function drawIceOverlay(
   ctx.restore()
 }
 
+function drawGoalOverlay(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number
+) {
+  const cx = x + cell / 2
+  const cy = y + cell / 2
+  const r = Math.max(4, cell * 0.2)
+  ctx.save()
+  ctx.lineWidth = Math.max(1.4, cell * 0.05)
+  ctx.strokeStyle = 'rgba(251, 191, 36, 0.95)'
+  ctx.fillStyle = 'rgba(120, 53, 15, 0.2)'
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.strokeStyle = 'rgba(254, 240, 138, 0.9)'
+  ctx.beginPath()
+  ctx.moveTo(cx - r * 0.55, cy)
+  ctx.lineTo(cx + r * 0.55, cy)
+  ctx.moveTo(cx, cy - r * 0.55)
+  ctx.lineTo(cx, cy + r * 0.55)
+  ctx.stroke()
+  ctx.restore()
+}
+
 function getClientXY(
   ev: MouseEvent | PointerEvent | TouchEvent
 ): {
@@ -685,6 +713,11 @@ export function renderBoard(
           cell,
           iceHp
         )
+      }
+      const hasGoal =
+        (opts?.goalGrid?.[r]?.[c] ?? 0) > 0
+      if (hasGoal) {
+        drawGoalOverlay(ctx, drawX, drawY, cell)
       }
     }
   }

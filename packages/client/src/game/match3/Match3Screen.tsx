@@ -178,6 +178,8 @@ export const Match3Screen: React.FC<
     dailyRecord: 0,
     goalScore: 0,
     goalProgressPct: 0,
+    goalTargetsTotal: 0,
+    goalTargetsLeft: 0,
     timeLeftSec: 300,
   })
 
@@ -399,7 +401,8 @@ export const Match3Screen: React.FC<
       gameEndReason === 'goalReached' ||
       (resultSnapshot.goalScore > 0 &&
         resultSnapshot.score >=
-          resultSnapshot.goalScore)
+          resultSnapshot.goalScore &&
+        resultSnapshot.goalTargetsLeft <= 0)
     const goalRemain = Math.max(
       0,
       resultSnapshot.goalScore -
@@ -416,6 +419,8 @@ export const Match3Screen: React.FC<
     return {
       isWin,
       goalRemain,
+      targetsRemain:
+        resultSnapshot.goalTargetsLeft,
       comboBonus,
       timeBonus,
       totalWithBonus,
@@ -456,6 +461,16 @@ export const Match3Screen: React.FC<
               <span>Цель</span>
               <strong>{goalPct}</strong>
             </div>
+            {hud.goalTargetsTotal > 0 && (
+              <div className="match3__hud-mobile-item">
+                <span>Метки</span>
+                <strong>
+                  {hud.goalTargetsTotal -
+                    hud.goalTargetsLeft}
+                  /{hud.goalTargetsTotal}
+                </strong>
+              </div>
+            )}
             <div className="match3__hud-mobile-item">
               <span>Время</span>
               <strong>{timeLabel}</strong>
@@ -530,6 +545,16 @@ export const Match3Screen: React.FC<
                         ? `${appliedLevel.goalValue} очков`
                         : '—'}
                     </div>
+                    {appliedLevel.targetCells &&
+                      appliedLevel.targetCells >
+                        0 && (
+                        <div>
+                          Меток для бомб:{' '}
+                          {
+                            appliedLevel.targetCells
+                          }
+                        </div>
+                      )}
                     <div>
                       Поле:{' '}
                       {appliedLevel.boardSize}x
@@ -645,6 +670,14 @@ export const Match3Screen: React.FC<
                 Осталось до цели:{' '}
                 {resultStats?.goalRemain ?? 0}
               </li>
+              {resultSnapshot.goalTargetsTotal >
+                0 && (
+                <li>
+                  Осталось меток:{' '}
+                  {resultStats?.targetsRemain ??
+                    0}
+                </li>
+              )}
               <li>
                 Лучшее комбо: x
                 {resultSnapshot.maxCombo}
