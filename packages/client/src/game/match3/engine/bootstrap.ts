@@ -115,11 +115,24 @@ type CreateParams = {
   fxCanvas?: HTMLCanvasElement
   onHudChange?: (next: GameHudState) => void
   onGameEnd?: (payload: GameEndPayload) => void
+  /**
+   * Каскадный множитель текущего прохода (1 = первый матч, 2+ = комбо).
+   * UI может использовать для лёгкого screen shake при chain ≥ 3.
+   */
+  onComboShake?: (chain: number) => void
+  /**
+   * Матч 4+ в линии или T/L-форма: UI может показать искристую обводку поля.
+   */
+  onPremiumMatchBorder?: (
+    shape: 'line4plus' | 'tOrL'
+  ) => void
 }
 
 const DEFAULT_HINT_IDLE_MS = 10000
 const SWAP_ANIM_MS = 140
 const FALL_ANIM_MS = 190
+/** Номер каскада в resolve, с которого дергаем screen shake в UI. */
+const COMBO_SHAKE_MIN_CHAIN = 3
 
 type TileMotion = {
   from: CellRC
@@ -152,6 +165,8 @@ export function createMatch3Game(
     fxCanvas,
     onHudChange,
     onGameEnd,
+    onComboShake,
+    onPremiumMatchBorder,
   } = params
   const ctxMaybe = canvas.getContext('2d')
   if (!ctxMaybe) {
@@ -751,6 +766,17 @@ export function createMatch3Game(
             matches
           )
 
+        const matchClusterStyle =
+          classifySwapCelebration(matches)
+        if (
+          matchClusterStyle === 'line4plus' ||
+          matchClusterStyle === 'tOrL'
+        ) {
+          onPremiumMatchBorder?.(
+            matchClusterStyle
+          )
+        }
+
         await flashMatches(matches, {
           durationMs: 220,
           chain,
@@ -764,6 +790,9 @@ export function createMatch3Game(
         syncGoalProgress(hud)
         emitHud()
         maxChain = Math.max(maxChain, chain)
+        if (chain >= COMBO_SHAKE_MIN_CHAIN) {
+          onComboShake?.(chain)
+        }
         playSound(chain > 1 ? 'cascade' : 'match')
         if (matchFx) {
           matchFx.burstSpecialActivations(

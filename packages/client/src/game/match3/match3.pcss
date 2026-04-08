@@ -309,6 +309,7 @@
     padding-bottom: 10px;
   }
 
+  .match3__board-wrap,
   .match3__board {
     min-width: 0;
     max-width: 480px;
@@ -359,6 +360,27 @@
   overflow: hidden;
 }
 
+.match3__board-wrap {
+  position: relative;
+  margin-inline: auto;
+  width: var(--m3-board-size);
+  max-width: 880px;
+  min-width: 280px;
+  aspect-ratio: 1;
+}
+
+.match3__board-wrap .match3__board {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+}
+
+.match3__board-wrap .match3__board.is-overlay-only {
+  width: 100%;
+}
+
 .match3--start .match3__arena {
   --m3-board-size: min(
     calc(var(--m3-safe-w) * 0.96),
@@ -375,6 +397,86 @@
   margin-inline: auto;
 }
 
+.match3--start .match3__board-wrap {
+  width: var(--m3-board-size);
+  min-width: 0;
+  margin-inline: auto;
+}
+
+/* «Петарды» по периметру поля (последовательные вспышки) */
+.match3__board-sparks {
+  position: absolute;
+  inset: -3px;
+  z-index: 25;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.match3__spark-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: match3-spark-crackle 0.34s
+    ease-out forwards;
+}
+
+.match3__spark-dot--line4 {
+  background: radial-gradient(
+    circle,
+    #ffffff 0%,
+    #bae6fd 38%,
+    #38bdf8 62%,
+    transparent 78%
+  );
+  box-shadow:
+    0 0 4px rgba(255, 255, 255, 0.95),
+    0 0 10px rgba(56, 189, 248, 0.95),
+    0 0 18px rgba(125, 211, 252, 0.55);
+}
+
+.match3__spark-dot--tl {
+  background: radial-gradient(
+    circle,
+    #ffffff 0%,
+    #f9a8d4 35%,
+    #c084fc 58%,
+    transparent 78%
+  );
+  box-shadow:
+    0 0 5px rgba(255, 255, 255, 0.9),
+    0 0 11px rgba(244, 114, 182, 0.92),
+    0 0 20px rgba(192, 132, 252, 0.65);
+}
+
+@keyframes match3-spark-crackle {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    filter: brightness(1);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.45);
+    filter: brightness(1.35);
+  }
+  48% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+    filter: brightness(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.12);
+    filter: brightness(0.75);
+  }
+}
+
 .match3__board--stack {
   display: grid;
   grid-template: 1fr / 1fr;
@@ -384,6 +486,91 @@
 
 .match3__board--stack > .match3__canvas {
   grid-area: 1 / 1;
+}
+
+@keyframes match3-board-shake-light {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  16% {
+    transform: translate3d(-5px, 3px, 0);
+  }
+  32% {
+    transform: translate3d(5px, -3px, 0);
+  }
+  48% {
+    transform: translate3d(-4px, -3px, 0);
+  }
+  64% {
+    transform: translate3d(4px, 3px, 0);
+  }
+  80% {
+    transform: translate3d(-3px, 1px, 0);
+  }
+}
+
+@keyframes match3-board-shake-strong {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  12% {
+    transform: translate3d(-8px, 5px, 0);
+  }
+  24% {
+    transform: translate3d(8px, -5px, 0);
+  }
+  36% {
+    transform: translate3d(-7px, -5px, 0);
+  }
+  48% {
+    transform: translate3d(7px, 5px, 0);
+  }
+  60% {
+    transform: translate3d(-6px, 3px, 0);
+  }
+  72% {
+    transform: translate3d(5px, -3px, 0);
+  }
+}
+
+.match3__board--shake-light {
+  animation: match3-board-shake-light 0.5s
+    ease-out;
+  will-change: transform;
+}
+
+.match3__board--shake-strong {
+  animation: match3-board-shake-strong 0.58s
+    ease-out;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match3__board--shake-light,
+  .match3__board--shake-strong {
+    animation: none !important;
+    will-change: auto;
+  }
+
+  .match3__board-sparks .match3__spark-dot {
+    animation: match3-spark-crackle-soft 0.28s
+      ease-out forwards;
+    animation-delay: 0s !important;
+  }
+}
+
+@keyframes match3-spark-crackle-soft {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  40% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 .match3__canvas {
