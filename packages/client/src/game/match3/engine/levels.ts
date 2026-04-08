@@ -24,6 +24,8 @@ export type LevelConfig = {
   durationSec: GameDurationOption
   tileKinds: number
   theme: GameThemeOption
+  /** Множитель ледяных клеток: rookie=1, pilot=2, professor=4 */
+  iceMultiplier?: 1 | 2 | 4
 }
 
 export const MATCH3_LEVELS: LevelConfig[] = [
@@ -38,6 +40,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     durationSec: 3 * 60,
     tileKinds: 6,
     theme: 'standard',
+    iceMultiplier: 1,
   },
   {
     id: 'pilot',
@@ -50,6 +53,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     durationSec: 5 * 60,
     tileKinds: 7,
     theme: 'space',
+    iceMultiplier: 2,
   },
   {
     id: 'professor',
@@ -62,6 +66,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     durationSec: 10 * 60,
     tileKinds: 8,
     theme: 'math',
+    iceMultiplier: 4,
   },
 ]
 

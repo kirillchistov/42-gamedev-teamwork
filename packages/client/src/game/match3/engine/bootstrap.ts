@@ -52,7 +52,6 @@ import { findMatches } from './core/match'
 import type { CellRC } from './core/match'
 import { collapse } from './core/collapse'
 import { refill } from './core/refill'
-import { trySwap } from './core/swap'
 import { clearAndScore } from './core/scoring'
 import {
   getLineOrientation,
@@ -134,6 +133,9 @@ type CreateParams = {
 const DEFAULT_HINT_IDLE_MS = 10000
 const SWAP_ANIM_MS = 140
 const FALL_ANIM_MS = 190
+const ICE_HP = 1
+const ICE_SCORE_PER_DAMAGE = 10
+const ICE_SCORE_BREAK_BONUS = 40
 /** Номер каскада в resolve, с которого дергаем screen shake в UI. */
 const COMBO_SHAKE_MIN_CHAIN = 3
 
@@ -146,6 +148,7 @@ type SpecialActivation = {
   type: 'line' | 'bomb'
   orientation?: 'row' | 'col'
 }
+type IceGrid = number[][]
 
 type SoundFx =
   | 'swap'
@@ -235,6 +238,7 @@ export function createMatch3Game(
   const hud = createInitialHud()
 
   let board: Board = []
+  let iceGrid: IceGrid = []
   let boardSize = 8
   let tileKinds = tileKindsForBoardSize(boardSize)
   let forcedTileKinds: number | null = null
@@ -245,6 +249,7 @@ export function createMatch3Game(
     'cosmic'
   let soundEnabled = true
   let scoreMode: ScoreMode = 'x1'
+  let gameIceMultiplier: 1 | 2 | 4 = 1
   let phase: Phase = 'idle'
   let isAnimating = false
   let timerId: number | null = null
@@ -278,6 +283,7 @@ export function createMatch3Game(
     renderBoard(ctx, board, {
       hintFrom: hintMove?.from ?? null,
       hintTo: hintMove?.to ?? null,
+      iceGrid,
       ...opts,
       theme: gameTheme,
       iconTheme: gameIconTheme,
@@ -413,6 +419,229 @@ export function createMatch3Game(
 
   const cloneBoard = (src: Board): Board =>
     src.map(row => [...row])
+
+  const cloneIceGrid = (src: IceGrid): IceGrid =>
+    src.map(row => [...row])
+
+  const inBounds = (r: number, c: number) =>
+    r >= 0 &&
+    c >= 0 &&
+    r < board.length &&
+    c < (board[0]?.length ?? 0)
+
+  const isFrozenCell = (r: number, c: number) =>
+    (iceGrid[r]?.[c] ?? 0) > 0
+
+  const getMatchBoard = (): Board =>
+    board.map((row, r) =>
+      row.map((value, c) =>
+        isFrozenCell(r, c) ? -1 : value
+      )
+    )
+
+  const isAdjacent = (a: CellRC, b: CellRC) => {
+    const dr = Math.abs(a.r - b.r)
+    const dc = Math.abs(a.c - b.c)
+    return (
+      (dr === 1 && dc === 0) ||
+      (dr === 0 && dc === 1)
+    )
+  }
+
+  const trySwapConsideringIce = (
+    a: CellRC,
+    b: CellRC
+  ): boolean => {
+    if (!isAdjacent(a, b)) return false
+    if (
+      !inBounds(a.r, a.c) ||
+      !inBounds(b.r, b.c)
+    )
+      return false
+    if (
+      isFrozenCell(a.r, a.c) ||
+      isFrozenCell(b.r, b.c)
+    )
+      return false
+    const aRow = board[a.r]
+    const bRow = board[b.r]
+    if (!aRow || !bRow) return false
+    const v1 = aRow[a.c]
+    const v2 = bRow[b.c]
+    if (
+      typeof v1 !== 'number' ||
+      typeof v2 !== 'number' ||
+      v1 < 0 ||
+      v2 < 0
+    )
+      return false
+    aRow[a.c] = v2
+    bRow[b.c] = v1
+    const ok =
+      findMatches(getMatchBoard()).length > 0
+    if (!ok) {
+      aRow[a.c] = v1
+      bRow[b.c] = v2
+    }
+    return ok
+  }
+
+  const computeIceCount = () => {
+    const base = boardSize >= 12 ? 2 : 1
+    return base * gameIceMultiplier
+  }
+
+  const createIceGrid = (
+    srcBoard: Board,
+    hp: number
+  ): IceGrid => {
+    const rows = srcBoard.length
+    const cols =
+      rows > 0 ? srcBoard[0]?.length ?? 0 : 0
+    const grid: IceGrid = Array.from(
+      { length: rows },
+      () => Array.from({ length: cols }, () => 0)
+    )
+    if (rows === 0 || cols === 0) return grid
+    const targetCount = Math.min(
+      rows * cols,
+      computeIceCount()
+    )
+    const candidates: CellRC[] = []
+    for (let r = 0; r < rows; r += 1) {
+      for (let c = 0; c < cols; c += 1) {
+        if ((srcBoard[r]?.[c] ?? -1) < 0) continue
+        candidates.push({ r, c })
+      }
+    }
+    // Мягко избегаем плотных кластеров: сортируем случайно и отбираем клетки,
+    // которые не соседствуют с уже выбранным льдом.
+    for (
+      let i = candidates.length - 1;
+      i > 0;
+      i -= 1
+    ) {
+      const j = Math.floor(
+        Math.random() * (i + 1)
+      )
+      const tmp = candidates[i]
+      candidates[i] = candidates[j] as CellRC
+      candidates[j] = tmp as CellRC
+    }
+    const picked: CellRC[] = []
+    const hasIceNeighbor = (cell: CellRC) =>
+      picked.some(
+        p =>
+          Math.abs(p.r - cell.r) +
+            Math.abs(p.c - cell.c) ===
+          1
+      )
+    for (const cell of candidates) {
+      if (picked.length >= targetCount) break
+      if (hasIceNeighbor(cell)) continue
+      picked.push(cell)
+    }
+    // Если без соседства не набрали — добираем остаток.
+    if (picked.length < targetCount) {
+      for (const cell of candidates) {
+        if (picked.length >= targetCount) break
+        if (
+          picked.some(
+            p => p.r === cell.r && p.c === cell.c
+          )
+        )
+          continue
+        picked.push(cell)
+      }
+    }
+    for (const cell of picked) {
+      const row = grid[cell.r]
+      if (!row) continue
+      row[cell.c] = hp
+    }
+    return grid
+  }
+
+  const collectClearedCells = (
+    matches: CellRC[],
+    activations: SpecialActivation[]
+  ): CellRC[] => {
+    const out: CellRC[] = []
+    const seen = new Set<string>()
+    const push = (r: number, c: number) => {
+      if (!inBounds(r, c)) return
+      const key = `${r},${c}`
+      if (seen.has(key)) return
+      seen.add(key)
+      out.push({ r, c })
+    }
+    for (const m of matches) push(m.r, m.c)
+    for (const activation of activations) {
+      if (activation.type === 'line') {
+        if (activation.orientation === 'col') {
+          for (
+            let r = 0;
+            r < board.length;
+            r += 1
+          ) {
+            push(r, activation.cell.c)
+          }
+        } else {
+          const cols = board[0]?.length ?? 0
+          for (let c = 0; c < cols; c += 1) {
+            push(activation.cell.r, c)
+          }
+        }
+      } else {
+        for (let dr = -1; dr <= 1; dr += 1) {
+          for (let dc = -1; dc <= 1; dc += 1) {
+            push(
+              activation.cell.r + dr,
+              activation.cell.c + dc
+            )
+          }
+        }
+      }
+    }
+    return out
+  }
+
+  const applyIceDamage = (
+    cleared: CellRC[],
+    chain: number
+  ): number => {
+    const nextIce = cloneIceGrid(iceGrid)
+    const damaged = new Set<string>()
+    let damageHits = 0
+    let breaks = 0
+    for (const cell of cleared) {
+      const neighbors: CellRC[] = [
+        { r: cell.r - 1, c: cell.c },
+        { r: cell.r + 1, c: cell.c },
+        { r: cell.r, c: cell.c - 1 },
+        { r: cell.r, c: cell.c + 1 },
+      ]
+      for (const n of neighbors) {
+        if (!inBounds(n.r, n.c)) continue
+        const hp = nextIce[n.r]?.[n.c] ?? 0
+        if (hp <= 0) continue
+        const key = `${n.r},${n.c}`
+        if (damaged.has(key)) continue
+        damaged.add(key)
+        const updated = Math.max(0, hp - 1)
+        const row = nextIce[n.r]
+        if (!row) continue
+        row[n.c] = updated
+        damageHits += 1
+        if (updated === 0) breaks += 1
+      }
+    }
+    iceGrid = nextIce
+    const raw =
+      damageHits * ICE_SCORE_PER_DAMAGE +
+      breaks * ICE_SCORE_BREAK_BONUS
+    return Math.floor(raw * chain * scoreMult())
+  }
 
   const animateTileMotions = (
     motions: TileMotion[],
@@ -588,7 +817,9 @@ export function createMatch3Game(
     )
       return
     if (firstPick || targetCell) return
-    const candidate = findPossibleMoves(board)[0]
+    const candidate = findPossibleMoves(
+      getMatchBoard()
+    )[0]
     if (!candidate) return
     hintMove = candidate
     drawBoard()
@@ -781,7 +1012,9 @@ export function createMatch3Game(
 
       while (pass < maxPasses) {
         pass += 1
-        const matches = findMatches(board)
+        const matches = findMatches(
+          getMatchBoard()
+        )
         if (matches.length === 0) break
         const boardBeforeClear = cloneBoard(board)
         const specialActivations =
@@ -806,11 +1039,26 @@ export function createMatch3Game(
           durationMs: 220,
           chain,
         })
-        const base = clearAndScore(board, matches)
+        const clearedCells = collectClearedCells(
+          matches,
+          specialActivations
+        )
+        const base = clearAndScore(
+          board,
+          matches,
+          {
+            isCellClearable: (r, c) =>
+              !isFrozenCell(r, c),
+          }
+        )
+        const iceBonus = applyIceDamage(
+          clearedCells,
+          chain
+        )
         const gained = Math.floor(
           base * chain * scoreMult()
         )
-        hud.score += gained
+        hud.score += gained + iceBonus
         hud.currentCombo = chain
         syncGoalProgress(hud)
         emitHud()
@@ -834,7 +1082,7 @@ export function createMatch3Game(
           matchFx.burstScoreText(
             board,
             matches,
-            gained,
+            gained + iceBonus,
             chain
           )
           ensureFxLoop()
@@ -868,7 +1116,8 @@ export function createMatch3Game(
       syncRecordsFromScore()
 
       const hasAnyMoves =
-        findPossibleMoves(board).length > 0
+        findPossibleMoves(getMatchBoard())
+          .length > 0
       if (!hasAnyMoves) {
         clearHint()
         const shuffled =
@@ -901,6 +1150,7 @@ export function createMatch3Game(
     )
     tileKinds = next.tileKinds
     board = next.board
+    iceGrid = createIceGrid(board, ICE_HP)
     keyboardCursor = {
       r: Math.floor(boardSize / 2),
       c: Math.floor(boardSize / 2),
@@ -940,6 +1190,10 @@ export function createMatch3Game(
     )
       return
     markPlayerActivity()
+    if (isFrozenCell(cell.r, cell.c)) {
+      drawBoard()
+      return
+    }
 
     if (!firstPick) {
       firstPick = cell
@@ -956,13 +1210,7 @@ export function createMatch3Game(
     targetPulse = false
 
     const source = firstPick
-    const ok = trySwap(
-      board,
-      source.r,
-      source.c,
-      cell.r,
-      cell.c
-    )
+    const ok = trySwapConsideringIce(source, cell)
     firstPick = null
     targetCell = null
 
@@ -975,7 +1223,9 @@ export function createMatch3Game(
         ],
         SWAP_ANIM_MS
       )
-      const immediateMatches = findMatches(board)
+      const immediateMatches = findMatches(
+        getMatchBoard()
+      )
       const style = classifySwapCelebration(
         immediateMatches
       )
@@ -1260,6 +1510,7 @@ export function createMatch3Game(
     clearDragState()
     phase = 'idle'
     board = []
+    iceGrid = []
     firstPick = null
     keyboardCursor = null
     targetCell = null
@@ -1348,6 +1599,7 @@ export function createMatch3Game(
     gameGoalScore = level.goalValue
     gameTheme = level.theme
     forcedTileKinds = level.tileKinds
+    gameIceMultiplier = level.iceMultiplier ?? 1
 
     if (phase === 'playing') {
       rebuildBoard()

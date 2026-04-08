@@ -52,6 +52,7 @@ export type RenderOpts = {
   hintTo?: CellRC | null
   theme?: GameThemeOption
   iconTheme?: GameIconThemeOption
+  iceGrid?: number[][]
 }
 
 const COSMIC_ICON_PATHS = [
@@ -456,6 +457,49 @@ function drawSpecialMarker(
   ctx.restore()
 }
 
+function drawIceOverlay(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  hp: number
+) {
+  const alpha =
+    hp >= 3 ? 0.46 : hp === 2 ? 0.34 : 0.24
+  ctx.save()
+  ctx.fillStyle = `rgba(167, 243, 255, ${alpha})`
+  ctx.strokeStyle = 'rgba(226, 248, 255, 0.75)'
+  ctx.lineWidth = Math.max(1, cell * 0.04)
+  const inset = Math.max(1, cell * 0.06)
+  ctx.beginPath()
+  pathRoundRect(
+    ctx,
+    x + inset,
+    y + inset,
+    cell - inset * 2,
+    cell - inset * 2,
+    Math.max(3, cell * 0.15)
+  )
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)'
+  ctx.lineWidth = Math.max(1, cell * 0.025)
+  ctx.beginPath()
+  ctx.moveTo(x + cell * 0.28, y + cell * 0.35)
+  ctx.lineTo(x + cell * 0.72, y + cell * 0.5)
+  if (hp >= 2) {
+    ctx.moveTo(x + cell * 0.52, y + cell * 0.2)
+    ctx.lineTo(x + cell * 0.36, y + cell * 0.68)
+  }
+  if (hp >= 3) {
+    ctx.moveTo(x + cell * 0.22, y + cell * 0.58)
+    ctx.lineTo(x + cell * 0.64, y + cell * 0.3)
+  }
+  ctx.stroke()
+  ctx.restore()
+}
+
 function getClientXY(
   ev: MouseEvent | PointerEvent | TouchEvent
 ): {
@@ -632,6 +676,16 @@ export function renderBoard(
         drawY,
         cell
       )
+      const iceHp = opts?.iceGrid?.[r]?.[c] ?? 0
+      if (iceHp > 0) {
+        drawIceOverlay(
+          ctx,
+          drawX,
+          drawY,
+          cell,
+          iceHp
+        )
+      }
     }
   }
 

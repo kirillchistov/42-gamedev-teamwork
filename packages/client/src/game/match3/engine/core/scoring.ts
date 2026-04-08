@@ -347,7 +347,13 @@ function expandBySpecialEffects(
  */
 export function clearAndScore(
   board: Board,
-  matches: CellRC[]
+  matches: CellRC[],
+  opts?: {
+    isCellClearable?: (
+      rowIndex: number,
+      colIndex: number
+    ) => boolean
+  }
 ): number {
   const unique = uniqCells(matches)
   const groups = splitIntoConnectedGroups(unique)
@@ -370,6 +376,11 @@ export function clearAndScore(
 
   for (const m of expandedToClear) {
     if (!isInBounds(board, m.r, m.c)) continue
+    if (
+      opts?.isCellClearable &&
+      !opts.isCellClearable(m.r, m.c)
+    )
+      continue
     const row = board[m.r]
     if (!row) continue
     if (spawnCellKeys.has(cellKey(m))) continue
