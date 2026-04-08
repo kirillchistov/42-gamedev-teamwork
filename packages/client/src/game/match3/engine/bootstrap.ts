@@ -50,16 +50,10 @@
 import type { Board } from './core/grid'
 import { findMatches } from './core/match'
 import type { CellRC } from './core/match'
-import { collapse } from './core/collapse'
-import { refill } from './core/refill'
-import { clearAndScore } from './core/scoring'
-import {
-  getLineOrientation,
-  getSpecialType,
-} from './core/cell'
 import {
   findPossibleMoves,
   shuffleBoardUntilPlayable,
+  type MoveCandidate,
 } from './core/possibleMoves'
 import {
   pickCellAt,
@@ -86,12 +80,31 @@ import {
   type ScoreMode,
 } from './gameState'
 import type { LevelConfig } from './levels'
-import { maybeUpdateHighScore } from '../systems/highscore'
+import {
+  isAdjacentCell,
+  isSameCell,
+  clampCursor,
+  createMatch3InputController,
+} from './inputController'
+import {
+  createIdleHintController,
+  createRoundTimer,
+} from './sessionRuntime'
+import {
+  runOneResolvePass,
+  type ResolveTileMotion,
+} from './resolvePass'
+import { classifySwapCelebration } from './resolvePipeline'
+import {
+  countPositiveCells,
+  createGoalGrid,
+  createIceGrid,
+  type OverlayGrid,
+} from './obstacleSystem'
+import { syncRecordsFromScore } from './hudSync'
 import {
   loadDailyRecord,
   loadPlayerRecord,
-  updateDailyRecord,
-  updatePlayerRecord,
 } from '../systems/records'
 import {
   createMatchFx,
@@ -132,26 +145,15 @@ type CreateParams = {
 
 const DEFAULT_HINT_IDLE_MS = 10000
 const SWAP_ANIM_MS = 140
-const FALL_ANIM_MS = 190
 const ICE_HP = 1
 const ICE_SCORE_PER_DAMAGE = 10
 const ICE_SCORE_BREAK_BONUS = 40
 const TARGET_HP = 1
 const TARGET_SCORE_PER_HIT = 60
-/** Номер каскада в resolve, с которого дергаем screen shake в UI. */
-const COMBO_SHAKE_MIN_CHAIN = 3
 
-type TileMotion = {
-  from: CellRC
-  to: CellRC
-}
-type SpecialActivation = {
-  cell: CellRC
-  type: 'line' | 'bomb'
-  orientation?: 'row' | 'col'
-}
-type IceGrid = number[][]
-type GoalGrid = number[][]
+type TileMotion = ResolveTileMotion
+type IceGrid = OverlayGrid
+type GoalGrid = OverlayGrid
 
 type SoundFx =
   | 'swap'
@@ -257,26 +259,15 @@ export function createMatch3Game(
   let gameTargetCells = 0
   let phase: Phase = 'idle'
   let isAnimating = false
-  let timerId: number | null = null
   let isResolving = false
   let firstPick: CellRC | null = null
   let keyboardCursor: CellRC | null = null
   let targetCell: CellRC | null = null
   let targetPulse = false
-  let hintMove: {
-    from: CellRC
-    to: CellRC
-  } | null = null
+  let hintMove: MoveCandidate | null = null
   let hintIdleMs = DEFAULT_HINT_IDLE_MS
-  let hintTimeoutId: number | null = null
   let inputBlocked = false
   let iconThemeRedrawId: number | null = null
-  const pressedKeys = new Set<string>()
-  let dragPointerId: number | null = null
-  let dragStartCell: CellRC | null = null
-  let dragPreviewCell: CellRC | null = null
-  let dragStartX = 0
-  let dragStartY = 0
   const DRAG_SWAP_THRESHOLD_PX = 12
 
   const emitHud = () => onHudChange?.({ ...hud })
@@ -426,12 +417,6 @@ export function createMatch3Game(
   const cloneBoard = (src: Board): Board =>
     src.map(row => [...row])
 
-  const cloneIceGrid = (src: IceGrid): IceGrid =>
-    src.map(row => [...row])
-  const cloneGoalGrid = (
-    src: GoalGrid
-  ): GoalGrid => src.map(row => [...row])
-
   const inBounds = (r: number, c: number) =>
     r >= 0 &&
     c >= 0 &&
@@ -448,20 +433,11 @@ export function createMatch3Game(
       )
     )
 
-  const isAdjacent = (a: CellRC, b: CellRC) => {
-    const dr = Math.abs(a.r - b.r)
-    const dc = Math.abs(a.c - b.c)
-    return (
-      (dr === 1 && dc === 0) ||
-      (dr === 0 && dc === 1)
-    )
-  }
-
   const trySwapConsideringIce = (
     a: CellRC,
     b: CellRC
   ): boolean => {
-    if (!isAdjacent(a, b)) return false
+    if (!isAdjacentCell(a, b)) return false
     if (
       !inBounds(a.r, a.c) ||
       !inBounds(b.r, b.c)
@@ -498,257 +474,6 @@ export function createMatch3Game(
   const computeIceCount = () => {
     const base = boardSize >= 12 ? 2 : 1
     return base * gameIceMultiplier
-  }
-
-  const createIceGrid = (
-    srcBoard: Board,
-    hp: number
-  ): IceGrid => {
-    const rows = srcBoard.length
-    const cols =
-      rows > 0 ? srcBoard[0]?.length ?? 0 : 0
-    const grid: IceGrid = Array.from(
-      { length: rows },
-      () => Array.from({ length: cols }, () => 0)
-    )
-    if (rows === 0 || cols === 0) return grid
-    const targetCount = Math.min(
-      rows * cols,
-      computeIceCount()
-    )
-    const candidates: CellRC[] = []
-    for (let r = 0; r < rows; r += 1) {
-      for (let c = 0; c < cols; c += 1) {
-        if ((srcBoard[r]?.[c] ?? -1) < 0) continue
-        candidates.push({ r, c })
-      }
-    }
-    // Мягко избегаем плотных кластеров: сортируем случайно и отбираем клетки,
-    // которые не соседствуют с уже выбранным льдом.
-    for (
-      let i = candidates.length - 1;
-      i > 0;
-      i -= 1
-    ) {
-      const j = Math.floor(
-        Math.random() * (i + 1)
-      )
-      const tmp = candidates[i]
-      candidates[i] = candidates[j] as CellRC
-      candidates[j] = tmp as CellRC
-    }
-    const picked: CellRC[] = []
-    const hasIceNeighbor = (cell: CellRC) =>
-      picked.some(
-        p =>
-          Math.abs(p.r - cell.r) +
-            Math.abs(p.c - cell.c) ===
-          1
-      )
-    for (const cell of candidates) {
-      if (picked.length >= targetCount) break
-      if (hasIceNeighbor(cell)) continue
-      picked.push(cell)
-    }
-    // Если без соседства не набрали — добираем остаток.
-    if (picked.length < targetCount) {
-      for (const cell of candidates) {
-        if (picked.length >= targetCount) break
-        if (
-          picked.some(
-            p => p.r === cell.r && p.c === cell.c
-          )
-        )
-          continue
-        picked.push(cell)
-      }
-    }
-    for (const cell of picked) {
-      const row = grid[cell.r]
-      if (!row) continue
-      row[cell.c] = hp
-    }
-    return grid
-  }
-
-  const createGoalGrid = (
-    srcBoard: Board,
-    count: number,
-    hp: number
-  ): GoalGrid => {
-    const rows = srcBoard.length
-    const cols =
-      rows > 0 ? srcBoard[0]?.length ?? 0 : 0
-    const grid: GoalGrid = Array.from(
-      { length: rows },
-      () => Array.from({ length: cols }, () => 0)
-    )
-    const capped = Math.max(
-      0,
-      Math.min(rows * cols, Math.floor(count))
-    )
-    if (capped <= 0) return grid
-    const candidates: CellRC[] = []
-    for (let r = 0; r < rows; r += 1) {
-      for (let c = 0; c < cols; c += 1) {
-        if ((srcBoard[r]?.[c] ?? -1) < 0) continue
-        candidates.push({ r, c })
-      }
-    }
-    for (
-      let i = candidates.length - 1;
-      i > 0;
-      i -= 1
-    ) {
-      const j = Math.floor(
-        Math.random() * (i + 1)
-      )
-      const tmp = candidates[i]
-      candidates[i] = candidates[j] as CellRC
-      candidates[j] = tmp as CellRC
-    }
-    for (let i = 0; i < capped; i += 1) {
-      const cell = candidates[i]
-      if (!cell) break
-      const row = grid[cell.r]
-      if (!row) continue
-      row[cell.c] = hp
-    }
-    return grid
-  }
-
-  const collectClearedCells = (
-    matches: CellRC[],
-    activations: SpecialActivation[]
-  ): CellRC[] => {
-    const out: CellRC[] = []
-    const seen = new Set<string>()
-    const push = (r: number, c: number) => {
-      if (!inBounds(r, c)) return
-      const key = `${r},${c}`
-      if (seen.has(key)) return
-      seen.add(key)
-      out.push({ r, c })
-    }
-    for (const m of matches) push(m.r, m.c)
-    for (const activation of activations) {
-      if (activation.type === 'line') {
-        if (activation.orientation === 'col') {
-          for (
-            let r = 0;
-            r < board.length;
-            r += 1
-          ) {
-            push(r, activation.cell.c)
-          }
-        } else {
-          const cols = board[0]?.length ?? 0
-          for (let c = 0; c < cols; c += 1) {
-            push(activation.cell.r, c)
-          }
-        }
-      } else {
-        for (let dr = -1; dr <= 1; dr += 1) {
-          for (let dc = -1; dc <= 1; dc += 1) {
-            push(
-              activation.cell.r + dr,
-              activation.cell.c + dc
-            )
-          }
-        }
-      }
-    }
-    return out
-  }
-
-  const applyIceDamage = (
-    cleared: CellRC[],
-    chain: number
-  ): number => {
-    const nextIce = cloneIceGrid(iceGrid)
-    const damaged = new Set<string>()
-    let damageHits = 0
-    let breaks = 0
-    for (const cell of cleared) {
-      const neighbors: CellRC[] = [
-        { r: cell.r - 1, c: cell.c },
-        { r: cell.r + 1, c: cell.c },
-        { r: cell.r, c: cell.c - 1 },
-        { r: cell.r, c: cell.c + 1 },
-      ]
-      for (const n of neighbors) {
-        if (!inBounds(n.r, n.c)) continue
-        const hp = nextIce[n.r]?.[n.c] ?? 0
-        if (hp <= 0) continue
-        const key = `${n.r},${n.c}`
-        if (damaged.has(key)) continue
-        damaged.add(key)
-        const updated = Math.max(0, hp - 1)
-        const row = nextIce[n.r]
-        if (!row) continue
-        row[n.c] = updated
-        damageHits += 1
-        if (updated === 0) breaks += 1
-      }
-    }
-    iceGrid = nextIce
-    const raw =
-      damageHits * ICE_SCORE_PER_DAMAGE +
-      breaks * ICE_SCORE_BREAK_BONUS
-    return Math.floor(raw * chain * scoreMult())
-  }
-
-  const applyGoalDamageFromBombs = (
-    activations: SpecialActivation[],
-    chain: number
-  ): { score: number; hits: CellRC[] } => {
-    const nextGoal = cloneGoalGrid(goalGrid)
-    const hits: CellRC[] = []
-    const seen = new Set<string>()
-    const touch = (r: number, c: number) => {
-      if (!inBounds(r, c)) return
-      const hp = nextGoal[r]?.[c] ?? 0
-      if (hp <= 0) return
-      const row = nextGoal[r]
-      if (!row) return
-      row[c] = Math.max(0, hp - 1)
-      if (row[c] === 0) {
-        const key = `${r},${c}`
-        if (!seen.has(key)) {
-          seen.add(key)
-          hits.push({ r, c })
-        }
-      }
-    }
-    for (const a of activations) {
-      if (a.type !== 'bomb') continue
-      for (let dr = -1; dr <= 1; dr += 1) {
-        for (let dc = -1; dc <= 1; dc += 1) {
-          touch(a.cell.r + dr, a.cell.c + dc)
-        }
-      }
-    }
-    goalGrid = nextGoal
-    hud.goalTargetsLeft = nextGoal.reduce(
-      (acc, row) =>
-        acc +
-        row.reduce(
-          (rowAcc, value) =>
-            rowAcc + (value > 0 ? 1 : 0),
-          0
-        ),
-      0
-    )
-    syncGoalProgress(hud)
-    return {
-      score: Math.floor(
-        hits.length *
-          TARGET_SCORE_PER_HIT *
-          chain *
-          scoreMult()
-      ),
-      hits,
-    }
   }
 
   const animateTileMotions = (
@@ -827,88 +552,27 @@ export function createMatch3Game(
     return motions
   }
 
-  const collectSpecialActivations = (
-    snapshot: Board,
-    initial: CellRC[]
-  ): SpecialActivation[] => {
-    const rows = snapshot.length
-    const cols =
-      rows > 0 ? snapshot[0]?.length ?? 0 : 0
-    if (rows === 0 || cols === 0) return []
-    const inBounds = (r: number, c: number) =>
-      r >= 0 && c >= 0 && r < rows && c < cols
-    const key = (r: number, c: number) =>
-      `${r},${c}`
-    const seen = new Set<string>()
-    const queue = [...initial]
-    const activations: SpecialActivation[] = []
-    for (const m of initial) {
-      seen.add(key(m.r, m.c))
-    }
-    while (queue.length > 0) {
-      const cell = queue.shift()
-      if (!cell || !inBounds(cell.r, cell.c))
-        continue
-      const value = snapshot[cell.r]?.[cell.c]
-      if (
-        typeof value !== 'number' ||
-        value < 0
-      ) {
-        continue
-      }
-      const special = getSpecialType(value)
-      if (!special) continue
-      if (special === 'line') {
-        const orientation =
-          getLineOrientation(value) ?? 'row'
-        activations.push({
-          cell,
-          type: 'line',
-          orientation,
-        })
-        if (orientation === 'row') {
-          for (let c = 0; c < cols; c += 1) {
-            const k = key(cell.r, c)
-            if (seen.has(k)) continue
-            seen.add(k)
-            queue.push({ r: cell.r, c })
-          }
-        } else {
-          for (let r = 0; r < rows; r += 1) {
-            const k = key(r, cell.c)
-            if (seen.has(k)) continue
-            seen.add(k)
-            queue.push({ r, c: cell.c })
-          }
-        }
-      } else {
-        activations.push({ cell, type: 'bomb' })
-        for (let dr = -1; dr <= 1; dr += 1) {
-          for (let dc = -1; dc <= 1; dc += 1) {
-            const rr = cell.r + dr
-            const cc = cell.c + dc
-            if (!inBounds(rr, cc)) continue
-            const k = key(rr, cc)
-            if (seen.has(k)) continue
-            seen.add(k)
-            queue.push({ r: rr, c: cc })
-          }
-        }
-      }
-    }
-    return activations
-  }
+  const idleHint = createIdleHintController({
+    getPhase: () => phase,
+    getInputBlocked: () => inputBlocked,
+    getIsResolving: () => isResolving,
+    getHintIdleMs: () => hintIdleMs,
+    selectionBlocksHint: () =>
+      Boolean(firstPick || targetCell),
+    getCurrentHintMove: () => hintMove,
+    setHintMove: m => {
+      hintMove = m
+    },
+    getFirstMoveCandidate: () =>
+      findPossibleMoves(getMatchBoard())[0],
+    redraw: drawBoard,
+  })
 
-  const clearHint = () => {
-    hintMove = null
-  }
-
-  const stopHintTimer = () => {
-    if (hintTimeoutId !== null) {
-      window.clearTimeout(hintTimeoutId)
-      hintTimeoutId = null
-    }
-  }
+  const clearHint = () => idleHint.clearHint()
+  const stopHintTimer = () => idleHint.stopTimer()
+  const scheduleHint = () => idleHint.schedule()
+  const markPlayerActivity = () =>
+    idleHint.markActivity()
 
   const stopIconThemeRedraw = () => {
     if (iconThemeRedrawId !== null) {
@@ -917,50 +581,22 @@ export function createMatch3Game(
     }
   }
 
-  const showHintIfIdle = () => {
-    if (
-      phase !== 'playing' ||
-      isResolving ||
-      inputBlocked
-    )
-      return
-    if (firstPick || targetCell) return
-    const candidate = findPossibleMoves(
-      getMatchBoard()
-    )[0]
-    if (!candidate) return
-    hintMove = candidate
-    drawBoard()
-  }
-
-  const scheduleHint = () => {
-    stopHintTimer()
-    if (phase !== 'playing' || inputBlocked)
-      return
-    hintTimeoutId = window.setTimeout(() => {
-      showHintIfIdle()
-    }, hintIdleMs)
-  }
-
-  const markPlayerActivity = () => {
-    const hadHint = Boolean(hintMove)
-    clearHint()
-    if (phase === 'playing') {
-      if (hadHint) drawBoard()
-      scheduleHint()
-    }
-  }
+  let roundTimer: ReturnType<
+    typeof createRoundTimer
+  > | null = null
 
   const finishGame = (reason: GameEndReason) => {
     playSound(
       reason === 'goalReached' ? 'win' : 'lose'
     )
     phase = 'ended'
-    stopTimer()
+    roundTimer?.stop()
     stopHintTimer()
     clearHint()
     syncGoalProgress(hud)
-    syncRecordsFromScore()
+    const synced = syncRecordsFromScore(hud.score)
+    hud.playerRecord = synced.playerRecord
+    hud.dailyRecord = synced.dailyRecord
     emitHud()
     onGameEnd?.({
       reason,
@@ -968,18 +604,26 @@ export function createMatch3Game(
     })
   }
 
-  const sameCell = (
-    a: CellRC | null,
-    b: CellRC | null
-  ) =>
-    Boolean(a && b && a.r === b.r && a.c === b.c)
+  roundTimer = createRoundTimer({
+    getPhase: () => phase,
+    getInputBlocked: () => inputBlocked,
+    getTimeLeftSec: () => hud.timeLeftSec,
+    setTimeLeftSec: next => {
+      hud.timeLeftSec = next
+    },
+    emitHud,
+    onTimeUp: () => finishGame('timeOut'),
+  })
+
+  const stopTimer = () => roundTimer?.stop()
+  const startGameTimer = () => roundTimer?.start()
 
   const renderInteraction = () => {
     const target =
       targetCell ??
       (firstPick &&
       keyboardCursor &&
-      !sameCell(firstPick, keyboardCursor)
+      !isSameCell(firstPick, keyboardCursor)
         ? keyboardCursor
         : null)
 
@@ -989,14 +633,6 @@ export function createMatch3Game(
       targetPulse,
       showSwapArrow: Boolean(firstPick && target),
     })
-  }
-
-  const syncRecordsFromScore = () => {
-    hud.playerRecord = updatePlayerRecord(
-      hud.score
-    )
-    hud.dailyRecord = updateDailyRecord(hud.score)
-    maybeUpdateHighScore(hud.score)
   }
 
   function flashMatches(
@@ -1059,55 +695,6 @@ export function createMatch3Game(
     ensureFxLoop()
   }
 
-  const classifySwapCelebration = (
-    matches: CellRC[]
-  ): 'normal' | 'line4plus' | 'tOrL' => {
-    if (matches.length < 3) return 'normal'
-    const keySet = new Set(
-      matches.map(m => `${m.r},${m.c}`)
-    )
-    let hasTL = false
-    let longestLine = 0
-    for (const cell of matches) {
-      let rowRun = 1
-      let c = cell.c - 1
-      while (keySet.has(`${cell.r},${c}`)) {
-        rowRun += 1
-        c -= 1
-      }
-      c = cell.c + 1
-      while (keySet.has(`${cell.r},${c}`)) {
-        rowRun += 1
-        c += 1
-      }
-
-      let colRun = 1
-      let r = cell.r - 1
-      while (keySet.has(`${r},${cell.c}`)) {
-        colRun += 1
-        r -= 1
-      }
-      r = cell.r + 1
-      while (keySet.has(`${r},${cell.c}`)) {
-        colRun += 1
-        r += 1
-      }
-
-      if (rowRun >= 3 && colRun >= 3) {
-        hasTL = true
-      }
-      longestLine = Math.max(
-        longestLine,
-        rowRun,
-        colRun
-      )
-    }
-
-    if (hasTL) return 'tOrL'
-    if (longestLine >= 4) return 'line4plus'
-    return 'normal'
-  }
-
   async function resolveBoard(): Promise<void> {
     if (isResolving) return
     isResolving = true
@@ -1120,110 +707,46 @@ export function createMatch3Game(
 
       while (pass < maxPasses) {
         pass += 1
-        const matches = findMatches(
-          getMatchBoard()
-        )
-        if (matches.length === 0) break
-        const boardBeforeClear = cloneBoard(board)
-        const specialActivations =
-          collectSpecialActivations(
-            boardBeforeClear,
-            matches
-          )
-
-        const matchClusterStyle =
-          classifySwapCelebration(matches)
-        if (
-          gameVfxQuality === 'full' &&
-          (matchClusterStyle === 'line4plus' ||
-            matchClusterStyle === 'tOrL')
-        ) {
-          onPremiumMatchBorder?.(
-            matchClusterStyle
-          )
-        }
-
-        await flashMatches(matches, {
-          durationMs: 220,
-          chain,
-        })
-        const clearedCells = collectClearedCells(
-          matches,
-          specialActivations
-        )
-        const base = clearAndScore(
-          board,
-          matches,
-          {
-            isCellClearable: (r, c) =>
-              !isFrozenCell(r, c),
-          }
-        )
-        const iceBonus = applyIceDamage(
-          clearedCells,
-          chain
-        )
-        const goalDamage =
-          applyGoalDamageFromBombs(
-            specialActivations,
-            chain
-          )
-        const gained = Math.floor(
-          base * chain * scoreMult()
-        )
-        hud.score +=
-          gained + iceBonus + goalDamage.score
-        hud.currentCombo = chain
-        syncGoalProgress(hud)
-        emitHud()
-        maxChain = Math.max(maxChain, chain)
-        if (
-          chain >= COMBO_SHAKE_MIN_CHAIN &&
-          gameVfxQuality === 'full'
-        ) {
-          onComboShake?.(chain)
-        }
-        playSound(chain > 1 ? 'cascade' : 'match')
-        if (
-          matchFx &&
-          gameVfxQuality === 'full'
-        ) {
-          matchFx.burstSpecialActivations(
-            boardBeforeClear,
-            specialActivations,
-            gameTheme
-          )
-          if (goalDamage.hits.length > 0) {
-            matchFx.burstGoalHits(
-              board,
-              goalDamage.hits,
-              gameTheme
-            )
-          }
-          matchFx.burstScoreText(
+        const { matched, nextChain } =
+          await runOneResolvePass({
             board,
-            matches,
-            gained + iceBonus + goalDamage.score,
-            chain
-          )
-          ensureFxLoop()
-        }
-
-        const beforeFall = cloneBoard(board)
-        collapse(board)
-        refill(board, tileKinds)
-        const fallMotions = buildFallMotions(
-          beforeFall,
-          board
-        )
-        clearHint()
-        await animateTileMotions(
-          fallMotions,
-          FALL_ANIM_MS,
-          { overshoot: true }
-        )
-        chain += 1
-        await delay(24)
+            getMatchBoard,
+            isFrozenCell,
+            getIceGrid: () => iceGrid,
+            setIceGrid: g => {
+              iceGrid = g
+            },
+            getGoalGrid: () => goalGrid,
+            setGoalGrid: g => {
+              goalGrid = g
+            },
+            hud,
+            tileKinds,
+            chain,
+            gameVfxQuality,
+            gameTheme,
+            scoreMult,
+            iceScorePerDamage:
+              ICE_SCORE_PER_DAMAGE,
+            iceBreakBonus: ICE_SCORE_BREAK_BONUS,
+            targetScorePerHit:
+              TARGET_SCORE_PER_HIT,
+            onPremiumMatchBorder,
+            onComboShake,
+            playSound,
+            matchFx,
+            ensureFxLoop,
+            cloneBoard,
+            buildFallMotions,
+            animateTileMotions,
+            flashMatches,
+            clearHint,
+            emitHud,
+            delay,
+          })
+        if (!matched) break
+        maxChain = Math.max(maxChain, chain)
+        chain = nextChain
       }
 
       if (maxChain > 0) {
@@ -1234,7 +757,11 @@ export function createMatch3Game(
       }
       hud.currentCombo = 0
       syncGoalProgress(hud)
-      syncRecordsFromScore()
+      const synced = syncRecordsFromScore(
+        hud.score
+      )
+      hud.playerRecord = synced.playerRecord
+      hud.dailyRecord = synced.dailyRecord
 
       const hasAnyMoves =
         findPossibleMoves(getMatchBoard())
@@ -1272,23 +799,19 @@ export function createMatch3Game(
     )
     tileKinds = next.tileKinds
     board = next.board
-    iceGrid = createIceGrid(board, ICE_HP)
+    iceGrid = createIceGrid(
+      board,
+      computeIceCount(),
+      ICE_HP
+    )
     goalGrid = createGoalGrid(
       board,
       gameTargetCells,
       TARGET_HP
     )
     hud.goalTargetsTotal = gameTargetCells
-    hud.goalTargetsLeft = goalGrid.reduce(
-      (acc, row) =>
-        acc +
-        row.reduce(
-          (rowAcc, value) =>
-            rowAcc + (value > 0 ? 1 : 0),
-          0
-        ),
-      0
-    )
+    hud.goalTargetsLeft =
+      countPositiveCells(goalGrid)
     syncGoalProgress(hud)
     keyboardCursor = {
       r: Math.floor(boardSize / 2),
@@ -1297,27 +820,6 @@ export function createMatch3Game(
     targetCell = null
     targetPulse = false
     drawBoard()
-  }
-
-  const stopTimer = () => {
-    if (timerId !== null) {
-      window.clearInterval(timerId)
-      timerId = null
-    }
-  }
-
-  const startGameTimer = () => {
-    stopTimer()
-    timerId = window.setInterval(() => {
-      if (phase !== 'playing') return
-      if (inputBlocked) return
-      if (hud.timeLeftSec <= 0) return
-      hud.timeLeftSec -= 1
-      emitHud()
-      if (hud.timeLeftSec === 0) {
-        finishGame('timeOut')
-      }
-    }, 1000)
   }
 
   async function handleSelectCell(cell: CellRC) {
@@ -1383,52 +885,23 @@ export function createMatch3Game(
     emitHud()
   }
 
-  async function handlePick(ev: PointerEvent) {
-    if (
-      phase !== 'playing' ||
-      isResolving ||
-      isAnimating ||
-      inputBlocked
-    )
-      return
-    markPlayerActivity()
-    const cell = pickCellAt(board, canvas, ev)
-    if (!cell) return
-    keyboardCursor = cell
-    await handleSelectCell(cell)
-  }
-
-  const clearDragState = () => {
-    dragPointerId = null
-    dragStartCell = null
-    dragPreviewCell = null
-    dragStartX = 0
-    dragStartY = 0
-  }
-
   const moveKeyboardCursor = (
     dr: number,
     dc: number
   ) => {
     if (inputBlocked) return
     markPlayerActivity()
-    if (!keyboardCursor) {
-      keyboardCursor = { r: 0, c: 0 }
-    }
     const rows = board.length
     const cols =
       rows > 0 ? board[0]?.length ?? 0 : 0
-    if (rows === 0 || cols === 0) return
-    keyboardCursor = {
-      r: Math.max(
-        0,
-        Math.min(rows - 1, keyboardCursor.r + dr)
-      ),
-      c: Math.max(
-        0,
-        Math.min(cols - 1, keyboardCursor.c + dc)
-      ),
-    }
+    keyboardCursor = clampCursor(
+      keyboardCursor,
+      dr,
+      dc,
+      rows,
+      cols
+    )
+    if (!keyboardCursor) return
     renderInteraction()
   }
 
@@ -1438,207 +911,79 @@ export function createMatch3Game(
     void handleSelectCell(keyboardCursor)
   }
 
-  const onKeyDown = (ev: KeyboardEvent) => {
-    if (
-      phase !== 'playing' ||
-      isAnimating ||
-      inputBlocked
-    )
-      return
-    markPlayerActivity()
-    const code = ev.code
-    if (pressedKeys.has(code)) return
-    pressedKeys.add(code)
-
-    if (code === 'ArrowUp' || code === 'KeyW') {
-      ev.preventDefault()
-      moveKeyboardCursor(-1, 0)
-      return
-    }
-    if (code === 'ArrowDown' || code === 'KeyS') {
-      ev.preventDefault()
-      moveKeyboardCursor(1, 0)
-      return
-    }
-    if (code === 'ArrowLeft' || code === 'KeyA') {
-      ev.preventDefault()
-      moveKeyboardCursor(0, -1)
-      return
-    }
-    if (
-      code === 'ArrowRight' ||
-      code === 'KeyD'
-    ) {
-      ev.preventDefault()
-      moveKeyboardCursor(0, 1)
-      return
-    }
-    if (code === 'Enter' || code === 'Space') {
-      ev.preventDefault()
-      ensureAudio()
-      selectKeyboardCursor()
-    }
-  }
-
-  const onKeyUp = (ev: KeyboardEvent) => {
-    pressedKeys.delete(ev.code)
-  }
-
-  const onPointerDown = (ev: PointerEvent) => {
-    if (
-      phase !== 'playing' ||
-      isResolving ||
-      isAnimating ||
-      inputBlocked
-    ) {
-      return
-    }
-    ensureAudio()
-    canvas.focus()
-    dragPointerId = ev.pointerId
-    dragStartX = ev.clientX
-    dragStartY = ev.clientY
-    dragStartCell = pickCellAt(board, canvas, ev)
-    if (dragStartCell) {
-      keyboardCursor = dragStartCell
-    }
-    if (canvas.setPointerCapture) {
-      canvas.setPointerCapture(ev.pointerId)
-    }
-    void handlePick(ev)
-  }
-
-  const onPointerMove = (ev: PointerEvent) => {
-    if (
-      dragPointerId === null ||
-      ev.pointerId !== dragPointerId
-    ) {
-      return
-    }
-    if (
-      phase !== 'playing' ||
-      isResolving ||
-      isAnimating ||
-      inputBlocked ||
-      !dragStartCell
-    ) {
-      return
-    }
-
-    const dx = ev.clientX - dragStartX
-    const dy = ev.clientY - dragStartY
-    const absDx = Math.abs(dx)
-    const absDy = Math.abs(dy)
-    const distance = Math.hypot(dx, dy)
-    if (distance < DRAG_SWAP_THRESHOLD_PX) {
-      if (dragPreviewCell) {
-        dragPreviewCell = null
+  const match3Input = createMatch3InputController(
+    {
+      canvas,
+      dragThresholdPx: DRAG_SWAP_THRESHOLD_PX,
+      getBoard: () => board,
+      pointerGuard: () =>
+        phase === 'playing' &&
+        !isResolving &&
+        !isAnimating &&
+        !inputBlocked,
+      keyboardGuard: () =>
+        phase === 'playing' &&
+        !isAnimating &&
+        !inputBlocked,
+      ensureAudio,
+      markActivity: markPlayerActivity,
+      onPointerDownPick: ev => {
+        const cell = pickCellAt(board, canvas, ev)
+        if (!cell) return
+        void handleSelectCell(cell)
+      },
+      moveKeyboardCursor,
+      submitKeyboardCursor: selectKeyboardCursor,
+      renderInteraction,
+      onSelectCell: handleSelectCell,
+      setKeyboardCursor: cell => {
+        keyboardCursor = cell
+      },
+      clearPointerPreview: () => {
         targetCell = null
         targetPulse = false
         renderInteraction()
-      }
-      return
-    }
-
-    const rows = board.length
-    const cols =
-      rows > 0 ? board[0]?.length ?? 0 : 0
-    if (rows === 0 || cols === 0) return
-
-    const preferHorizontal = absDx >= absDy
-    const target: CellRC = preferHorizontal
-      ? {
-          r: dragStartCell.r,
-          c: Math.max(
-            0,
-            Math.min(
-              cols - 1,
-              dragStartCell.c + (dx > 0 ? 1 : -1)
-            )
-          ),
+      },
+      setPointerPreviewTarget: cell => {
+        targetCell = cell
+        targetPulse = false
+        renderInteraction()
+      },
+      onPointerUpWithoutDragCommit: () => {
+        if (targetCell) {
+          targetCell = null
+          targetPulse = false
+          renderInteraction()
         }
-      : {
-          r: Math.max(
-            0,
-            Math.min(
-              rows - 1,
-              dragStartCell.r + (dy > 0 ? 1 : -1)
-            )
-          ),
-          c: dragStartCell.c,
-        }
-
-    if (
-      target.r === dragStartCell.r &&
-      target.c === dragStartCell.c
-    ) {
-      return
+      },
     }
-
-    if (
-      dragPreviewCell &&
-      dragPreviewCell.r === target.r &&
-      dragPreviewCell.c === target.c
-    ) {
-      return
-    }
-
-    dragPreviewCell = target
-    targetCell = target
-    targetPulse = false
-    renderInteraction()
-  }
-
-  const onPointerUpOrCancel = (
-    ev: PointerEvent
-  ) => {
-    const isTrackedPointer =
-      dragPointerId !== null &&
-      ev.pointerId === dragPointerId
-    const previewTarget = dragPreviewCell
-    if (
-      isTrackedPointer &&
-      canvas.releasePointerCapture
-    ) {
-      try {
-        canvas.releasePointerCapture(ev.pointerId)
-      } catch {
-        // ignore release errors if capture was already lost
-      }
-    }
-    clearDragState()
-    if (
-      isTrackedPointer &&
-      ev.type === 'pointerup' &&
-      previewTarget
-    ) {
-      void handleSelectCell(previewTarget)
-    } else if (targetCell) {
-      targetCell = null
-      targetPulse = false
-      renderInteraction()
-    }
-  }
+  )
 
   canvas.tabIndex = 0
   canvas.addEventListener(
     'pointerdown',
-    onPointerDown
+    match3Input.onPointerDown
   )
   canvas.addEventListener(
     'pointermove',
-    onPointerMove
+    match3Input.onPointerMove
   )
   canvas.addEventListener(
     'pointerup',
-    onPointerUpOrCancel
+    match3Input.onPointerUpOrCancel
   )
   canvas.addEventListener(
     'pointercancel',
-    onPointerUpOrCancel
+    match3Input.onPointerUpOrCancel
   )
-  window.addEventListener('keydown', onKeyDown)
-  window.addEventListener('keyup', onKeyUp)
+  window.addEventListener(
+    'keydown',
+    match3Input.onKeyDown
+  )
+  window.addEventListener(
+    'keyup',
+    match3Input.onKeyUp
+  )
 
   const resetIdle = () => {
     stopTimer()
@@ -1646,7 +991,8 @@ export function createMatch3Game(
     clearHint()
     cancelFxLoop()
     matchFx?.reset()
-    clearDragState()
+    match3Input.clearDragState()
+    match3Input.clearPressedKeys()
     phase = 'idle'
     board = []
     iceGrid = []
@@ -1671,7 +1017,8 @@ export function createMatch3Game(
     stopTimer()
     stopHintTimer()
     clearHint()
-    clearDragState()
+    match3Input.clearDragState()
+    match3Input.clearPressedKeys()
     phase = 'playing'
     resetHudForPlay(hud, {
       durationSec: gameDurationSec,
@@ -1797,7 +1144,8 @@ export function createMatch3Game(
   const setInputBlocked = (blocked: boolean) => {
     inputBlocked = Boolean(blocked)
     if (inputBlocked) {
-      clearDragState()
+      match3Input.clearDragState()
+      match3Input.clearPressedKeys()
       firstPick = null
       targetCell = null
       targetPulse = false
@@ -1814,25 +1162,28 @@ export function createMatch3Game(
   const destroy = () => {
     canvas.removeEventListener(
       'pointerdown',
-      onPointerDown
+      match3Input.onPointerDown
     )
     canvas.removeEventListener(
       'pointermove',
-      onPointerMove
+      match3Input.onPointerMove
     )
     canvas.removeEventListener(
       'pointerup',
-      onPointerUpOrCancel
+      match3Input.onPointerUpOrCancel
     )
     canvas.removeEventListener(
       'pointercancel',
-      onPointerUpOrCancel
+      match3Input.onPointerUpOrCancel
     )
     window.removeEventListener(
       'keydown',
-      onKeyDown
+      match3Input.onKeyDown
     )
-    window.removeEventListener('keyup', onKeyUp)
+    window.removeEventListener(
+      'keyup',
+      match3Input.onKeyUp
+    )
     stopTimer()
     stopHintTimer()
     stopIconThemeRedraw()
