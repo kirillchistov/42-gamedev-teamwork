@@ -168,6 +168,7 @@ export const SignupPage: React.FC = () => {
                 Фамилия
                 <Input
                   type="text"
+                  name="second_name"
                   placeholder="Фамилия"
                   value={form.second_name ?? ''}
                   onChange={handleChange}
