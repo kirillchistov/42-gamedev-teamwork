@@ -111,6 +111,21 @@ export const TILE_COLORS_BY_THEME: Record<
   ],
 }
 
+/**
+ * Множитель длительности анимаций поля и слоя VFX.
+ * 1.1 ≈ на ~10% медленнее относительно базовых значений.
+ */
+export const MATCH3_ANIM_TIME_MULT = 1.1
+
+export function match3AnimMs(
+  baseMs: number
+): number {
+  return Math.max(
+    1,
+    Math.round(baseMs * MATCH3_ANIM_TIME_MULT)
+  )
+}
+
 // Другие настройки:
 // export const ANIMATION_SPEED = 240;
 // export const MATCH_MINIMUM = 3;

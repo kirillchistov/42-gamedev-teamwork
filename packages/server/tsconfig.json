@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
     "composite": true,
     "target": "es2019",
     "module": "commonjs",

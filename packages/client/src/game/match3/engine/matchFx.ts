@@ -11,9 +11,17 @@
 import type { Board } from './core/grid'
 import type { CellRC } from './core/match'
 import {
+  MATCH3_ANIM_TIME_MULT,
   TILE_COLORS_BY_THEME,
   type GameThemeOption,
 } from './config'
+
+const VFX_PACE = MATCH3_ANIM_TIME_MULT
+const vfxSpd = 1 / VFX_PACE
+const FLASH_DECAY_PER_K = Math.pow(
+  0.92,
+  1 / VFX_PACE
+)
 import { boardLayout } from './renderer'
 import type { LineOrientation } from './core/cell'
 
@@ -107,7 +115,8 @@ export function createMatchFx(
         const a = Math.random() * Math.PI * 2
         const sp =
           (2.4 + Math.random() * 7) *
-          (0.58 + boost * 0.32)
+          (0.58 + boost * 0.32) *
+          vfxSpd
         particles.push({
           x:
             cx +
@@ -116,9 +125,11 @@ export function createMatchFx(
             cy +
             (Math.random() - 0.5) * cell * 0.42,
           vx: Math.cos(a) * sp,
-          vy: Math.sin(a) * sp - 1.4,
+          vy: Math.sin(a) * sp - 1.4 * vfxSpd,
           life: 0,
-          maxLife: 320 + Math.random() * 300,
+          maxLife:
+            (320 + Math.random() * 300) *
+            VFX_PACE,
           size: 2.4 + Math.random() * 5.2,
           color,
         })
@@ -191,7 +202,9 @@ export function createMatchFx(
       const cy = oy + pivot.r * cell + cell / 2
       const a = Math.random() * Math.PI * 2
       const sp =
-        (3.4 + Math.random() * 10.5) * styleScale
+        (3.4 + Math.random() * 10.5) *
+        styleScale *
+        vfxSpd
       particles.push({
         x:
           cx +
@@ -200,12 +213,13 @@ export function createMatchFx(
           cy +
           (Math.random() - 0.5) * cell * 0.55,
         vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp - 1.8,
+        vy: Math.sin(a) * sp - 1.8 * vfxSpd,
         life: 0,
         maxLife:
-          260 +
-          Math.random() * 280 +
-          styleScale * 110,
+          (260 +
+            Math.random() * 280 +
+            styleScale * 110) *
+          VFX_PACE,
         size:
           2.2 + Math.random() * 4.8 * styleScale,
         color,
@@ -249,9 +263,11 @@ export function createMatchFx(
     texts.push({
       x: cx,
       y: cy - cell * 0.08,
-      vy: -(0.38 + Math.min(0.3, chain * 0.06)),
+      vy:
+        -(0.38 + Math.min(0.3, chain * 0.06)) *
+        vfxSpd,
       life: 0,
-      maxLife: 760,
+      maxLife: 760 * VFX_PACE,
       text: `+${score}${combo}`,
       color: chain > 1 ? '#fde68a' : '#bfdbfe',
       size: Math.max(
@@ -290,10 +306,14 @@ export function createMatchFx(
           particles.push({
             x: isRow ? cx + along : cx + jitter,
             y: isRow ? cy + jitter : cy + along,
-            vx: isRow ? t * 8 : t * 1.7,
-            vy: isRow ? t * 1.7 : t * 8,
+            vx:
+              (isRow ? t * 8 : t * 1.7) * vfxSpd,
+            vy:
+              (isRow ? t * 1.7 : t * 8) * vfxSpd,
             life: 0,
-            maxLife: 240 + Math.random() * 180,
+            maxLife:
+              (240 + Math.random() * 180) *
+              VFX_PACE,
             size: 1.8 + Math.random() * 3.4,
             color:
               theme === 'space'
@@ -308,14 +328,17 @@ export function createMatchFx(
         const angle = Math.random() * Math.PI * 2
         const dist =
           Math.random() * cell * 1.6 + cell * 0.2
-        const sp = 2.2 + Math.random() * 9.5
+        const sp =
+          (2.2 + Math.random() * 9.5) * vfxSpd
         particles.push({
           x: cx + Math.cos(angle) * dist * 0.18,
           y: cy + Math.sin(angle) * dist * 0.18,
           vx: Math.cos(angle) * sp,
           vy: Math.sin(angle) * sp,
           life: 0,
-          maxLife: 260 + Math.random() * 220,
+          maxLife:
+            (260 + Math.random() * 220) *
+            VFX_PACE,
           size: 2 + Math.random() * 4.6,
           color:
             theme === 'space'
@@ -349,7 +372,8 @@ export function createMatchFx(
       const n = 46
       for (let i = 0; i < n; i += 1) {
         const angle = Math.random() * Math.PI * 2
-        const speed = 2 + Math.random() * 8.5
+        const speed =
+          (2 + Math.random() * 8.5) * vfxSpd
         particles.push({
           x:
             cx +
@@ -360,7 +384,9 @@ export function createMatchFx(
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
           life: 0,
-          maxLife: 220 + Math.random() * 180,
+          maxLife:
+            (220 + Math.random() * 180) *
+            VFX_PACE,
           size: 1.8 + Math.random() * 3.4,
           color:
             theme === 'space'
@@ -374,7 +400,7 @@ export function createMatchFx(
 
   function step(dtMs: number) {
     const k = Math.min(3, dtMs / 16.67)
-    flash *= Math.pow(0.92, k)
+    flash *= Math.pow(FLASH_DECAY_PER_K, k)
 
     const g = 0.11 * k
     const drag = Math.pow(0.984, k)

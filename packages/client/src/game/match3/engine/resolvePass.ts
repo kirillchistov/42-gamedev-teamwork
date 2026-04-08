@@ -21,13 +21,15 @@ import {
 } from './obstacleSystem'
 import type { GameHudState } from './gameState'
 import { syncGoalProgress } from './gameState'
-import type {
-  GameThemeOption,
-  GameVfxQualityOption,
+import {
+  match3AnimMs,
+  type GameThemeOption,
+  type GameVfxQualityOption,
 } from './config'
 import type { MatchFxApi } from './matchFx'
 
-export const RESOLVE_FALL_ANIM_MS = 190
+export const RESOLVE_FALL_ANIM_MS =
+  match3AnimMs(190)
 
 export type ResolveTileMotion = {
   from: CellRC
@@ -214,7 +216,7 @@ export async function runOneResolvePass(
     { overshoot: true }
   )
 
-  await env.delay(24)
+  await env.delay(match3AnimMs(24))
   return {
     matched: true,
     nextChain: env.chain + 1,

@@ -63,6 +63,7 @@ import {
 } from './renderer'
 import {
   GAME_DURATION_SEC,
+  match3AnimMs,
   type GameIconThemeOption,
   type GameThemeOption,
   type GameVfxQualityOption,
@@ -144,7 +145,7 @@ type CreateParams = {
 }
 
 const DEFAULT_HINT_IDLE_MS = 10000
-const SWAP_ANIM_MS = 140
+const SWAP_ANIM_MS = match3AnimMs(140)
 const ICE_HP = 1
 const ICE_SCORE_PER_DAMAGE = 10
 const ICE_SCORE_BREAK_BONUS = 40
@@ -640,9 +641,12 @@ export function createMatch3Game(
     opts?: { durationMs?: number; chain?: number }
   ): Promise<void> {
     const fullVfx = gameVfxQuality === 'full'
-    const durationMs = fullVfx
+    const baseDurationMs = fullVfx
       ? opts?.durationMs ?? 200
       : Math.min(opts?.durationMs ?? 220, 140)
+    const durationMs = match3AnimMs(
+      baseDurationMs
+    )
     const chain = Math.max(1, opts?.chain ?? 1)
     if (
       matchFx &&
