@@ -3,6 +3,7 @@
  * 2. Обработка ошибки logged юзера (есть cookie) логина User already in system
  * 3. Проверяем сессию, пробуем /auth/user
  * 4. Если отвалилась сеть/таймаут: локально очищаем сессию'
+ * 5. Добавлены sync reducers для обновления профиля без лишних запросов
  **/
 import {
   createAsyncThunk,
@@ -194,7 +195,43 @@ export const logoutThunk = createAsyncThunk(
 export const userSlice = createSlice({
   name: 'user',
   initialState,
-  reducers: {},
+  reducers: {
+    setUser: (
+      state,
+      action: PayloadAction<User | null>
+    ) => {
+      state.data = action.payload
+      if (action.payload === null) {
+        state.error = null
+        state.isAuthChecked = true
+      }
+    },
+    clearUser: state => {
+      state.data = null
+      state.error = null
+      state.isLoading = false
+      state.isAuthChecked = true
+    },
+    patchUserProfile: (
+      state,
+      action: PayloadAction<Partial<User>>
+    ) => {
+      if (state.data) {
+        state.data = {
+          ...state.data,
+          ...action.payload,
+        }
+      }
+    },
+    updateUserAvatar: (
+      state,
+      action: PayloadAction<string>
+    ) => {
+      if (state.data) {
+        state.data.avatar = action.payload
+      }
+    },
+  },
   extraReducers: builder => {
     builder
       .addCase(fetchUserThunk.pending, state => {
@@ -298,6 +335,13 @@ export const userSlice = createSlice({
   },
 })
 
+export const {
+  setUser,
+  clearUser,
+  patchUserProfile,
+  updateUserAvatar,
+} = userSlice.actions
+
 export const selectUser = (state: RootState) =>
   state.user.data
 export const selectUserIsLoading = (
@@ -312,5 +356,24 @@ export const selectUserIsInitialized = (
 export const selectUserError = (
   state: RootState
 ) => state.user.error
+export const selectIsAuthenticated = (
+  state: RootState
+) => !!state.user.data
+export const selectUserProfile = (
+  state: RootState
+) => state.user.data
+export const selectUserAvatar = (
+  state: RootState
+) => state.user.data?.avatar || null
+export const selectUserDisplayName = (
+  state: RootState
+) => {
+  const user = state.user.data
+  if (!user) return ''
+  return (
+    user.display_name ||
+    `${user.first_name} ${user.second_name}`
+  )
+}
 
 export default userSlice.reducer
