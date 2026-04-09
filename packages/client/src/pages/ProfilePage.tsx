@@ -12,12 +12,21 @@
  * Убран стартовый doValidate для паролей из useEffect.
  * Для профиля handleBlur валидирует profileRef.current, (актуальное состояние после ввода).
  * Кнопка "Сохранить изменения" активируется только после валидации
+ *
+ * Интеграция с Redux:
+ * - данные пользователя синхронизированы со стором
+ * - профиль обновляется через updateProfileThunk
+ * - аватар обновляется через updateAvatarThunk
  **/
 import React, {
   useEffect,
   useRef,
   useState,
 } from 'react'
+import {
+  useDispatch,
+  useSelector,
+} from 'react-redux'
 import { Helmet } from 'react-helmet'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
@@ -35,10 +44,18 @@ import {
   ProfileResponse,
   resourceFileUrl,
 } from '../shared/api/userApi'
-// import { DEFAULT_AVATAR_PATH } from '../constants'
 import { useValidate } from '../hooks/useValidate'
 import { validateAvatarFile } from '../shared/validation/authValidation'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
+import { AppDispatch } from '../store'
+import {
+  selectUser,
+  updateProfileThunk,
+  updateAvatarThunk,
+  patchUserProfile,
+  updateUserAvatar,
+  fetchUserThunk,
+} from '../slices/userSlice'
 
 function profilesEqual(
   a: ProfileData,
@@ -55,7 +72,10 @@ function profilesEqual(
 }
 
 export const ProfilePage: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>()
+  const userFromStore = useSelector(selectUser)
   const { theme } = useLandingTheme()
+
   const [profile, setProfile] =
     useState<ProfileData>({
       first_name: '',
@@ -111,7 +131,32 @@ export const ProfilePage: React.FC = () => {
     }, 2800)
     return () => window.clearTimeout(id)
   }, [toastMessage])
+
   const passwordsValidate = useValidate()
+
+  useEffect(() => {
+    if (!userFromStore) {
+      dispatch(fetchUserThunk())
+    } else {
+      setProfile({
+        first_name:
+          userFromStore.first_name || '',
+        second_name:
+          userFromStore.second_name || '',
+        display_name:
+          userFromStore.display_name || '',
+        email: userFromStore.email || '',
+        phone: userFromStore.phone || '',
+        login: userFromStore.login || '',
+      })
+      const avatarUrl = userFromStore.avatar
+        ? resourceFileUrl(userFromStore.avatar)
+        : null
+      setAvatar(avatarUrl)
+      setSavedProfile({ ...profile })
+      profileValidate.doValidate(profile)
+    }
+  }, [dispatch, userFromStore])
 
   const applyServerProfile = (
     data: ProfileResponse,
@@ -134,21 +179,9 @@ export const ProfilePage: React.FC = () => {
         : base
     )
     profileValidate.doValidate(next)
-  }
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const data = await userApi.getProfile()
-        applyServerProfile(data)
-      } catch {
-        console.log(
-          'Не удалось загрузить профиль'
-        )
-      }
-    }
-    void loadProfile()
-  }, [])
+    dispatch(patchUserProfile(data))
+  }
 
   const handleChange: React.ChangeEventHandler<
     HTMLInputElement
@@ -241,9 +274,10 @@ export const ProfilePage: React.FC = () => {
       async () => {
         setLoading(true)
         try {
-          await userApi.updateProfile(profile)
-          const fresh = await userApi.getProfile()
-          applyServerProfile(fresh)
+          const result = await dispatch(
+            updateProfileThunk(profile)
+          ).unwrap()
+          applyServerProfile(result)
           notifyProfileSuccess(
             'Изменения профиля сохранены'
           )
@@ -331,11 +365,17 @@ export const ProfilePage: React.FC = () => {
       return
     }
     try {
-      await userApi.updateAvatar(file)
-      const fresh = await userApi.getProfile()
-      applyServerProfile(fresh, {
-        bustAvatar: true,
-      })
+      const result = await dispatch(
+        updateAvatarThunk(file)
+      ).unwrap()
+      const base = resourceFileUrl(result.avatar)
+      setAvatar(
+        base
+          ? `${
+              base.split('?')[0]
+            }?v=${Date.now()}`
+          : null
+      )
       notifyProfileSuccess('Аватар обновлён')
     } catch {
       console.warn(
@@ -349,8 +389,8 @@ export const ProfilePage: React.FC = () => {
   const handleAvatarDelete = async () => {
     try {
       await userApi.deleteAvatar()
-      const fresh = await userApi.getProfile()
-      applyServerProfile(fresh)
+      dispatch(updateUserAvatar(''))
+      setAvatar(null)
       notifyProfileSuccess('Аватар удалён')
     } catch {
       console.warn(

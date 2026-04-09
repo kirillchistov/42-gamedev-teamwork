@@ -17,7 +17,10 @@ import type {
   SignupData,
   User,
 } from '../types/user'
-import { userApi } from '../shared/api/userApi'
+import {
+  userApi,
+  ProfileData,
+} from '../shared/api/userApi'
 
 // Единый таймаут сетевых запросов авторизации
 const AUTH_REQUEST_TIMEOUT_MS = 12_000
@@ -192,6 +195,23 @@ export const logoutThunk = createAsyncThunk(
   }
 )
 
+export const updateProfileThunk =
+  createAsyncThunk(
+    'user/updateProfile',
+    async (profileData: ProfileData) => {
+      return await userApi.updateProfile(
+        profileData
+      )
+    }
+  )
+
+export const updateAvatarThunk = createAsyncThunk(
+  'user/updateAvatar',
+  async (file: File) => {
+    return await userApi.updateAvatar(file)
+  }
+)
+
 export const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -332,6 +352,60 @@ export const userSlice = createSlice({
         state.isAuthChecked = true
         state.error = null
       })
+
+    builder
+      .addCase(
+        updateProfileThunk.pending,
+        state => {
+          state.isLoading = true
+          state.error = null
+        }
+      )
+      .addCase(
+        updateProfileThunk.fulfilled,
+        (state, { payload }) => {
+          state.data = payload
+          state.isLoading = false
+          state.error = null
+        }
+      )
+      .addCase(
+        updateProfileThunk.rejected,
+        (state, action) => {
+          state.isLoading = false
+          state.error =
+            action.error.message ||
+            'Ошибка обновления профиля'
+        }
+      )
+
+    builder
+      .addCase(
+        updateAvatarThunk.pending,
+        state => {
+          state.isLoading = true
+          state.error = null
+        }
+      )
+      .addCase(
+        updateAvatarThunk.fulfilled,
+        (state, { payload }) => {
+          if (state.data) {
+            state.data.avatar = payload.avatar
+          }
+          state.isLoading = false
+          state.error = null
+        }
+      )
+      .addCase(
+        updateAvatarThunk.rejected,
+        (state, action) => {
+          state.isLoading = false
+          state.error =
+            action.error.message ||
+            'Ошибка обновления аватара'
+        }
+      )
   },
 })
 
