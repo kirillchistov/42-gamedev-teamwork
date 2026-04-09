@@ -3,7 +3,6 @@ import {
   fireEvent,
   render,
   screen,
-  act,
 } from '@testing-library/react'
 import {
   MemoryRouter,
