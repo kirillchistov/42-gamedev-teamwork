@@ -3,8 +3,13 @@
  * Для каждой вставки есть несколько попыток, чтобы не создать мгновенный матч прямо на рефилле.
  * Это делает динамику партии более предсказуемой и уменьшает «бесплатные» каскады.
  * Модуль вызывается сразу после collapse на каждом проходе резолва.
+ * 6.1.6 Спец-фишки:
+ * Обновлена матчинговая логика под спец-клетки
+ * refill.ts (grid.ts, match.ts) теперь сравнивают по базовому kind, а не по “сырым” числам
+ * это позволяет спец-фишкам участвовать в обычных матчах как фишки своего цвета/типа
  */
 import type { Board } from './grid'
+import { getCellKind, isEmptyCell } from './cell'
 
 function randInt(maxExclusive: number): number {
   return Math.floor(Math.random() * maxExclusive)
@@ -19,12 +24,28 @@ function wouldFormMatch(
   //  По вертикали: проверяем две налево
   const a = board[rowIndex]?.[colIndex - 1]
   const b = board[rowIndex]?.[colIndex - 2]
-  if (a === value && b === value) return true
+  if (
+    typeof a === 'number' &&
+    typeof b === 'number' &&
+    !isEmptyCell(a) &&
+    !isEmptyCell(b) &&
+    getCellKind(a) === value &&
+    getCellKind(b) === value
+  )
+    return true
 
   // По вертикали: проверяем две вверх
   const x = board[rowIndex - 1]?.[colIndex]
   const y = board[rowIndex - 2]?.[colIndex]
-  if (x === value && y === value) return true
+  if (
+    typeof x === 'number' &&
+    typeof y === 'number' &&
+    !isEmptyCell(x) &&
+    !isEmptyCell(y) &&
+    getCellKind(x) === value &&
+    getCellKind(y) === value
+  )
+    return true
 
   return false
 }

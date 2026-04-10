@@ -23,19 +23,10 @@ import { routes } from './routes'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import './index.css'
 import { setPageHasBeenInitializedOnServer } from './slices/ssrSlice'
-
-const PUBLIC_PATHS = new Set([
-  '/login',
-  '/signup',
-  '/register',
-  '/signin',
-  '/sign-in',
-  '*',
-])
+import { isPublicRoutePath } from './router/publicRoutePaths'
 
 const guardedRoutes = routes.map(route => {
-  if (PUBLIC_PATHS.has(route.path ?? ''))
-    return route
+  if (isPublicRoutePath(route.path)) return route
   type RouteWithComponent = typeof route & {
     Component: React.ComponentType
   }
@@ -91,7 +82,7 @@ export const render = async (
     })
   } catch (e) {
     console.log(
-      'Инициализация страницы произошла с ошибкой',
+      'Ошибка при инициализации страницы',
       e
     )
   }

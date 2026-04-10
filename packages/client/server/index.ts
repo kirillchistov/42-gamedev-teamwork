@@ -2,17 +2,23 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 import { HelmetData } from 'react-helmet'
-import express, { Request as ExpressRequest } from 'express'
+import express, {
+  Request as ExpressRequest,
+} from 'express'
 import path from 'path'
 
 import fs from 'fs/promises'
-import { createServer as createViteServer, ViteDevServer } from 'vite'
+import {
+  createServer as createViteServer,
+  ViteDevServer,
+} from 'vite'
 import serialize from 'serialize-javascript'
 import cookieParser from 'cookie-parser'
 
 const port = process.env.PORT || 80
 const clientPath = path.join(__dirname, '..')
-const isDev = process.env.NODE_ENV === 'development'
+const isDev =
+  process.env.NODE_ENV === 'development'
 
 async function createServer() {
   const app = express()
@@ -29,7 +35,10 @@ async function createServer() {
     app.use(vite.middlewares)
   } else {
     app.use(
-      express.static(path.join(clientPath, 'dist/client'), { index: false })
+      express.static(
+        path.join(clientPath, 'dist/client'),
+        { index: false }
+      )
     )
   }
 
@@ -37,9 +46,10 @@ async function createServer() {
     const url = req.originalUrl
 
     try {
-      // Получаем файл client/index.html который мы правили ранее
-      // Создаём переменные
-      let render: (req: ExpressRequest) => Promise<{
+      // Получаю файл client/index.html и создаю переменные
+      let render: (
+        req: ExpressRequest
+      ) => Promise<{
         html: string
         initialState: unknown
         helmet: HelmetData
@@ -52,33 +62,42 @@ async function createServer() {
           'utf-8'
         )
 
-        // Применяем встроенные HTML-преобразования vite и плагинов
-        template = await vite.transformIndexHtml(url, template)
+        // Применяю встроенные HTML-преобразования vite и плагинов
+        template = await vite.transformIndexHtml(
+          url,
+          template
+        )
 
-        // Загружаем модуль клиента, который писали выше,
-        // он будет рендерить HTML-код
+        // Загружаю модуль клиента, который будет рендерить HTML
         render = (
           await vite.ssrLoadModule(
-            path.join(clientPath, 'src/entry-server.tsx')
+            path.join(
+              clientPath,
+              'src/entry-server.tsx'
+            )
           )
         ).render
       } else {
         template = await fs.readFile(
-          path.join(clientPath, 'dist/client/index.html'),
+          path.join(
+            clientPath,
+            'dist/client/index.html'
+          ),
           'utf-8'
         )
 
-        // Получаем путь до сбилдженого модуля клиента, чтобы не тащить средства сборки клиента на сервер
+        // Получаю путь до собранного модуля клиента
         const pathToServer = path.join(
           clientPath,
           'dist/server/entry-server.js'
         )
 
-        // Импортируем этот модуль и вызываем с инишл стейтом
-        render = (await import(pathToServer)).render
+        // Импортирю этот модуль и вызываю с начальным стейтом
+        render = (await import(pathToServer))
+          .render
       }
 
-      // Получаем HTML-строку из JSX
+      // Получаю HTML-строку из JSX
       const {
         html: appHtml,
         initialState,
@@ -86,7 +105,7 @@ async function createServer() {
         styleTags,
       } = await render(req)
 
-      // Заменяем комментарий на сгенерированную HTML-строку
+      // Заменяю комментарий на сгенерированную HTML-строку
       const html = template
         .replace('<!--ssr-styles-->', styleTags)
         .replace(
@@ -96,21 +115,29 @@ async function createServer() {
         .replace(`<!--ssr-outlet-->`, appHtml)
         .replace(
           `<!--ssr-initial-state-->`,
-          `<script>window.APP_INITIAL_STATE = ${serialize(initialState, {
-            isJSON: true,
-          })}</script>`
+          `<script>window.APP_INITIAL_STATE = ${serialize(
+            initialState,
+            {
+              isJSON: true,
+            }
+          )}</script>`
         )
 
-      // Завершаем запрос и отдаём HTML-страницу
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(html)
+      // Завершаю запрос и отдаю HTML-страницу
+      res
+        .status(200)
+        .set({ 'Content-Type': 'text/html' })
+        .end(html)
     } catch (e) {
-      vite.ssrFixStacktrace(e as Error)
+      vite?.ssrFixStacktrace(e as Error)
       next(e)
     }
   })
 
   app.listen(port, () => {
-    console.log(`Client is listening on port: ${port}`)
+    console.log(
+      `Client is listening on port: ${port}`
+    )
   })
 }
 

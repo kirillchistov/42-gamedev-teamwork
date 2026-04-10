@@ -1,0 +1,85 @@
+/* Общие медиазапросы layout (навигация, лендинг, формы) */
+/* === RESPONSIVE === */
+
+@media (max-width: 1439px) {
+  .team__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1023px) {
+  .landing-nav--desktop {
+    display: none;
+  }
+
+  .landing-burger {
+    display: flex;
+  }
+
+  .landing-nav--mobile {
+    display: none;
+  }
+
+  .landing-nav--mobile.landing-nav--mobile-open {
+    display: flex;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 767px) {
+  .landing main {
+    padding: 24px 12px 32px;
+  }
+
+  .hero__text h1 {
+    font-size: 28px;
+  }
+
+  .team__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .extra-sections {
+    max-width: 100%;
+    padding: 0 12px;
+  }
+
+  .auth-main {
+    padding: 32px 12px;
+  }
+
+  .auth-card {
+    padding: 20px 16px 24px;
+  }
+
+  .auth-form--grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 479px) {
+  .landing-header__inner {
+    padding: 0 12px;
+  }
+
+  .hero-board__cell {
+    width: 28px;
+    height: 28px;
+  }
+}
+/* Адаптив */
+
+@media (max-width: 767px) {
+  .leaderboard-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .leaderboard-grid-item {
+    padding: 8px 0;
+  }
+}

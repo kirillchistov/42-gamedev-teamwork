@@ -1,0 +1,70 @@
+/* Карточки контента: форум, лидерборд, блоки на лендинге (.extra-card) */
+/* === EXTRA SECTIONS (LOGIN/REG/PROFILE/FORUM/LEADERBOARD/ABOUT) === */
+/* === THIS WILL GO AWAY TO SEPARATE PCSS FILES === */
+
+.extra-sections {
+  max-width: 800px;
+  margin: 0 auto 48px;
+  padding: 0 var(--layout-padding-x);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.extra-card {
+  background: var(--color-bg-card-light);
+  border-radius: 20px;
+  padding: 18px 18px 20px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  font-size: 14px;
+}
+
+.extra-card h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.extra-card p {
+  margin: 0 0 10px;
+  color: var(--color-text-subtle-light);
+}
+
+.extra-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.extra-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.extra-card input,
+.extra-card textarea {
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  padding: 6px 8px;
+  font: inherit;
+}
+
+.extra-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.extra-card th,
+.extra-card td {
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.extra-card th {
+  background: var(--color-slate-100);
+  font-weight: 600;
+}

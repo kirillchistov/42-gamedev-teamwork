@@ -1,9 +1,11 @@
-/* общие токены, типографика, layout */
+/* Глобальные стили приложения: переменные, shell, шапка, подвал, кнопки
+ * 6.3.2 Оболочка страницы игры: .landing-header--game (компактная высота), .landing-theme-toggle,
+ * .landing-fullscreen-btn, .game-page-shell:fullscreen / :-webkit-full-screen
+ */
+@import './variables.pcss';
 
 :root {
   --radius-card: 24px;
-  --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.08);
-  --header-height: 120px;
 }
 
 body {
@@ -39,4 +41,473 @@ button {
     display: none;
 }
 
-/* Сюда перетащим стили из landing.pcss */
+/* Ожидание fetchUser в ProtectedRoute */
+.protected-route__loading {
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.protected-route__loading-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-subtle-light, #64748b);
+}
+
+/* === COMMON LAYOUT === */
+
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-page-light);
+  color: var(--color-text-main-light);
+}
+
+.landing main {
+  flex: 1;
+  padding: 32px var(--layout-padding-x) 40px;
+}
+
+.section {
+  max-width: var(--layout-max-width);
+  margin: 0 auto 48px;
+}
+
+.section h2 {
+  font-size: 28px;
+  margin: 0 0 16px;
+}
+
+.section p.section-subtitle {
+  margin: 0 0 24px;
+  color: var(--color-text-subtle-light);
+  max-width: 640px;
+}
+
+.landing--dark-neon .section p.section-subtitle {
+  color: var(--color-text-main-dark);
+  text-shadow: none;
+}
+
+/* === HEADER === */
+
+.landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: var(--header-height);
+  background: rgba(245, 247, 251, 0.9);
+  border-bottom: 1px solid var(--color-border-subtle-light);
+  backdrop-filter: blur(16px);
+}
+
+.landing-header__inner {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--layout-padding-x-md);
+  gap: 24px;
+}
+
+.landing-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.landing-logo__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: radial-gradient(
+      circle at 20% 20%,
+      var(--color-accent-primary),
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      var(--color-accent-secondary),
+      transparent 60%
+    );
+  box-shadow: 0 0 18px rgba(79, 70, 229, 0.6),
+    0 0 0 1px rgba(148, 163, 184, 0.4);
+  position: relative;
+}
+
+.landing-logo__icon::before,
+.landing-logo__icon::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-neon-amber);
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.9);
+}
+
+.landing-logo__icon::before {
+  top: 4px;
+  left: 10px;
+}
+
+.landing-logo__icon::after {
+  bottom: 5px;
+  right: 6px;
+}
+
+.landing-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 14px;
+}
+
+.landing-nav button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-text-subtle-light);
+  cursor: pointer;
+}
+
+.landing-nav button:hover {
+  color: var(--color-text-main-light);
+}
+
+/* desktop / mobile */
+
+.landing-nav--mobile {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px var(--layout-padding-x-md) 18px;
+  border-top: 1px solid var(--color-border-subtle-light);
+  background: rgba(245, 247, 251, 0.9);
+}
+
+.landing-nav--mobile button {
+  text-align: left;
+}
+
+/* полноэкранный оверлей под выпадающим меню (≤1023px) */
+.landing-nav-backdrop {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .landing-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    /* ниже строки шапки и панели пунктов, но над контентом страницы */
+    z-index: 900;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: rgba(15, 23, 42, 0.42);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .landing--dark-neon .landing-nav-backdrop {
+    background: rgba(2, 6, 23, 0.78);
+  }
+
+  .landing-header__inner {
+    position: relative;
+    z-index: 902;
+  }
+
+  .landing-nav--mobile.landing-nav--mobile-open {
+    position: relative;
+    z-index: 901;
+  }
+}
+
+/* theme switch */
+
+.landing-header__right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.landing-theme-switch {
+  display: inline-flex;
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  gap: 2px;
+}
+
+.landing-theme-switch__btn {
+  border: none;
+  background: transparent;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-subtle-light);
+  font-size: 14px;
+}
+
+.landing-theme-switch__btn.is-active {
+  background: #ffffff;
+  color: var(--color-accent-primary);
+  box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.35);
+}
+
+/* /game: низкая шапка */
+.landing-header--game {
+  height: var(--header-height-game);
+  min-height: var(--header-height-game);
+}
+
+.landing-header--game .landing-header__inner {
+  gap: 10px;
+  padding: 0 14px;
+}
+
+.landing-header--game .landing-logo {
+  font-size: 14px;
+  gap: 8px;
+}
+
+.landing-header--game .landing-logo__icon {
+  width: var(--game-logo-icon);
+  height: var(--game-logo-icon);
+}
+
+.landing-header--game .landing-logo__icon::before,
+.landing-header--game .landing-logo__icon::after {
+  width: 3px;
+  height: 3px;
+}
+
+.landing-header--game .landing-logo__icon::before {
+  top: 3px;
+  left: 8px;
+}
+
+.landing-header--game .landing-logo__icon::after {
+  bottom: 4px;
+  right: 5px;
+}
+
+.landing-header--game .landing-nav {
+  font-size: 13px;
+  gap: 12px;
+}
+
+.landing-header--game.is-fs .landing-nav--desktop {
+  display: none;
+}
+
+.landing-header--game .landing-header__right {
+  gap: 8px;
+}
+
+.landing-theme-toggle {
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: rgba(255, 255, 255, 0.85);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.landing-theme-toggle__glyph {
+  font-size: 17px;
+  display: block;
+  transform: translateY(0.5px);
+}
+
+.landing-settings-btn,
+.landing-fullscreen-btn {
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: rgba(255, 255, 255, 0.85);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: var(--color-text-subtle-light);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.landing-settings-btn:hover,
+.landing-fullscreen-btn:hover {
+  color: var(--color-text-main-light);
+  border-color: rgba(79, 70, 229, 0.45);
+}
+
+.game-page-shell:fullscreen,
+.game-page-shell:-webkit-full-screen {
+  min-height: 100vh;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+/* burger */
+
+.landing-burger {
+  display: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  padding: 7px 6px;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.landing-burger span {
+  display: block;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: #0f172a;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.landing-burger.is-open span:nth-child(1) {
+  transform: translateY(5px) rotate(45deg);
+}
+
+.landing-burger.is-open span:nth-child(2) {
+  opacity: 0;
+}
+
+.landing-burger.is-open span:nth-child(3) {
+  transform: translateY(-5px) rotate(-45deg);
+}
+
+.landing-header--game .landing-burger {
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+}
+
+.landing-header--game.is-fs .landing-burger {
+  display: flex;
+}
+
+.landing-header--game.is-fs .landing-nav--mobile.landing-nav--mobile-open {
+  display: flex;
+  position: relative;
+  z-index: 901;
+}
+
+.landing-header--game .landing-burger.is-open span:nth-child(1) {
+  transform: translateY(4px) rotate(45deg);
+}
+
+.landing-header--game .landing-burger.is-open span:nth-child(3) {
+  transform: translateY(-4px) rotate(-45deg);
+}
+
+/* === BUTTONS === */
+
+.btn {
+  border-radius: var(--radius-pill);
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  padding: 9px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn--primary {
+  background: var(--color-accent-primary);
+  color: var(--color-white);
+}
+
+.btn--primary:hover {
+  background: var(--color-indigo-700);
+}
+
+.btn--outline {
+  background: transparent;
+  color: var(--color-accent-primary);
+  border: 1px solid var(--color-accent-primary);
+}
+
+.landing--dark-neon .btn--outline {
+  background: transparent;
+  color: var(--color-accent-primary-soft);
+  border: 1px solid var(--color-accent-primary);
+}
+
+.landing--dark-neon .landing-logo__text {
+  background: transparent;
+  color: var(--color-accent-primary-soft);
+}
+
+.btn--outline:hover {
+  background: var(--color-accent-primary-soft);
+  color: var(--color-accent-primary);
+}
+
+.btn--flat {
+  background: transparent;
+  color: var(--color-text-subtle-light);
+}
+
+.btn--flat:hover {
+  color: var(--color-accent-primary);
+}
+
+.btn--disabled,
+.btn--disabled:hover {
+  cursor: default;
+  opacity: 0.5;
+}
+/* === FOOTER === */
+
+.landing-footer {
+  border-top: 1px solid var(--color-border-subtle-light);
+  background: var(--color-white);
+}
+
+.landing-footer__inner {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: 12px var(--layout-padding-x-md) 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--color-text-subtle-light);
+}
+
+.landing--dark-neon .landing-footer__inner {
+  color: var(--color-text-subtle-dark);
+}

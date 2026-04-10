@@ -3,9 +3,14 @@
  * Модуль возвращает плоский список координат, которые нужно удалить на следующем шаге.
  * Логика не изменяет поле и не начисляет очки — она только детектирует матчи.
  * Такой контракт делает функцию удобной для повторного вызова в каскадных проходах.
+ * 6.1.6 Спец-фишки:
+ * Обновлена матчинговая логика под спец-клетки
+ * match.ts (grid.ts, refill.ts) теперь сравнивают по базовому kind, а не по “сырым” числам
+ * это позволяет спец-фишкам участвовать в обычных матчах как фишки своего цвета/типа
  */
 
 import type { Board } from './grid'
+import { getCellKind, isEmptyCell } from './cell'
 
 export type CellRC = { r: number; c: number }
 
@@ -41,14 +46,23 @@ export function findMatches(
     let c = 0
     while (c < cols) {
       const v = row[c]
-      if (typeof v !== 'number' || v < 0) {
+      if (
+        typeof v !== 'number' ||
+        isEmptyCell(v)
+      ) {
         c += 1
         continue
       }
+      const kind = getCellKind(v)
 
       const start = c
       let end = c + 1
-      while (end < cols && row[end] === v)
+      while (
+        end < cols &&
+        typeof row[end] === 'number' &&
+        !isEmptyCell(row[end] as number) &&
+        getCellKind(row[end] as number) === kind
+      )
         end += 1
 
       const len = end - start
@@ -66,14 +80,24 @@ export function findMatches(
     let r = 0
     while (r < rows) {
       const v = board[r]?.[c]
-      if (typeof v !== 'number' || v < 0) {
+      if (
+        typeof v !== 'number' ||
+        isEmptyCell(v)
+      ) {
         r += 1
         continue
       }
+      const kind = getCellKind(v)
 
       const start = r
       let end = r + 1
-      while (end < rows && board[end]?.[c] === v)
+      while (
+        end < rows &&
+        typeof board[end]?.[c] === 'number' &&
+        !isEmptyCell(board[end]?.[c] as number) &&
+        getCellKind(board[end]?.[c] as number) ===
+          kind
+      )
         end += 1
 
       const len = end - start

@@ -1,0 +1,196 @@
+/* Страница лидерборда */
+/* === LEADERBOARD === */
+
+.leaderboard-card {
+  margin-bottom: 16px;
+}
+
+/* Верхняя панель: фильтры + переключатель вида */
+
+.leaderboard-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.leaderboard-toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaderboard-toolbar__status {
+  color: var(--color-text-subtle-light);
+  font-size: 12px;
+}
+
+.leaderboard-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Переключатель «таблица / плитка» */
+
+.leaderboard-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-text-subtle-light);
+}
+
+.leaderboard-view-toggle__btn {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: inherit;
+  cursor: pointer;
+  color: var(--color-text-subtle-light);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.leaderboard-view-toggle__btn.is-active {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--color-accent-primary);
+}
+
+/* Таблица */
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.45);
+  text-align: left;
+}
+
+.leaderboard-table thead th {
+  font-weight: 600;
+  color: var(--color-text-subtle-light);
+  white-space: nowrap;
+}
+
+/* кнопка сортировки в заголовке */
+
+.leaderboard-sort-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.leaderboard-sort-btn span {
+  display: inline-block;
+}
+
+.leaderboard-sort-btn--active {
+  color: var(--color-accent-primary);
+}
+
+.leaderboard-sort-btn::after {
+  content: '';
+}
+
+/* стрелки уже рисуются через текст ↑/↓; делаем их тонкими */
+.leaderboard-sort-btn {
+  font-size: 13px;
+}
+
+/* Игрок в таблице */
+
+.leaderboard-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaderboard-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.7);
+}
+
+/* Плитка в две колонки, как в макете */
+
+.leaderboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 32px;
+}
+
+.leaderboard-grid-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.leaderboard-grid-rank {
+  min-width: 20px;
+  text-align: right;
+  margin-right: 12px;
+  font-size: 16px;
+}
+
+.leaderboard-grid-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.leaderboard-avatar-large {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.9);
+  flex-shrink: 0;
+}
+
+.leaderboard-grid-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.leaderboard-grid-nickname {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.leaderboard-grid-rating {
+  font-size: 13px;
+}
+
+.leaderboard-grid-meta {
+  font-size: 12px;
+  color: var(--color-text-subtle-light);
+}

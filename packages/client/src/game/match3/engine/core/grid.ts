@@ -3,9 +3,14 @@
  * Поле хранится как матрица чисел: 0..N-1 — тип фишки, -1 — пустая клетка.
  * Внутри есть пере-брос значений при генерации, чтобы не появлялись авто-комбо на старте.
  * Этот модуль используется при запуске партии и при полном пересоздании доски/поля.
+ * 6.1.6 Спец-фишки:
+ * Обновлена матчинговая логика под спец-клетки
+ * grid.ts (match.ts, refill.ts) теперь сравнивают по базовому kind, а не по “сырым” числам
+ * это позволяет спец-фишкам участвовать в обычных матчах как фишки своего цвета/типа
  */
 
 import { findMatches } from './match'
+import { getCellKind, isEmptyCell } from './cell'
 
 export type Board = number[][]
 
@@ -28,17 +33,35 @@ function hasMatchAt(
   colIndex: number
 ): boolean {
   const v = board[rowIndex]?.[colIndex]
-  if (typeof v !== 'number' || v < 0) return false
+  if (typeof v !== 'number' || isEmptyCell(v))
+    return false
+  const kind = getCellKind(v)
 
   // Проверяем по горизонтали (смотрим влево)
   const a = board[rowIndex]?.[colIndex - 1]
   const b = board[rowIndex]?.[colIndex - 2]
-  if (a === v && b === v) return true
+  if (
+    typeof a === 'number' &&
+    typeof b === 'number' &&
+    !isEmptyCell(a) &&
+    !isEmptyCell(b) &&
+    getCellKind(a) === kind &&
+    getCellKind(b) === kind
+  )
+    return true
 
   // Проверяем по вертикали (смотрим вверх)
   const x = board[rowIndex - 1]?.[colIndex]
   const y = board[rowIndex - 2]?.[colIndex]
-  if (x === v && y === v) return true
+  if (
+    typeof x === 'number' &&
+    typeof y === 'number' &&
+    !isEmptyCell(x) &&
+    !isEmptyCell(y) &&
+    getCellKind(x) === kind &&
+    getCellKind(y) === kind
+  )
+    return true
 
   return false
 }

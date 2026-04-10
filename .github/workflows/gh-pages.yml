@@ -3,7 +3,11 @@ name: Deploy client to GitHub Pages
 on:
   push:
     branches:
-      - sprint_555
+      - main
+      - dev
+      - sprint_6
+      - feature/6.3-game-visuals
+      - sprint_7
   workflow_dispatch:
 
 permissions:
@@ -32,10 +36,15 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build client
+        env:
+          GITHUB_PAGES_BASE_URL: /${{ github.event.repository.name }}/
         run: cd packages/client && yarn build
 
-      - name: Replace index.html with demo
-        run: cp packages/client/demo-landing.html packages/client/dist/client/index.html        
+      - name: SPA fallback for deep links
+        run: cp packages/client/dist/client/index.html packages/client/dist/client/404.html
+
+      - name: Disable Jekyll
+        run: touch packages/client/dist/client/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

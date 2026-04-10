@@ -13,23 +13,29 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import './shared/styles/normalize.pcss'
 import './shared/styles/base.pcss'
 import './shared/styles/landing.pcss'
+import './shared/styles/site-cards.pcss'
+import './shared/styles/auth.pcss'
+import './shared/styles/error-pages.pcss'
+import './shared/styles/cosmic-error.pcss'
+import './shared/styles/leaderboard.pcss'
+import './shared/styles/themes.pcss'
+import './shared/styles/match3-theme.pcss'
+import './shared/styles/responsive.pcss'
+import './shared/styles/forum.pcss'
 import '@gravity-ui/uikit/styles/fonts.css'
 import '@gravity-ui/uikit/styles/styles.css'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { isPublicRoutePath } from './router/publicRoutePaths'
 
-const PUBLIC_PATHS = new Set([
-  '/login',
-  '/sign-in',
-  '/signin',
-  '/signup',
-  '/register',
-  '/signin',
-  '/sign-in',
-  '*',
-])
+const routerBasename = (() => {
+  const base = import.meta.env.BASE_URL || '/'
+  const trimmed = base.replace(/\/+$/, '')
+  return trimmed === '' ? undefined : trimmed
+})()
 
 const router = createBrowserRouter(
   routes.map(route => {
-    if (PUBLIC_PATHS.has(route.path ?? ''))
+    if (isPublicRoutePath(route.path))
       return route
     const { Component, ...rest } = route
     return {
@@ -40,7 +46,10 @@ const router = createBrowserRouter(
         </ProtectedRoute>
       ),
     }
-  })
+  }),
+  routerBasename
+    ? { basename: routerBasename }
+    : {}
 )
 
 ReactDOM.hydrateRoot(
@@ -48,7 +57,9 @@ ReactDOM.hydrateRoot(
   <Provider store={store}>
     <LandingThemeProvider>
       <ThemeProvider theme="light">
-        <RouterProvider router={router} />
+        <ErrorBoundary>
+          <RouterProvider router={router} />
+        </ErrorBoundary>
       </ThemeProvider>
     </LandingThemeProvider>
   </Provider>

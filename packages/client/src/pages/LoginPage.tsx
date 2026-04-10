@@ -1,13 +1,19 @@
-import React, { FormEvent, useState } from 'react'
+/** Изменения и починка Sprint6 Chores:
+ * Сбрасываем серверную сессию при заходе на /login и перед signin,
+ * чтобы починить 400 «User already in system» (см. loginThunk).
+ */
+import React, {
+  FormEvent,
+  useEffect,
+  useState,
+} from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
   useNavigate,
-  Navigate,
 } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
-import { AuthSessionNotice } from '../components/AuthSessionNotice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
@@ -19,19 +25,19 @@ import {
 import {
   fetchUserThunk,
   loginThunk,
-  selectUser,
+  logoutThunk,
   selectUserError,
   selectUserIsAuthChecked,
   selectUserIsLoading,
 } from '../slices/userSlice'
 
+// Сбрасываем серверную сессию при заходе на /login и перед signin,
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
   const { theme } = useLandingTheme()
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const user = useSelector(selectUser)
   const isAuthChecked = useSelector(
     selectUserIsAuthChecked
   )
@@ -42,21 +48,26 @@ export const LoginPage: React.FC = () => {
 
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
+  const [isLoggingOut, setIsLoggingOut] =
+    useState(false)
 
-  if (user) {
-    return (
-      <Navigate
-        to="/game"
-        replace
-        state={{
-          notice: 'Вы уже вошли в систему',
-        }}
-      />
-    )
-  }
+  useEffect(() => {
+    if (!isAuthChecked) return
+    let alive = true
+    const reset = async () => {
+      setIsLoggingOut(true)
+      await dispatch(logoutThunk())
+      if (alive) setIsLoggingOut(false)
+    }
+    void reset()
+    return () => {
+      alive = false
+    }
+  }, [dispatch, isAuthChecked])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    await dispatch(logoutThunk())
     const result = await dispatch(
       loginThunk({ login, password })
     )
@@ -83,8 +94,10 @@ export const LoginPage: React.FC = () => {
           <section className="auth-card auth-card--wide">
             <p>Проверяем текущую сессию...</p>
           </section>
-        ) : user ? (
-          <AuthSessionNotice actionLabel="Выйти и войти под другим" />
+        ) : isLoggingOut ? (
+          <section className="auth-card auth-card--wide">
+            <p>Выходим из текущей сессии...</p>
+          </section>
         ) : (
           <section className="auth-card auth-card--wide">
             <h1>Вход</h1>
