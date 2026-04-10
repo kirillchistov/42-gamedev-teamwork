@@ -6,3 +6,4 @@ coverage/
 .DS_Store
 dist
 tmp
+package-lock.json
