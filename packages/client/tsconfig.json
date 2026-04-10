@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@match3-public/*": ["public/*"],
       "@match3-icons/*": ["public/iconset/*"]
