@@ -46,8 +46,7 @@ async function createServer() {
     const url = req.originalUrl
 
     try {
-      // Получаем файл client/index.html который мы правили ранее
-      // Создаём переменные
+      // Получаю файл client/index.html и создаю переменные
       let render: (
         req: ExpressRequest
       ) => Promise<{
@@ -63,14 +62,13 @@ async function createServer() {
           'utf-8'
         )
 
-        // Применяем встроенные HTML-преобразования vite и плагинов
+        // Применяю встроенные HTML-преобразования vite и плагинов
         template = await vite.transformIndexHtml(
           url,
           template
         )
 
-        // Загружаем модуль клиента, который писали выше,
-        // он будет рендерить HTML-код
+        // Загружаю модуль клиента, который будет рендерить HTML
         render = (
           await vite.ssrLoadModule(
             path.join(
@@ -88,18 +86,18 @@ async function createServer() {
           'utf-8'
         )
 
-        // Получаем путь до сбилдженого модуля клиента, чтобы не тащить средства сборки клиента на сервер
+        // Получаю путь до собранного модуля клиента
         const pathToServer = path.join(
           clientPath,
           'dist/server/entry-server.js'
         )
 
-        // Импортируем этот модуль и вызываем с инишл стейтом
+        // Импортирю этот модуль и вызываю с начальным стейтом
         render = (await import(pathToServer))
           .render
       }
 
-      // Получаем HTML-строку из JSX
+      // Получаю HTML-строку из JSX
       const {
         html: appHtml,
         initialState,
@@ -107,7 +105,7 @@ async function createServer() {
         styleTags,
       } = await render(req)
 
-      // Заменяем комментарий на сгенерированную HTML-строку
+      // Заменяю комментарий на сгенерированную HTML-строку
       const html = template
         .replace('<!--ssr-styles-->', styleTags)
         .replace(
@@ -125,7 +123,7 @@ async function createServer() {
           )}</script>`
         )
 
-      // Завершаем запрос и отдаём HTML-страницу
+      // Завершаю запрос и отдаю HTML-страницу
       res
         .status(200)
         .set({ 'Content-Type': 'text/html' })
