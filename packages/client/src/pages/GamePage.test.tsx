@@ -3,6 +3,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from '@testing-library/react'
 import {
   MemoryRouter,
@@ -69,18 +70,26 @@ describe('Тесты настроек на странице GamePage', () => {
     window.localStorage.clear()
     jest.useFakeTimers()
     jest.clearAllMocks()
-    renderGamePage()
   })
 
-  test('Таймер на запуск игры стартовал', () => {
+  test('Таймер на запуск игры стартовал, затем появилось окно инициализации', async () => {
     const { container } = renderGamePage()
+
     const element = container.querySelector(
       '.match3__countdown'
     )
     expect(element).toHaveTextContent('3')
+
+    const button: Element = await waitFor(
+      () => screen.getByText('Играть'),
+      { timeout: 3100 }
+    )
+    expect(element).not.toBeInTheDocument()
+    expect(button).toBeInTheDocument()
   })
 
   test('Открытие модалки с настройками', () => {
+    renderGamePage()
     fireEvent.click(
       screen.getByRole('button', {
         name: 'open-settings',
@@ -94,6 +103,7 @@ describe('Тесты настроек на странице GamePage', () => {
   })
 
   test('Закрытие модалки кнопкой Отмена', () => {
+    renderGamePage()
     fireEvent.click(
       screen.getByRole('button', {
         name: 'open-settings',
@@ -112,6 +122,7 @@ describe('Тесты настроек на странице GamePage', () => {
   })
 
   test('Закрытие модалки кнопкой Закрыть', () => {
+    renderGamePage()
     // renderGamePage()
 
     fireEvent.click(
@@ -132,6 +143,7 @@ describe('Тесты настроек на странице GamePage', () => {
   })
 
   test('Закрытие модалки кнопкой Escape', () => {
+    renderGamePage()
     fireEvent.click(
       screen.getByRole('button', {
         name: 'open-settings',
