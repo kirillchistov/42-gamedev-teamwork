@@ -79,7 +79,7 @@ async function createServer() {
                 template = await promises_1.default.readFile(path_1.default.join(clientPath, 'dist/client/index.html'), 'utf-8');
                 // Получаю путь до собранного модуля клиента
                 const pathToServer = path_1.default.join(clientPath, 'dist/server/entry-server.js');
-                // Импортирю этот модуль и вызываю с начальным стейтом
+                // Импортируем этот модуль и вызываем с инишл стейтом
                 render = (await Promise.resolve(`${pathToServer}`).then(s => __importStar(require(s))))
                     .render;
             }
@@ -93,7 +93,7 @@ async function createServer() {
                 .replace(`<!--ssr-initial-state-->`, `<script>window.APP_INITIAL_STATE = ${(0, serialize_javascript_1.default)(initialState, {
                 isJSON: true,
             })}</script>`);
-            // Завершаю запрос и отдаю HTML-страницу
+            // Завершаем запрос и отдаём HTML-страницу
             res
                 .status(200)
                 .set({ 'Content-Type': 'text/html' })
