@@ -1,0 +1,21 @@
+{
+  "name": "Match-3 Cosmic Game",
+  "short_name": "Match-3",
+  "description": "Match-3 browser game with cosmic theme",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "/icons/cosmic1.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/cosmic2.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    }
+  ]
+}

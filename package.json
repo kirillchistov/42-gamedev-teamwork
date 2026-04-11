@@ -1,6 +1,7 @@
 {
   "name": "42-gamedev-teamwork",
   "private": true,
+  "packageManager": "yarn@1.22.22",
   "scripts": {
     "bootstrap": "yarn && node init.js && lerna clean && yarn && lerna bootstrap",
     "build": "lerna run build",
@@ -18,6 +19,11 @@
   ],
   "engines": {
     "node": ">=15"
+  },
+  "resolutions": {
+    "workbox-build": "7.3.0",
+    "workbox-window": "7.3.0",
+    "smob": "1.4.1"
   },
   "devDependencies": {
     "@evilmartians/lefthook": "^1.3.9",
