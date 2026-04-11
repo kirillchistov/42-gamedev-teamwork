@@ -24,6 +24,7 @@
     "jsx": "react-jsx"
   },
   "include": ["src"],
+  "exclude": ["src/sw.ts", "src/sw-env.d.ts"],
   "references": [
     { "path": "./tsconfig.node.json" },
     { "path": "./tsconfig.server.json" }
