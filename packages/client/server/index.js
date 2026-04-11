@@ -82,7 +82,8 @@ async function createServer() {
                 // Получаем путь до сбилдженого модуля клиента, чтобы не тащить средства сборки клиента на сервер
                 const pathToServer = path_1.default.join(clientPath, 'dist/server/entry-server.js');
                 // Импортируем этот модуль и вызываем с инишл стейтом
-                render = (await Promise.resolve(`${pathToServer}`).then(s => __importStar(require(s)))).render;
+                render = (await Promise.resolve(`${pathToServer}`).then(s => __importStar(require(s))))
+                    .render;
             }
             // Получаем HTML-строку из JSX
             const { html: appHtml, initialState, helmet, styleTags, } = await render(req);
@@ -95,7 +96,10 @@ async function createServer() {
                 isJSON: true,
             })}</script>`);
             // Завершаем запрос и отдаём HTML-страницу
-            res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+            res
+                .status(200)
+                .set({ 'Content-Type': 'text/html' })
+                .end(html);
         }
         catch (e) {
             vite === null || vite === void 0 ? void 0 : vite.ssrFixStacktrace(e);

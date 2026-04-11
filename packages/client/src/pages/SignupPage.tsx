@@ -74,6 +74,7 @@ export const SignupPage: React.FC = () => {
     useState<SignupFormValues>({
       first_name: '',
       second_name: '',
+      display_name: '',
       email: '',
       phone: '',
       login: '',
@@ -113,6 +114,9 @@ export const SignupPage: React.FC = () => {
         signupThunk({
           first_name: form.first_name ?? '',
           second_name: form.second_name ?? '',
+          display_name:
+            form.display_name ??
+            `${form.first_name} ${form.second_name}`,
           email: form.email ?? '',
           phone: form.phone ?? '',
           login: form.login ?? '',
@@ -178,6 +182,23 @@ export const SignupPage: React.FC = () => {
                   message={
                     signupValidate.errors
                       .second_name
+                  }
+                />
+              </label>
+              <label>
+                Никнейм
+                <Input
+                  type="text"
+                  name="display_name"
+                  placeholder="Никнейм"
+                  value={form.display_name ?? ''}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                />
+                <FieldError
+                  message={
+                    signupValidate.errors
+                      .display_name
                   }
                 />
               </label>

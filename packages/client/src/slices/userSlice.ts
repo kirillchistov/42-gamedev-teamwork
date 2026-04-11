@@ -3,6 +3,7 @@
  * 2. Обработка ошибки logged юзера (есть cookie) логина User already in system
  * 3. Проверяем сессию, пробуем /auth/user
  * 4. Если отвалилась сеть/таймаут: локально очищаем сессию'
+ * 5. Добавлены sync reducers для обновления профиля без лишних запросов
  **/
 import {
   createAsyncThunk,
@@ -16,7 +17,10 @@ import type {
   SignupData,
   User,
 } from '../types/user'
-import { userApi } from '../shared/api/userApi'
+import {
+  userApi,
+  ProfileData,
+} from '../shared/api/userApi'
 
 // Единый таймаут сетевых запросов авторизации
 const AUTH_REQUEST_TIMEOUT_MS = 12_000
@@ -191,10 +195,63 @@ export const logoutThunk = createAsyncThunk(
   }
 )
 
+export const updateProfileThunk =
+  createAsyncThunk(
+    'user/updateProfile',
+    async (profileData: ProfileData) => {
+      return await userApi.updateProfile(
+        profileData
+      )
+    }
+  )
+
+export const updateAvatarThunk = createAsyncThunk(
+  'user/updateAvatar',
+  async (file: File) => {
+    return await userApi.updateAvatar(file)
+  }
+)
+
 export const userSlice = createSlice({
   name: 'user',
   initialState,
-  reducers: {},
+  reducers: {
+    setUser: (
+      state,
+      action: PayloadAction<User | null>
+    ) => {
+      state.data = action.payload
+      if (action.payload === null) {
+        state.error = null
+        state.isAuthChecked = true
+      }
+    },
+    clearUser: state => {
+      state.data = null
+      state.error = null
+      state.isLoading = false
+      state.isAuthChecked = true
+    },
+    patchUserProfile: (
+      state,
+      action: PayloadAction<Partial<User>>
+    ) => {
+      if (state.data) {
+        state.data = {
+          ...state.data,
+          ...action.payload,
+        }
+      }
+    },
+    updateUserAvatar: (
+      state,
+      action: PayloadAction<string>
+    ) => {
+      if (state.data) {
+        state.data.avatar = action.payload
+      }
+    },
+  },
   extraReducers: builder => {
     builder
       .addCase(fetchUserThunk.pending, state => {
@@ -295,8 +352,69 @@ export const userSlice = createSlice({
         state.isAuthChecked = true
         state.error = null
       })
+
+    builder
+      .addCase(
+        updateProfileThunk.pending,
+        state => {
+          state.isLoading = true
+          state.error = null
+        }
+      )
+      .addCase(
+        updateProfileThunk.fulfilled,
+        (state, { payload }) => {
+          state.data = payload
+          state.isLoading = false
+          state.error = null
+        }
+      )
+      .addCase(
+        updateProfileThunk.rejected,
+        (state, action) => {
+          state.isLoading = false
+          state.error =
+            action.error.message ||
+            'Ошибка обновления профиля'
+        }
+      )
+
+    builder
+      .addCase(
+        updateAvatarThunk.pending,
+        state => {
+          state.isLoading = true
+          state.error = null
+        }
+      )
+      .addCase(
+        updateAvatarThunk.fulfilled,
+        (state, { payload }) => {
+          if (state.data) {
+            state.data.avatar = payload.avatar
+          }
+          state.isLoading = false
+          state.error = null
+        }
+      )
+      .addCase(
+        updateAvatarThunk.rejected,
+        (state, action) => {
+          state.isLoading = false
+          state.error =
+            action.error.message ||
+            'Ошибка обновления аватара'
+        }
+      )
   },
 })
+
+export const {
+  setUser,
+  clearUser,
+  patchUserProfile,
+  updateUserAvatar,
+} = userSlice.actions
 
 export const selectUser = (state: RootState) =>
   state.user.data
@@ -312,5 +430,24 @@ export const selectUserIsInitialized = (
 export const selectUserError = (
   state: RootState
 ) => state.user.error
+export const selectIsAuthenticated = (
+  state: RootState
+) => !!state.user.data
+export const selectUserProfile = (
+  state: RootState
+) => state.user.data
+export const selectUserAvatar = (
+  state: RootState
+) => state.user.data?.avatar || null
+export const selectUserDisplayName = (
+  state: RootState
+) => {
+  const user = state.user.data
+  if (!user) return ''
+  return (
+    user.display_name ||
+    `${user.first_name} ${user.second_name}`
+  )
+}
 
 export default userSlice.reducer
