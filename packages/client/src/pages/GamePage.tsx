@@ -59,8 +59,10 @@ export const GamePage: React.FC = () => {
   const { theme } = useLandingTheme()
   const pageShellRef =
     useRef<HTMLDivElement | null>(null)
-  const [showSettings, setShowSettings] =
-    useState(false)
+  const [
+    showSettingsPanel,
+    setShowSettingsPanel,
+  ] = useState(false)
   const [selectedLevelId, setSelectedLevelId] =
     useState(DEFAULT_MATCH3_LEVEL_ID)
   const [goalType, setGoalType] =
@@ -165,32 +167,12 @@ export const GamePage: React.FC = () => {
       window.removeEventListener('keydown', onKey)
   }, [])
 
-  useEffect(() => {
-    if (!showSettings) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowSettings(false)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () =>
-      window.removeEventListener('keydown', onKey)
-  }, [showSettings])
-
   const isStartRoute =
     location.pathname === '/game/start'
   const isPlayRoute =
     location.pathname === '/game/play'
   const isFinishRoute =
     location.pathname === '/game/finish'
-
-  const restartFromStartScreen = () => {
-    setShowSettings(false)
-    setStartCountdown(3)
-    if (location.pathname !== '/game/start') {
-      navigate('/game/start')
-    }
-  }
 
   useEffect(() => {
     if (location.pathname === '/game') {
@@ -291,13 +273,334 @@ export const GamePage: React.FC = () => {
       <Header
         variant="game"
         fullscreenTargetRef={pageShellRef}
-        onOpenSettings={() =>
-          setShowSettings(true)
-        }
       />
 
-      <main className="auth-main match3-page__main">
-        <div className="auth-card auth-card--wide match3-page__card">
+      {isStartRoute && (
+        <section className="match3-start-screen">
+          <div className="match3-start-screen__inner">
+            {startCountdown > 0 ? (
+              <div className="match3-start-screen__countdown">
+                <div className="match3__countdown">
+                  {startCountdown}
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="match3__start-glow-note">
+                  Cosmic Match: комбинируй,
+                  набирай очки, побеждай время!
+                </p>
+                <div className="match3__start-info">
+                  <div>
+                    Уровень: {appliedLevel.title}
+                  </div>
+                  <div>
+                    Цель:{' '}
+                    {goalType === 'score'
+                      ? `${appliedLevel.goalValue} очков`
+                      : '—'}
+                  </div>
+                  {appliedLevel.targetCells &&
+                    appliedLevel.targetCells >
+                      0 && (
+                      <div>
+                        Меток для бомб:{' '}
+                        {appliedLevel.targetCells}
+                      </div>
+                    )}
+                  <div>
+                    Поле: {appliedLevel.boardSize}
+                    x{appliedLevel.boardSize}
+                  </div>
+                  <div>Тема: Космос</div>
+                  <div>
+                    Время:{' '}
+                    {appliedLevel.durationSec /
+                      60}{' '}
+                    мин
+                  </div>
+                  <div>
+                    Типов фишек:{' '}
+                    {appliedLevel.tileKinds}
+                  </div>
+                </div>
+                <div className="match3__start-actions">
+                  <button
+                    type="button"
+                    className="btn btn--outline match3__settings-play-btn"
+                    onClick={() =>
+                      setShowSettingsPanel(
+                        v => !v
+                      )
+                    }>
+                    {showSettingsPanel
+                      ? 'Скрыть настройки'
+                      : 'Настройки'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--primary match3__play-btn"
+                    onClick={() =>
+                      navigate('/game/play')
+                    }>
+                    Играть
+                  </button>
+                </div>
+                {showSettingsPanel && (
+                  <div className="match3-start-screen__settings-panel">
+                    <div className="match3-page__settings-head">
+                      <h2 className="match3-page__settings-title">
+                        Настройки игры
+                      </h2>
+                      <button
+                        type="button"
+                        className="btn btn--flat"
+                        onClick={() =>
+                          setShowSettingsPanel(
+                            false
+                          )
+                        }>
+                        Закрыть
+                      </button>
+                    </div>
+                    <div className="match3-page__settings-grid">
+                      <label className="match3-page__settings-label">
+                        Уровень
+                        <select
+                          value={selectedLevelId}
+                          onChange={e => {
+                            const nextId =
+                              e.target.value
+                            const preset =
+                              getMatch3LevelById(
+                                nextId
+                              )
+                            setSelectedLevelId(
+                              nextId
+                            )
+                            setBoardSize(
+                              preset.boardSize
+                            )
+                            setDurationSec(
+                              preset.durationSec
+                            )
+                            setTileKinds(
+                              preset.tileKinds
+                            )
+                          }}>
+                          {MATCH3_LEVELS.map(
+                            level => (
+                              <option
+                                key={level.id}
+                                value={level.id}>
+                                {level.title}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Размер поля
+                        <select
+                          value={boardSize}
+                          onChange={e => {
+                            const next = Number(
+                              e.target.value
+                            ) as BoardSizeOption
+                            setBoardSize(next)
+                            setTileKinds(
+                              TILE_KINDS_BY_BOARD_SIZE[
+                                next
+                              ]
+                            )
+                          }}>
+                          {BOARD_SIZE_OPTIONS.map(
+                            size => (
+                              <option
+                                key={size}
+                                value={size}>
+                                {size}x{size}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Тематика
+                        <input
+                          value="Космос"
+                          readOnly
+                        />
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Иконки
+                        <input
+                          value="Космос"
+                          readOnly
+                        />
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Участвовать в рейтинге
+                        <select
+                          value={rankingMode}
+                          onChange={e => {
+                            setRankingMode(
+                              e.target.value as
+                                | 'yes'
+                                | 'friends'
+                                | 'no'
+                            )
+                          }}>
+                          <option value="yes">
+                            Да
+                          </option>
+                          <option
+                            value="friends"
+                            disabled>
+                            С друзьями (скоро)
+                          </option>
+                          <option
+                            value="no"
+                            disabled>
+                            Нет (скоро)
+                          </option>
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Время
+                        <select
+                          value={durationSec}
+                          onChange={e => {
+                            setDurationSec(
+                              Number(
+                                e.target.value
+                              ) as GameDurationOption
+                            )
+                          }}>
+                          {GAME_DURATION_OPTIONS.map(
+                            sec => (
+                              <option
+                                key={sec}
+                                value={sec}>
+                                {sec / 60} мин
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Число типов фишек
+                        <input
+                          type="number"
+                          min={4}
+                          max={12}
+                          value={tileKinds}
+                          onChange={e => {
+                            setTileKinds(
+                              Math.max(
+                                4,
+                                Math.min(
+                                  12,
+                                  Number(
+                                    e.target.value
+                                  ) || 4
+                                )
+                              )
+                            )
+                          }}
+                        />
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Звук
+                        <select
+                          value={
+                            soundEnabled
+                              ? 'on'
+                              : 'off'
+                          }
+                          onChange={e => {
+                            setSoundEnabled(
+                              e.target.value ===
+                                'on'
+                            )
+                          }}>
+                          <option value="on">
+                            Включен
+                          </option>
+                          <option value="off">
+                            Выключен
+                          </option>
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Графика (эффекты)
+                        <select
+                          value={vfxQuality}
+                          onChange={e => {
+                            setVfxQuality(
+                              e.target
+                                .value as GameVfxQualityOption
+                            )
+                          }}>
+                          <option value="full">
+                            Полная
+                          </option>
+                          <option value="simple">
+                            Упрощённая
+                          </option>
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Таймаут подсказки
+                        <select
+                          value={hintIdleMs}
+                          onChange={e => {
+                            setHintIdleMs(
+                              Number(
+                                e.target.value
+                              )
+                            )
+                          }}>
+                          <option value={2000}>
+                            2 сек
+                          </option>
+                          <option value={4000}>
+                            4 сек
+                          </option>
+                          <option value={6000}>
+                            6 сек
+                          </option>
+                          <option value={10000}>
+                            10 сек
+                          </option>
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Тип цели
+                        <select
+                          value={goalType}
+                          onChange={e => {
+                            setGoalType(
+                              e.target
+                                .value as LevelGoalType
+                            )
+                          }}>
+                          <option value="score">
+                            Набрать очки
+                          </option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+      )}
+
+      {isPlayRoute && (
+        <section className="match3-play-screen">
           {toastMessage && (
             <div
               role="status"
@@ -308,486 +611,139 @@ export const GamePage: React.FC = () => {
               </div>
             </div>
           )}
+          <Match3Screen
+            selectedLevelId={selectedLevelId}
+            goalType={goalType}
+            boardSize={boardSize}
+            themeOption={themeOption}
+            durationSec={durationSec}
+            tileKinds={tileKinds}
+            iconThemeOption={iconThemeOption}
+            soundEnabled={soundEnabled}
+            vfxQuality={vfxQuality}
+            hintIdleMs={hintIdleMs}
+            forcePlayMode
+            onGameFinished={handleGameFinished}
+          />
+        </section>
+      )}
 
-          {showSettings && (
+      {isFinishRoute && (
+        <section className="match3-finish-screen">
+          <div className="match3-finish-screen__inner">
             <div
-              className="match3-page__settings-modal"
-              onClick={e => {
-                if (
-                  e.target === e.currentTarget
-                ) {
-                  setShowSettings(false)
-                }
-              }}>
-              <div
-                className="match3-page__settings-card"
-                onClick={e =>
-                  e.stopPropagation()
+              className={
+                'match3__overlay match3__overlay--results ' +
+                (finishStats?.isWin
+                  ? 'is-win'
+                  : 'is-lose')
+              }>
+              {finishStats?.isWin ? (
+                <img
+                  src={cosmicBadgeWinUrl}
+                  alt="Победа"
+                  className="match3__results-badge match3__results-badge--win"
+                />
+              ) : (
+                <div className="match3__results-badge">
+                  LOSE
+                </div>
+              )}
+              <h3 className="match3__results-title">
+                {finishStats?.isWin
+                  ? 'Победа!'
+                  : 'Поражение'}
+              </h3>
+              <p
+                className={
+                  'match3__results-verdict ' +
+                  (finishStats?.isWin
+                    ? 'is-win'
+                    : 'is-lose')
                 }>
-                <div className="match3-page__settings-head">
-                  <h2 className="match3-page__settings-title">
-                    Настройки игры
-                  </h2>
-                  <button
-                    type="button"
-                    className="btn btn--flat"
-                    onClick={() =>
-                      setShowSettings(false)
-                    }>
-                    Закрыть
-                  </button>
-                </div>
-                <div className="match3-page__settings-grid">
-                  <label className="match3-page__settings-label">
-                    Уровень
-                    <select
-                      value={selectedLevelId}
-                      onChange={e => {
-                        const nextId =
-                          e.target.value
-                        const preset =
-                          getMatch3LevelById(
-                            nextId
-                          )
-                        setSelectedLevelId(nextId)
-                        setBoardSize(
-                          preset.boardSize
-                        )
-                        setDurationSec(
-                          preset.durationSec
-                        )
-                        setTileKinds(
-                          preset.tileKinds
-                        )
-                      }}>
-                      {MATCH3_LEVELS.map(
-                        level => (
-                          <option
-                            key={level.id}
-                            value={level.id}>
-                            {level.title}
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </label>
-                  <label className="match3-page__settings-label">
-                    Размер поля
-                    <select
-                      value={boardSize}
-                      onChange={e => {
-                        const next = Number(
-                          e.target.value
-                        ) as BoardSizeOption
-                        setBoardSize(next)
-                        setTileKinds(
-                          TILE_KINDS_BY_BOARD_SIZE[
-                            next
-                          ]
-                        )
-                      }}>
-                      {BOARD_SIZE_OPTIONS.map(
-                        size => (
-                          <option
-                            key={size}
-                            value={size}>
-                            {size}x{size}
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </label>
-                  <label className="match3-page__settings-label">
-                    Тематика
-                    <input
-                      value="Космос"
-                      readOnly
-                    />
-                  </label>
-                  <label className="match3-page__settings-label">
-                    Иконки
-                    <input
-                      value="Космос"
-                      readOnly
-                    />
-                  </label>
-                  <label className="match3-page__settings-label">
-                    Участвовать в рейтинге
-                    <select
-                      value={rankingMode}
-                      onChange={e => {
-                        setRankingMode(
-                          e.target.value as
-                            | 'yes'
-                            | 'friends'
-                            | 'no'
-                        )
-                      }}>
-                      <option value="yes">
-                        Да
-                      </option>
-                      <option
-                        value="friends"
-                        disabled>
-                        С друзьями (скоро)
-                      </option>
-                      <option value="no" disabled>
-                        Нет (скоро)
-                      </option>
-                    </select>
-                  </label>
-                  <label className="match3-page__settings-label">
-                    Время
-                    <select
-                      value={durationSec}
-                      onChange={e => {
-                        setDurationSec(
-                          Number(
-                            e.target.value
-                          ) as GameDurationOption
-                        )
-                      }}>
-                      {GAME_DURATION_OPTIONS.map(
-                        sec => (
-                          <option
-                            key={sec}
-                            value={sec}>
-                            {sec / 60} мин
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </label>
-                  <label className="match3-page__settings-label">
-                    Число типов фишек
-                    <input
-                      type="number"
-                      min={4}
-                      max={12}
-                      value={tileKinds}
-                      onChange={e => {
-                        setTileKinds(
-                          Math.max(
-                            4,
-                            Math.min(
-                              12,
-                              Number(
-                                e.target.value
-                              ) || 4
-                            )
-                          )
-                        )
-                      }}
-                    />
-                  </label>
-                  <label className="match3-page__settings-label">
-                    Звук
-                    <select
-                      value={
-                        soundEnabled
-                          ? 'on'
-                          : 'off'
-                      }
-                      onChange={e => {
-                        setSoundEnabled(
-                          e.target.value === 'on'
-                        )
-                      }}>
-                      <option value="on">
-                        Включен
-                      </option>
-                      <option value="off">
-                        Выключен
-                      </option>
-                    </select>
-                  </label>
-                  <label className="match3-page__settings-label">
-                    Графика (эффекты)
-                    <select
-                      value={vfxQuality}
-                      onChange={e => {
-                        setVfxQuality(
-                          e.target
-                            .value as GameVfxQualityOption
-                        )
-                      }}>
-                      <option value="full">
-                        Полная
-                      </option>
-                      <option value="simple">
-                        Упрощённая
-                      </option>
-                    </select>
-                  </label>
-                  <label className="match3-page__settings-label">
-                    Таймаут подсказки
-                    <select
-                      value={hintIdleMs}
-                      onChange={e => {
-                        setHintIdleMs(
-                          Number(e.target.value)
-                        )
-                      }}>
-                      <option value={2000}>
-                        2 сек
-                      </option>
-                      <option value={4000}>
-                        4 сек
-                      </option>
-                      <option value={6000}>
-                        6 сек
-                      </option>
-                      <option value={10000}>
-                        10 сек
-                      </option>
-                    </select>
-                  </label>
-                  <label className="match3-page__settings-label">
-                    Тип цели
-                    <select
-                      value={goalType}
-                      onChange={e => {
-                        setGoalType(
-                          e.target
-                            .value as LevelGoalType
-                        )
-                      }}>
-                      <option value="score">
-                        Набрать очки
-                      </option>
-                    </select>
-                  </label>
-                </div>
-                <div className="match3-page__settings-head">
-                  <button
-                    type="button"
-                    className="btn btn--outline"
-                    onClick={() =>
-                      setShowSettings(false)
-                    }>
-                    Отмена
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--primary"
-                    onClick={
-                      restartFromStartScreen
-                    }>
-                    Применить и перезапустить
-                  </button>
-                </div>
+                {finishStats?.isWin
+                  ? 'Цель уровня выполнена'
+                  : lastResult?.reason ===
+                    'timeOut'
+                  ? 'Время вышло, цель не достигнута'
+                  : 'Цель не достигнута'}
+              </p>
+              {lastResult ? (
+                <ul className="match3__results-list">
+                  <li>
+                    Счёт:{' '}
+                    {lastResult.snapshot.score}
+                  </li>
+                  <li>
+                    Цель:{' '}
+                    {
+                      lastResult.snapshot
+                        .goalScore
+                    }
+                  </li>
+                  <li>
+                    Ходов:{' '}
+                    {lastResult.snapshot.moves}
+                  </li>
+                  <li>
+                    Прогресс цели:{' '}
+                    {
+                      lastResult.snapshot
+                        .goalProgressPct
+                    }
+                    %
+                  </li>
+                  <li>
+                    Осталось до цели:{' '}
+                    {finishStats?.goalRemain ?? 0}
+                  </li>
+                  <li>
+                    Лучшее комбо: x
+                    {lastResult.snapshot.maxCombo}
+                  </li>
+                  <li>
+                    Бонус за комбо: +
+                    {finishStats?.comboBonus ?? 0}
+                  </li>
+                  <li>
+                    Бонус за время: +
+                    {finishStats?.timeBonus ?? 0}
+                  </li>
+                  <li>
+                    Итог с бонусами:{' '}
+                    <strong className="match3__results-total">
+                      {finishStats?.totalWithBonus ??
+                        0}
+                    </strong>
+                  </li>
+                </ul>
+              ) : (
+                <p className="match3__results-verdict">
+                  Нет данных о последней игре
+                </p>
+              )}
+              <div className="match3__start-actions">
+                <button
+                  type="button"
+                  className="btn btn--outline match3__again-btn"
+                  onClick={() =>
+                    navigate('/game/start')
+                  }>
+                  Изменить уровень
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--primary match3__again-btn"
+                  onClick={() =>
+                    navigate('/game/play')
+                  }>
+                  Сыграть снова
+                </button>
               </div>
             </div>
-          )}
-
-          {isStartRoute && (
-            <section className="match3 match3--start">
-              <div className="match3__arena">
-                {startCountdown > 0 ? (
-                  <div className="match3__overlay match3__overlay--results">
-                    <div className="match3__countdown">
-                      {startCountdown}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="match3__overlay match3__overlay--results">
-                    <p className="match3__start-glow-note">
-                      Cosmic Match: комбинируй,
-                      набирай очки, побеждай
-                      время!
-                    </p>
-                    <div className="match3__start-info">
-                      <div>
-                        Уровень:{' '}
-                        {appliedLevel.title}
-                      </div>
-                      <div>
-                        Цель:{' '}
-                        {goalType === 'score'
-                          ? `${appliedLevel.goalValue} очков`
-                          : '—'}
-                      </div>
-                      <div>
-                        Поле:{' '}
-                        {appliedLevel.boardSize}x
-                        {appliedLevel.boardSize}
-                      </div>
-                      <div>Тема: Космос</div>
-                      <div>
-                        Время:{' '}
-                        {appliedLevel.durationSec /
-                          60}{' '}
-                        мин
-                      </div>
-                      <div>
-                        Типов фишек:{' '}
-                        {appliedLevel.tileKinds}
-                      </div>
-                    </div>
-                    <div className="match3__start-actions">
-                      <button
-                        type="button"
-                        className="btn btn--outline match3__settings-play-btn"
-                        onClick={() =>
-                          setShowSettings(true)
-                        }>
-                        Настройки
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--primary match3__play-btn"
-                        onClick={() =>
-                          navigate('/game/play')
-                        }>
-                        Играть
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {isPlayRoute && (
-            <Match3Screen
-              selectedLevelId={selectedLevelId}
-              goalType={goalType}
-              boardSize={boardSize}
-              themeOption={themeOption}
-              durationSec={durationSec}
-              tileKinds={tileKinds}
-              iconThemeOption={iconThemeOption}
-              soundEnabled={soundEnabled}
-              vfxQuality={vfxQuality}
-              hintIdleMs={hintIdleMs}
-              onOpenSettings={() =>
-                setShowSettings(true)
-              }
-              forcePlayMode
-              onGameFinished={handleGameFinished}
-            />
-          )}
-
-          {isFinishRoute && (
-            <section className="match3">
-              <div className="match3__arena">
-                <div
-                  className={
-                    'match3__overlay match3__overlay--results ' +
-                    (finishStats?.isWin
-                      ? 'is-win'
-                      : 'is-lose')
-                  }>
-                  {finishStats?.isWin ? (
-                    <img
-                      src={cosmicBadgeWinUrl}
-                      alt="Победа"
-                      className="match3__results-badge match3__results-badge--win"
-                    />
-                  ) : (
-                    <div className="match3__results-badge">
-                      LOSE
-                    </div>
-                  )}
-                  <h3 className="match3__results-title">
-                    {finishStats?.isWin
-                      ? 'Победа!'
-                      : 'Поражение'}
-                  </h3>
-                  <p
-                    className={
-                      'match3__results-verdict ' +
-                      (finishStats?.isWin
-                        ? 'is-win'
-                        : 'is-lose')
-                    }>
-                    {finishStats?.isWin
-                      ? 'Цель уровня выполнена'
-                      : lastResult?.reason ===
-                        'timeOut'
-                      ? 'Время вышло, цель не достигнута'
-                      : 'Цель не достигнута'}
-                  </p>
-                  {lastResult ? (
-                    <ul className="match3__results-list">
-                      <li>
-                        Счёт:{' '}
-                        {
-                          lastResult.snapshot
-                            .score
-                        }
-                      </li>
-                      <li>
-                        Цель:{' '}
-                        {
-                          lastResult.snapshot
-                            .goalScore
-                        }
-                      </li>
-                      <li>
-                        Ходов:{' '}
-                        {
-                          lastResult.snapshot
-                            .moves
-                        }
-                      </li>
-                      <li>
-                        Прогресс цели:{' '}
-                        {
-                          lastResult.snapshot
-                            .goalProgressPct
-                        }
-                        %
-                      </li>
-                      <li>
-                        Осталось до цели:{' '}
-                        {finishStats?.goalRemain ??
-                          0}
-                      </li>
-                      <li>
-                        Лучшее комбо: x
-                        {
-                          lastResult.snapshot
-                            .maxCombo
-                        }
-                      </li>
-                      <li>
-                        Бонус за комбо: +
-                        {finishStats?.comboBonus ??
-                          0}
-                      </li>
-                      <li>
-                        Бонус за время: +
-                        {finishStats?.timeBonus ??
-                          0}
-                      </li>
-                      <li>
-                        Итог с бонусами:{' '}
-                        <strong className="match3__results-total">
-                          {finishStats?.totalWithBonus ??
-                            0}
-                        </strong>
-                      </li>
-                    </ul>
-                  ) : (
-                    <p className="match3__results-verdict">
-                      Нет данных о последней игре
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn--outline match3__again-btn"
-                    onClick={() =>
-                      navigate('/game/play')
-                    }>
-                    Сыграть снова
-                  </button>
-                </div>
-              </div>
-            </section>
-          )}
-        </div>
-      </main>
+          </div>
+        </section>
+      )}
 
       <Footer />
     </div>

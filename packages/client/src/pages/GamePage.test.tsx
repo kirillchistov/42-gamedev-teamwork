@@ -1,5 +1,6 @@
 import React from 'react'
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -25,20 +26,9 @@ jest.mock(
   })
 )
 
+// хедер без onOpenSettings
 jest.mock('../components/Header', () => ({
-  Header: ({
-    onOpenSettings,
-  }: {
-    onOpenSettings?: () => void
-  }) => (
-    <div>
-      <button
-        type="button"
-        onClick={onOpenSettings}>
-        open-settings
-      </button>
-    </div>
-  ),
+  Header: () => <div data-testid="header" />,
 }))
 
 jest.mock('../components/Footer', () => ({
@@ -65,11 +55,29 @@ function renderGamePage() {
   )
 }
 
+// пропускает обратный отсчёт и ждёт кнопку «Играть»
+async function skipCountdown() {
+  act(() => {
+    jest.advanceTimersByTime(1100)
+  })
+  act(() => {
+    jest.advanceTimersByTime(1000)
+  })
+  act(() => {
+    jest.advanceTimersByTime(1000)
+  })
+  return waitFor(() => screen.getByText('Играть'))
+}
+
 describe('Тесты настроек на странице GamePage', () => {
   beforeEach(() => {
     window.localStorage.clear()
     jest.useFakeTimers()
     jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
   })
 
   test('Таймер на запуск игры стартовал, затем появилось окно инициализации', async () => {
@@ -80,19 +88,18 @@ describe('Тесты настроек на странице GamePage', () => {
     )
     expect(element).toHaveTextContent('3')
 
-    const button: Element = await waitFor(
-      () => screen.getByText('Играть'),
-      { timeout: 3100 }
-    )
+    const button = await skipCountdown()
     expect(element).not.toBeInTheDocument()
     expect(button).toBeInTheDocument()
   })
 
-  test('Открытие модалки с настройками', () => {
+  test('Открытие inline-панели настроек кнопкой «Настройки»', async () => {
     renderGamePage()
+    await skipCountdown()
+
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'open-settings',
+        name: 'Настройки',
       })
     )
     expect(
@@ -102,32 +109,13 @@ describe('Тесты настроек на странице GamePage', () => {
     ).toBeInTheDocument()
   })
 
-  test('Закрытие модалки кнопкой Отмена', () => {
+  test('Закрытие inline-панели кнопкой «Закрыть»', async () => {
     renderGamePage()
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'open-settings',
-      })
-    )
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'Отмена',
-      })
-    )
-    expect(
-      screen.queryByRole('heading', {
-        name: 'Настройки игры',
-      })
-    ).not.toBeInTheDocument()
-  })
-
-  test('Закрытие модалки кнопкой Закрыть', () => {
-    renderGamePage()
-    // renderGamePage()
+    await skipCountdown()
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'open-settings',
+        name: 'Настройки',
       })
     )
     fireEvent.click(
@@ -142,14 +130,28 @@ describe('Тесты настроек на странице GamePage', () => {
     ).not.toBeInTheDocument()
   })
 
-  test('Закрытие модалки кнопкой Escape', () => {
+  test('Повторный клик на «Настройки» скрывает панель', async () => {
     renderGamePage()
+    await skipCountdown()
+
+    // Раскрываем
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'open-settings',
+        name: 'Настройки',
       })
     )
-    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(
+      screen.getByRole('heading', {
+        name: 'Настройки игры',
+      })
+    ).toBeInTheDocument()
+
+    // Сворачиваем повторным кликом
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Скрыть настройки',
+      })
+    )
     expect(
       screen.queryByRole('heading', {
         name: 'Настройки игры',
