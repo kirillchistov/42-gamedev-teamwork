@@ -4,6 +4,7 @@
 
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 import dotenv from 'dotenv'
 import path from 'path'
 dotenv.config()
@@ -47,5 +48,24 @@ export default defineConfig({
   ssr: {
     format: 'cjs',
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      manifest: false,
+      injectManifest: {
+        globPatterns: [
+          '**/*.{js,css,html,png,svg,ico,json}',
+        ],
+        globIgnores: ['iconset/**/*'],
+        maximumFileSizeToCacheInBytes:
+          5 * 1024 * 1024,
+      },
+      devOptions: {
+        enabled: false,
+      },
+    }),
+  ],
 })
