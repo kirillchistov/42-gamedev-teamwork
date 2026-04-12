@@ -1111,3 +1111,174 @@
     transform: translate3d(-0.4px, -0.6px, 0) scale(1.001);
   }
 }
+
+/* переменные игровых экранов */
+
+:root {
+  --m3-screen-h: calc(100dvh - var(--header-height-game, 56px));
+  --m3-screen-bg: rgb(2, 6, 23);
+}
+
+/* старт-экран */
+
+.match3-start-screen {
+  flex: 1;
+  width: 100%;
+  height: var(--m3-screen-h);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 2.5vh, 32px) clamp(16px, 3vw, 32px);
+  box-sizing: border-box;
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      rgba(56, 189, 248, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 85% 110%,
+      rgba(168, 85, 247, 0.1),
+      transparent 55%
+    ),
+    var(--m3-screen-bg);
+}
+
+.match3-start-screen__inner {
+  width: min(580px, 100%);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 1.8vh, 20px);
+}
+
+/* отсчёт */
+.match3-start-screen__countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* inline панель настроек */
+.match3-start-screen__settings-panel {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border-radius: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background:
+    radial-gradient(
+      90% 120% at 0% 0%,
+      rgba(56, 189, 248, 0.1),
+      transparent 55%
+    ),
+    rgba(3, 10, 30, 0.82);
+  padding: 14px 16px 12px;
+  backdrop-filter: blur(6px);
+}
+
+/* сетка не выезжает за панель */
+.match3-start-screen__settings-panel .match3-page__settings-grid {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.match3-start-screen__settings-panel .match3-page__settings-label select,
+.match3-start-screen__settings-panel .match3-page__settings-label input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.88);
+  border-color: rgba(56, 189, 248, 0.32);
+  color: #e2e8f0;
+}
+
+.match3-start-screen__settings-panel .match3-page__settings-label select:focus,
+.match3-start-screen__settings-panel .match3-page__settings-label input:focus {
+  outline: 2px solid rgba(56, 189, 248, 0.5);
+  outline-offset: 1px;
+}
+
+.match3-start-screen__settings-panel .match3-page__settings-title {
+  color: #e2e8f0;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}
+
+.match3-start-screen__settings-panel .match3-page__settings-label {
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+/* экран игры */
+
+.match3-play-screen {
+  flex: 1;
+  width: 100%;
+  height: var(--m3-screen-h);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--m3-screen-bg);
+  --m3-card-pad-x: 0px;
+  --m3-card-pad-y: 0px;
+  --m3-main-pad-y: 0px;
+}
+
+/* toast поверх поля */
+.match3-play-screen .match3-page__toast-wrap {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  z-index: 20;
+}
+
+.match3-play-screen .match3 {
+  flex: 1;
+  margin-top: 0;
+}
+
+/* финишный экран */
+
+.match3-finish-screen {
+  flex: 1;
+  width: 100%;
+  height: var(--m3-screen-h);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 2.5vh, 32px) clamp(16px, 3vw, 32px);
+  box-sizing: border-box;
+  background: var(--m3-screen-bg);
+}
+
+.match3-finish-screen__inner {
+  width: min(560px, 100%);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 2.2vh, 24px);
+}
+
+/* overlay на всю ширину */
+.match3-finish-screen .match3__overlay--results {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* кнопки финишного экрана */
+.match3-finish-screen .match3__start-actions {
+  margin-top: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
