@@ -279,10 +279,12 @@ export const GamePage: React.FC = () => {
               Cosmic Match
             </h1>
             <p className="match3-home-screen__subtitle">
-              Космический match‑3 с
-              комбо‑каскадами, целями уровня и
-              прогрессией. Подходит для коротких
-              сессий и соревновательной игры.
+              "3 в ряд" скомбо‑каскадами, целями
+              уровня и прогрессией.
+            </p>
+            <p className="match3-home-screen__subtitle">
+              Подходит для коротких сессий и
+              соревновательной игры.
             </p>
 
             <button
