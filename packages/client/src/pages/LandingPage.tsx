@@ -5,8 +5,6 @@ import { Header } from '../components/Header'
 import { Hero } from '../components/Landing/Hero'
 import { HowToPlay } from '../components/Landing/HowToPlay'
 import { Benefits } from '../components/Landing/Benefits'
-import { Leaderboard } from '../components/Landing/Leaderboard'
-import { Forum } from '../components/Landing/Forum'
 import { Team } from '../components/Landing/Team'
 import { Contact } from '../components/Landing/Contact'
 import { Footer } from '../components/Footer'
@@ -39,8 +37,6 @@ export const LandingPage = () => {
         <Hero />
         <HowToPlay />
         <Benefits />
-        <Leaderboard />
-        <Forum />
         <Team />
         <Contact />
       </main>

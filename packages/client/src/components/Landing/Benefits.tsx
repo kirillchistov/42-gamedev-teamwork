@@ -6,24 +6,38 @@ export const Benefits: React.FC = () => {
     <section className="section" id="benefits">
       <h2>Преимущества Cosmic Match</h2>
       <p className="section-subtitle">
-        Учебный проект match‑3 в сеттинге космоса: понятный вход, глубокие
-        механики и современный технологический стек.
+        Проект развивается как игровая платформа:
+        быстрый вход, понятная прогрессия и
+        расширяемая архитектура под новые
+        механики.
       </p>
       <div className="benefits__inner">
         <div className="benefits__content">
-          <div className="benefits__card" id="benefit-card">
-            <h3>Простой вход</h3>
+          <div
+            className="benefits__card"
+            id="benefit-card">
+            <h3>Понятный старт, глубокий рост</h3>
             <p>
-              Геймплей понятен за секунды: меняй соседние фишки и собирай три в
-              ряд.
+              В текущей версии доступен
+              классический match‑3 геймплей, а в
+              roadmap — бустеры, расширенные цели,
+              мета‑прогресс и тематические
+              события.
             </p>
           </div>
           <div className="benefits__controls">
-            <button type="button" id="benefit-prev">
+            <button
+              type="button"
+              id="benefit-prev">
               ‹
             </button>
-            <div className="benefits__dots" id="benefit-dots" />
-            <button type="button" id="benefit-next">
+            <div
+              className="benefits__dots"
+              id="benefit-dots"
+            />
+            <button
+              type="button"
+              id="benefit-next">
               ›
             </button>
           </div>
