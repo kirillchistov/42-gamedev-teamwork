@@ -1,4 +1,5 @@
-﻿import React from 'react'
+﻿// 6.5 Подключил HOC withAuthGuard в роутинг
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import {
   createBrowserRouter,

@@ -1,3 +1,4 @@
+// 6.5 Подключил HOC withAuthGuard вместо ProtectedRoute для непубличных маршрутов
 import React from 'react'
 import ReactDOM from 'react-dom/server'
 import { Provider } from 'react-redux'
