@@ -138,7 +138,7 @@ export const ProfilePage: React.FC = () => {
     if (!userFromStore) {
       dispatch(fetchUserThunk())
     } else {
-      setProfile({
+      const nextProfile: ProfileData = {
         first_name:
           userFromStore.first_name || '',
         second_name:
@@ -148,13 +148,15 @@ export const ProfilePage: React.FC = () => {
         email: userFromStore.email || '',
         phone: userFromStore.phone || '',
         login: userFromStore.login || '',
-      })
+      }
+      setProfile(nextProfile)
+      profileRef.current = nextProfile
       const avatarUrl = userFromStore.avatar
         ? resourceFileUrl(userFromStore.avatar)
         : null
       setAvatar(avatarUrl)
-      setSavedProfile({ ...profile })
-      profileValidate.doValidate(profile)
+      setSavedProfile({ ...nextProfile })
+      profileValidate.doValidate(nextProfile)
     }
   }, [dispatch, userFromStore])
 
@@ -187,10 +189,14 @@ export const ProfilePage: React.FC = () => {
     HTMLInputElement
   > = e => {
     const { name, value } = e.target
-    setProfile(prev => ({
-      ...prev,
-      [name]: value,
-    }))
+    setProfile(prev => {
+      const next = {
+        ...prev,
+        [name]: value,
+      }
+      profileRef.current = next
+      return next
+    })
   }
 
   const handleBlur = () => {
