@@ -28,6 +28,10 @@
     grid-template-columns: 1fr;
     gap: 32px;
   }
+
+  .how-to-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 767px) {
@@ -41,6 +45,10 @@
 
   .team__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .blog-grid {
+    grid-template-columns: 1fr;
   }
 
   .extra-sections {
@@ -69,6 +77,10 @@
   .hero-board__cell {
     width: 28px;
     height: 28px;
+  }
+
+  .how-to-grid {
+    grid-template-columns: 1fr;
   }
 }
 /* Адаптив */

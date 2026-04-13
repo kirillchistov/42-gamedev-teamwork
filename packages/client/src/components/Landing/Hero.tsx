@@ -1,6 +1,9 @@
 // Главный блок лендинга с заголовком, описанием и кнопками
 // client/src/components/Landing/Hero.tsx
 import React from 'react'
+import { Link } from 'react-router-dom'
+import { useSelector } from '../../store'
+import { selectUser } from '../../slices/userSlice'
 
 const BOARD_ROWS = 6
 const BOARD_COLS = 6
@@ -26,6 +29,12 @@ const getGemColorClass = (
 }
 
 export const Hero: React.FC = () => {
+  const user = useSelector(selectUser)
+  const ctaLink = user ? '/profile' : '/signup'
+  const ctaText = user
+    ? 'Профиль'
+    : 'Зарегистрироваться'
+
   return (
     <section className="hero" id="top-hero">
       <div className="hero__text">
@@ -41,16 +50,16 @@ export const Hero: React.FC = () => {
           персонажем и историей.
         </p>
         <div className="hero__actions">
-          <a
+          <Link
             className="btn btn--primary"
-            href="/game">
+            to="/game">
             Перейти к игре
-          </a>
-          <a
+          </Link>
+          <Link
             className="btn btn--outline"
-            href="#how-to-play">
-            Как устроена игра
-          </a>
+            to={ctaLink}>
+            {ctaText}
+          </Link>
         </div>
       </div>
 
@@ -98,7 +107,12 @@ export const Hero: React.FC = () => {
           {/* пара неоновых вспышек поверх доски */}
           <div className="hero-board__flash hero-board__flash--one" />
           <div className="hero-board__flash hero-board__flash--two" />
-
+          <div className="hero-board__combo-burst" />
+          <div className="hero-board__combo-line hero-board__combo-line--h" />
+          <div className="hero-board__combo-line hero-board__combo-line--v" />
+          <div className="hero-board__combo-tag">
+            MEGA COMBO x8
+          </div>
           <div className="hero-board__effect" />
         </div>
       </div>

@@ -1,5 +1,6 @@
 // Блок "Команда" на лендинге с карточками участников и их ролями
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 const team = [
   { name: 'dev-1', role: 'Game Developer' },
@@ -15,23 +16,28 @@ export const Team: React.FC = () => {
       <div className="team__inner">
         <h2>Команда</h2>
         <p className="section-subtitle">
-          Пять разработчиков, UI/UX, гейм‑дизайн и бэкенд — все роли закрыты
-          внутри учебного проекта.
+          Пять разработчиков, UI/UX, гейм‑дизайн и
+          бэкенд — все роли закрыты внутри
+          учебного проекта.
         </p>
         <div className="team__grid">
           {team.map(member => (
-            <div className="team-card" key={member.name}>
+            <div
+              className="team-card"
+              key={member.name}>
               <div className="team-card__avatar" />
               <div className="team-card__info">
-                <div className="team-card__name">{member.name}</div>
-                <div className="team-card__role">{member.role}</div>
-                <a
+                <div className="team-card__name">
+                  {member.name}
+                </div>
+                <div className="team-card__role">
+                  {member.role}
+                </div>
+                <Link
                   className="team-card__github"
-                  href="#"
-                  target="_blank"
-                  rel="noreferrer">
+                  to="/forum">
                   GitHub
-                </a>
+                </Link>
               </div>
             </div>
           ))}
