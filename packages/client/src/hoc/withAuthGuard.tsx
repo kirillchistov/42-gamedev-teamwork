@@ -1,3 +1,7 @@
+// Этот HOC авторизации использует хук useAuthGuard;
+// При loading показывает loader; при denied делает <Navigate to="/login" replace />;
+// При allowed рендерит обернутый в него компонент.
+
 import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuthGuard } from '../hooks/useAuthGuard'
