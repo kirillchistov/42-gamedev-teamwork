@@ -174,6 +174,16 @@ export const routes = [
     fetchData: initError404Page,
   },
   {
+    path: '/error400',
+    Component: Error404Page,
+    fetchData: initError404Page,
+  },
+  {
+    path: '/error/400',
+    Component: Error404Page,
+    fetchData: initError404Page,
+  },
+  {
     path: '/error500',
     Component: Error500Page,
     fetchData: initError500Page,

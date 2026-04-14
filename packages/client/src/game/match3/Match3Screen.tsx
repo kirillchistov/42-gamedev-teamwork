@@ -482,7 +482,7 @@ export const Match3Screen: React.FC<
               aria-label="Начать заново"
               title="Начать заново">
               <IconRestart />
-              <span>Начать заново</span>
+              <span>Заново</span>
             </button>
           </div>
         )}
