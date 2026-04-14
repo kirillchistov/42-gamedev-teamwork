@@ -84,6 +84,9 @@ export const GamePage: React.FC = () => {
   const [rankingMode, setRankingMode] = useState<
     'yes' | 'friends' | 'no'
   >('yes')
+  const [limitMode, setLimitMode] = useState<
+    'time' | 'moves'
+  >('time')
   const [tileKinds, setTileKinds] = useState(
     initialLevel.tileKinds
   )
@@ -169,18 +172,12 @@ export const GamePage: React.FC = () => {
 
   const isStartRoute =
     location.pathname === '/game/start'
+  const isGameLandingRoute =
+    location.pathname === '/game'
   const isPlayRoute =
     location.pathname === '/game/play'
   const isFinishRoute =
     location.pathname === '/game/finish'
-
-  useEffect(() => {
-    if (location.pathname === '/game') {
-      navigate('/game/start', {
-        replace: true,
-      })
-    }
-  }, [location.pathname, navigate])
 
   useEffect(() => {
     if (!isStartRoute) return
@@ -275,6 +272,88 @@ export const GamePage: React.FC = () => {
         fullscreenTargetRef={pageShellRef}
       />
 
+      {isGameLandingRoute && (
+        <section className="match3-home-screen">
+          <div className="match3-home-screen__inner">
+            <h1 className="match3-home-screen__title">
+              Cosmic Match
+            </h1>
+            <p className="match3-home-screen__subtitle">
+              "3 в ряд" скомбо‑каскадами, целями
+              уровня и прогрессией.
+            </p>
+            <p className="match3-home-screen__subtitle">
+              Подходит для коротких сессий и
+              соревновательной игры.
+            </p>
+
+            <button
+              type="button"
+              className="btn btn--primary match3-home-screen__play-btn"
+              onClick={() =>
+                navigate('/game/start')
+              }>
+              Играть
+            </button>
+
+            <div className="match3-home-screen__cards">
+              <article className="match3-home-screen__card">
+                <h2>Как играть</h2>
+                <p>
+                  Меняйте соседние фишки,
+                  собирайте линии 3+ и запускайте
+                  каскады для максимального счёта.
+                </p>
+              </article>
+              <article className="match3-home-screen__card">
+                <h2>Цель матча</h2>
+                <p>
+                  Закрывайте цели уровня и
+                  улучшайте личный результат,
+                  чтобы продвигаться в таблице
+                  лидеров.
+                </p>
+              </article>
+              <article className="match3-home-screen__card">
+                <h2>Что дальше</h2>
+                <p>
+                  В ближайших релизах: игра по
+                  ходам, бустеры, расширенные
+                  цели, мета‑прогресс и события.
+                </p>
+              </article>
+            </div>
+
+            <div className="match3-home-screen__links">
+              <button
+                type="button"
+                className="btn btn--outline"
+                onClick={() =>
+                  navigate('/forum')
+                }>
+                Форум
+              </button>
+              <button
+                type="button"
+                className="btn btn--outline"
+                onClick={() =>
+                  navigate('/leaderboard')
+                }>
+                Лидерборд
+              </button>
+              <button
+                type="button"
+                className="btn btn--outline"
+                onClick={() =>
+                  navigate('/profile')
+                }>
+                Профиль
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {isStartRoute && (
         <section className="match3-start-screen">
           <div className="match3-start-screen__inner">
@@ -287,8 +366,7 @@ export const GamePage: React.FC = () => {
             ) : (
               <>
                 <p className="match3__start-glow-note">
-                  Cosmic Match: комбинируй,
-                  набирай очки, побеждай время!
+                  Собирай комбо, побеждай время!
                 </p>
                 <div className="match3__start-info">
                   <div>
@@ -467,6 +545,27 @@ export const GamePage: React.FC = () => {
                         </select>
                       </label>
                       <label className="match3-page__settings-label">
+                        Ограничение
+                        <select
+                          value={limitMode}
+                          onChange={e => {
+                            setLimitMode(
+                              e.target.value as
+                                | 'time'
+                                | 'moves'
+                            )
+                          }}>
+                          <option value="time">
+                            Время
+                          </option>
+                          <option
+                            value="moves"
+                            disabled>
+                            Ходы (скоро)
+                          </option>
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
                         Время
                         <select
                           value={durationSec}
@@ -629,7 +728,13 @@ export const GamePage: React.FC = () => {
       )}
 
       {isFinishRoute && (
-        <section className="match3-finish-screen">
+        <section
+          className={
+            'match3-finish-screen ' +
+            (finishStats?.isWin
+              ? 'match3-finish-screen--win'
+              : 'match3-finish-screen--lose')
+          }>
           <div className="match3-finish-screen__inner">
             <div
               className={
@@ -729,11 +834,11 @@ export const GamePage: React.FC = () => {
                   onClick={() =>
                     navigate('/game/start')
                   }>
-                  Изменить уровень
+                  Настройки
                 </button>
                 <button
                   type="button"
-                  className="btn btn--primary match3__again-btn"
+                  className="btn btn--primary match3__play-btn"
                   onClick={() =>
                     navigate('/game/play')
                   }>

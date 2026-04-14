@@ -43,7 +43,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     tileKinds: 6,
     theme: 'standard',
     iceMultiplier: 1,
-    targetCells: 0,
+    targetCells: undefined,
   },
   {
     id: 'pilot',

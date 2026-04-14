@@ -24,6 +24,10 @@ import {
 
 // Единый таймаут сетевых запросов авторизации
 const AUTH_REQUEST_TIMEOUT_MS = 12_000
+const AUTH_RELOGIN_CONFLICT_MESSAGE =
+  'Аккаунт уже активен на другом устройстве. Выйдите из аккаунта там и повторите вход.'
+const AUTH_SESSION_CONFIRMATION_FAILED_MESSAGE =
+  'Вход выполнен, но сессия не подтвердилась. Попробуйте войти еще раз.'
 
 function fetchWithTimeout(
   url: string,
@@ -47,7 +51,22 @@ function isAlreadyLoggedInError(
 ): boolean {
   const m = message.toLowerCase()
   return (
-    m.includes('already') && m.includes('system')
+    (m.includes('already') &&
+      (m.includes('system') ||
+        m.includes('logged'))) ||
+    m.includes('already in system') ||
+    m.includes('уже в системе') ||
+    m.includes('уже авторизован')
+  )
+}
+
+function isUnauthorizedMessage(
+  message: string
+): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('unauthorized') ||
+    m.includes('не авторизован')
   )
 }
 
@@ -129,18 +148,31 @@ export const loginThunk = createAsyncThunk(
         signinRes,
         'Ошибка входа'
       )
-      // Уже есть сессия — пробуем /auth/user вместо ошибки 400
+      // Конфликт активной сессии: показываем понятный сценарий для "входа с другого устройства".
       if (isAlreadyLoggedInError(reason)) {
         try {
           return await fetchCurrentUser()
         } catch {
-          return rejectWithValue(reason)
+          return rejectWithValue(
+            AUTH_RELOGIN_CONFLICT_MESSAGE
+          )
         }
+      }
+      if (isUnauthorizedMessage(reason)) {
+        return rejectWithValue(
+          'Неверный логин или пароль'
+        )
       }
       return rejectWithValue(reason)
     }
 
-    return fetchCurrentUser()
+    try {
+      return await fetchCurrentUser()
+    } catch {
+      return rejectWithValue(
+        AUTH_SESSION_CONFIRMATION_FAILED_MESSAGE
+      )
+    }
   }
 )
 

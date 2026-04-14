@@ -508,6 +508,20 @@ button {
   color: var(--color-text-subtle-light);
 }
 
+.landing-footer__compact {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  .landing-footer__full {
+    display: none;
+  }
+
+  .landing-footer__compact {
+    display: inline;
+  }
+}
+
 .landing--dark-neon .landing-footer__inner {
   color: var(--color-text-subtle-dark);
 }

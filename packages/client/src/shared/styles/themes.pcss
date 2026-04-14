@@ -80,6 +80,9 @@
 .landing--dark-neon .benefits__inner,
 .landing--dark-neon .team__inner,
 .landing--dark-neon .contact__inner,
+.landing--dark-neon .how-to-card,
+.landing--dark-neon .leaders-card,
+.landing--dark-neon .blog-card,
 .landing--dark-neon .extra-card,
 .landing--dark-neon .auth-card {
   background-color: var(--color-bg-card-dark) !important;
@@ -90,13 +93,35 @@
 /* section subtitles and text */
 
 .landing--dark-neon .section-subtitle,
+.landing--dark-neon .section p,
 .landing--dark-neon .hero__text p,
 .landing--dark-neon .benefits__card p,
 .landing--dark-neon .contact__inner p,
 .landing--dark-neon .extra-card p,
 .landing--dark-neon .extra-card li {
   color: var(--color-text-subtle-dark);
-  text-shadow: none;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+}
+
+.landing--dark-neon .section h2 {
+  text-shadow:
+    0 0 8px rgba(56, 189, 248, 0.26),
+    0 0 14px rgba(56, 189, 248, 0.14);
+}
+
+.landing--dark-neon .how-to-card__screen p {
+  color: var(--color-text-subtle-dark) !important;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+}
+
+.landing--dark-neon .blog-card__sprint,
+.landing--dark-neon .how-to-card__badge {
+  color: var(--color-text-subtle-dark) !important;
+}
+
+.landing--dark-neon .blog-card__sprint {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(125, 211, 252, 0.5);
 }
 
 .landing--dark-neon .team-card__role {
@@ -129,6 +154,10 @@
   background: rgba(15, 23, 42, 0.96);
   box-shadow: 0 0 16px rgba(56, 189, 248, 0.9),
     inset 0 0 0 1px rgba(56, 189, 248, 0.9);
+}
+
+.landing--dark-neon .hero-board__combo-tag {
+  background: rgba(2, 6, 23, 0.88);
 }
 
 /* дефолтный цвет только если нет модификатора */
