@@ -41,6 +41,7 @@ import {
   type GameHudState,
 } from './engine/bootstrap'
 import {
+  GAME_DURATION_SEC,
   PRESTART_COUNTDOWN_SEC,
   type BoardSizeOption,
   type GameDurationOption,
@@ -180,7 +181,7 @@ export const Match3Screen: React.FC<
     goalProgressPct: 0,
     goalTargetsTotal: 0,
     goalTargetsLeft: 0,
-    timeLeftSec: 300,
+    timeLeftSec: GAME_DURATION_SEC,
   })
 
   const [uiPhase, setUiPhase] = useState<UiPhase>(
