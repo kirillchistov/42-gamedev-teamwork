@@ -1,3 +1,4 @@
+// 6.5 Подключил HOC withAuthGuard вместо ProtectedRoute для непубличных маршрутов
 import React from 'react'
 import ReactDOM from 'react-dom/server'
 import { Provider } from 'react-redux'
@@ -20,7 +21,7 @@ import {
 import { LandingThemeProvider } from './contexts/LandingThemeContext'
 import { reducer } from './store'
 import { routes } from './routes'
-import { ProtectedRoute } from './components/ProtectedRoute'
+import { withAuthGuard } from './hoc/withAuthGuard'
 import './index.css'
 import { setPageHasBeenInitializedOnServer } from './slices/ssrSlice'
 import { isPublicRoutePath } from './router/publicRoutePaths'
@@ -32,13 +33,11 @@ const guardedRoutes = routes.map(route => {
   }
   const { Component, ...rest } =
     route as RouteWithComponent
+  const GuardedComponent =
+    withAuthGuard(Component)
   return {
     ...rest,
-    element: (
-      <ProtectedRoute>
-        <Component />
-      </ProtectedRoute>
-    ),
+    element: <GuardedComponent />,
   }
 })
 

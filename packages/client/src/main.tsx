@@ -1,4 +1,5 @@
-﻿import React from 'react'
+﻿// 6.5 Подключил HOC withAuthGuard в роутинг
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import {
   createBrowserRouter,
@@ -9,7 +10,7 @@ import { ThemeProvider } from '@gravity-ui/uikit'
 import { store } from './store'
 import { routes } from './routes'
 import { LandingThemeProvider } from './contexts/LandingThemeContext'
-import { ProtectedRoute } from './components/ProtectedRoute'
+import { withAuthGuard } from './hoc/withAuthGuard'
 import './shared/styles/normalize.pcss'
 import './shared/styles/base.pcss'
 import './shared/styles/landing.pcss'
@@ -38,13 +39,11 @@ const router = createBrowserRouter(
     if (isPublicRoutePath(route.path))
       return route
     const { Component, ...rest } = route
+    const GuardedComponent =
+      withAuthGuard(Component)
     return {
       ...rest,
-      element: (
-        <ProtectedRoute>
-          <Component />
-        </ProtectedRoute>
-      ),
+      element: <GuardedComponent />,
     }
   }),
   routerBasename
