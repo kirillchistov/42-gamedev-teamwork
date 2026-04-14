@@ -13,7 +13,12 @@ import { Footer } from '../components/Footer'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
-import { Button, Input } from '../shared/ui'
+import {
+  Button,
+  FieldError,
+  Input,
+} from '../shared/ui'
+import { useValidate } from '../hooks/useValidate'
 import {
   useDispatch,
   useSelector,
@@ -39,18 +44,24 @@ export const LoginPage: React.FC = () => {
     selectUserIsLoading
   )
   const error = useSelector(selectUserError)
+  const loginValidate = useValidate()
 
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const result = await dispatch(
-      loginThunk({ login, password })
+    loginValidate.doValidate(
+      { login, password },
+      async () => {
+        const result = await dispatch(
+          loginThunk({ login, password })
+        )
+        if (loginThunk.fulfilled.match(result)) {
+          navigate('/game', { replace: true })
+        }
+      }
     )
-    if (loginThunk.fulfilled.match(result)) {
-      navigate('/game', { replace: true })
-    }
   }
 
   return (
@@ -89,7 +100,23 @@ export const LoginPage: React.FC = () => {
                   onChange={e =>
                     setLogin(e.target.value)
                   }
+                  onFocus={() =>
+                    loginValidate.handleFieldFocus(
+                      'login'
+                    )
+                  }
+                  onBlur={e =>
+                    loginValidate.handleFieldBlur(
+                      'login',
+                      e.target.value
+                    )
+                  }
                   autoComplete="username"
+                />
+                <FieldError
+                  message={loginValidate.getFieldError(
+                    'login'
+                  )}
                 />
               </label>
 
@@ -103,7 +130,23 @@ export const LoginPage: React.FC = () => {
                   onChange={e =>
                     setPassword(e.target.value)
                   }
+                  onFocus={() =>
+                    loginValidate.handleFieldFocus(
+                      'password'
+                    )
+                  }
+                  onBlur={e =>
+                    loginValidate.handleFieldBlur(
+                      'password',
+                      e.target.value
+                    )
+                  }
                   autoComplete="current-password"
+                />
+                <FieldError
+                  message={loginValidate.getFieldError(
+                    'password'
+                  )}
                 />
               </label>
 

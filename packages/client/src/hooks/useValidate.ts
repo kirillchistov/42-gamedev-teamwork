@@ -27,6 +27,13 @@ export const useValidate = () => {
   const [errors, setErrors] = useState<
     Partial<SignupFormValues>
   >({})
+  const [touched, setTouched] = useState<
+    Partial<
+      Record<keyof SignupFormValues, boolean>
+    >
+  >({})
+  const [isSubmitted, setIsSubmitted] =
+    useState(false)
   const [isValidateError, setIsValidateError] =
     useState(true)
 
@@ -92,6 +99,7 @@ export const useValidate = () => {
       values: SignupFormValues,
       callback?: () => void
     ) => {
+      setIsSubmitted(true)
       setIsValidateError(true)
       const validationErrors = validate(values)
       setErrors({ ...validationErrors })
@@ -105,14 +113,78 @@ export const useValidate = () => {
     [validate]
   )
 
+  const validateField = useCallback(
+    (
+      field: keyof SignupFormValues,
+      value: unknown
+    ) => {
+      const fieldErrors = validate({
+        [field]:
+          typeof value === 'string'
+            ? value
+            : value != null
+            ? String(value)
+            : '',
+      })
+
+      setErrors(prev => ({
+        ...prev,
+        [field]: fieldErrors[field],
+      }))
+
+      return fieldErrors[field]
+    },
+    [validate]
+  )
+
+  const handleFieldFocus = useCallback(
+    (field: keyof SignupFormValues) => {
+      setTouched(prev => ({
+        ...prev,
+        [field]: true,
+      }))
+    },
+    []
+  )
+
+  const handleFieldBlur = useCallback(
+    (
+      field: keyof SignupFormValues,
+      value: unknown
+    ) => {
+      setTouched(prev => ({
+        ...prev,
+        [field]: true,
+      }))
+      validateField(field, value)
+    },
+    [validateField]
+  )
+
+  const getFieldError = useCallback(
+    (field: keyof SignupFormValues) => {
+      if (!touched[field] && !isSubmitted) {
+        return undefined
+      }
+      return errors[field]
+    },
+    [errors, touched, isSubmitted]
+  )
+
   const resetValidation = useCallback(() => {
     setErrors({})
+    setTouched({})
+    setIsSubmitted(false)
     setIsValidateError(true)
   }, [])
 
   return {
     errors,
     doValidate,
+    validateField,
+    handleFieldFocus,
+    handleFieldBlur,
+    getFieldError,
     isValidateError,
     resetValidation,
   }
