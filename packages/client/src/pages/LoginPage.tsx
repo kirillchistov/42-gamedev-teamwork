@@ -2,11 +2,7 @@
  * Сбрасываем серверную сессию при заходе на /login и перед signin,
  * чтобы починить 400 «User already in system» (см. loginThunk).
  */
-import React, {
-  FormEvent,
-  useEffect,
-  useState,
-} from 'react'
+import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
@@ -25,13 +21,11 @@ import {
 import {
   fetchUserThunk,
   loginThunk,
-  logoutThunk,
   selectUserError,
   selectUserIsAuthChecked,
   selectUserIsLoading,
 } from '../slices/userSlice'
 
-// Сбрасываем серверную сессию при заходе на /login и перед signin,
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
   const { theme } = useLandingTheme()
@@ -48,26 +42,9 @@ export const LoginPage: React.FC = () => {
 
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
-  const [isLoggingOut, setIsLoggingOut] =
-    useState(false)
-
-  useEffect(() => {
-    if (!isAuthChecked) return
-    let alive = true
-    const reset = async () => {
-      setIsLoggingOut(true)
-      await dispatch(logoutThunk())
-      if (alive) setIsLoggingOut(false)
-    }
-    void reset()
-    return () => {
-      alive = false
-    }
-  }, [dispatch, isAuthChecked])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    await dispatch(logoutThunk())
     const result = await dispatch(
       loginThunk({ login, password })
     )
@@ -93,10 +70,6 @@ export const LoginPage: React.FC = () => {
         {!isAuthChecked ? (
           <section className="auth-card auth-card--wide">
             <p>Проверяем текущую сессию...</p>
-          </section>
-        ) : isLoggingOut ? (
-          <section className="auth-card auth-card--wide">
-            <p>Выходим из текущей сессии...</p>
           </section>
         ) : (
           <section className="auth-card auth-card--wide">
