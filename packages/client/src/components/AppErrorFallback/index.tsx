@@ -1,3 +1,4 @@
+// UI для сбоев и 'react-router' errorElement
 import React from 'react'
 import { Button } from '../../shared/ui'
 import { CosmicErrorLayout } from '../CosmicErrorLayout'

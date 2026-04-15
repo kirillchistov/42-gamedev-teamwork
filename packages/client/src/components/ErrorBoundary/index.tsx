@@ -1,4 +1,4 @@
-// Обертка для обработки ошибок в компонентах.
+// Обертка для отлова и обработки ошибок в компонентах / поддереве.
 import React from 'react'
 import { AppErrorFallback } from '../AppErrorFallback'
 
