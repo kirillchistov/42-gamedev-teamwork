@@ -1,6 +1,6 @@
 // Обертка для обработки ошибок в компонентах.
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { AppErrorFallback } from '../AppErrorFallback'
 
 type Props = {
   children: React.ReactNode
@@ -34,20 +34,7 @@ export class ErrorBoundary extends React.Component<
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div className="ErrorBoundary ErrorBoundary--app">
-          <h1>Космическая турбулентность</h1>
-          <p>
-            Что-то пошло не так. Попробуйте
-            обновить страницу.
-          </p>
-          <Link
-            to="/"
-            className="Button Button--primary">
-            Вернуться на главную
-          </Link>
-        </div>
-      )
+      return <AppErrorFallback />
     }
 
     return this.props.children

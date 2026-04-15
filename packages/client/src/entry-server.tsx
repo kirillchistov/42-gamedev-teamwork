@@ -1,3 +1,6 @@
+// вход на сервере, экспортирует render(req) для SSR
+// возвращает html, initialState, helmet, styleTags.
+
 // 6.5 Подключил HOC withAuthGuard вместо ProtectedRoute для непубличных маршрутов
 import React from 'react'
 import ReactDOM from 'react-dom/server'

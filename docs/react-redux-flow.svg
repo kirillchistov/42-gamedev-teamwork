@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480" role="img" aria-labelledby="title desc">
+  <title id="title">????? ??????: SSR, React Router, Redux</title>
+  <desc id="desc">????????????? ?????: ?????? ????????, ????????? ??????, ????????????? ?????, ???????? ? UI.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .box {
+        fill: #334155;
+        stroke: #94a3b8;
+        stroke-width: 1.5;
+        rx: 8;
+        animation: glow 8s ease-in-out infinite;
+      }
+      .lbl { fill: #f1f5f9; font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600; }
+      .sub { fill: #cbd5e1; font-family: ui-monospace, monospace; font-size: 10px; }
+      .arr {
+        stroke: #475569;
+        stroke-width: 2;
+        fill: none;
+        marker-end: url(#m);
+        animation: line 8s ease-in-out infinite;
+      }
+      @keyframes glow {
+        0%, 1.5% { stroke: #38bdf8; stroke-width: 2.5; fill: #1e3a5f; filter: url(#glow); }
+        3%, 100% { stroke: #94a3b8; stroke-width: 1.5; fill: #334155; filter: none; }
+      }
+      @keyframes line {
+        0%, 1.5% { stroke: #38bdf8; stroke-width: 2.5; }
+        3%, 100% { stroke: #475569; stroke-width: 2; }
+      }
+      #b1, #l1 { animation-delay: 0s; }
+      #b2, #l2 { animation-delay: 1s; }
+      #b3, #l3 { animation-delay: 2s; }
+      #b4, #l4 { animation-delay: 3s; }
+      #b5, #l5 { animation-delay: 4s; }
+      #b6, #l6 { animation-delay: 5s; }
+      #b7, #l7 { animation-delay: 6s; }
+      #b8, #l8 { animation-delay: 7s; }
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <polygon points="0 0, 8 4, 0 8" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <text x="460" y="36" text-anchor="middle" class="lbl" font-size="16">React + Redux: ????? ?? ??????? ?? UI</text>
+  <text x="460" y="54" text-anchor="middle" class="sub">????????? ????? ???? ????? ??????? ? ?????? ????, ???? 8 ?</text>
+  <rect id="b1" x="40" y="80" width="160" height="56" class="box"/>
+  <text x="120" y="108" text-anchor="middle" class="lbl">???????</text>
+  <text x="120" y="124" text-anchor="middle" class="sub">GET URL</text>
+  <path id="l1" class="arr" d="M 200 108 L 248 108"/>
+  <rect id="b2" x="248" y="80" width="180" height="56" class="box"/>
+  <text x="338" y="108" text-anchor="middle" class="lbl">SSR Express</text>
+  <text x="338" y="124" text-anchor="middle" class="sub">packages/client/server</text>
+  <path id="l2" class="arr" d="M 428 108 L 476 108"/>
+  <rect id="b3" x="476" y="80" width="180" height="56" class="box"/>
+  <text x="566" y="108" text-anchor="middle" class="lbl">entry-server.tsx</text>
+  <text x="566" y="124" text-anchor="middle" class="sub">render(req)</text>
+  <path id="l3" class="arr" d="M 566 136 L 566 168"/>
+  <rect id="b4" x="400" y="168" width="332" height="64" class="box"/>
+  <text x="566" y="196" text-anchor="middle" class="lbl">??????? + fetchData</text>
+  <text x="566" y="212" text-anchor="middle" class="sub">routes.tsx ? thunk ? store</text>
+  <path id="l4" class="arr" d="M 566 232 L 566 264"/>
+  <rect id="b5" x="420" y="264" width="292" height="56" class="box"/>
+  <text x="566" y="292" text-anchor="middle" class="lbl">Redux store</text>
+  <text x="566" y="308" text-anchor="middle" class="sub">user, forum, friends, ssr</text>
+  <path id="l5" class="arr" d="M 566 320 L 566 352"/>
+  <rect id="b6" x="360" y="352" width="412" height="56" class="box"/>
+  <text x="566" y="380" text-anchor="middle" class="lbl">HTML + window.APP_INITIAL_STATE</text>
+  <text x="566" y="396" text-anchor="middle" class="sub">????? ???????</text>
+  <path id="l6" class="arr" d="M 772 380 L 780 380 L 780 152"/>
+  <rect id="b7" x="700" y="80" width="180" height="72" class="box"/>
+  <text x="790" y="108" text-anchor="middle" class="lbl">??????</text>
+  <text x="790" y="124" text-anchor="middle" class="sub">main.tsx</text>
+  <text x="790" y="140" text-anchor="middle" class="sub">Provider + Router</text>
+  <path id="l7" class="arr" d="M 790 152 L 790 200"/>
+  <rect id="b8" x="688" y="200" width="204" height="64" class="box"/>
+  <text x="790" y="228" text-anchor="middle" class="lbl">???????? + usePage</text>
+  <text x="790" y="244" text-anchor="middle" class="sub">useSelector ? UI</text>
+  <text x="40" y="448" class="sub">?????: entry-server.tsx, main.tsx, routes.tsx, store.ts, hooks/usePage.ts</text>
+</svg>
