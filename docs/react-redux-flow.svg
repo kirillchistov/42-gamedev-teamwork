@@ -1,6 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480" role="img" aria-labelledby="title desc">
-  <title id="title">????? ??????: SSR, React Router, Redux</title>
-  <desc id="desc">????????????? ?????: ?????? ????????, ????????? ??????, ????????????? ?????, ???????? ? UI.</desc>
+  <title id="title">Data flow: SSR, React Router, Redux</title>
+  <desc id="desc">Animated diagram: page request, server render, store initialization, HTML response, client hydrate, UI.</desc>
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0f172a"/>
@@ -52,10 +53,10 @@
     </marker>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
-  <text x="460" y="36" text-anchor="middle" class="lbl" font-size="16">React + Redux: ????? ?? ??????? ?? UI</text>
-  <text x="460" y="54" text-anchor="middle" class="sub">????????? ????? ???? ????? ??????? ? ?????? ????, ???? 8 ?</text>
+  <text x="460" y="36" text-anchor="middle" class="lbl" font-size="16">React + Redux: request to UI</text>
+  <text x="460" y="54" text-anchor="middle" class="sub">Highlight runs in order; full cycle 8s</text>
   <rect id="b1" x="40" y="80" width="160" height="56" class="box"/>
-  <text x="120" y="108" text-anchor="middle" class="lbl">???????</text>
+  <text x="120" y="108" text-anchor="middle" class="lbl">Browser</text>
   <text x="120" y="124" text-anchor="middle" class="sub">GET URL</text>
   <path id="l1" class="arr" d="M 200 108 L 248 108"/>
   <rect id="b2" x="248" y="80" width="180" height="56" class="box"/>
@@ -67,8 +68,8 @@
   <text x="566" y="124" text-anchor="middle" class="sub">render(req)</text>
   <path id="l3" class="arr" d="M 566 136 L 566 168"/>
   <rect id="b4" x="400" y="168" width="332" height="64" class="box"/>
-  <text x="566" y="196" text-anchor="middle" class="lbl">??????? + fetchData</text>
-  <text x="566" y="212" text-anchor="middle" class="sub">routes.tsx ? thunk ? store</text>
+  <text x="566" y="196" text-anchor="middle" class="lbl">Route + fetchData</text>
+  <text x="566" y="212" text-anchor="middle" class="sub">routes.tsx -&gt; thunk -&gt; store</text>
   <path id="l4" class="arr" d="M 566 232 L 566 264"/>
   <rect id="b5" x="420" y="264" width="292" height="56" class="box"/>
   <text x="566" y="292" text-anchor="middle" class="lbl">Redux store</text>
@@ -76,15 +77,15 @@
   <path id="l5" class="arr" d="M 566 320 L 566 352"/>
   <rect id="b6" x="360" y="352" width="412" height="56" class="box"/>
   <text x="566" y="380" text-anchor="middle" class="lbl">HTML + window.APP_INITIAL_STATE</text>
-  <text x="566" y="396" text-anchor="middle" class="sub">????? ???????</text>
+  <text x="566" y="396" text-anchor="middle" class="sub">response to browser</text>
   <path id="l6" class="arr" d="M 772 380 L 780 380 L 780 152"/>
   <rect id="b7" x="700" y="80" width="180" height="72" class="box"/>
-  <text x="790" y="108" text-anchor="middle" class="lbl">??????</text>
+  <text x="790" y="108" text-anchor="middle" class="lbl">Client</text>
   <text x="790" y="124" text-anchor="middle" class="sub">main.tsx</text>
   <text x="790" y="140" text-anchor="middle" class="sub">Provider + Router</text>
   <path id="l7" class="arr" d="M 790 152 L 790 200"/>
   <rect id="b8" x="688" y="200" width="204" height="64" class="box"/>
-  <text x="790" y="228" text-anchor="middle" class="lbl">???????? + usePage</text>
-  <text x="790" y="244" text-anchor="middle" class="sub">useSelector ? UI</text>
-  <text x="40" y="448" class="sub">?????: entry-server.tsx, main.tsx, routes.tsx, store.ts, hooks/usePage.ts</text>
+  <text x="790" y="228" text-anchor="middle" class="lbl">Page + usePage</text>
+  <text x="790" y="244" text-anchor="middle" class="sub">useSelector -&gt; UI</text>
+  <text x="40" y="448" class="sub">Key files: entry-server.tsx, main.tsx, routes.tsx, store.ts, hooks/usePage.ts</text>
 </svg>

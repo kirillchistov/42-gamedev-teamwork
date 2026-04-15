@@ -9,7 +9,7 @@
 - `docs` — проектная и игровая документация.
 - `docker-compose.yml`, `Dockerfile.*` — локальный и production-запуск в контейнерах.
 
-Шаблон близок к курсовому **SSR на Express + React + Redux Toolkit**: лендинг, страницы авторизации, закрытые разделы после логина, игра match-3.
+Шаблон на основе курсового **SSR на Express + React + Redux Toolkit**: лендинг, страницы авторизации, закрытые разделы после логина, игра match-3.
 
 ## Точки входа
 
@@ -115,7 +115,7 @@
 
 ![Поток React + Redux](react-redux-flow.svg)
 
-Ниже — та же логика в виде статичной Mermaid-схемы (удобно в просмотрщиках с поддержкой Mermaid):
+Логика в виде статичной Mermaid-схемы:
 
 ```mermaid
 flowchart TB
@@ -143,7 +143,7 @@ flowchart TB
 
 ## Сервер (`packages/server`)
 
-HTTP на Express, CORS, тестовые JSON-маршруты; при необходимости — БД через [`db.ts`](../packages/server/db.ts). Точка входа: [`packages/server/index.ts`](../packages/server/index.ts). Новые маршруты и сервисы добавляйте в этом пакете (по мере роста — вынос в `src/` внутри пакета при желании).
+HTTP на Express, CORS, тестовые JSON-маршруты; далее подключаем БД через [`db.ts`](../packages/server/db.ts). Точка входа: [`packages/server/index.ts`](../packages/server/index.ts). Новые маршруты и сервисы добавляем в этот пакет (по мере роста — вынос в `src/` внутри пакета).
 
 ## Документация (`docs`)
 
@@ -159,6 +159,6 @@ HTTP на Express, CORS, тестовые JSON-маршруты; при необ
 ## Куда добавлять новый функционал
 
 - Игровая механика — `packages/client/src/game/match3/engine`.
-- Новые экраны / настройки игры — `packages/client/src/pages` и при необходимости `Match3Screen.tsx`.
+- Новые экраны / настройки игры — `packages/client/src/pages`, при необходимости `Match3Screen.tsx`.
 - API и бизнес-правила на бэкенде — `packages/server`.
 - Документация — `docs`.
