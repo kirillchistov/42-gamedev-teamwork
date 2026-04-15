@@ -1,14 +1,4 @@
-/**
- * Страница /game: Cosmic Match (match-3), тосты, настройки-заглушки, оболочка под тему лендинга.
- * 6.3.2 Оболочка страницы игры (полноэкран, компактная шапка, луна/солнце, найстройки игры в шапку)
- * Заголовок игры убрал совсем, настройки игры в меню в шапке, подзаголовок с описанием только на старте
- * Больше места под поле и удобство игры: компактный Header, полноэкран по кнопке и клавише F.
- * Добавил отдельный модальный слой настроек в GamePage (втч Уровень и Тип цели = Набрать очки)
- * Реализовал ref game-page-shell на корневой div; Header variant="game" + fullscreenTargetRef;
- * useEffect — hotkey F вызывает toggleFullscreen(pageShellRef) вне input/textarea/select.
- * Затронуты также: utils/fullscreen.ts, Header/index.tsx, LandingThemeContext (toggleColorMode),
- * shared/styles variables.pcss / base.pcss / themes.pcss.
- */
+// Страница /game: Cosmic Match (match-3), тосты, настройки-заглушки, оболочка под тему лендинга
 import React, {
   useEffect,
   useMemo,

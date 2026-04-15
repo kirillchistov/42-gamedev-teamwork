@@ -1,3 +1,5 @@
+// Express для SSR: в dev — Vite в 'middlewareMode', в prod — статика 'dist/client' и серверный бандл;
+// парсинг cookie, сериализация начального состояния Redux в HTML.
 import dotenv from 'dotenv'
 dotenv.config()
 

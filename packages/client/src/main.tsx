@@ -1,4 +1,5 @@
-﻿// 6.5 Подключил HOC withAuthGuard в роутинг
+﻿// клиентский вход: 'ReactDOM.createRoot', 'Provider', 'RouterProvider' (React Router v6),
+// темы, глобальные стили, ErrorBoundary / AppErrorFallback, оборачивание в 'withAuthGuard'.
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import {
