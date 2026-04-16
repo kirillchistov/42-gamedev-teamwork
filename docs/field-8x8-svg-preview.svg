@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 620" role="img" aria-labelledby="title desc">
+  <title id="title">8x8 field preview (Match-3) - SVG</title>
+  <desc id="desc">Non-interactive 8x8 board preview with animated VFX, special tiles, and S7 visual improvements.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1220"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+
+    <radialGradient id="planetGlow" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>
+      <stop offset="45%" stop-color="#a78bfa" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="tileShine" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="45%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Gradient icon for the "red bomb" (S7 third special effect demo) -->
+    <radialGradient id="bombRedGrad" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#fecaca" stop-opacity="1"/>
+      <stop offset="35%" stop-color="#f87171" stop-opacity="1"/>
+      <stop offset="70%" stop-color="#ef4444" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7f1d1d" stop-opacity="0.9"/>
+    </radialGradient>
+
+    <linearGradient id="iceFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#93c5fd" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#bae6fd" stop-opacity="0.25"/>
+    </linearGradient>
+
+    <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <style>
+      .gridLine { stroke: rgba(148, 163, 184, 0.18); stroke-width: 1; }
+      .tileBase { filter: url(#softGlow); }
+      .tileShine { fill: url(#tileShine); opacity: 0.9; }
+
+      .matchRing {
+        fill: none;
+        stroke: #f59e0b;
+        stroke-width: 3;
+        stroke-opacity: 0.9;
+        animation: matchPulse 1.6s ease-in-out infinite;
+      }
+      @keyframes matchPulse {
+        0%, 100% { transform: scale(0.98); opacity: 0.55; }
+        50% { transform: scale(1.06); opacity: 1; }
+      }
+
+      .rocketPulse { animation: rocketPulse 1.2s ease-in-out infinite; transform-origin: center; }
+      @keyframes rocketPulse {
+        0%, 100% { filter: drop-shadow(0px 0px 0px rgba(245, 158, 11, 0)); opacity: 0.95; }
+        50% { filter: drop-shadow(0px 0px 10px rgba(245, 158, 11, 0.35)); opacity: 1; }
+      }
+
+      .freezeShimmer {
+        stroke: rgba(56, 189, 248, 0.95);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-dasharray: 5 8;
+        animation: shimmer 1.1s linear infinite;
+      }
+      @keyframes shimmer {
+        from { stroke-dashoffset: 0; }
+        to { stroke-dashoffset: -40; }
+      }
+
+      .bgFloat {
+        animation: bgFloat 8s ease-in-out infinite;
+        transform-origin: 350px 220px;
+      }
+      @keyframes bgFloat {
+        0%, 100% { transform: translate(0px, 0px) scale(1); opacity: 0.95; }
+        50% { transform: translate(0px, -6px) scale(1.02); opacity: 1; }
+      }
+
+      .moonGlow { animation: moonGlow 2s ease-in-out infinite; }
+      @keyframes moonGlow {
+        0%, 100% { filter: drop-shadow(0 0 0 rgba(236, 72, 153, 0.0)); }
+        50% { filter: drop-shadow(0 0 12px rgba(236, 72, 153, 0.35)); }
+      }
+
+      /* === Timed special effects demo (13s loop, second-by-second script) === */
+      /* Timeline checkpoints (seconds -> percent of 13s): 0=0, 1=7.69, 2=15.38, 3=23.08, 4=30.77, 5=38.46, 6=46.15, 7=53.85, 8=61.54, 9=69.23, 10=76.92, 11=84.62, 12=92.31, 13=100 */
+      .phaseBombIcon { animation: phaseBombIcon 13s linear infinite; opacity: 0; }
+      .phaseBombHL { animation: phaseBombHL 13s linear infinite; opacity: 0; }
+      .phaseBombExplode { animation: phaseBombExplode 13s linear infinite; opacity: 0; }
+      .phaseBombHoles { animation: phaseBombHoles 13s linear infinite; opacity: 0; }
+      .phaseBombRefill { animation: phaseBombRefill 13s linear infinite; opacity: 0; }
+
+      .phaseRocketIcon { animation: phaseRocketIcon 13s linear infinite; opacity: 0; }
+      .phaseRocketHL { animation: phaseRocketHL 13s linear infinite; opacity: 0; }
+      .phaseRocketFly { animation: phaseRocketFly 13s linear infinite; opacity: 0; }
+      .phaseRocketRowHoles { animation: phaseRocketRowHoles 13s linear infinite; opacity: 0; }
+      .phaseRocketRowRefill { animation: phaseRocketRowRefill 13s linear infinite; opacity: 0; }
+
+      .phaseRedBombShow { animation: phaseRedBombShow 13s linear infinite; opacity: 0; }
+      .phaseRedExplode { animation: phaseRedExplode 13s linear infinite; opacity: 0; }
+      .phaseRedHoles { animation: phaseRedHoles 13s linear infinite; opacity: 0; }
+
+      @keyframes phaseBombIcon { 0%, 15.38% { opacity: 1; } 23.08%, 100% { opacity: 0; } }
+      @keyframes phaseBombHL { 0%, 7.69% { opacity: 0; } 7.69%, 15.38% { opacity: 1; } 15.39%, 100% { opacity: 0; } }
+      @keyframes phaseBombExplode { 0%, 15.38% { opacity: 0; } 15.38%, 23.08% { opacity: 1; } 23.09%, 100% { opacity: 0; } }
+      @keyframes phaseBombHoles { 0%, 23.08% { opacity: 0; } 23.08%, 30.77% { opacity: 1; } 30.78%, 100% { opacity: 0; } }
+      @keyframes phaseBombRefill { 0%, 30.77% { opacity: 0; } 30.77%, 38.46% { opacity: 1; } 38.47%, 100% { opacity: 0; } }
+
+      @keyframes phaseRocketIcon { 0%, 38.46% { opacity: 0; } 38.46%, 53.85% { opacity: 1; } 53.86%, 100% { opacity: 0; } }
+      @keyframes phaseRocketHL { 0%, 46.15% { opacity: 0; } 46.15%, 53.85% { opacity: 1; } 53.86%, 100% { opacity: 0; } }
+      @keyframes phaseRocketFly { 0%, 53.85% { opacity: 0; } 53.85%, 61.54% { opacity: 1; } 61.55%, 100% { opacity: 0; } }
+      @keyframes phaseRocketRowHoles { 0%, 61.54% { opacity: 0; } 61.54%, 69.23% { opacity: 1; } 69.24%, 100% { opacity: 0; } }
+      @keyframes phaseRocketRowRefill { 0%, 69.23% { opacity: 0; } 69.23%, 76.92% { opacity: 1; } 76.93%, 100% { opacity: 0; } }
+
+      @keyframes phaseRedBombShow { 0%, 76.92% { opacity: 0; } 76.92%, 84.62% { opacity: 1; } 84.63%, 100% { opacity: 0; } }
+      @keyframes phaseRedExplode { 0%, 84.62% { opacity: 0; } 84.62%, 92.31% { opacity: 1; } 92.32%, 100% { opacity: 0; } }
+      @keyframes phaseRedHoles { 0%, 92.31% { opacity: 0; } 92.31%, 100% { opacity: 1; } }
+
+      /* Highlights (pulsing rings) */
+      .hlRing {
+        fill: none;
+        stroke: rgba(59, 130, 246, 0.95);
+        stroke-width: 3;
+        filter: url(#softGlow);
+        animation: hlPulse 1.2s ease-in-out infinite;
+      }
+      @keyframes hlPulse {
+        0%, 100% { transform: scale(0.98); opacity: 0.55; }
+        50% { transform: scale(1.08); opacity: 1; }
+      }
+
+      /* Explosion visuals */
+      .explosionRing { fill: none; stroke-width: 4; filter: url(#softGlow); }
+      .ringWarm { stroke: rgba(251, 191, 36, 0.95); }
+      .ringHot { stroke: rgba(248, 113, 113, 0.95); }
+      .ringFire { stroke: rgba(245, 158, 11, 0.95); }
+      .explodeGrow { animation: explodeGrow 13s linear infinite; opacity: 0; }
+      @keyframes explodeGrow {
+        0%, 15.38% { opacity: 0; transform: scale(0.35); }
+        17% { opacity: 1; transform: scale(1.1); }
+        23.08% { opacity: 0; transform: scale(1.75); }
+        100% { opacity: 0; transform: scale(1.75); }
+      }
+      .redExplodeGrow { animation: redExplodeGrow 13s linear infinite; opacity: 0; }
+      @keyframes redExplodeGrow {
+        0%, 84.62% { opacity: 0; transform: scale(0.35); }
+        86% { opacity: 1; transform: scale(1.08); }
+        92.31% { opacity: 0; transform: scale(1.7); }
+        100% { opacity: 0; transform: scale(1.7); }
+      }
+
+      /* "Empty cells" overlay */
+      .hole { fill: rgba(2, 6, 23, 0.95); stroke: rgba(148,163,184,0.30); stroke-width: 2; }
+      .refillTile { filter: url(#softGlow); }
+
+      /* Rocket fly along row 8 */
+      .rocketFlyRow8 { animation: rocketFlyRow8 13s linear infinite; transform-origin: 80px 470px; }
+      @keyframes rocketFlyRow8 {
+        0%, 53.85% { transform: translateX(-120px); }
+        61.54% { transform: translateX(520px); }
+        100% { transform: translateX(520px); }
+      }
+      .beamRow8 { stroke: rgba(245,158,11,0.90); stroke-width: 10; stroke-linecap: round; filter: url(#softGlow); animation: beamRow8 13s linear infinite; opacity: 0; }
+      @keyframes beamRow8 {
+        0%, 53.85% { opacity: 0; }
+        54.2%, 61.2% { opacity: 1; }
+        61.54%, 100% { opacity: 0; }
+      }
+
+      /* Red bomb icon styling (black outline 1px) */
+      .redBombBody { fill: url(#bombRedGrad); stroke: rgba(2,6,23,0.95); stroke-width: 1; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="560" height="620" fill="url(#bg)"/>
+  <g class="bgFloat">
+    <circle cx="360" cy="210" r="220" fill="url(#planetGlow)"/>
+    <circle cx="430" cy="170" r="7" fill="#38bdf8" opacity="0.6"/>
+    <circle cx="120" cy="160" r="5" fill="#a78bfa" opacity="0.35"/>
+  </g>
+
+  <text x="280" y="44" text-anchor="middle" font-size="18" fill="#f8fafc" font-family="system-ui, sans-serif" font-weight="700">
+    8x8 Board Preview (Static)
+  </text>
+  <text x="280" y="66" text-anchor="middle" font-size="12" fill="rgba(203, 213, 225, 0.95)" font-family="ui-monospace, monospace">
+    5 colors + special tiles + match VFX (no interaction)
+  </text>
+
+  <!-- Board geometry -->
+  <!-- Top-left of board grid: (80, 140). Cell size: 44. Tile size: 40 (80-90% of cell). -->
+  <g id="board">
+    <!-- Grid -->
+    <rect x="80" y="140" width="352" height="352" rx="16" fill="rgba(2, 6, 23, 0.16)" stroke="rgba(148, 163, 184, 0.25)" stroke-width="2"/>
+    <!-- Grid lines -->
+    <g>
+      <!-- vertical -->
+      <line x1="80" y1="140" x2="80" y2="492" class="gridLine"/>
+      <line x1="124" y1="140" x2="124" y2="492" class="gridLine"/>
+      <line x1="168" y1="140" x2="168" y2="492" class="gridLine"/>
+      <line x1="212" y1="140" x2="212" y2="492" class="gridLine"/>
+      <line x1="256" y1="140" x2="256" y2="492" class="gridLine"/>
+      <line x1="300" y1="140" x2="300" y2="492" class="gridLine"/>
+      <line x1="344" y1="140" x2="344" y2="492" class="gridLine"/>
+      <line x1="388" y1="140" x2="388" y2="492" class="gridLine"/>
+      <line x1="432" y1="140" x2="432" y2="492" class="gridLine"/>
+      <!-- horizontal -->
+      <line x1="80" y1="140" x2="432" y2="140" class="gridLine"/>
+      <line x1="80" y1="184" x2="432" y2="184" class="gridLine"/>
+      <line x1="80" y1="228" x2="432" y2="228" class="gridLine"/>
+      <line x1="80" y1="272" x2="432" y2="272" class="gridLine"/>
+      <line x1="80" y1="316" x2="432" y2="316" class="gridLine"/>
+      <line x1="80" y1="360" x2="432" y2="360" class="gridLine"/>
+      <line x1="80" y1="404" x2="432" y2="404" class="gridLine"/>
+      <line x1="80" y1="448" x2="432" y2="448" class="gridLine"/>
+      <line x1="80" y1="492" x2="432" y2="492" class="gridLine"/>
+    </g>
+
+    <!-- Base tiles: circles at cell centers -->
+    <!-- Center formula: cx=102 + c*44, cy=162 + r*44 -->
+    <g id="tiles">
+      <!-- Row 0 (cy=162) -->
+      <circle cx="102" cy="162" r="20" fill="#3b82f6"/>
+      <circle cx="146" cy="162" r="20" fill="#22c55e"/>
+      <circle cx="190" cy="162" r="20" fill="#fbbf24"/>
+      <circle cx="234" cy="162" r="20" fill="#ef4444"/>
+      <circle cx="278" cy="162" r="20" fill="#ec4899"/>
+      <circle cx="322" cy="162" r="20" fill="#3b82f6"/>
+      <circle cx="366" cy="162" r="20" fill="#22c55e"/>
+      <circle cx="410" cy="162" r="20" fill="#fbbf24"/>
+      <!-- Row 1 (cy=206) -->
+      <circle cx="102" cy="206" r="20" fill="#22c55e"/>
+      <circle cx="146" cy="206" r="20" fill="#fbbf24"/>
+      <circle cx="190" cy="206" r="20" fill="#ef4444"/>
+      <circle cx="234" cy="206" r="20" fill="#ec4899"/>
+      <circle cx="278" cy="206" r="20" fill="#3b82f6"/>
+      <circle cx="322" cy="206" r="20" fill="#22c55e"/>
+      <circle cx="366" cy="206" r="20" fill="#fbbf24"/>
+      <circle cx="410" cy="206" r="20" fill="#ef4444"/>
+      <!-- Row 2 (cy=250) -->
+      <circle cx="102" cy="250" r="20" fill="#fbbf24"/>
+      <circle cx="146" cy="250" r="20" fill="#ef4444"/>
+      <circle cx="190" cy="250" r="20" fill="#ec4899"/>
+      <circle cx="234" cy="250" r="20" fill="#3b82f6"/>
+      <circle cx="278" cy="250" r="20" fill="#22c55e"/>
+      <circle cx="322" cy="250" r="20" fill="#fbbf24"/>
+      <circle cx="366" cy="250" r="20" fill="#ef4444"/>
+      <circle cx="410" cy="250" r="20" fill="#ec4899"/>
+      <!-- Row 3 (cy=294) -->
+      <circle cx="102" cy="294" r="20" fill="#ef4444"/>
+      <circle cx="146" cy="294" r="20" fill="#ec4899"/>
+      <circle cx="190" cy="294" r="20" fill="#3b82f6"/>
+      <circle cx="234" cy="294" r="20" fill="#22c55e"/>
+      <circle cx="278" cy="294" r="20" fill="#fbbf24"/>
+      <circle cx="322" cy="294" r="20" fill="#ef4444"/>
+      <circle cx="366" cy="294" r="20" fill="#ec4899"/>
+      <circle cx="410" cy="294" r="20" fill="#3b82f6"/>
+      <!-- Row 4 (cy=338) -->
+      <circle cx="102" cy="338" r="20" fill="#ec4899"/>
+      <circle cx="146" cy="338" r="20" fill="#3b82f6"/>
+      <circle cx="190" cy="338" r="20" fill="#22c55e"/>
+      <circle cx="234" cy="338" r="20" fill="#fbbf24"/>
+      <circle cx="278" cy="338" r="20" fill="#ef4444"/>
+      <circle cx="322" cy="338" r="20" fill="#ec4899"/>
+      <circle cx="366" cy="338" r="20" fill="#3b82f6"/>
+      <circle cx="410" cy="338" r="20" fill="#22c55e"/>
+      <!-- Row 5 (cy=382) -->
+      <circle cx="102" cy="382" r="20" fill="#3b82f6"/>
+      <circle cx="146" cy="382" r="20" fill="#22c55e"/>
+      <circle cx="190" cy="382" r="20" fill="#fbbf24"/>
+      <circle cx="234" cy="382" r="20" fill="#ef4444"/>
+      <circle cx="278" cy="382" r="20" fill="#ec4899"/>
+      <circle cx="322" cy="382" r="20" fill="#3b82f6"/>
+      <circle cx="366" cy="382" r="20" fill="#22c55e"/>
+      <circle cx="410" cy="382" r="20" fill="#fbbf24"/>
+      <!-- Row 6 (cy=426) -->
+      <circle cx="102" cy="426" r="20" fill="#22c55e"/>
+      <circle cx="146" cy="426" r="20" fill="#fbbf24"/>
+      <circle cx="190" cy="426" r="20" fill="#ef4444"/>
+      <circle cx="234" cy="426" r="20" fill="#ec4899"/>
+      <circle cx="278" cy="426" r="20" fill="#3b82f6"/>
+      <circle cx="322" cy="426" r="20" fill="#22c55e"/>
+      <circle cx="366" cy="426" r="20" fill="#fbbf24"/>
+      <circle cx="410" cy="426" r="20" fill="#ef4444"/>
+      <!-- Row 7 (cy=470) -->
+      <circle cx="102" cy="470" r="20" fill="#fbbf24"/>
+      <circle cx="146" cy="470" r="20" fill="#ef4444"/>
+      <circle cx="190" cy="470" r="20" fill="#ec4899"/>
+      <circle cx="234" cy="470" r="20" fill="#3b82f6"/>
+      <circle cx="278" cy="470" r="20" fill="#22c55e"/>
+      <circle cx="322" cy="470" r="20" fill="#fbbf24"/>
+      <circle cx="366" cy="470" r="20" fill="#ef4444"/>
+      <circle cx="410" cy="470" r="20" fill="#ec4899"/>
+
+      <!-- Shine overlay (subtle, static) -->
+      <g opacity="0.9">
+        <circle cx="102" cy="162" r="20" class="tileShine"/>
+        <circle cx="146" cy="162" r="20" class="tileShine"/>
+        <circle cx="190" cy="162" r="20" class="tileShine"/>
+        <circle cx="234" cy="162" r="20" class="tileShine"/>
+        <circle cx="278" cy="162" r="20" class="tileShine"/>
+        <circle cx="322" cy="162" r="20" class="tileShine"/>
+        <circle cx="366" cy="162" r="20" class="tileShine"/>
+        <circle cx="410" cy="162" r="20" class="tileShine"/>
+      </g>
+    </g>
+
+    <!-- Ice blockers (special overlay) -->
+    <g id="iceBlockers" opacity="0.95">
+      <!-- (r=0,c=3) and (r=0,c=4) and (r=1,c=3) -->
+      <rect x="212" y="142" width="40" height="40" rx="10" fill="url(#iceFill)" stroke="rgba(186, 230, 253, 0.65)" stroke-width="2"/>
+      <rect x="256" y="142" width="40" height="40" rx="10" fill="url(#iceFill)" stroke="rgba(186, 230, 253, 0.65)" stroke-width="2"/>
+      <rect x="212" y="186" width="40" height="40" rx="10" fill="url(#iceFill)" stroke="rgba(186, 230, 253, 0.65)" stroke-width="2"/>
+      <path d="M 224 170 L 228 166 L 232 170 L 236 166 L 240 170" fill="none" stroke="rgba(56, 189, 248, 0.85)" stroke-width="2" class="freezeShimmer"/>
+      <path d="M 268 170 L 272 166 L 276 170 L 280 166 L 284 170" fill="none" stroke="rgba(56, 189, 248, 0.85)" stroke-width="2" class="freezeShimmer"/>
+    </g>
+
+    <!-- Match highlight (row 3 col 1..3): (146,294), (190,294), (234,294) -->
+    <g id="matchVfx">
+      <circle cx="146" cy="294" r="24" class="matchRing"/>
+      <circle cx="190" cy="294" r="24" class="matchRing"/>
+      <circle cx="234" cy="294" r="24" class="matchRing"/>
+      <path d="M 130 318 C 154 300, 178 300, 206 318" fill="none" stroke="rgba(245,158,11,0.35)" stroke-width="6" stroke-linecap="round" opacity="0.55"/>
+    </g>
+
+    <!-- === Special effects sequence demo === -->
+    <!-- 0s: show bomb at R4C7 (x=366,y=294) -->
+    <g id="bombR4C7" class="phaseBombIcon">
+      <circle cx="366" cy="294" r="18" fill="rgba(251,191,36,0.20)" filter="url(#softGlow)"/>
+      <circle cx="366" cy="294" r="14" fill="rgba(245,158,11,0.85)" opacity="0.95"/>
+      <circle cx="360" cy="288" r="4" fill="rgba(255,255,255,0.35)"/>
+    </g>
+
+    <!-- 1s: highlight R4C3..R4C7 -->
+    <g id="hlRow4C3toC7" class="phaseBombHL">
+      <circle cx="190" cy="294" r="24" class="hlRing"/>
+      <circle cx="234" cy="294" r="24" class="hlRing"/>
+      <circle cx="278" cy="294" r="24" class="hlRing"/>
+      <circle cx="322" cy="294" r="24" class="hlRing"/>
+      <circle cx="366" cy="294" r="24" class="hlRing"/>
+    </g>
+
+    <!-- 2s: explosion for range R3C3..R5C7 -->
+    <g id="bombAreaExplode" class="phaseBombExplode">
+      <rect x="168" y="228" width="220" height="132" rx="18" fill="rgba(251,191,36,0.08)" stroke="rgba(251,191,36,0.55)" stroke-width="3"/>
+      <g transform="translate(278 294)">
+        <circle cx="0" cy="0" r="26" class="explosionRing ringWarm explodeGrow"/>
+        <circle cx="0" cy="0" r="18" class="explosionRing ringFire explodeGrow" opacity="0.85"/>
+      </g>
+    </g>
+
+    <!-- 3s: black holes in range R3C3..R5C7 -->
+    <g id="bombAreaHoles" class="phaseBombHoles">
+      <!-- rows 3..5: y={250,294,338} cols 3..7: x={190,234,278,322,366} -->
+      <!-- row 3 -->
+      <circle cx="190" cy="250" r="20" class="hole"/>
+      <circle cx="234" cy="250" r="20" class="hole"/>
+      <circle cx="278" cy="250" r="20" class="hole"/>
+      <circle cx="322" cy="250" r="20" class="hole"/>
+      <circle cx="366" cy="250" r="20" class="hole"/>
+      <!-- row 4 -->
+      <circle cx="190" cy="294" r="20" class="hole"/>
+      <circle cx="234" cy="294" r="20" class="hole"/>
+      <circle cx="278" cy="294" r="20" class="hole"/>
+      <circle cx="322" cy="294" r="20" class="hole"/>
+      <circle cx="366" cy="294" r="20" class="hole"/>
+      <!-- row 5 -->
+      <circle cx="190" cy="338" r="20" class="hole"/>
+      <circle cx="234" cy="338" r="20" class="hole"/>
+      <circle cx="278" cy="338" r="20" class="hole"/>
+      <circle cx="322" cy="338" r="20" class="hole"/>
+      <circle cx="366" cy="338" r="20" class="hole"/>
+    </g>
+
+    <!-- 4s: refill R3C3..R5C7 (field fully filled) -->
+    <g id="bombAreaRefill" class="phaseBombRefill">
+      <!-- row 3 -->
+      <circle cx="190" cy="250" r="20" fill="#3b82f6" class="refillTile"/>
+      <circle cx="234" cy="250" r="20" fill="#22c55e" class="refillTile"/>
+      <circle cx="278" cy="250" r="20" fill="#fbbf24" class="refillTile"/>
+      <circle cx="322" cy="250" r="20" fill="#ec4899" class="refillTile"/>
+      <circle cx="366" cy="250" r="20" fill="#3b82f6" class="refillTile"/>
+      <!-- row 4 -->
+      <circle cx="190" cy="294" r="20" fill="#22c55e" class="refillTile"/>
+      <circle cx="234" cy="294" r="20" fill="#fbbf24" class="refillTile"/>
+      <circle cx="278" cy="294" r="20" fill="#ec4899" class="refillTile"/>
+      <circle cx="322" cy="294" r="20" fill="#3b82f6" class="refillTile"/>
+      <circle cx="366" cy="294" r="20" fill="#22c55e" class="refillTile"/>
+      <!-- row 5 -->
+      <circle cx="190" cy="338" r="20" fill="#fbbf24" class="refillTile"/>
+      <circle cx="234" cy="338" r="20" fill="#ec4899" class="refillTile"/>
+      <circle cx="278" cy="338" r="20" fill="#3b82f6" class="refillTile"/>
+      <circle cx="322" cy="338" r="20" fill="#22c55e" class="refillTile"/>
+      <circle cx="366" cy="338" r="20" fill="#fbbf24" class="refillTile"/>
+    </g>
+
+    <!-- 5s: show rocket at R8C1 -->
+    <g id="rocketR8C1" class="phaseRocketIcon">
+      <path d="M 102 452 L 116 472 L 102 492 L 88 472 Z" fill="#f59e0b" opacity="0.95" filter="url(#softGlow)"/>
+      <path d="M 102 459 L 111 472 L 102 485 L 93 472 Z" fill="#fde68a" opacity="0.85"/>
+      <circle cx="102" cy="470" r="28" fill="none" stroke="rgba(245,158,11,0.55)" stroke-width="3" opacity="0.75"/>
+    </g>
+
+    <!-- 6s: highlight R8C2..R8C5 -->
+    <g id="hlRow8C2toC5" class="phaseRocketHL">
+      <circle cx="146" cy="470" r="24" class="hlRing"/>
+      <circle cx="190" cy="470" r="24" class="hlRing"/>
+      <circle cx="234" cy="470" r="24" class="hlRing"/>
+      <circle cx="278" cy="470" r="24" class="hlRing"/>
+    </g>
+
+    <!-- 7s: rocket fly across R8C1..R8C8 and burn -->
+    <g id="rocketFlyFxRow8" class="phaseRocketFly">
+      <path d="M 90 470 L 422 470" class="beamRow8"/>
+      <g class="rocketFlyRow8">
+        <path d="M 74 470 L 92 462 L 92 478 Z" fill="#f59e0b" opacity="0.95"/>
+        <path d="M 92 470 L 104 466 L 104 474 Z" fill="#fde68a" opacity="0.85"/>
+      </g>
+    </g>
+
+    <!-- 8s: black holes in R8C1..R8C8 -->
+    <g id="rocketRow8Holes" class="phaseRocketRowHoles">
+      <circle cx="102" cy="470" r="20" class="hole"/>
+      <circle cx="146" cy="470" r="20" class="hole"/>
+      <circle cx="190" cy="470" r="20" class="hole"/>
+      <circle cx="234" cy="470" r="20" class="hole"/>
+      <circle cx="278" cy="470" r="20" class="hole"/>
+      <circle cx="322" cy="470" r="20" class="hole"/>
+      <circle cx="366" cy="470" r="20" class="hole"/>
+      <circle cx="410" cy="470" r="20" class="hole"/>
+    </g>
+
+    <!-- 9s: refill R8C1..R8C8 -->
+    <g id="rocketRow8Refill" class="phaseRocketRowRefill">
+      <circle cx="102" cy="470" r="20" fill="#22c55e" class="refillTile"/>
+      <circle cx="146" cy="470" r="20" fill="#fbbf24" class="refillTile"/>
+      <circle cx="190" cy="470" r="20" fill="#ec4899" class="refillTile"/>
+      <circle cx="234" cy="470" r="20" fill="#3b82f6" class="refillTile"/>
+      <circle cx="278" cy="470" r="20" fill="#22c55e" class="refillTile"/>
+      <circle cx="322" cy="470" r="20" fill="#fbbf24" class="refillTile"/>
+      <circle cx="366" cy="470" r="20" fill="#3b82f6" class="refillTile"/>
+      <circle cx="410" cy="470" r="20" fill="#ec4899" class="refillTile"/>
+    </g>
+
+    <!-- 10s: show red gradient bomb with 1px black outline at R2C2 and highlight target set -->
+    <g id="redBombR2C2" class="phaseRedBombShow">
+      <circle cx="146" cy="206" r="18" class="redBombBody" filter="url(#softGlow)"/>
+      <circle cx="140" cy="200" r="4" fill="rgba(255,255,255,0.35)"/>
+
+      <!-- highlight R2C3..R2C5 -->
+      <circle cx="190" cy="206" r="24" class="hlRing"/>
+      <circle cx="234" cy="206" r="24" class="hlRing"/>
+      <circle cx="278" cy="206" r="24" class="hlRing"/>
+      <!-- highlight single cells: R1C8, R4C3, R5C7, R7C2, R8C8 -->
+      <circle cx="410" cy="162" r="24" class="hlRing"/>
+      <circle cx="190" cy="294" r="24" class="hlRing"/>
+      <circle cx="366" cy="338" r="24" class="hlRing"/>
+      <circle cx="146" cy="426" r="24" class="hlRing"/>
+      <circle cx="410" cy="470" r="24" class="hlRing"/>
+    </g>
+
+    <!-- 11s: red/orange/yellow explosion and clear targets -->
+    <g id="redBombExplode" class="phaseRedExplode">
+      <g transform="translate(146 206)">
+        <circle cx="0" cy="0" r="22" class="explosionRing ringHot redExplodeGrow"/>
+        <circle cx="0" cy="0" r="34" class="explosionRing ringFire redExplodeGrow" opacity="0.85"/>
+        <circle cx="0" cy="0" r="46" class="explosionRing ringWarm redExplodeGrow" opacity="0.75"/>
+      </g>
+      <rect x="168" y="186" width="132" height="40" rx="14" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.45)" stroke-width="2"/>
+    </g>
+
+    <!-- 12s: black holes for targets (R2C3..R2C5 + R1C8 + R4C3 + R5C7 + R7C2 + R8C8) -->
+    <g id="redBombTargetsHoles" class="phaseRedHoles">
+      <circle cx="190" cy="206" r="20" class="hole"/>
+      <circle cx="234" cy="206" r="20" class="hole"/>
+      <circle cx="278" cy="206" r="20" class="hole"/>
+      <circle cx="410" cy="162" r="20" class="hole"/>
+      <circle cx="190" cy="294" r="20" class="hole"/>
+      <circle cx="366" cy="338" r="20" class="hole"/>
+      <circle cx="146" cy="426" r="20" class="hole"/>
+      <circle cx="410" cy="470" r="20" class="hole"/>
+    </g>
+
+    <!-- Rocket booster (r=2,c=5) at (322,250) -->
+    <g id="rocket" class="rocketPulse">
+      <!-- inner triangle -->
+      <path d="M 322 232 L 336 252 L 322 272 L 308 252 Z" fill="#f59e0b" opacity="0.95"/>
+      <path d="M 322 239 L 331 252 L 322 265 L 313 252 Z" fill="#fbbf24" opacity="0.85"/>
+      <!-- glow ring -->
+      <circle cx="322" cy="250" r="28" fill="none" stroke="rgba(245,158,11,0.6)" stroke-width="3" opacity="0.7"/>
+    </g>
+
+    <!-- Freeze booster icon (r=1,c=1) at (146,206) -->
+    <g id="freeze" opacity="0.95">
+      <circle cx="146" cy="206" r="26" fill="rgba(56,189,248,0.08)" stroke="rgba(56,189,248,0.55)" stroke-width="2"/>
+      <path d="M 146 182 L 146 230" fill="none" stroke="rgba(56,189,248,0.9)" stroke-width="2" class="freezeShimmer"/>
+      <path d="M 122 206 L 170 206" fill="none" stroke="rgba(56,189,248,0.9)" stroke-width="2" class="freezeShimmer"/>
+      <path d="M 129 189 L 163 223" fill="none" stroke="rgba(56,189,248,0.8)" stroke-width="2" class="freezeShimmer"/>
+      <path d="M 163 189 L 129 223" fill="none" stroke="rgba(56,189,248,0.8)" stroke-width="2" class="freezeShimmer"/>
+    </g>
+
+    <!-- Moon tile (r=6,c=6) centered at (366,426). Bigger icon per S7. -->
+    <g id="moon" class="moonGlow">
+      <circle cx="366" cy="426" r="26" fill="#ec4899" opacity="0.22"/>
+      <!-- crescent using subtract-like approximation: base circle then offset smaller circle -->
+      <path d="M 366 404
+               A 22 22 0 1 0 374 418
+               A 22 22 0 1 0 366 404 Z" fill="#f472b6" opacity="0.95"/>
+      <circle cx="374" cy="418" r="13" fill="#334155" opacity="0.85"/>
+      <circle cx="360" cy="412" r="4" fill="#fff" opacity="0.45"/>
+    </g>
+  </g>
+
+  <!-- Legend -->
+  <g id="legend" transform="translate(0 0)">
+    <rect x="64" y="520" width="432" height="86" rx="16" fill="rgba(2, 6, 23, 0.35)" stroke="rgba(148,163,184,0.25)" stroke-width="2"/>
+    <text x="84" y="548" font-size="13" fill="rgba(248,250,252,0.96)" font-family="system-ui, sans-serif" font-weight="700">S7 visual set shown</text>
+    <g transform="translate(84 560)">
+      <g transform="translate(0 0)">
+        <circle cx="10" cy="10" r="8" fill="#3b82f6"/>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Blue</text>
+      </g>
+      <g transform="translate(120 0)">
+        <circle cx="10" cy="10" r="8" fill="#22c55e"/>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Green</text>
+      </g>
+      <g transform="translate(240 0)">
+        <circle cx="10" cy="10" r="8" fill="#fbbf24"/>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Yellow</text>
+      </g>
+      <g transform="translate(360 0)">
+        <circle cx="10" cy="10" r="8" fill="#ef4444"/>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Red</text>
+      </g>
+      <g transform="translate(0 28)">
+        <circle cx="10" cy="10" r="8" fill="#ec4899"/>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Pink</text>
+      </g>
+
+      <g transform="translate(160 28)">
+        <rect x="0" y="2" width="18" height="18" rx="4" fill="rgba(186,230,253,0.25)" stroke="rgba(186,230,253,0.7)"/>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Ice block</text>
+      </g>
+      <g transform="translate(320 28)">
+        <path d="M 5 15 L 15 8 L 15 22 Z" fill="#f59e0b" opacity="0.95"/>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Booster</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Subtle note -->
+  <text x="280" y="610" text-anchor="middle" font-size="11" fill="rgba(203,213,225,0.7)" font-family="ui-monospace, monospace">
+    Preview-only: static SVG with animated VFX overlays.
+  </text>
+</svg>
+
