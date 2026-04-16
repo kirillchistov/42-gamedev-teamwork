@@ -117,7 +117,7 @@
 
 Логика в виде статичной Mermaid-схемы:
 
-'''mermaid
+```mermaid
 flowchart TB
   subgraph client_req["Запрос страницы"]
     B[Браузер]
@@ -139,7 +139,25 @@ flowchart TB
   end
   B --> E --> ES --> R --> T --> S
   S --> H --> M --> P --> UI
-'''
+```
+
+## Дополнительные анимированные схемы
+
+### Авторизация
+
+![Authentication flow](auth-flow.svg)
+
+### Валидация данных
+
+![Validation flow](validation-flow.svg)
+
+### Service Workers
+
+![Service Worker flow](service-worker-flow.svg)
+
+### Meta-схема проекта
+
+![Project meta flow](project-meta-flow.svg)
 
 ## Сервер ('packages/server')
 

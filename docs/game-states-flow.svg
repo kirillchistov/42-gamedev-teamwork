@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 500" role="img" aria-labelledby="title desc">
+  <title id="title">Game states flow</title>
+  <desc id="desc">Animated state machine for game phases and transitions in Match-3.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0f172a"/><stop offset="100%" style="stop-color:#1e293b"/></linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .box{fill:#334155;stroke:#94a3b8;stroke-width:1.5;rx:10;animation:glow 8s ease-in-out infinite}
+      .lbl{fill:#f1f5f9;font:600 13px system-ui,sans-serif}
+      .sub{fill:#cbd5e1;font:10px ui-monospace,monospace}
+      .arr{stroke:#475569;stroke-width:2;fill:none;marker-end:url(#m);animation:line 8s ease-in-out infinite}
+      @keyframes glow{0%,1.6%{stroke:#38bdf8;stroke-width:2.5;fill:#1e3a5f;filter:url(#glow)}3%,100%{stroke:#94a3b8;stroke-width:1.5;fill:#334155;filter:none}}
+      @keyframes line{0%,1.6%{stroke:#38bdf8;stroke-width:2.5}3%,100%{stroke:#475569;stroke-width:2}}
+      #b1,#l1{animation-delay:0s}#b2,#l2{animation-delay:1s}#b3,#l3{animation-delay:2s}#b4,#l4{animation-delay:3s}
+      #b5,#l5{animation-delay:4s}#b6,#l6{animation-delay:5s}#b7,#l7{animation-delay:6s}#l8{animation-delay:7s}
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0 0,8 4,0 8" fill="#64748b"/></marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <text x="460" y="34" text-anchor="middle" class="lbl" font-size="16">Game states and transitions</text>
+  <text x="460" y="52" text-anchor="middle" class="sub">High-level phase machine used by GamePage + engine runtime</text>
+
+  <rect id="b1" x="70" y="94" width="170" height="64" class="box"/><text x="155" y="123" class="lbl" text-anchor="middle">bootstrapping</text><text x="155" y="139" class="sub" text-anchor="middle">createMatch3Game()</text>
+  <path id="l1" class="arr" d="M 240 126 L 312 126"/>
+  <rect id="b2" x="312" y="94" width="170" height="64" class="box"/><text x="397" y="123" class="lbl" text-anchor="middle">ready</text><text x="397" y="139" class="sub" text-anchor="middle">start screen / setup</text>
+  <path id="l2" class="arr" d="M 482 126 L 556 126"/>
+  <rect id="b3" x="556" y="94" width="170" height="64" class="box"/><text x="641" y="123" class="lbl" text-anchor="middle">playing</text><text x="641" y="139" class="sub" text-anchor="middle">input + timer + resolve</text>
+  <path id="l3" class="arr" d="M 726 126 L 800 126"/>
+  <rect id="b4" x="800" y="94" width="90" height="64" class="box"/><text x="845" y="123" class="lbl" text-anchor="middle">paused</text><text x="845" y="139" class="sub" text-anchor="middle">optional</text>
+
+  <path id="l4" class="arr" d="M 845 158 L 845 226 L 726 226"/>
+  <rect id="b5" x="556" y="194" width="170" height="64" class="box"/><text x="641" y="223" class="lbl" text-anchor="middle">resolving</text><text x="641" y="239" class="sub" text-anchor="middle">board stabilization</text>
+  <path id="l5" class="arr" d="M 556 226 L 482 226"/>
+  <rect id="b6" x="312" y="194" width="170" height="64" class="box"/><text x="397" y="223" class="lbl" text-anchor="middle">playing</text><text x="397" y="239" class="sub" text-anchor="middle">next move loop</text>
+  <path id="l6" class="arr" d="M 397 258 L 397 332"/>
+  <rect id="b7" x="278" y="332" width="238" height="70" class="box"/><text x="397" y="363" class="lbl" text-anchor="middle">finished (win/lose)</text><text x="397" y="379" class="sub" text-anchor="middle">result payload + end screen</text>
+  <path id="l7" class="arr" d="M 516 367 L 654 367 L 654 158"/>
+  <path id="l8" class="arr" d="M 278 367 L 155 367 L 155 158"/>
+
+  <text x="32" y="476" class="sub">Transitions: ready->playing(start), playing->resolving(valid move), resolving->playing(stable), playing->finished(time/goal), finished->ready(restart)</text>
+</svg>
