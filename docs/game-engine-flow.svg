@@ -25,24 +25,60 @@
   <text x="460" y="34" class="lbl" font-size="16" text-anchor="middle">Match-3 engine: one move lifecycle</text>
   <text x="460" y="52" class="sub" text-anchor="middle">Input -> swap -> resolve passes -> HUD -> end checks -> hint scheduling</text>
 
-  <rect id="b1" x="28" y="90" width="148" height="56" class="box"/><text x="102" y="118" class="lbl" text-anchor="middle">Input</text><text x="102" y="134" class="sub" text-anchor="middle">click / drag</text>
+  <rect id="b1" x="28" y="90" width="148" height="56" class="box"/>
+  <g id="t1" transform="translate(102 0)">
+    <text y="114" text-anchor="middle" class="lbl">Input</text>
+    <text y="130" text-anchor="middle" class="sub">click / drag</text>
+  </g>
   <path id="l1" class="arr" d="M 176 118 L 224 118"/>
-  <rect id="b2" x="224" y="90" width="168" height="56" class="box"/><text x="308" y="118" class="lbl" text-anchor="middle">pickCellAt()</text><text x="308" y="134" class="sub" text-anchor="middle">renderer geometry</text>
+  <rect id="b2" x="224" y="90" width="168" height="56" class="box"/>
+  <g id="t2" transform="translate(308 0)">
+    <text y="114" text-anchor="middle" class="lbl">pickCellAt()</text>
+    <text y="130" text-anchor="middle" class="sub">renderer geometry</text>
+  </g>
   <path id="l2" class="arr" d="M 392 118 L 442 118"/>
-  <rect id="b3" x="442" y="90" width="180" height="56" class="box"/><text x="532" y="118" class="lbl" text-anchor="middle">Validate swap</text><text x="532" y="134" class="sub" text-anchor="middle">rules + blockers</text>
+  <rect id="b3" x="442" y="90" width="180" height="56" class="box"/>
+  <g id="t3" transform="translate(532 0)">
+    <text y="114" text-anchor="middle" class="lbl">Validate swap</text>
+    <text y="130" text-anchor="middle" class="sub">rules + blockers</text>
+  </g>
   <path id="l3" class="arr" d="M 622 118 L 672 118"/>
-  <rect id="b4" x="672" y="90" width="220" height="56" class="box"/><text x="782" y="118" class="lbl" text-anchor="middle">Swap animation</text><text x="782" y="134" class="sub" text-anchor="middle">set input blocked</text>
+  <rect id="b4" x="672" y="90" width="220" height="56" class="box"/>
+  <g id="t4" transform="translate(782 0)">
+    <text y="114" text-anchor="middle" class="lbl">Swap animation</text>
+    <text y="130" text-anchor="middle" class="sub">set input blocked</text>
+  </g>
 
   <path id="l4" class="arr" d="M 782 146 L 782 186"/>
-  <rect id="b5" x="642" y="186" width="250" height="60" class="box"/><text x="767" y="214" class="lbl" text-anchor="middle">resolveBoard()</text><text x="767" y="230" class="sub" text-anchor="middle">matches -> clear -> collapse -> refill</text>
+  <rect id="b5" x="642" y="186" width="250" height="60" class="box"/>
+  <g id="t5" transform="translate(767 0)">
+    <text y="210" text-anchor="middle" class="lbl">resolveBoard()</text>
+    <text y="226" text-anchor="middle" class="sub">matches -> clear -> collapse -> refill</text>
+  </g>
   <path id="l5" class="arr" d="M 642 216 L 566 216"/>
-  <rect id="b6" x="406" y="186" width="160" height="60" class="box"/><text x="486" y="214" class="lbl" text-anchor="middle">Pass loop</text><text x="486" y="230" class="sub" text-anchor="middle">until stable</text>
+  <rect id="b6" x="406" y="186" width="160" height="60" class="box"/>
+  <g id="t6" transform="translate(486 0)">
+    <text y="210" text-anchor="middle" class="lbl">Pass loop</text>
+    <text y="226" text-anchor="middle" class="sub">until stable</text>
+  </g>
   <path id="l6" class="arr" d="M 406 216 L 330 216"/>
-  <rect id="b7" x="170" y="186" width="160" height="60" class="box"/><text x="250" y="214" class="lbl" text-anchor="middle">HUD sync</text><text x="250" y="230" class="sub" text-anchor="middle">score/combo/goals</text>
+  <rect id="b7" x="170" y="186" width="160" height="60" class="box"/>
+  <g id="t7" transform="translate(250 0)">
+    <text y="210" text-anchor="middle" class="lbl">HUD sync</text>
+    <text y="226" text-anchor="middle" class="sub">score/combo/goals</text>
+  </g>
   <path id="l7" class="arr" d="M 250 246 L 250 288"/>
-  <rect id="b8" x="130" y="288" width="240" height="60" class="box"/><text x="250" y="316" class="lbl" text-anchor="middle">Finish conditions</text><text x="250" y="332" class="sub" text-anchor="middle">time up / goal reached</text>
+  <rect id="b8" x="130" y="288" width="240" height="60" class="box"/>
+  <g id="t8" transform="translate(250 0)">
+    <text y="312" text-anchor="middle" class="lbl">Finish conditions</text>
+    <text y="328" text-anchor="middle" class="sub">time up / goal reached</text>
+  </g>
   <path id="l8" class="arr" d="M 370 318 L 458 318"/>
-  <rect id="b9" x="458" y="288" width="306" height="60" class="box"/><text x="611" y="316" class="lbl" text-anchor="middle">unblock input + schedule idle hint</text><text x="611" y="332" class="sub" text-anchor="middle">sessionRuntime.ts controllers</text>
+  <rect id="b9" x="458" y="288" width="306" height="60" class="box"/>
+  <g id="t9" transform="translate(611 0)">
+    <text y="312" text-anchor="middle" class="lbl">unblock input + schedule idle hint</text>
+    <text y="328" text-anchor="middle" class="sub">sessionRuntime.ts controllers</text>
+  </g>
 
   <text x="28" y="476" class="sub">Key files: bootstrap.ts, inputController.ts, resolvePipeline.ts, resolvePass.ts, gameState.ts, hudSync.ts, sessionRuntime.ts</text>
 </svg>

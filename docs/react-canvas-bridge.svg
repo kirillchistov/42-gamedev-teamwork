@@ -19,25 +19,66 @@
     <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0 0,8 4,0 8" fill="#64748b"/></marker>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
-  <text x="460" y="34" text-anchor="middle" class="lbl" font-size="16">React ? Canvas API bridge</text>
+  <text x="460" y="34" text-anchor="middle" class="lbl" font-size="16">React + Canvas API bridge</text>
   <text x="460" y="52" text-anchor="middle" class="sub">Game canvas layers are imperative; React overlays are declarative and sit above canvas</text>
 
-  <rect id="b1" x="48" y="90" width="192" height="58" class="box"/><text x="144" y="118" class="lbl" text-anchor="middle">GamePage.tsx</text><text x="144" y="134" class="sub" text-anchor="middle">settings + route state</text>
+  <rect id="b1" x="48" y="90" width="192" height="58" class="box"/>
+  <g id="t1" transform="translate(144 0)">
+    <text y="112" text-anchor="middle" class="lbl">GamePage.tsx</text>
+    <text y="126" text-anchor="middle" class="sub">settings + route state</text>
+    <text y="138" text-anchor="middle" class="sub">Component: GamePage</text>
+  </g>
   <path id="l1" class="arr" d="M 240 119 L 302 119"/>
-  <rect id="b2" x="302" y="90" width="212" height="58" class="box"/><text x="408" y="118" class="lbl" text-anchor="middle">Match3Screen.tsx</text><text x="408" y="134" class="sub" text-anchor="middle">mount canvas refs</text>
+  <rect id="b2" x="302" y="90" width="212" height="58" class="box"/>
+  <g id="t2" transform="translate(408 0)">
+    <text y="112" text-anchor="middle" class="lbl">Match3Screen.tsx</text>
+    <text y="126" text-anchor="middle" class="sub">mount canvas refs</text>
+    <text y="138" text-anchor="middle" class="sub">Component: Match3Screen</text>
+  </g>
   <path id="l2" class="arr" d="M 514 119 L 578 119"/>
-  <rect id="b3" x="578" y="90" width="294" height="58" class="box"/><text x="725" y="118" class="lbl" text-anchor="middle">createMatch3Game(boardCanvas, fxCanvas)</text><text x="725" y="134" class="sub" text-anchor="middle">game canvas: board + fx layers</text>
+  <rect id="b3" x="578" y="90" width="294" height="58" class="box"/>
+  <g id="t3" transform="translate(725 0)">
+    <text y="112" text-anchor="middle" class="lbl">createMatch3Game(boardCanvas, fxCanvas)</text>
+    <text y="126" text-anchor="middle" class="sub">game canvas: board + fx layers</text>
+    <text y="138" text-anchor="middle" class="sub">Module: bootstrap.ts</text>
+  </g>
 
   <path id="l3" class="arr" d="M 725 148 L 725 194"/>
-  <rect id="b4" x="580" y="194" width="292" height="58" class="box"/><text x="726" y="222" class="lbl" text-anchor="middle">runtime controls from React</text><text x="726" y="238" class="sub" text-anchor="middle">setLevel/theme/vfx/startPlay/reset</text>
+  <rect id="b4" x="580" y="194" width="292" height="58" class="box"/>
+  <g id="t4" transform="translate(726 0)">
+    <text y="216" text-anchor="middle" class="lbl">runtime controls from React</text>
+    <text y="230" text-anchor="middle" class="sub">setLevel/theme/vfx/startPlay/reset</text>
+    <text y="242" text-anchor="middle" class="sub">Module: runtime API</text>
+  </g>
   <path id="l4" class="arr" d="M 580 223 L 516 223"/>
-  <rect id="b5" x="292" y="194" width="224" height="58" class="box"/><text x="404" y="222" class="lbl" text-anchor="middle">engine loops</text><text x="404" y="238" class="sub" text-anchor="middle">board draw + fx draw + resolve</text>
+  <rect id="b5" x="292" y="194" width="224" height="58" class="box"/>
+  <g id="t5" transform="translate(404 0)">
+    <text y="216" text-anchor="middle" class="lbl">engine loops</text>
+    <text y="230" text-anchor="middle" class="sub">board draw + fx draw + resolve</text>
+    <text y="242" text-anchor="middle" class="sub">Modules: renderer + matchFx</text>
+  </g>
   <path id="l5" class="arr" d="M 292 223 L 236 223"/>
-  <rect id="b6" x="48" y="194" width="188" height="58" class="box"/><text x="142" y="222" class="lbl" text-anchor="middle">onHudChange()</text><text x="142" y="238" class="sub" text-anchor="middle">score/time/goals/combo</text>
+  <rect id="b6" x="48" y="194" width="188" height="58" class="box"/>
+  <g id="t6" transform="translate(142 0)">
+    <text y="216" text-anchor="middle" class="lbl">onHudChange()</text>
+    <text y="230" text-anchor="middle" class="sub">score/time/goals/combo</text>
+    <text y="242" text-anchor="middle" class="sub">Callback: onHudChange</text>
+  </g>
   <path id="l6" class="arr feedback" d="M 142 252 L 142 306"/>
-  <rect id="b7" x="48" y="306" width="256" height="64" class="box"/><text x="176" y="336" class="lbl" text-anchor="middle">React overlay layer (DOM)</text><text x="176" y="352" class="sub" text-anchor="middle">HUD, modals, result screen</text>
-  <path id="l7" class="arr feedback" d="M 304 338 L 580 338 L 580 252"/>
-  <rect id="b8" x="580" y="306" width="292" height="64" class="box"/><text x="726" y="336" class="lbl" text-anchor="middle">Composition on screen</text><text x="726" y="352" class="sub" text-anchor="middle">canvas behind, React overlays above</text>
+  <rect id="b7" x="48" y="306" width="256" height="64" class="box"/>
+  <g id="t7" transform="translate(176 0)">
+    <text y="332" text-anchor="middle" class="lbl">React overlay layer (DOM)</text>
+    <text y="348" text-anchor="middle" class="sub">HUD, modals, result screen</text>
+    <text y="360" text-anchor="middle" class="sub">Layer: React DOM</text>
+  </g>
+  <!-- Feedback path from overlay -> runtime controls (avoid Composition block) -->
+  <path id="l7" class="arr feedback" d="M 304 338 L 540 338 L 540 296 L 726 296 L 726 252"/>
+  <rect id="b8" x="580" y="306" width="292" height="64" class="box"/>
+  <g id="t8" transform="translate(726 0)">
+    <text y="332" text-anchor="middle" class="lbl">Composition on screen</text>
+    <text y="348" text-anchor="middle" class="sub">canvas behind, React overlays above</text>
+    <text y="360" text-anchor="middle" class="sub">Composition: browser paint</text>
+  </g>
 
   <text x="48" y="460" class="sub">Two visual layers: (1) game canvas = board + fx, (2) React overlay layer = HUD/modals/events.</text>
   <text x="48" y="478" class="sub">Contract boundary: React owns UX and route state; engine owns board simulation and frame rendering.</text>

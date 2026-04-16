@@ -21,23 +21,55 @@
   <text x="460" y="34" text-anchor="middle" class="lbl" font-size="16">Rendering layers: game canvas + React overlays</text>
   <text x="460" y="52" text-anchor="middle" class="sub">Game canvas has board + fx; React overlays are composited above them</text>
 
-  <rect id="b1" x="40" y="88" width="200" height="58" class="box"/><text x="140" y="116" class="lbl" text-anchor="middle">State snapshot</text><text x="140" y="132" class="sub" text-anchor="middle">grid + animation frames</text>
+  <rect id="b1" x="40" y="88" width="200" height="58" class="box"/>
+  <g id="t1" transform="translate(140 0)">
+    <text y="112" text-anchor="middle" class="lbl">State snapshot</text>
+    <text y="128" text-anchor="middle" class="sub">grid + animation frames</text>
+  </g>
   <path id="l1" class="arr" d="M 240 117 L 300 117"/>
-  <rect id="b2" x="300" y="88" width="230" height="58" class="box"/><text x="415" y="116" class="lbl" text-anchor="middle">renderer.renderBoard()</text><text x="415" y="132" class="sub" text-anchor="middle">board-canvas clear + draw</text>
+  <rect id="b2" x="300" y="88" width="230" height="58" class="box"/>
+  <g id="t2" transform="translate(415 0)">
+    <text y="112" text-anchor="middle" class="lbl">renderer.renderBoard()</text>
+    <text y="128" text-anchor="middle" class="sub">board-canvas clear + draw</text>
+  </g>
   <path id="l2" class="arr" d="M 530 117 L 592 117"/>
-  <rect id="b3" x="592" y="88" width="288" height="58" class="box"/><text x="736" y="116" class="lbl" text-anchor="middle">draw cells, tiles, blockers, highlights</text><text x="736" y="132" class="sub" text-anchor="middle">icons/theme fallback to shapes</text>
+  <rect id="b3" x="592" y="88" width="288" height="58" class="box"/>
+  <g id="t3" transform="translate(736 0)">
+    <text y="112" text-anchor="middle" class="lbl">draw cells, tiles, blockers, highlights</text>
+    <text y="128" text-anchor="middle" class="sub">icons/theme fallback to shapes</text>
+  </g>
 
   <path id="l3" class="arr" d="M 415 146 L 415 196"/>
-  <rect id="b4" x="250" y="196" width="330" height="58" class="box"/><text x="415" y="224" class="lbl" text-anchor="middle">requestAnimationFrame board loop</text><text x="415" y="240" class="sub" text-anchor="middle">while game is active</text>
+  <rect id="b4" x="250" y="196" width="330" height="58" class="box"/>
+  <g id="t4" transform="translate(415 0)">
+    <text y="220" text-anchor="middle" class="lbl">requestAnimationFrame board loop</text>
+    <text y="236" text-anchor="middle" class="sub">while game is active</text>
+  </g>
   <path id="l4" class="arr" d="M 580 225 L 660 225"/>
-  <rect id="b5" x="660" y="196" width="230" height="58" class="box"/><text x="775" y="224" class="lbl" text-anchor="middle">matchFx update</text><text x="775" y="240" class="sub" text-anchor="middle">particles + premium combos</text>
+  <rect id="b5" x="660" y="196" width="230" height="58" class="box"/>
+  <g id="t5" transform="translate(775 0)">
+    <text y="220" text-anchor="middle" class="lbl">matchFx update</text>
+    <text y="236" text-anchor="middle" class="sub">particles + premium combos</text>
+  </g>
 
   <path id="l5" class="arr" d="M 775 254 L 775 306"/>
-  <rect id="b6" x="620" y="306" width="270" height="58" class="box"/><text x="755" y="334" class="lbl" text-anchor="middle">fx-canvas draw</text><text x="755" y="350" class="sub" text-anchor="middle">separate layer over board</text>
+  <rect id="b6" x="620" y="306" width="270" height="58" class="box"/>
+  <g id="t6" transform="translate(755 0)">
+    <text y="330" text-anchor="middle" class="lbl">fx-canvas draw</text>
+    <text y="346" text-anchor="middle" class="sub">separate layer over board</text>
+  </g>
   <path id="l6" class="arr" d="M 620 335 L 516 335"/>
-  <rect id="b7" x="278" y="306" width="238" height="58" class="box"/><text x="397" y="334" class="lbl" text-anchor="middle">compose on screen</text><text x="397" y="350" class="sub" text-anchor="middle">game canvas + React overlay layer</text>
+  <rect id="b7" x="278" y="306" width="238" height="58" class="box"/>
+  <g id="t7" transform="translate(397 0)">
+    <text y="330" text-anchor="middle" class="lbl">compose on screen</text>
+    <text y="346" text-anchor="middle" class="sub">game canvas + React overlay layer</text>
+  </g>
   <path id="l7" class="arr" d="M 278 335 L 196 335"/>
-  <rect id="b8" x="40" y="306" width="156" height="58" class="box"/><text x="118" y="334" class="lbl" text-anchor="middle">next frame</text><text x="118" y="350" class="sub" text-anchor="middle">loop</text>
+  <rect id="b8" x="40" y="306" width="156" height="58" class="box"/>
+  <g id="t8" transform="translate(118 0)">
+    <text y="330" text-anchor="middle" class="lbl">next frame</text>
+    <text y="346" text-anchor="middle" class="sub">loop</text>
+  </g>
 
   <text x="32" y="460" class="sub">Visual model: game canvas (board + fx) plus React DOM overlays for HUD and modals.</text>
   <text x="32" y="476" class="sub">Key files: renderer.ts, matchFx.ts, Match3Screen.tsx, GamePage.tsx, game-visuals.md</text>

@@ -30,43 +30,68 @@
   <text x="460" y="54" text-anchor="middle" class="sub">Registration, caching, fetch handling, offline fallback</text>
 
   <rect id="b1" x="40" y="80" width="176" height="58" class="box"/>
-  <text x="128" y="108" text-anchor="middle" class="lbl">App starts</text>
-  <text x="128" y="124" text-anchor="middle" class="sub">main.tsx boot</text>
+  <g id="t1" transform="translate(128 0)">
+    <text y="104" text-anchor="middle" class="lbl">App starts</text>
+    <text y="118" text-anchor="middle" class="sub">main.tsx boot</text>
+    <text y="130" text-anchor="middle" class="sub">Component: app root</text>
+  </g>
   <path id="l1" class="arr" d="M 216 109 L 272 109"/>
 
   <rect id="b2" x="272" y="80" width="204" height="58" class="box"/>
-  <text x="374" y="108" text-anchor="middle" class="lbl">SW registration</text>
-  <text x="374" y="124" text-anchor="middle" class="sub">src/sw.ts + VitePWA setup</text>
+  <g id="t2" transform="translate(374 0)">
+    <text y="104" text-anchor="middle" class="lbl">SW registration</text>
+    <text y="118" text-anchor="middle" class="sub">src/sw.ts + VitePWA setup</text>
+    <text y="130" text-anchor="middle" class="sub">Module: SW register</text>
+  </g>
   <path id="l2" class="arr" d="M 476 109 L 536 109"/>
 
   <rect id="b3" x="536" y="80" width="196" height="58" class="box"/>
-  <text x="634" y="108" text-anchor="middle" class="lbl">install event</text>
-  <text x="634" y="124" text-anchor="middle" class="sub">precache assets</text>
+  <g id="t3" transform="translate(634 0)">
+    <text y="104" text-anchor="middle" class="lbl">install event</text>
+    <text y="118" text-anchor="middle" class="sub">precache assets</text>
+    <text y="130" text-anchor="middle" class="sub">Module: install handler</text>
+  </g>
   <path id="l3" class="arr" d="M 634 138 L 634 172"/>
 
   <rect id="b4" x="474" y="172" width="320" height="62" class="box"/>
-  <text x="634" y="200" text-anchor="middle" class="lbl">activate event</text>
-  <text x="634" y="216" text-anchor="middle" class="sub">cleanup old caches / take control</text>
+  <g id="t4" transform="translate(634 0)">
+    <text y="196" text-anchor="middle" class="lbl">activate event</text>
+    <text y="210" text-anchor="middle" class="sub">cleanup old caches / take control</text>
+    <text y="222" text-anchor="middle" class="sub">Module: activate handler</text>
+  </g>
   <path id="l4" class="arr" d="M 474 203 L 350 203"/>
 
   <rect id="b5" x="138" y="172" width="212" height="62" class="box"/>
-  <text x="244" y="200" text-anchor="middle" class="lbl">fetch request</text>
-  <text x="244" y="216" text-anchor="middle" class="sub">page, API, game assets</text>
+  <g id="t5" transform="translate(244 0)">
+    <text y="196" text-anchor="middle" class="lbl">fetch request</text>
+    <text y="210" text-anchor="middle" class="sub">page, API, game assets</text>
+    <text y="222" text-anchor="middle" class="sub">Module: fetch event</text>
+  </g>
   <path id="l5" class="arr" d="M 244 234 L 244 266"/>
 
   <rect id="b6" x="138" y="266" width="212" height="58" class="box"/>
-  <text x="244" y="294" text-anchor="middle" class="lbl">cache hit?</text>
-  <text x="244" y="310" text-anchor="middle" class="sub">serve cached response</text>
+  <g id="t6" transform="translate(244 0)">
+    <text y="290" text-anchor="middle" class="lbl">cache hit?</text>
+    <text y="304" text-anchor="middle" class="sub">serve cached response</text>
+    <text y="316" text-anchor="middle" class="sub">Module: cache match</text>
+  </g>
   <path id="l6" class="arr" d="M 350 295 L 474 295"/>
 
   <rect id="b7" x="474" y="266" width="320" height="58" class="box"/>
-  <text x="634" y="294" text-anchor="middle" class="lbl">cache miss -> network</text>
-  <text x="634" y="310" text-anchor="middle" class="sub">success: cache + return / fail: offline fallback</text>
+  <g id="t7" transform="translate(634 0)">
+    <text y="290" text-anchor="middle" class="lbl">cache miss -&gt; network</text>
+    <text y="304" text-anchor="middle" class="sub">success: cache + return / fail: offline fallback</text>
+    <text y="316" text-anchor="middle" class="sub">Module: network strategy</text>
+  </g>
   <path id="l7" class="arr" d="M 634 324 L 634 356"/>
 
   <rect id="b8" x="474" y="356" width="320" height="58" class="box"/>
-  <text x="634" y="384" text-anchor="middle" class="lbl">Offline-ready UX</text>
-  <text x="634" y="400" text-anchor="middle" class="sub">app still works for cached routes/assets</text>
+  <g id="t8" transform="translate(634 0)">
+    <text y="380" text-anchor="middle" class="lbl">Offline-ready UX</text>
+    <text y="394" text-anchor="middle" class="sub">app still works for cached routes/assets</text>
+    <text y="406" text-anchor="middle" class="sub">Component: offline UX</text>
+  </g>
 
-  <text x="40" y="448" class="sub">Key files: src/sw.ts, vite.config.ts, main.tsx; verify in DevTools Application + Network Offline</text>
+  <text x="40" y="448" class="sub">Key files: src/sw.ts, vite.config.ts, main.tsx</text>
+  <text x="40" y="466" class="sub">Verify in DevTools: Application + Network Offline</text>
 </svg>

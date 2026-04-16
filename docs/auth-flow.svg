@@ -16,6 +16,7 @@
       .lbl { fill:#f1f5f9; font:600 13px system-ui, sans-serif; }
       .sub { fill:#cbd5e1; font:10px ui-monospace, monospace; }
       .arr { stroke:#475569; stroke-width:2; fill:none; marker-end:url(#m); animation: line 8s ease-in-out infinite; }
+      .redirect { stroke:#f59e0b; stroke-dasharray:6 4; }
       @keyframes glow { 0%,1.5%{stroke:#38bdf8;stroke-width:2.5;fill:#1e3a5f;filter:url(#glow)} 3%,100%{stroke:#94a3b8;stroke-width:1.5;fill:#334155;filter:none} }
       @keyframes line { 0%,1.5%{stroke:#38bdf8;stroke-width:2.5} 3%,100%{stroke:#475569;stroke-width:2} }
       #b1,#l1{animation-delay:0s} #b2,#l2{animation-delay:1s} #b3,#l3{animation-delay:2s} #b4,#l4{animation-delay:3s}
@@ -30,50 +31,78 @@
   <text x="460" y="54" text-anchor="middle" class="sub">Guard chain: useAuthCheck -> withAuthGuard -> useAuthGuard -> ProtectedRoute</text>
 
   <rect id="b1" x="40" y="80" width="168" height="58" class="box"/>
-  <text x="124" y="108" text-anchor="middle" class="lbl">Login page</text>
-  <text x="124" y="124" text-anchor="middle" class="sub">/login or /sign-in</text>
+  <g id="t1" transform="translate(124 0)">
+    <text y="104" text-anchor="middle" class="lbl">Login page</text>
+    <text y="118" text-anchor="middle" class="sub">/login or /sign-in</text>
+    <text y="130" text-anchor="middle" class="sub">Component: LoginPage.tsx</text>
+  </g>
   <path id="l1" class="arr" d="M 208 109 L 260 109"/>
 
   <rect id="b2" x="260" y="80" width="194" height="58" class="box"/>
-  <text x="357" y="108" text-anchor="middle" class="lbl">Form validation</text>
-  <text x="357" y="124" text-anchor="middle" class="sub">useValidate + authValidation</text>
+  <g id="t2" transform="translate(357 0)">
+    <text y="104" text-anchor="middle" class="lbl">Form validation</text>
+    <text y="118" text-anchor="middle" class="sub">useValidate + authValidation</text>
+    <text y="130" text-anchor="middle" class="sub">Module: hooks/validation</text>
+  </g>
   <path id="l2" class="arr" d="M 454 109 L 512 109"/>
 
   <rect id="b3" x="512" y="80" width="176" height="58" class="box"/>
-  <text x="600" y="108" text-anchor="middle" class="lbl">submitLoginThunk</text>
-  <text x="600" y="124" text-anchor="middle" class="sub">userSlice.ts</text>
+  <g id="t3" transform="translate(600 0)">
+    <text y="104" text-anchor="middle" class="lbl">submitLoginThunk</text>
+    <text y="118" text-anchor="middle" class="sub">userSlice.ts</text>
+    <text y="130" text-anchor="middle" class="sub">Module: Redux thunk</text>
+  </g>
   <path id="l3" class="arr" d="M 600 138 L 600 172"/>
 
   <rect id="b4" x="456" y="172" width="288" height="62" class="box"/>
-  <text x="600" y="200" text-anchor="middle" class="lbl">API request + response</text>
-  <text x="600" y="216" text-anchor="middle" class="sub">shared/api/userApi.ts</text>
+  <g id="t4" transform="translate(600 0)">
+    <text y="196" text-anchor="middle" class="lbl">API request + response</text>
+    <text y="210" text-anchor="middle" class="sub">shared/api/userApi.ts</text>
+    <text y="222" text-anchor="middle" class="sub">Module: API client</text>
+  </g>
   <path id="l4" class="arr" d="M 600 234 L 600 268"/>
 
   <rect id="b5" x="456" y="268" width="288" height="58" class="box"/>
-  <text x="600" y="296" text-anchor="middle" class="lbl">Redux update</text>
-  <text x="600" y="312" text-anchor="middle" class="sub">store.user = authenticated user</text>
-  <path id="l5" class="arr" d="M 456 297 L 344 297"/>
+  <g id="t5" transform="translate(600 0)">
+    <text y="292" text-anchor="middle" class="lbl">Redux update</text>
+    <text y="306" text-anchor="middle" class="sub">store.user = authenticated user</text>
+    <text y="318" text-anchor="middle" class="sub">Module: store.ts</text>
+  </g>
+  <path id="l5" class="arr" d="M 456 297 L 252 297"/>
 
   <rect id="b6" x="56" y="268" width="196" height="58" class="box"/>
-  <text x="154" y="296" text-anchor="middle" class="lbl">useAuthCheck</text>
-  <text x="154" y="312" text-anchor="middle" class="sub">sync user/session state</text>
-  <path id="l6" class="arr" d="M 456 297 L 252 297"/>
+  <g id="t6" transform="translate(154 0)">
+    <text y="292" text-anchor="middle" class="lbl">useAuthCheck</text>
+    <text y="306" text-anchor="middle" class="sub">sync user/session state</text>
+    <text y="318" text-anchor="middle" class="sub">Hook: useAuthCheck.ts</text>
+  </g>
 
   <rect id="b7" x="270" y="344" width="196" height="58" class="box"/>
-  <text x="368" y="372" text-anchor="middle" class="lbl">withAuthGuard (HOC)</text>
-  <text x="368" y="388" text-anchor="middle" class="sub">wrap route elements</text>
+  <g id="t7" transform="translate(368 0)">
+    <text y="368" text-anchor="middle" class="lbl">withAuthGuard (HOC)</text>
+    <text y="382" text-anchor="middle" class="sub">wrap route elements</text>
+    <text y="394" text-anchor="middle" class="sub">HOC: withAuthGuard.tsx</text>
+  </g>
   <path id="l7" class="arr" d="M 154 326 L 154 373 L 270 373"/>
 
-  <rect id="b8" x="136" y="172" width="232" height="62" class="box"/>
-  <text x="252" y="200" text-anchor="middle" class="lbl">ProtectedRoute decision</text>
-  <text x="252" y="216" text-anchor="middle" class="sub">allow or redirect to /login</text>
-  <path id="l8" class="arr" d="M 582 344 L 582 234 L 368 234"/>
+  <rect id="b8" x="152" y="172" width="232" height="62" class="box"/>
+  <g id="t8" transform="translate(268 0)">
+    <text y="196" text-anchor="middle" class="lbl">ProtectedRoute decision</text>
+    <text y="210" text-anchor="middle" class="sub">allow or redirect to /login</text>
+    <text y="222" text-anchor="middle" class="sub">Component: ProtectedRoute</text>
+  </g>
+  <path id="l8" class="arr" d="M 698 373 L 698 430 L 44 430 L 44 203 L 152 203"/>
 
-  <rect id="b9" x="484" y="344" width="196" height="58" class="box"/>
-  <text x="582" y="372" text-anchor="middle" class="lbl">useAuthGuard</text>
-  <text x="582" y="388" text-anchor="middle" class="sub">decide route access</text>
-  <path id="l9" class="arr" d="M 466 373 L 484 373"/>
+  <rect id="b9" x="502" y="344" width="196" height="58" class="box"/>
+  <g id="t9" transform="translate(600 0)">
+    <text y="368" text-anchor="middle" class="lbl">useAuthGuard</text>
+    <text y="382" text-anchor="middle" class="sub">decide route access</text>
+    <text y="394" text-anchor="middle" class="sub">Hook: useAuthGuard.ts</text>
+  </g>
+  <path id="l9" class="arr" d="M 466 373 L 502 373"/>
+  <path id="l10" class="arr redirect" d="M 152 203 L 124 203 L 124 138"/>
 
   <text x="40" y="508" class="sub">Role split: useAuthCheck syncs session data; withAuthGuard wires guard logic; useAuthGuard makes access decision.</text>
-  <text x="40" y="526" class="sub">Key files: useAuthCheck.ts, withAuthGuard.tsx, ProtectedRoute/index.tsx, userSlice.ts, userApi.ts, LoginPage.tsx</text>
+  <text x="40" y="526" class="sub">Key files: useAuthCheck.ts, withAuthGuard.tsx, ProtectedRoute/index.tsx</text>
+  <text x="40" y="544" class="sub">userSlice.ts, userApi.ts, LoginPage.tsx</text>
 </svg>
