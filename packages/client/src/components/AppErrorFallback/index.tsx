@@ -1,6 +1,6 @@
 // UI для сбоев и 'react-router' errorElement
 import React from 'react'
-import { Button } from '../../shared/ui'
+import { LinkButton } from '../../shared/ui'
 import { CosmicErrorLayout } from '../CosmicErrorLayout'
 
 type AppErrorFallbackProps = {
@@ -14,10 +14,6 @@ export const AppErrorFallback: React.FC<
   title = 'Ошибка 500 — Cosmic Match',
   description = 'Внутренняя ошибка сервера',
 }) => {
-  const goHome = () => {
-    window.location.assign('/')
-  }
-
   return (
     <CosmicErrorLayout
       title={title}
@@ -40,12 +36,12 @@ export const AppErrorFallback: React.FC<
         Мы уже чиним ретранслятор. Загляните чуть
         позже или вернитесь на базу.
       </p>
-      <Button
+      <LinkButton
         type="button"
         variant="primary"
-        onClick={goHome}>
+        to="/">
         На главную
-      </Button>
+      </LinkButton>
     </CosmicErrorLayout>
   )
 }

@@ -9,8 +9,8 @@
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    sans-serif;
+  font-family: system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--color-bg-main);
   color: var(--color-text-main);
 }
@@ -38,7 +38,7 @@ button {
 }
 
 .hidden {
-    display: none;
+  display: none;
 }
 
 /* Ожидание fetchUser в ProtectedRoute */
@@ -100,7 +100,8 @@ button {
   z-index: 1000;
   height: var(--header-height);
   background: rgba(245, 247, 251, 0.9);
-  border-bottom: 1px solid var(--color-border-subtle-light);
+  border-bottom: 1px solid
+    var(--color-border-subtle-light);
   backdrop-filter: blur(16px);
 }
 
@@ -190,7 +191,8 @@ button {
   flex-direction: column;
   gap: 10px;
   padding: 12px var(--layout-padding-x-md) 18px;
-  border-top: 1px solid var(--color-border-subtle-light);
+  border-top: 1px solid
+    var(--color-border-subtle-light);
   background: rgba(245, 247, 251, 0.9);
 }
 
@@ -297,7 +299,8 @@ button {
   height: 3px;
 }
 
-.landing-header--game .landing-logo__icon::before {
+.landing-header--game
+  .landing-logo__icon::before {
   top: 3px;
   left: 8px;
 }
@@ -312,7 +315,8 @@ button {
   gap: 12px;
 }
 
-.landing-header--game.is-fs .landing-nav--desktop {
+.landing-header--game.is-fs
+  .landing-nav--desktop {
   display: none;
 }
 
@@ -390,7 +394,8 @@ button {
   height: 2px;
   border-radius: var(--radius-pill);
   background: #0f172a;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .landing-burger.is-open span:nth-child(1) {
@@ -415,17 +420,22 @@ button {
   display: flex;
 }
 
-.landing-header--game.is-fs .landing-nav--mobile.landing-nav--mobile-open {
+.landing-header--game.is-fs
+  .landing-nav--mobile.landing-nav--mobile-open {
   display: flex;
   position: relative;
   z-index: 901;
 }
 
-.landing-header--game .landing-burger.is-open span:nth-child(1) {
+.landing-header--game
+  .landing-burger.is-open
+  span:nth-child(1) {
   transform: translateY(4px) rotate(45deg);
 }
 
-.landing-header--game .landing-burger.is-open span:nth-child(3) {
+.landing-header--game
+  .landing-burger.is-open
+  span:nth-child(3) {
   transform: translateY(-4px) rotate(-45deg);
 }
 
@@ -493,7 +503,8 @@ button {
 /* === FOOTER === */
 
 .landing-footer {
-  border-top: 1px solid var(--color-border-subtle-light);
+  border-top: 1px solid
+    var(--color-border-subtle-light);
   background: var(--color-white);
 }
 

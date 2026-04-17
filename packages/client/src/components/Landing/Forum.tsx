@@ -6,11 +6,14 @@ export const Forum: React.FC = () => {
     <section className="section" id="forum">
       <h1>Форум Cosmic Match</h1>
       <p className="auth-note">
-        Темы и ответы пока статичны. Друзья и пользователь подгружаются так же,
-        как на странице друзей.
+        Темы и ответы пока статичны. Друзья и
+        пользователь подгружаются так же, как на
+        странице друзей.
       </p>
 
-      <div className="extra-card" style={{ marginBottom: 16 }}>
+      <div
+        className="extra-card"
+        style={{ marginBottom: 16 }}>
         <h3>Темы</h3>
         <table>
           <thead>
@@ -35,8 +38,12 @@ export const Forum: React.FC = () => {
         </table>
       </div>
 
-      <div className="extra-card" style={{ marginBottom: 16 }}>
-        <h3>Демо‑список друзей (как на FriendsPage)</h3>
+      <div
+        className="extra-card"
+        style={{ marginBottom: 16 }}>
+        <h3>
+          Демо‑список друзей (как на FriendsPage)
+        </h3>
         <p>Вы вошли как User</p>
         <p>Здесь будет загрузка списка друзей…</p>
       </div>
@@ -46,13 +53,21 @@ export const Forum: React.FC = () => {
         <form>
           <label>
             Заголовок темы
-            <input type="text" placeholder="Идеи бонусных уровней" />
+            <input
+              type="text"
+              placeholder="Идеи бонусных уровней"
+            />
           </label>
           <label>
             Сообщение
-            <textarea rows={4} placeholder="Опишите вашу идею или вопрос" />
+            <textarea
+              rows={4}
+              placeholder="Опишите вашу идею или вопрос"
+            />
           </label>
-          <button type="button" className="btn btn--primary">
+          <button
+            type="button"
+            className="btn btn--primary">
             Опубликовать
           </button>
         </form>

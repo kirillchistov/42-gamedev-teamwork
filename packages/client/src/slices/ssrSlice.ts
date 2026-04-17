@@ -18,14 +18,18 @@ export const ssrSlice = createSlice({
       state,
       { payload }: PayloadAction<boolean>
     ) => {
-      state.pageHasBeenInitializedOnServer = payload
+      state.pageHasBeenInitializedOnServer =
+        payload
     },
   },
 })
 
-export const selectPageHasBeenInitializedOnServer = (state: RootState) =>
-  state.ssr.pageHasBeenInitializedOnServer
+export const selectPageHasBeenInitializedOnServer =
+  (state: RootState) =>
+    state.ssr.pageHasBeenInitializedOnServer
 
-export const { setPageHasBeenInitializedOnServer } = ssrSlice.actions
+export const {
+  setPageHasBeenInitializedOnServer,
+} = ssrSlice.actions
 
 export default ssrSlice.reducer

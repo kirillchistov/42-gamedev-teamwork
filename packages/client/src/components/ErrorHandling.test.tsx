@@ -6,6 +6,7 @@ import {
 import { Provider } from 'react-redux'
 import {
   createMemoryRouter,
+  MemoryRouter,
   RouterProvider,
 } from 'react-router-dom'
 import { store } from '../store'
@@ -41,9 +42,11 @@ describe('Unified app error fallback', () => {
   test('shows the same fallback via ErrorBoundary', () => {
     render(
       <AppProviders>
-        <ErrorBoundary>
-          <ThrowOnRender />
-        </ErrorBoundary>
+        <MemoryRouter>
+          <ErrorBoundary>
+            <ThrowOnRender />
+          </ErrorBoundary>
+        </MemoryRouter>
       </AppProviders>
     )
 
@@ -53,7 +56,7 @@ describe('Unified app error fallback', () => {
       )
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', {
+      screen.getByRole('link', {
         name: 'На главную',
       })
     ).toBeInTheDocument()
@@ -80,7 +83,7 @@ describe('Unified app error fallback', () => {
       )
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', {
+      screen.getByRole('link', {
         name: 'На главную',
       })
     ).toBeInTheDocument()

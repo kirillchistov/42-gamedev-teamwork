@@ -5,6 +5,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
+import clsx from 'clsx'
 import { Helmet } from 'react-helmet'
 import {
   useLocation,
@@ -750,20 +751,21 @@ export const GamePage: React.FC = () => {
 
       {isFinishRoute && (
         <section
-          className={
-            'match3-finish-screen ' +
-            (finishStats?.isWin
+          className={clsx(
+            'match3-finish-screen',
+            finishStats?.isWin
               ? 'match3-finish-screen--win'
-              : 'match3-finish-screen--lose')
-          }>
+              : 'match3-finish-screen--lose'
+          )}>
           <div className="match3-finish-screen__inner">
             <div
-              className={
-                'match3__overlay match3__overlay--results ' +
-                (finishStats?.isWin
+              className={clsx(
+                'match3__overlay',
+                'match3__overlay--results',
+                finishStats?.isWin
                   ? 'is-win'
-                  : 'is-lose')
-              }>
+                  : 'is-lose'
+              )}>
               {finishStats?.isWin ? (
                 <img
                   src={cosmicBadgeWinUrl}
@@ -781,12 +783,12 @@ export const GamePage: React.FC = () => {
                   : 'Поражение'}
               </h3>
               <p
-                className={
-                  'match3__results-verdict ' +
-                  (finishStats?.isWin
+                className={clsx(
+                  'match3__results-verdict',
+                  finishStats?.isWin
                     ? 'is-win'
-                    : 'is-lose')
-                }>
+                    : 'is-lose'
+                )}>
                 {finishStats?.isWin
                   ? 'Цель уровня выполнена'
                   : lastResult?.reason ===

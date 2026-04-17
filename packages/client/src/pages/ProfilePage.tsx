@@ -1,18 +1,4 @@
-/** Изменения и починка Sprint6 Chores
- * Avatar — вместо проверки только по размеру используем validateAvatarFile,
- * сообщения совпадают с профилем;
- * при ошибке инпут сбрасывается (e.target.value = '').
- * ProfilePage.handleSubmit — отправка на API только после успешной валидации
- * doValidate(profile, async () => { ... }), чтобы не уходил запрос при ошибках полей.
- * Полный путь к аватару из API и обновление аватара с нормализацией URL
- * Починка замены аватара и его отображения после замены
- * Форма смены пароля после клика по ссылке "Сменить пароль"
- * Тостер и консоль-лог при успешном сохранении профиля и аватара
- * Поля смены пароля в профиле валидируются отдельно от других
- * Убран стартовый doValidate для паролей из useEffect.
- * Кнопка "Сохранить изменения" активируется только после валидации
- *
- * Интеграция с Redux:
+/** Интеграция с Redux:
  * - данные пользователя синхронизированы со стором
  * - профиль обновляется через updateProfileThunk
  * - аватар обновляется через updateAvatarThunk
@@ -22,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
+import clsx from 'clsx'
 import {
   useDispatch,
   useSelector,
@@ -622,11 +609,10 @@ export const ProfilePage: React.FC = () => {
                 type="submit"
                 variant="primary"
                 disabled={!canSaveProfile}
-                className={
-                  (!canSaveProfile
-                    ? 'btn--disabled'
-                    : '') + ' btn btn--primary'
-                }>
+                className={clsx({
+                  'btn--disabled':
+                    !canSaveProfile,
+                })}>
                 {loading
                   ? 'Сохранение...'
                   : 'Сохранить изменения'}
@@ -720,12 +706,10 @@ export const ProfilePage: React.FC = () => {
                     type="submit"
                     variant="primary"
                     disabled={!canSubmitPassword}
-                    className={
-                      (!canSubmitPassword
-                        ? 'btn--disabled'
-                        : '') +
-                      ' btn btn--primary'
-                    }>
+                    className={clsx({
+                      'btn--disabled':
+                        !canSubmitPassword,
+                    })}>
                     Сохранить пароль
                   </Button>
                 </div>

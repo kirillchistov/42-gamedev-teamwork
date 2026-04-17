@@ -3,14 +3,19 @@ import React from 'react'
 import { Link, LinkProps } from 'react-router-dom'
 import clsx from 'clsx'
 
-type ButtonVariant = 'primary' | 'outline' | 'flat'
+type ButtonVariant =
+  | 'primary'
+  | 'outline'
+  | 'flat'
 
 type LinkButtonProps = Omit<LinkProps, 'to'> & {
   to: LinkProps['to']
   variant?: ButtonVariant
 }
 
-export const LinkButton: React.FC<LinkButtonProps> = ({
+export const LinkButton: React.FC<
+  LinkButtonProps
+> = ({
   to,
   variant = 'primary',
   className,

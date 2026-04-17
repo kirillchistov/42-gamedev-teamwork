@@ -73,7 +73,10 @@
 //   }
 // }
 
-import { LandingPage, initLandingPage } from './LandingPage'
+import {
+  LandingPage,
+  initLandingPage,
+} from './LandingPage'
 
 export const MainPage = LandingPage
 export const initMainPage = initLandingPage

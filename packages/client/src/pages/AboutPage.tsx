@@ -11,7 +11,10 @@ export const AboutPage = () => {
       <Helmet>
         <meta charSet="utf-8" />
         <title>О проекте</title>
-        <meta name="description" content="О проекте" />
+        <meta
+          name="description"
+          content="О проекте"
+        />
       </Helmet>
       <Header />
       Здесь будет информация о проекте!
@@ -19,4 +22,5 @@ export const AboutPage = () => {
   )
 }
 
-export const initAboutPage = () => Promise.resolve()
+export const initAboutPage = () =>
+  Promise.resolve()
