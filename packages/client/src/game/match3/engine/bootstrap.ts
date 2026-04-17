@@ -637,7 +637,6 @@ export function createMatch3Game(
       selected: firstPick ?? keyboardCursor,
       target,
       targetPulse,
-      showSwapArrow: Boolean(firstPick && target),
     })
   }
 

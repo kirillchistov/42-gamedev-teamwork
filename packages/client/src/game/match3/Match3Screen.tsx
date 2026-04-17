@@ -78,6 +78,18 @@ function buildBorderSparkPositions(
 
 const BORDER_SPARK_POSITIONS =
   buildBorderSparkPositions(BORDER_SPARK_COUNT)
+const COACH_MESSAGES = [
+  'Собирайте 3+ в ряд и находите спрятанные сокровища!',
+  'За комбинации 4+ и бомбы/ракеты получайте комбо-баллы!',
+  'Цель: набрать максимум баллов за минимальное время и число ходов',
+]
+const ROOKIE_TUTORIAL_GAMES_KEY =
+  'match3:rookie-tutorial-games'
+const ROOKIE_TUTORIAL_DONE_KEY =
+  'match3:rookie-tutorial-done'
+const MATCH3_HINTS_HIDDEN_KEY =
+  'match3:hints-hidden'
+const ROOKIE_TUTORIAL_MAX_GAMES = 3
 
 function IconSettings() {
   return (
@@ -185,12 +197,42 @@ export const Match3Screen: React.FC<
   >('off')
   const [sparkBurstId, setSparkBurstId] =
     useState(0)
+  const [coachStep, setCoachStep] = useState(0)
+  const [showKeyboardHint, setShowKeyboardHint] =
+    useState(false)
+  const [
+    comboSuccessCount,
+    setComboSuccessCount,
+  ] = useState(0)
+  const [
+    showIdleCoachHint,
+    setShowIdleCoachHint,
+  ] = useState(false)
+  const [
+    isRookieTutorialActive,
+    setIsRookieTutorialActive,
+  ] = useState(false)
+  const [
+    isRookieTutorialCompleted,
+    setIsRookieTutorialCompleted,
+  ] = useState(false)
+  const [
+    playingElapsedSec,
+    setPlayingElapsedSec,
+  ] = useState(0)
+  const [hintsHidden, setHintsHidden] =
+    useState(false)
   const shakeResetRef = useRef<number | null>(
     null
   )
   const sparkResetRef = useRef<number | null>(
     null
   )
+  const idleCoachTimerRef = useRef<number | null>(
+    null
+  )
+  const prevScoreRef = useRef(0)
+  const playSessionTrackedRef = useRef(false)
 
   const onComboShake = useCallback(
     (chain: number) => {
@@ -354,6 +396,190 @@ export const Match3Screen: React.FC<
     game.setSoundEnabled(soundEnabled)
   }, [soundEnabled])
 
+  useEffect(() => {
+    if (uiPhase !== 'playing') {
+      playSessionTrackedRef.current = false
+      setPlayingElapsedSec(0)
+      return
+    }
+    const timer = window.setInterval(() => {
+      setPlayingElapsedSec(v => v + 1)
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [uiPhase])
+
+  useEffect(() => {
+    try {
+      const hidden =
+        window.localStorage.getItem(
+          MATCH3_HINTS_HIDDEN_KEY
+        ) === '1'
+      setHintsHidden(hidden)
+    } catch {
+      setHintsHidden(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (uiPhase !== 'playing') return
+    if (playSessionTrackedRef.current) return
+    playSessionTrackedRef.current = true
+    if (selectedLevel.id !== 'rookie') {
+      setIsRookieTutorialActive(false)
+      setIsRookieTutorialCompleted(false)
+      return
+    }
+
+    let nextGamesCount = 1
+    try {
+      const raw = window.localStorage.getItem(
+        ROOKIE_TUTORIAL_GAMES_KEY
+      )
+      const prevCount = Number(raw || '0')
+      nextGamesCount =
+        Number.isFinite(prevCount) &&
+        prevCount > 0
+          ? prevCount + 1
+          : 1
+      window.localStorage.setItem(
+        ROOKIE_TUTORIAL_GAMES_KEY,
+        String(nextGamesCount)
+      )
+      if (
+        nextGamesCount > ROOKIE_TUTORIAL_MAX_GAMES
+      ) {
+        window.localStorage.setItem(
+          ROOKIE_TUTORIAL_DONE_KEY,
+          '1'
+        )
+      }
+    } catch {
+      nextGamesCount = 1
+    }
+    setIsRookieTutorialActive(
+      nextGamesCount <= ROOKIE_TUTORIAL_MAX_GAMES
+    )
+    setIsRookieTutorialCompleted(
+      nextGamesCount > ROOKIE_TUTORIAL_MAX_GAMES
+    )
+  }, [uiPhase, selectedLevel.id])
+
+  useEffect(() => {
+    if (uiPhase !== 'playing') return
+    setCoachStep(0)
+    const first = window.setTimeout(() => {
+      setCoachStep(1)
+    }, 3000)
+    const second = window.setTimeout(() => {
+      setCoachStep(2)
+    }, 6000)
+    return () => {
+      window.clearTimeout(first)
+      window.clearTimeout(second)
+    }
+  }, [uiPhase])
+
+  useEffect(() => {
+    if (uiPhase !== 'playing') {
+      setShowKeyboardHint(false)
+      setShowIdleCoachHint(false)
+      setComboSuccessCount(0)
+      prevScoreRef.current = 0
+      return
+    }
+    prevScoreRef.current = 0
+  }, [uiPhase])
+
+  useEffect(() => {
+    if (uiPhase !== 'playing') return
+    if (hud.score <= prevScoreRef.current) return
+    setComboSuccessCount(v => v + 1)
+    setShowIdleCoachHint(false)
+    prevScoreRef.current = hud.score
+  }, [hud.score, uiPhase])
+
+  useEffect(() => {
+    if (comboSuccessCount >= 2) {
+      setShowKeyboardHint(false)
+    }
+  }, [comboSuccessCount])
+
+  useEffect(() => {
+    if (uiPhase !== 'playing') return
+    const canvas = canvasRef.current
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (document.activeElement !== canvas)
+        return
+      const isKeyboardControl =
+        ev.code === 'Enter' ||
+        ev.code === 'Space' ||
+        ev.code === 'ArrowUp' ||
+        ev.code === 'ArrowDown' ||
+        ev.code === 'ArrowLeft' ||
+        ev.code === 'ArrowRight' ||
+        ev.code === 'KeyW' ||
+        ev.code === 'KeyA' ||
+        ev.code === 'KeyS' ||
+        ev.code === 'KeyD'
+      if (!isKeyboardControl) return
+      if (comboSuccessCount < 2) {
+        setShowKeyboardHint(true)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () =>
+      window.removeEventListener(
+        'keydown',
+        onKeyDown
+      )
+  }, [uiPhase, comboSuccessCount])
+
+  useEffect(() => {
+    if (uiPhase !== 'playing') return
+    const canvas = canvasRef.current
+    const resetIdleCoachTimer = () => {
+      if (idleCoachTimerRef.current !== null) {
+        window.clearTimeout(
+          idleCoachTimerRef.current
+        )
+      }
+      setShowIdleCoachHint(false)
+      idleCoachTimerRef.current =
+        window.setTimeout(() => {
+          setShowIdleCoachHint(true)
+        }, 10000)
+    }
+
+    resetIdleCoachTimer()
+    const onKeyDown = () => {
+      resetIdleCoachTimer()
+    }
+    const onPointerDown = () => {
+      resetIdleCoachTimer()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    canvas?.addEventListener(
+      'pointerdown',
+      onPointerDown
+    )
+    return () => {
+      if (idleCoachTimerRef.current !== null) {
+        window.clearTimeout(
+          idleCoachTimerRef.current
+        )
+        idleCoachTimerRef.current = null
+      }
+      window.removeEventListener(
+        'keydown',
+        onKeyDown
+      )
+      canvas?.removeEventListener(
+        'pointerdown',
+        onPointerDown
+      )
+    }
+  }, [uiPhase])
+
   const timeLabel = useMemo(() => {
     const mm = String(
       Math.floor(hud.timeLeftSec / 60)
@@ -367,6 +593,39 @@ export const Match3Screen: React.FC<
     limitMode === 'moves'
       ? `${Math.max(moveLimit - hud.moves, 0)}`
       : timeLabel
+  const hudHintText = showKeyboardHint
+    ? 'Enter или Space - выбор, Стрелки - переход к цели'
+    : showIdleCoachHint
+    ? isRookieTutorialActive &&
+      playingElapsedSec >= 30
+      ? 'Совет новичку: ищите двойные комбинации и ходы внизу поля — каскады дают больше очков'
+      : 'Следите за подсказками, чтобы не пропустить комбинацию'
+    : isRookieTutorialActive &&
+      playingElapsedSec >= 35 &&
+      comboSuccessCount < 2
+    ? 'Совет новичку: комбинации 4+ и бомбы/ракеты ускоряют набор очков'
+    : isRookieTutorialActive &&
+      playingElapsedSec >= 20 &&
+      comboSuccessCount === 0
+    ? 'Совет новичку: начинайте с нижней части поля, чтобы чаще запускать каскады'
+    : COACH_MESSAGES[
+        Math.min(
+          coachStep,
+          COACH_MESSAGES.length - 1
+        )
+      ]
+
+  const handleHideHints = () => {
+    setHintsHidden(true)
+    try {
+      window.localStorage.setItem(
+        MATCH3_HINTS_HIDDEN_KEY,
+        '1'
+      )
+    } catch {
+      // noop: optional persistence
+    }
+  }
 
   const handlePlay = () => {
     setUiPhase('playing')
@@ -442,54 +701,76 @@ export const Match3Screen: React.FC<
             : '')
         }>
         {uiPhase === 'playing' && (
-          <div className="match3__hud-top">
-            <div className="match3__hud-mobile-item">
-              <span>Счёт</span>
-              <strong>{hud.score}</strong>
-            </div>
-            <div className="match3__hud-mobile-item">
-              <span>Ходов</span>
-              <strong>{hud.moves}</strong>
-            </div>
-            <div className="match3__hud-mobile-item">
-              <span>Цель</span>
-              <strong>
-                {Math.min(
-                  hud.score,
-                  hud.goalScore
-                )}
-                /{hud.goalScore}
-              </strong>
-            </div>
-            {hud.goalTargetsTotal > 0 && (
+          <>
+            <div className="match3__hud-top">
               <div className="match3__hud-mobile-item">
-                <span>Метки</span>
+                <span>Счёт</span>
+                <strong>{hud.score}</strong>
+              </div>
+              <div className="match3__hud-mobile-item">
+                <span>Ходов</span>
+                <strong>{hud.moves}</strong>
+              </div>
+              <div className="match3__hud-mobile-item">
+                <span>Цель</span>
                 <strong>
-                  {hud.goalTargetsTotal -
-                    hud.goalTargetsLeft}
-                  /{hud.goalTargetsTotal}
+                  {Math.min(
+                    hud.score,
+                    hud.goalScore
+                  )}
+                  /{hud.goalScore}
                 </strong>
               </div>
-            )}
-            <div className="match3__hud-mobile-item">
-              <span>Осталось</span>
-              <strong>
-                {remainingLabel}
-                {limitMode === 'moves'
-                  ? ' ход.'
-                  : ''}
-              </strong>
+              {hud.goalTargetsTotal > 0 && (
+                <div className="match3__hud-mobile-item">
+                  <span>Метки</span>
+                  <strong>
+                    {hud.goalTargetsTotal -
+                      hud.goalTargetsLeft}
+                    /{hud.goalTargetsTotal}
+                  </strong>
+                </div>
+              )}
+              <div className="match3__hud-mobile-item">
+                <span>Осталось</span>
+                <strong>
+                  {remainingLabel}
+                  {limitMode === 'moves'
+                    ? ' ход.'
+                    : ''}
+                </strong>
+              </div>
+              <button
+                type="button"
+                className="match3__hud-restart"
+                onClick={handleRestartFromHud}
+                aria-label="Начать заново"
+                title="Начать заново">
+                <IconRestart />
+                <span>Заново</span>
+              </button>
             </div>
-            <button
-              type="button"
-              className="match3__hud-restart"
-              onClick={handleRestartFromHud}
-              aria-label="Начать заново"
-              title="Начать заново">
-              <IconRestart />
-              <span>Заново</span>
-            </button>
-          </div>
+            {!hintsHidden && (
+              <div className="match3__hud-kbd-hint-wrap">
+                {isRookieTutorialCompleted && (
+                  <span className="match3__hud-tutorial-badge">
+                    Обучение завершено
+                  </span>
+                )}
+                <div className="match3__hud-kbd-hint">
+                  {hudHintText}
+                </div>
+                <button
+                  type="button"
+                  className="match3__hud-hint-hide"
+                  onClick={handleHideHints}
+                  aria-label="Скрыть подсказки"
+                  title="Скрыть подсказки">
+                  ✕
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {showBoard && uiPhase !== 'results' && (

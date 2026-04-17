@@ -3,7 +3,7 @@
  * levels.ts - файл с конфигом уровней
  * LevelConfig с полями: id, title, description, goalType, goalValue,
  * boardSize, durationSec, tileKinds, theme
- * Пресеты: Новичок, Пилот, Профессор
+ * Пресеты: Новичок / Пилот / Асс
  * Хелперы: DEFAULT_MATCH3_LEVEL_ID, getMatch3LevelById
  */
 import {
@@ -24,7 +24,7 @@ export type LevelConfig = {
   durationSec: GameDurationOption
   tileKinds: number
   theme: GameThemeOption
-  /** Множитель ледяных клеток: rookie=1, pilot=2, professor=4 */
+  /** Множитель ледяных клеток: rookie=1, pilot=2, ace=4 */
   iceMultiplier?: 1 | 2 | 4
   /** Количество целевых клеток для механики bomb-target. */
   targetCells?: number
@@ -60,7 +60,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     targetCells: 4,
   },
   {
-    id: 'professor',
+    id: 'ace',
     title: 'Асс',
     description:
       'Сложный режим с большим полем и высоким порогом выигрыша.',

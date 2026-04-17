@@ -284,6 +284,66 @@
   margin: 0;
 }
 
+.match3__hud-kbd-hint {
+  width: min(820px, 98%);
+  margin: -2px auto 4px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.25;
+  color: #93c5fd;
+  opacity: 0.92;
+  user-select: none;
+}
+
+.match3__hud-kbd-hint-wrap {
+  width: min(820px, 98%);
+  margin: -2px auto 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.match3__arena--playing .match3__hud-kbd-hint {
+  width: auto;
+  margin: 0;
+}
+
+.match3__arena--playing .match3__hud-kbd-hint-wrap {
+  width: min(820px, 98%);
+}
+
+.match3__hud-tutorial-badge {
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #bbf7d0;
+  background: rgba(20, 83, 45, 0.45);
+  border: 1px solid rgba(74, 222, 128, 0.5);
+  white-space: nowrap;
+}
+
+.match3__hud-hint-hide {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.72);
+  color: #cbd5e1;
+  border-radius: 999px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.match3__hud-hint-hide:hover {
+  border-color: rgba(203, 213, 225, 0.75);
+}
+
 .match3__arena--playing .match3__board-wrap {
   /* Центрируем поле между HUD и нижним краем контейнера */
   margin: auto;
@@ -379,6 +439,14 @@
     padding-bottom: 10px;
   }
 
+  .match3__hud-kbd-hint {
+    font-size: 10px;
+  }
+
+  .match3__hud-kbd-hint-wrap {
+    display: none;
+  }
+
   .match3__board-wrap,
   .match3__board {
     min-width: 0;
@@ -416,6 +484,20 @@
   .match3__hud-restart {
     padding-top: 11px;
     padding-bottom: 11px;
+  }
+
+  .match3__hud-kbd-hint {
+    font-size: 9px;
+  }
+
+  .match3__hud-kbd-hint-wrap {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .match3__hud-kbd-hint-wrap {
+    display: none;
   }
 }
 
@@ -1502,6 +1584,18 @@
   background: rgba(255, 255, 255, 0.97);
   border-color: rgba(15, 23, 42, 0.18);
   color: #0f172a;
+}
+
+.landing--light-flat .match3__hud-kbd-hint,
+.landing--light-3d .match3__hud-kbd-hint {
+  color: #475569;
+}
+
+.landing--light-flat .match3__hud-hint-hide,
+.landing--light-3d .match3__hud-hint-hide {
+  background: rgba(255, 255, 255, 0.97);
+  border-color: rgba(15, 23, 42, 0.18);
+  color: #475569;
 }
 
 .landing--light-flat

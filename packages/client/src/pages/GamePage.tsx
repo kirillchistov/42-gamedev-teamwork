@@ -48,6 +48,12 @@ const cosmicBadgeWinUrl =
 const LAST_RESULT_KEY = 'match3:last-result'
 const FIRST_START_COUNTDOWN_DONE_KEY =
   'match3:first-start-countdown-done'
+const ROOKIE_TUTORIAL_GAMES_KEY =
+  'match3:rookie-tutorial-games'
+const ROOKIE_TUTORIAL_DONE_KEY =
+  'match3:rookie-tutorial-done'
+const MATCH3_HINTS_HIDDEN_KEY =
+  'match3:hints-hidden'
 
 const MOVE_LIMIT_BY_LEVEL: Record<
   string,
@@ -55,7 +61,7 @@ const MOVE_LIMIT_BY_LEVEL: Record<
 > = {
   rookie: 50,
   pilot: 75,
-  professor: 100,
+  ace: 100,
 }
 
 export const GamePage: React.FC = () => {
@@ -332,6 +338,27 @@ export const GamePage: React.FC = () => {
       JSON.stringify(next)
     )
     navigate('/game/finish')
+  }
+
+  const handleResetTutorialHints = () => {
+    try {
+      window.localStorage.removeItem(
+        ROOKIE_TUTORIAL_GAMES_KEY
+      )
+      window.localStorage.removeItem(
+        ROOKIE_TUTORIAL_DONE_KEY
+      )
+      window.localStorage.removeItem(
+        MATCH3_HINTS_HIDDEN_KEY
+      )
+      setToastMessage(
+        'Подсказки и обучение сброшены'
+      )
+    } catch {
+      setToastMessage(
+        'Не удалось сбросить подсказки'
+      )
+    }
   }
 
   return (
@@ -849,6 +876,14 @@ export const GamePage: React.FC = () => {
                           }}
                         />
                       </label>
+                      <button
+                        type="button"
+                        className="btn btn--outline"
+                        onClick={
+                          handleResetTutorialHints
+                        }>
+                        Показать советы снова
+                      </button>
                     </div>
                   </div>
                 )}

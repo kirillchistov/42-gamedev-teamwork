@@ -47,7 +47,6 @@ export type RenderOpts = {
   selected?: CellRC | null
   target?: CellRC | null
   targetPulse?: boolean
-  showSwapArrow?: boolean
   hintFrom?: CellRC | null
   hintTo?: CellRC | null
   theme?: GameThemeOption
@@ -818,72 +817,6 @@ export function renderBoard(
       )
       ctx.setLineDash([])
       ctx.restore()
-    }
-  }
-
-  // Линия/стрелка между первой и второй клеткой
-  if (
-    opts?.showSwapArrow &&
-    opts?.selected &&
-    opts?.target
-  ) {
-    const a = opts.selected
-    const b = opts.target
-    const inBounds = (p: CellRC) =>
-      p.r >= 0 &&
-      p.c >= 0 &&
-      p.r < rows &&
-      p.c < cols
-    if (inBounds(a) && inBounds(b)) {
-      const ax = ox + a.c * cell + cell / 2
-      const ay = oy + a.r * cell + cell / 2
-      const bx = ox + b.c * cell + cell / 2
-      const by = oy + b.r * cell + cell / 2
-      const dx = bx - ax
-      const dy = by - ay
-      const len = Math.hypot(dx, dy)
-      if (len > 1) {
-        const ux = dx / len
-        const uy = dy / len
-        const startX = ax + ux * (cell * 0.2)
-        const startY = ay + uy * (cell * 0.2)
-        const endX = bx - ux * (cell * 0.28)
-        const endY = by - uy * (cell * 0.28)
-
-        ctx.save()
-        ctx.strokeStyle =
-          'rgba(125, 211, 252, 0.95)'
-        ctx.lineWidth = 3
-        ctx.shadowColor =
-          'rgba(56, 189, 248, 0.9)'
-        ctx.shadowBlur = 10
-        ctx.beginPath()
-        ctx.moveTo(startX, startY)
-        ctx.lineTo(endX, endY)
-        ctx.stroke()
-
-        const headLen = Math.max(8, cell * 0.18)
-        const headW = Math.max(6, cell * 0.14)
-        const nx = -uy
-        const ny = ux
-        const hx1 =
-          endX - ux * headLen + nx * headW * 0.5
-        const hy1 =
-          endY - uy * headLen + ny * headW * 0.5
-        const hx2 =
-          endX - ux * headLen - nx * headW * 0.5
-        const hy2 =
-          endY - uy * headLen - ny * headW * 0.5
-        ctx.fillStyle =
-          'rgba(125, 211, 252, 0.98)'
-        ctx.beginPath()
-        ctx.moveTo(endX, endY)
-        ctx.lineTo(hx1, hy1)
-        ctx.lineTo(hx2, hy2)
-        ctx.closePath()
-        ctx.fill()
-        ctx.restore()
-      }
     }
   }
 
