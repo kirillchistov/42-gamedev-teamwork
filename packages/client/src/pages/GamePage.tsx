@@ -26,15 +26,17 @@ import {
   DEFAULT_MATCH3_LEVEL_ID,
   getMatch3LevelById,
   MATCH3_LEVELS,
-  type LevelGoalType,
 } from '../game/match3/engine/levels'
 import {
   BOARD_SIZE_OPTIONS,
   GAME_DURATION_OPTIONS,
+  MOVE_LIMIT_OPTIONS,
   TILE_KINDS_BY_BOARD_SIZE,
   type BoardSizeOption,
   type GameDurationOption,
   type GameIconThemeOption,
+  type GameLimitMode,
+  type MoveLimitOption,
   type GameThemeOption,
   type GameVfxQualityOption,
 } from '../game/match3/engine/config'
@@ -47,6 +49,15 @@ const LAST_RESULT_KEY = 'match3:last-result'
 const FIRST_START_COUNTDOWN_DONE_KEY =
   'match3:first-start-countdown-done'
 
+const MOVE_LIMIT_BY_LEVEL: Record<
+  string,
+  MoveLimitOption
+> = {
+  rookie: 50,
+  pilot: 75,
+  professor: 100,
+}
+
 export const GamePage: React.FC = () => {
   usePage({ initPage: initGamePage })
   const { theme } = useLandingTheme()
@@ -58,10 +69,11 @@ export const GamePage: React.FC = () => {
   ] = useState(false)
   const [selectedLevelId, setSelectedLevelId] =
     useState(DEFAULT_MATCH3_LEVEL_ID)
-  const [goalType, setGoalType] =
-    useState<LevelGoalType>('score')
   const initialLevel = getMatch3LevelById(
     DEFAULT_MATCH3_LEVEL_ID
+  )
+  const [goalScore, setGoalScore] = useState(
+    initialLevel.goalValue
   )
   const [boardSize, setBoardSize] =
     useState<BoardSizeOption>(
@@ -77,9 +89,14 @@ export const GamePage: React.FC = () => {
   const [rankingMode, setRankingMode] = useState<
     'yes' | 'friends' | 'no'
   >('yes')
-  const [limitMode, setLimitMode] = useState<
-    'time' | 'moves'
-  >('time')
+  const [limitMode, setLimitMode] =
+    useState<GameLimitMode>('moves')
+  const [moveLimit, setMoveLimit] =
+    useState<MoveLimitOption>(
+      MOVE_LIMIT_BY_LEVEL[
+        DEFAULT_MATCH3_LEVEL_ID
+      ] ?? 50
+    )
   const [tileKinds, setTileKinds] = useState(
     initialLevel.tileKinds
   )
@@ -99,9 +116,27 @@ export const GamePage: React.FC = () => {
   } | null>(null)
   const location = useLocation()
   const navigate = useNavigate()
+  const buildGameSettingsState = () => ({
+    limitMode,
+    moveLimit,
+    durationSec,
+    goalScore,
+    selectedLevelId,
+    boardSize,
+    tileKinds,
+  })
   const routeState = location.state as {
     notice?: string
     openSettings?: boolean
+    gameSettings?: {
+      limitMode: GameLimitMode
+      moveLimit: MoveLimitOption
+      durationSec: GameDurationOption
+      goalScore: number
+      selectedLevelId: string
+      boardSize: BoardSizeOption
+      tileKinds: number
+    }
   } | null
   const notice = routeState?.notice
   const openSettingsOnStart = Boolean(
@@ -136,6 +171,18 @@ export const GamePage: React.FC = () => {
       state: null,
     })
   }, [notice, navigate, location.pathname])
+
+  useEffect(() => {
+    const settings = routeState?.gameSettings
+    if (!settings) return
+    setLimitMode(settings.limitMode)
+    setMoveLimit(settings.moveLimit)
+    setDurationSec(settings.durationSec)
+    setGoalScore(settings.goalScore)
+    setSelectedLevelId(settings.selectedLevelId)
+    setBoardSize(settings.boardSize)
+    setTileKinds(settings.tileKinds)
+  }, [routeState?.gameSettings])
 
   useEffect(() => {
     if (!toastMessage) return
@@ -223,6 +270,7 @@ export const GamePage: React.FC = () => {
   const appliedLevel = useMemo(
     () => ({
       ...selectedLevel,
+      goalValue: goalScore,
       boardSize,
       theme: themeOption,
       durationSec,
@@ -230,6 +278,7 @@ export const GamePage: React.FC = () => {
     }),
     [
       selectedLevel,
+      goalScore,
       boardSize,
       themeOption,
       durationSec,
@@ -240,26 +289,35 @@ export const GamePage: React.FC = () => {
   const finishStats = useMemo(() => {
     if (!lastResult) return null
     const { snapshot, reason } = lastResult
+    const effectiveGoalScore =
+      snapshot.goalScore > 0
+        ? snapshot.goalScore
+        : goalScore
     const isWin =
       reason === 'goalReached' ||
-      (snapshot.goalScore > 0 &&
-        snapshot.score >= snapshot.goalScore)
+      snapshot.score >= effectiveGoalScore
     const goalRemain = Math.max(
       0,
-      snapshot.goalScore - snapshot.score
+      effectiveGoalScore - snapshot.score
     )
     const comboBonus = snapshot.maxCombo * 25
     const timeBonus = snapshot.timeLeftSec * 2
     const totalWithBonus =
       snapshot.score + comboBonus + timeBonus
+    const progressCurrent = Math.min(
+      snapshot.score,
+      effectiveGoalScore
+    )
     return {
       isWin,
       goalRemain,
+      progressCurrent,
+      effectiveGoalScore,
       comboBonus,
       timeBonus,
       totalWithBonus,
     }
-  }, [lastResult])
+  }, [lastResult, goalScore])
 
   const handleGameFinished = (
     payload: GameEndPayload
@@ -388,18 +446,26 @@ export const GamePage: React.FC = () => {
             ) : (
               <>
                 <p className="match3__start-glow-note">
-                  Собирай комбо, побеждай время!
+                  Собирай комбо, закрывай цель!
                 </p>
                 <div className="match3__start-info">
-                  <div>
+                  <button
+                    type="button"
+                    className="btn btn--flat"
+                    onClick={() =>
+                      setShowSettingsPanel(true)
+                    }>
                     Уровень: {appliedLevel.title}
-                  </div>
-                  <div>
-                    Цель:{' '}
-                    {goalType === 'score'
-                      ? `${appliedLevel.goalValue} очков`
-                      : '—'}
-                  </div>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--flat"
+                    onClick={() =>
+                      setShowSettingsPanel(true)
+                    }>
+                    Цель: {appliedLevel.goalValue}{' '}
+                    очков
+                  </button>
                   {appliedLevel.targetCells &&
                     appliedLevel.targetCells >
                       0 && (
@@ -408,21 +474,45 @@ export const GamePage: React.FC = () => {
                         {appliedLevel.targetCells}
                       </div>
                     )}
-                  <div>
+                  <button
+                    type="button"
+                    className="btn btn--flat"
+                    onClick={() =>
+                      setShowSettingsPanel(true)
+                    }>
                     Поле: {appliedLevel.boardSize}
                     x{appliedLevel.boardSize}
-                  </div>
-                  <div>Тема: Космос</div>
-                  <div>
-                    Время:{' '}
-                    {appliedLevel.durationSec /
-                      60}{' '}
-                    мин
-                  </div>
-                  <div>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--flat"
+                    onClick={() =>
+                      setShowSettingsPanel(true)
+                    }>
+                    Тема: Космос
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--flat"
+                    onClick={() =>
+                      setShowSettingsPanel(true)
+                    }>
+                    {limitMode === 'moves'
+                      ? `Ходы: ${moveLimit}`
+                      : `Время: ${
+                          appliedLevel.durationSec /
+                          60
+                        } мин`}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--flat"
+                    onClick={() =>
+                      setShowSettingsPanel(true)
+                    }>
                     Типов фишек:{' '}
                     {appliedLevel.tileKinds}
-                  </div>
+                  </button>
                 </div>
                 <div className="match3__start-actions">
                   <button
@@ -441,7 +531,12 @@ export const GamePage: React.FC = () => {
                     type="button"
                     className="btn btn--primary match3__play-btn"
                     onClick={() =>
-                      navigate('/game/play')
+                      navigate('/game/play', {
+                        state: {
+                          gameSettings:
+                            buildGameSettingsState(),
+                        },
+                      })
                     }>
                     Играть
                   </button>
@@ -483,6 +578,14 @@ export const GamePage: React.FC = () => {
                             )
                             setDurationSec(
                               preset.durationSec
+                            )
+                            setGoalScore(
+                              preset.goalValue
+                            )
+                            setMoveLimit(
+                              MOVE_LIMIT_BY_LEVEL[
+                                nextId
+                              ] ?? 75
                             )
                             setTileKinds(
                               preset.tileKinds
@@ -580,34 +683,56 @@ export const GamePage: React.FC = () => {
                           <option value="time">
                             Время
                           </option>
-                          <option
-                            value="moves"
-                            disabled>
-                            Ходы (скоро)
+                          <option value="moves">
+                            Ходы
                           </option>
                         </select>
                       </label>
                       <label className="match3-page__settings-label">
-                        Время
-                        <select
-                          value={durationSec}
-                          onChange={e => {
-                            setDurationSec(
-                              Number(
-                                e.target.value
-                              ) as GameDurationOption
-                            )
-                          }}>
-                          {GAME_DURATION_OPTIONS.map(
-                            sec => (
-                              <option
-                                key={sec}
-                                value={sec}>
-                                {sec / 60} мин
-                              </option>
-                            )
-                          )}
-                        </select>
+                        {limitMode === 'moves'
+                          ? 'Ходы'
+                          : 'Время'}
+                        {limitMode === 'moves' ? (
+                          <select
+                            value={moveLimit}
+                            onChange={e => {
+                              setMoveLimit(
+                                Number(
+                                  e.target.value
+                                ) as MoveLimitOption
+                              )
+                            }}>
+                            {MOVE_LIMIT_OPTIONS.map(
+                              moves => (
+                                <option
+                                  key={moves}
+                                  value={moves}>
+                                  {moves}
+                                </option>
+                              )
+                            )}
+                          </select>
+                        ) : (
+                          <select
+                            value={durationSec}
+                            onChange={e => {
+                              setDurationSec(
+                                Number(
+                                  e.target.value
+                                ) as GameDurationOption
+                              )
+                            }}>
+                            {GAME_DURATION_OPTIONS.map(
+                              sec => (
+                                <option
+                                  key={sec}
+                                  value={sec}>
+                                  {sec / 60} мин
+                                </option>
+                              )
+                            )}
+                          </select>
+                        )}
                       </label>
                       <label className="match3-page__settings-label">
                         Число типов фишек
@@ -697,19 +822,32 @@ export const GamePage: React.FC = () => {
                         </select>
                       </label>
                       <label className="match3-page__settings-label">
-                        Тип цели
-                        <select
-                          value={goalType}
+                        Цель (очки)
+                        <input
+                          type="number"
+                          min={1000}
+                          max={10000}
+                          step={100}
+                          value={goalScore}
                           onChange={e => {
-                            setGoalType(
-                              e.target
-                                .value as LevelGoalType
+                            const next = Number(
+                              e.target.value
                             )
-                          }}>
-                          <option value="score">
-                            Набрать очки
-                          </option>
-                        </select>
+                            setGoalScore(
+                              Math.max(
+                                1000,
+                                Math.min(
+                                  10000,
+                                  Number.isFinite(
+                                    next
+                                  )
+                                    ? next
+                                    : 1000
+                                )
+                              )
+                            )
+                          }}
+                        />
                       </label>
                     </div>
                   </div>
@@ -734,7 +872,9 @@ export const GamePage: React.FC = () => {
           )}
           <Match3Screen
             selectedLevelId={selectedLevelId}
-            goalType={goalType}
+            goalScore={goalScore}
+            limitMode={limitMode}
+            moveLimit={moveLimit}
             boardSize={boardSize}
             themeOption={themeOption}
             durationSec={durationSec}
@@ -794,6 +934,9 @@ export const GamePage: React.FC = () => {
                   : lastResult?.reason ===
                     'timeOut'
                   ? 'Время вышло, цель не достигнута'
+                  : lastResult?.reason ===
+                    'movesOut'
+                  ? 'Ходы закончились, цель не достигнута'
                   : 'Цель не достигнута'}
               </p>
               {lastResult ? (
@@ -804,22 +947,23 @@ export const GamePage: React.FC = () => {
                   </li>
                   <li>
                     Цель:{' '}
-                    {
-                      lastResult.snapshot
-                        .goalScore
-                    }
+                    {finishStats?.effectiveGoalScore ??
+                      goalScore}
                   </li>
                   <li>
                     Ходов:{' '}
                     {lastResult.snapshot.moves}
+                    {limitMode === 'moves'
+                      ? ` / ${moveLimit}`
+                      : ''}
                   </li>
                   <li>
                     Прогресс цели:{' '}
-                    {
-                      lastResult.snapshot
-                        .goalProgressPct
-                    }
-                    %
+                    {finishStats?.progressCurrent ??
+                      0}{' '}
+                    /{' '}
+                    {finishStats?.effectiveGoalScore ??
+                      goalScore}
                   </li>
                   <li>
                     Осталось до цели:{' '}
@@ -867,7 +1011,12 @@ export const GamePage: React.FC = () => {
                   type="button"
                   className="btn btn--primary match3__play-btn"
                   onClick={() =>
-                    navigate('/game/play')
+                    navigate('/game/play', {
+                      state: {
+                        gameSettings:
+                          buildGameSettingsState(),
+                      },
+                    })
                   }>
                   Сыграть снова
                 </button>

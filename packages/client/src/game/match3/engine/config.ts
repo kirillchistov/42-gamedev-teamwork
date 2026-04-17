@@ -51,6 +51,14 @@ export const GAME_DURATION_OPTIONS = [
 export type GameDurationOption =
   typeof GAME_DURATION_OPTIONS[number]
 
+export const MOVE_LIMIT_OPTIONS = [
+  50, 75, 100,
+] as const
+export type MoveLimitOption =
+  typeof MOVE_LIMIT_OPTIONS[number]
+
+export type GameLimitMode = 'time' | 'moves'
+
 export const GAME_THEME_OPTIONS = [
   'standard',
   'space',

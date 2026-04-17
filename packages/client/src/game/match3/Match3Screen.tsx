@@ -24,13 +24,14 @@ import {
   type BoardSizeOption,
   type GameDurationOption,
   type GameIconThemeOption,
+  type GameLimitMode,
+  type MoveLimitOption,
   type GameThemeOption,
   type GameVfxQualityOption,
 } from './engine/config'
 import {
   DEFAULT_MATCH3_LEVEL_ID,
   getMatch3LevelById,
-  type LevelGoalType,
 } from './engine/levels'
 
 type UiPhase =
@@ -106,7 +107,9 @@ function IconRestart() {
 
 type Match3ScreenProps = {
   selectedLevelId?: string
-  goalType?: LevelGoalType
+  goalScore?: number
+  limitMode?: GameLimitMode
+  moveLimit?: MoveLimitOption
   boardSize?: BoardSizeOption
   themeOption?: GameThemeOption
   durationSec?: GameDurationOption
@@ -127,7 +130,9 @@ export const Match3Screen: React.FC<
   Match3ScreenProps
 > = ({
   selectedLevelId = DEFAULT_MATCH3_LEVEL_ID,
-  goalType = 'score',
+  goalScore,
+  limitMode = 'moves',
+  moveLimit = 75,
   boardSize,
   themeOption,
   durationSec,
@@ -298,6 +303,8 @@ export const Match3Screen: React.FC<
   const appliedLevel = useMemo(
     () => ({
       ...selectedLevel,
+      goalValue:
+        goalScore ?? selectedLevel.goalValue,
       boardSize:
         boardSize ?? selectedLevel.boardSize,
       theme: themeOption ?? selectedLevel.theme,
@@ -308,6 +315,7 @@ export const Match3Screen: React.FC<
     }),
     [
       selectedLevel,
+      goalScore,
       boardSize,
       themeOption,
       durationSec,
@@ -320,6 +328,13 @@ export const Match3Screen: React.FC<
     if (!game) return
     game.setLevel(appliedLevel)
   }, [appliedLevel])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setLimitMode(limitMode)
+    game.setMoveLimit(moveLimit)
+  }, [limitMode, moveLimit])
 
   useEffect(() => {
     const game = gameRef.current
@@ -348,6 +363,10 @@ export const Match3Screen: React.FC<
     ).padStart(2, '0')
     return `${mm}:${ss}`
   }, [hud.timeLeftSec])
+  const remainingLabel =
+    limitMode === 'moves'
+      ? `${Math.max(moveLimit - hud.moves, 0)}`
+      : timeLabel
 
   const handlePlay = () => {
     setUiPhase('playing')
@@ -405,10 +424,6 @@ export const Match3Screen: React.FC<
       totalWithBonus,
     }
   }, [resultSnapshot, gameEndReason])
-  const goalPct =
-    hud.goalScore > 0
-      ? `${hud.goalProgressPct}%`
-      : '—'
   const isStartPhase =
     uiPhase === 'countdown' || uiPhase === 'ready'
   const showBoard = forcePlayMode || !isStartPhase
@@ -438,7 +453,13 @@ export const Match3Screen: React.FC<
             </div>
             <div className="match3__hud-mobile-item">
               <span>Цель</span>
-              <strong>{goalPct}</strong>
+              <strong>
+                {Math.min(
+                  hud.score,
+                  hud.goalScore
+                )}
+                /{hud.goalScore}
+              </strong>
             </div>
             {hud.goalTargetsTotal > 0 && (
               <div className="match3__hud-mobile-item">
@@ -451,8 +472,13 @@ export const Match3Screen: React.FC<
               </div>
             )}
             <div className="match3__hud-mobile-item">
-              <span>Время</span>
-              <strong>{timeLabel}</strong>
+              <span>Осталось</span>
+              <strong>
+                {remainingLabel}
+                {limitMode === 'moves'
+                  ? ' ход.'
+                  : ''}
+              </strong>
             </div>
             <button
               type="button"
@@ -511,7 +537,7 @@ export const Match3Screen: React.FC<
                 <div className="match3__overlay match3__overlay--ready">
                   <p className="match3__start-glow-note">
                     Cosmic Match: комбинируй,
-                    набирай очки, побеждай время!
+                    набирай очки, закрывай цель!
                   </p>
                   <div className="match3__start-info">
                     <div>
@@ -520,9 +546,8 @@ export const Match3Screen: React.FC<
                     </div>
                     <div>
                       Цель:{' '}
-                      {goalType === 'score'
-                        ? `${appliedLevel.goalValue} очков`
-                        : '—'}
+                      {appliedLevel.goalValue}{' '}
+                      очков
                     </div>
                     {appliedLevel.targetCells &&
                       appliedLevel.targetCells >
@@ -550,10 +575,12 @@ export const Match3Screen: React.FC<
                         : 'Продуктовая'}
                     </div>
                     <div>
-                      Время:{' '}
-                      {appliedLevel.durationSec /
-                        60}{' '}
-                      мин
+                      {limitMode === 'moves'
+                        ? `Ходы: ${moveLimit}`
+                        : `Время: ${
+                            appliedLevel.durationSec /
+                            60
+                          } мин`}
                     </div>
                     <div>
                       Типов фишек:{' '}
@@ -629,6 +656,8 @@ export const Match3Screen: React.FC<
                 ? 'Цель уровня выполнена'
                 : gameEndReason === 'timeOut'
                 ? 'Время вышло, цель не достигнута'
+                : gameEndReason === 'movesOut'
+                ? 'Ходы закончились, цель не достигнута'
                 : 'Цель не достигнута'}
             </p>
             <ul className="match3__results-list">
@@ -640,10 +669,17 @@ export const Match3Screen: React.FC<
               </li>
               <li>
                 Ходов: {resultSnapshot.moves}
+                {limitMode === 'moves'
+                  ? ` / ${moveLimit}`
+                  : ''}
               </li>
               <li>
                 Прогресс цели:{' '}
-                {resultSnapshot.goalProgressPct}%
+                {Math.min(
+                  resultSnapshot.score,
+                  resultSnapshot.goalScore
+                )}{' '}
+                / {resultSnapshot.goalScore}
               </li>
               <li>
                 Осталось до цели:{' '}

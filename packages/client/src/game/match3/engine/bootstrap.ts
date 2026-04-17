@@ -63,7 +63,9 @@ import {
 } from './renderer'
 import {
   GAME_DURATION_SEC,
+  type GameLimitMode,
   match3AnimMs,
+  type MoveLimitOption,
   type GameIconThemeOption,
   type GameThemeOption,
   type GameVfxQualityOption,
@@ -117,6 +119,7 @@ export type { GameHudState }
 export type GameEndReason =
   | 'goalReached'
   | 'timeOut'
+  | 'movesOut'
 
 export type GameEndPayload = {
   reason: GameEndReason
@@ -250,6 +253,8 @@ export function createMatch3Game(
   let tileKinds = tileKindsForBoardSize(boardSize)
   let forcedTileKinds: number | null = null
   let gameDurationSec = GAME_DURATION_SEC
+  let gameLimitMode: GameLimitMode = 'time'
+  let gameMoveLimit: MoveLimitOption = 75
   let gameGoalScore = 0
   let gameTheme: GameThemeOption = 'standard'
   let gameIconTheme: GameIconThemeOption =
@@ -883,6 +888,14 @@ export function createMatch3Game(
       hud.moves += 1
       drawBoard()
       await resolveBoard()
+      if (
+        phase === 'playing' &&
+        gameLimitMode === 'moves' &&
+        hud.moves >= gameMoveLimit
+      ) {
+        finishGame('movesOut')
+        return
+      }
     } else {
       drawBoard()
     }
@@ -1036,7 +1049,9 @@ export function createMatch3Game(
 
     rebuildBoard()
     void resolveBoard().then(() => {
-      startGameTimer()
+      if (gameLimitMode === 'time') {
+        startGameTimer()
+      }
       emitHud()
       scheduleHint()
     })
@@ -1069,6 +1084,23 @@ export function createMatch3Game(
       hud.timeLeftSec = gameDurationSec
       emitHud()
     }
+  }
+
+  const setLimitMode = (mode: GameLimitMode) => {
+    gameLimitMode = mode
+    if (phase === 'playing') {
+      if (mode === 'time') {
+        startGameTimer()
+      } else {
+        stopTimer()
+      }
+    }
+  }
+
+  const setMoveLimit = (
+    moveLimit: MoveLimitOption
+  ) => {
+    gameMoveLimit = moveLimit
   }
 
   const setTheme = (theme: GameThemeOption) => {
@@ -1206,6 +1238,8 @@ export function createMatch3Game(
     startPlay,
     setBoardSize,
     setDuration,
+    setLimitMode,
+    setMoveLimit,
     setTheme,
     setIconTheme,
     setSoundEnabled,
