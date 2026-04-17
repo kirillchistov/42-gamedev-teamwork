@@ -1,4 +1,8 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
+import {
+  createAsyncThunk,
+  createSlice,
+  PayloadAction,
+} from '@reduxjs/toolkit'
 import { RootState } from '../store'
 import { SERVER_HOST } from '../constants'
 
@@ -33,26 +37,37 @@ export const friendsSlice = createSlice({
   reducers: {},
   extraReducers: builder => {
     builder
-      .addCase(fetchFriendsThunk.pending.type, state => {
-        state.data = []
-        state.isLoading = true
-      })
+      .addCase(
+        fetchFriendsThunk.pending.type,
+        state => {
+          state.data = []
+          state.isLoading = true
+        }
+      )
       .addCase(
         fetchFriendsThunk.fulfilled.type,
-        (state, { payload }: PayloadAction<Friend[]>) => {
+        (
+          state,
+          { payload }: PayloadAction<Friend[]>
+        ) => {
           state.data = payload
           state.isLoading = false
         }
       )
-      .addCase(fetchFriendsThunk.rejected.type, state => {
-        state.isLoading = false
-      })
+      .addCase(
+        fetchFriendsThunk.rejected.type,
+        state => {
+          state.isLoading = false
+        }
+      )
   },
 })
 
-export const selectFriends = (state: RootState) => state.friends.data
+export const selectFriends = (state: RootState) =>
+  state.friends.data
 
-export const selectIsLoadingFriends = (state: RootState) =>
-  state.friends.isLoading
+export const selectIsLoadingFriends = (
+  state: RootState
+) => state.friends.isLoading
 
 export default friendsSlice.reducer

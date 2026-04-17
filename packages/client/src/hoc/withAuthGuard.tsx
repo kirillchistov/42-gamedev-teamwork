@@ -1,4 +1,5 @@
 // Этот HOC авторизации использует хук useAuthGuard;
+// Оборачивает дерево роутера; публичные пути задаются в 'router/publicRoutePaths.ts'
 // При loading показывает loader; при denied делает <Navigate to="/login" replace />;
 // При allowed рендерит обернутый в него компонент.
 

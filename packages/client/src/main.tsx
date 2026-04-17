@@ -1,4 +1,5 @@
-﻿// 6.5 Подключил HOC withAuthGuard в роутинг
+﻿// клиентский вход: 'ReactDOM.createRoot', 'Provider', 'RouterProvider' (React Router v6),
+// темы, глобальные стили, ErrorBoundary / AppErrorFallback, оборачивание в 'withAuthGuard'.
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import {
@@ -26,6 +27,7 @@ import './shared/styles/forum.pcss'
 import '@gravity-ui/uikit/styles/fonts.css'
 import '@gravity-ui/uikit/styles/styles.css'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { AppErrorFallback } from './components/AppErrorFallback'
 import { isPublicRoutePath } from './router/publicRoutePaths'
 
 const routerBasename = (() => {
@@ -36,14 +38,22 @@ const routerBasename = (() => {
 
 const router = createBrowserRouter(
   routes.map(route => {
+    const commonErrorElement = (
+      <AppErrorFallback />
+    )
+
     if (isPublicRoutePath(route.path))
-      return route
+      return {
+        ...route,
+        errorElement: commonErrorElement,
+      }
     const { Component, ...rest } = route
     const GuardedComponent =
       withAuthGuard(Component)
     return {
       ...rest,
       element: <GuardedComponent />,
+      errorElement: commonErrorElement,
     }
   }),
   routerBasename

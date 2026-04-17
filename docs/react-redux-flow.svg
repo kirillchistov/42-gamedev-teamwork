@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480" role="img" aria-labelledby="title desc">
+  <title id="title">Data flow: SSR, React Router, Redux</title>
+  <desc id="desc">Animated diagram: page request, server render, store initialization, HTML response, client hydrate, UI.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .box {
+        fill: #334155;
+        stroke: #94a3b8;
+        stroke-width: 1.5;
+        rx: 8;
+        animation: glow 8s ease-in-out infinite;
+      }
+      .lbl { fill: #f1f5f9; font-family: system-ui, sans-serif; font-size: 13px; font-weight: 600; }
+      .sub { fill: #cbd5e1; font-family: ui-monospace, monospace; font-size: 10px; }
+      .arr {
+        stroke: #475569;
+        stroke-width: 2;
+        fill: none;
+        marker-end: url(#m);
+        animation: line 8s ease-in-out infinite;
+      }
+      @keyframes glow {
+        0%, 1.5% { stroke: #38bdf8; stroke-width: 2.5; fill: #1e3a5f; filter: url(#glow); }
+        3%, 100% { stroke: #94a3b8; stroke-width: 1.5; fill: #334155; filter: none; }
+      }
+      @keyframes line {
+        0%, 1.5% { stroke: #38bdf8; stroke-width: 2.5; }
+        3%, 100% { stroke: #475569; stroke-width: 2; }
+      }
+      #b1, #l1 { animation-delay: 0s; }
+      #b2, #l2 { animation-delay: 1s; }
+      #b3, #l3 { animation-delay: 2s; }
+      #b4, #l4 { animation-delay: 3s; }
+      #b5, #l5 { animation-delay: 4s; }
+      #b6, #l6 { animation-delay: 5s; }
+      #b7, #l7 { animation-delay: 6s; }
+      #b8, #l8 { animation-delay: 7s; }
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <polygon points="0 0, 8 4, 0 8" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <text x="460" y="36" text-anchor="middle" class="lbl" font-size="16">React + Redux: request to UI</text>
+  <text x="460" y="54" text-anchor="middle" class="sub">Highlight runs in order; full cycle 8s</text>
+  <rect id="b1" x="40" y="80" width="180" height="56" class="box"/>
+  <g id="t1" transform="translate(130 0)">
+    <text y="104" text-anchor="middle" class="lbl">Browser</text>
+    <text y="118" text-anchor="middle" class="sub">GET URL</text>
+    <text y="130" text-anchor="middle" class="sub">Component: Browser</text>
+  </g>
+  <path id="l1" class="arr" d="M 130 136 L 130 260"/>
+  <rect id="b2" x="40" y="260" width="180" height="56" class="box"/>
+  <g id="t2" transform="translate(130 0)">
+    <text y="284" text-anchor="middle" class="lbl">SSR Express</text>
+    <text y="298" text-anchor="middle" class="sub">packages/client/server</text>
+    <text y="310" text-anchor="middle" class="sub">Module: server/index.ts</text>
+  </g>
+  <path id="l2" class="arr" d="M 220 288 L 260 288 L 260 108 L 300 108"/>
+  <rect id="b3" x="300" y="80" width="260" height="56" class="box"/>
+  <g id="t3" transform="translate(430 0)">
+    <text y="104" text-anchor="middle" class="lbl">entry-server.tsx</text>
+    <text y="118" text-anchor="middle" class="sub">render(req)</text>
+    <text y="130" text-anchor="middle" class="sub">Module: entry-server.tsx</text>
+  </g>
+  <path id="l3" class="arr" d="M 430 136 L 430 170"/>
+  <rect id="b4" x="300" y="170" width="260" height="64" class="box"/>
+  <text x="430" y="198" text-anchor="middle" class="lbl">Route + fetchData</text>
+  <text x="430" y="214" text-anchor="middle" class="sub">routes.tsx -&gt; thunk -&gt; store</text>
+  <text x="430" y="226" text-anchor="middle" class="sub">Module: routes.tsx</text>
+  <path id="l4" class="arr" d="M 430 234 L 430 270"/>
+  <rect id="b5" x="300" y="270" width="260" height="56" class="box"/>
+  <g id="t5" transform="translate(430 0)">
+    <text y="294" text-anchor="middle" class="lbl">Redux store</text>
+    <text y="308" text-anchor="middle" class="sub">user, forum, friends, ssr</text>
+    <text y="320" text-anchor="middle" class="sub">Module: store.ts</text>
+  </g>
+  <path id="l5" class="arr" d="M 430 326 L 430 360"/>
+  <rect id="b6" x="300" y="360" width="260" height="56" class="box"/>
+  <g id="t6" transform="translate(430 0)">
+    <text y="384" text-anchor="middle" class="lbl">HTML + window.APP_INITIAL_STATE</text>
+    <text y="398" text-anchor="middle" class="sub">response to browser</text>
+    <text y="410" text-anchor="middle" class="sub">Module: SSR response</text>
+  </g>
+  <path id="l6" class="arr" d="M 560 388 L 880 388 L 880 126 L 830 126"/>
+  <rect id="b7" x="650" y="90" width="180" height="72" class="box"/>
+  <g id="t7" transform="translate(740 0)">
+    <text y="114" text-anchor="middle" class="lbl">Client</text>
+    <text y="128" text-anchor="middle" class="sub">main.tsx</text>
+    <text y="142" text-anchor="middle" class="sub">Provider + Router</text>
+    <text y="154" text-anchor="middle" class="sub">Component: main.tsx</text>
+  </g>
+  <path id="l7" class="arr" d="M 740 162 L 740 230"/>
+  <rect id="b8" x="638" y="230" width="204" height="64" class="box"/>
+  <g id="t8" transform="translate(740 0)">
+    <text y="256" text-anchor="middle" class="lbl">Page + usePage</text>
+    <text y="272" text-anchor="middle" class="sub">useSelector -&gt; UI</text>
+    <text y="284" text-anchor="middle" class="sub">Component: usePage hook</text>
+  </g>
+  <text x="40" y="448" class="sub">Key files: entry-server.tsx, main.tsx, routes.tsx, store.ts, hooks/usePage.ts</text>
+</svg>

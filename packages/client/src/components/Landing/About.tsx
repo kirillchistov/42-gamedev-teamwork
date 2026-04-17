@@ -6,24 +6,34 @@ export const About: React.FC = () => {
     <section className="section" id="about">
       <h2>Почему Cosmic Match</h2>
       <p className="section-subtitle">
-        Учебный проект match‑3 в сеттинге космоса: понятный вход, глубокие
-        механики и современный технологический стек.
+        Учебный проект match‑3 в сеттинге космоса:
+        понятный вход, глубокие механики и
+        современный технологический стек.
       </p>
       <div className="benefits__inner">
         <div className="benefits__content">
-          <div className="benefits__card" id="benefit-card">
+          <div
+            className="benefits__card"
+            id="benefit-card">
             <h3>Простой вход</h3>
             <p>
-              Геймплей понятен за секунды: меняй соседние фишки и собирай три в
-              ряд.
+              Геймплей понятен за секунды: меняй
+              соседние фишки и собирай три в ряд.
             </p>
           </div>
           <div className="benefits__controls">
-            <button type="button" id="benefit-prev">
+            <button
+              type="button"
+              id="benefit-prev">
               ‹
             </button>
-            <div className="benefits__dots" id="benefit-dots" />
-            <button type="button" id="benefit-next">
+            <div
+              className="benefits__dots"
+              id="benefit-dots"
+            />
+            <button
+              type="button"
+              id="benefit-next">
               ›
             </button>
           </div>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480" role="img" aria-labelledby="title desc">
+  <title id="title">Validation flow</title>
+  <desc id="desc">Animated validation flow for forms: input, blur, rules check, errors, submit gate, dispatch.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .box { fill:#334155; stroke:#94a3b8; stroke-width:1.5; rx:8; animation: glow 8s ease-in-out infinite; }
+      .lbl { fill:#f1f5f9; font:600 13px system-ui, sans-serif; }
+      .sub { fill:#cbd5e1; font:10px ui-monospace, monospace; }
+      .arr { stroke:#475569; stroke-width:2; fill:none; marker-end:url(#m); animation: line 8s ease-in-out infinite; }
+      @keyframes glow { 0%,1.5%{stroke:#38bdf8;stroke-width:2.5;fill:#1e3a5f;filter:url(#glow)} 3%,100%{stroke:#94a3b8;stroke-width:1.5;fill:#334155;filter:none} }
+      @keyframes line { 0%,1.5%{stroke:#38bdf8;stroke-width:2.5} 3%,100%{stroke:#475569;stroke-width:2} }
+      #b1,#l1{animation-delay:0s} #b2,#l2{animation-delay:1s} #b3,#l3{animation-delay:2s} #b4,#l4{animation-delay:3s}
+      #b5,#l5{animation-delay:4s} #b6,#l6{animation-delay:5s} #b7,#l7{animation-delay:6s} #b8{animation-delay:7s}
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <polygon points="0 0, 8 4, 0 8" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <text x="460" y="36" text-anchor="middle" class="lbl" font-size="16">Form validation flow</text>
+  <text x="460" y="54" text-anchor="middle" class="sub">Blur + submit checks with error rendering and dispatch gate</text>
+
+  <rect id="b1" x="40" y="80" width="172" height="58" class="box"/>
+  <g id="t1" transform="translate(126 0)">
+    <text y="104" text-anchor="middle" class="lbl">Input change</text>
+    <text y="118" text-anchor="middle" class="sub">Login/Signup/Profile form</text>
+    <text y="130" text-anchor="middle" class="sub">Component: page form</text>
+  </g>
+  <path id="l1" class="arr" d="M 212 109 L 262 109"/>
+
+  <rect id="b2" x="262" y="80" width="186" height="58" class="box"/>
+  <g id="t2" transform="translate(355 0)">
+    <text y="104" text-anchor="middle" class="lbl">useValidate hook</text>
+    <text y="118" text-anchor="middle" class="sub">track values + touched</text>
+    <text y="130" text-anchor="middle" class="sub">Hook: useValidate.ts</text>
+  </g>
+  <path id="l2" class="arr" d="M 448 109 L 506 109"/>
+
+  <rect id="b3" x="506" y="80" width="210" height="58" class="box"/>
+  <g id="t3" transform="translate(611 0)">
+    <text y="104" text-anchor="middle" class="lbl">authValidation rules</text>
+    <text y="118" text-anchor="middle" class="sub">login/email/password/phone</text>
+    <text y="130" text-anchor="middle" class="sub">Module: authValidation.ts</text>
+  </g>
+  <path id="l3" class="arr" d="M 611 138 L 611 170"/>
+
+  <rect id="b4" x="450" y="170" width="322" height="62" class="box"/>
+  <g id="t4" transform="translate(611 0)">
+    <text y="194" text-anchor="middle" class="lbl">Field status computed</text>
+    <text y="208" text-anchor="middle" class="sub">valid + errorMessage per field</text>
+    <text y="220" text-anchor="middle" class="sub">Module: validation state</text>
+  </g>
+  <path id="l4" class="arr" d="M 450 201 L 344 201"/>
+
+  <rect id="b5" x="156" y="170" width="188" height="62" class="box"/>
+  <g id="t5" transform="translate(250 0)">
+    <text y="194" text-anchor="middle" class="lbl">FieldError render</text>
+    <text y="208" text-anchor="middle" class="sub">show inline errors</text>
+    <text y="220" text-anchor="middle" class="sub">Component: FieldError</text>
+  </g>
+  <path id="l5" class="arr" d="M 250 232 L 250 266"/>
+
+  <rect id="b6" x="140" y="266" width="220" height="58" class="box"/>
+  <g id="t6" transform="translate(250 0)">
+    <text y="290" text-anchor="middle" class="lbl">Submit attempt</text>
+    <text y="304" text-anchor="middle" class="sub">run full validation pass</text>
+    <text y="316" text-anchor="middle" class="sub">Component: submit handler</text>
+  </g>
+  <path id="l6" class="arr" d="M 360 295 L 472 295"/>
+
+  <rect id="b7" x="472" y="266" width="300" height="58" class="box"/>
+  <g id="t7" transform="translate(622 0)">
+    <text y="290" text-anchor="middle" class="lbl">Gate submission</text>
+    <text y="304" text-anchor="middle" class="sub">invalid -> stop, valid -> dispatch thunk</text>
+    <text y="316" text-anchor="middle" class="sub">Module: page action gate</text>
+  </g>
+  <path id="l7" class="arr" d="M 622 324 L 622 356"/>
+
+  <rect id="b8" x="472" y="356" width="300" height="58" class="box"/>
+  <g id="t8" transform="translate(622 0)">
+    <text y="380" text-anchor="middle" class="lbl">API call / state update</text>
+    <text y="394" text-anchor="middle" class="sub">only after valid form</text>
+    <text y="406" text-anchor="middle" class="sub">Module: thunk/API layer</text>
+  </g>
+
+  <text x="40" y="448" class="sub">Key files: hooks/useValidate.ts, shared/validation/authValidation.ts, shared/ui/FieldError</text>
+  <text x="40" y="466" class="sub">LoginPage.tsx, SignupPage.tsx, ProfilePage.tsx</text>
+</svg>

@@ -1,6 +1,9 @@
 ﻿import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '../../shared/ui'
+import {
+  Button,
+  LinkButton,
+} from '../../shared/ui'
 import {
   useDispatch,
   useSelector,
@@ -54,18 +57,14 @@ export const AuthSessionNotice: React.FC<
         автоматически.
       </p>
       <div className="auth-form__actions">
-        <Button
-          type="button"
-          variant="primary"
-          onClick={() => navigate('/profile')}>
+        <LinkButton
+          to="/profile"
+          variant="primary">
           Открыть профиль
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => navigate('/')}>
+        </LinkButton>
+        <LinkButton to="/" variant="outline">
           На главную
-        </Button>
+        </LinkButton>
         <Button
           type="button"
           variant="flat"

@@ -7,7 +7,8 @@ import { createClientAndConnect } from './db'
 
 const app = express()
 app.use(cors())
-const port = Number(process.env.SERVER_PORT) || 3001
+const port =
+  Number(process.env.SERVER_PORT) || 3001
 
 createClientAndConnect()
 
@@ -20,7 +21,10 @@ app.get('/friends', (_, res) => {
 })
 
 app.get('/user', (_, res) => {
-  res.json({ name: '</script>Степа', secondName: 'Степанов' })
+  res.json({
+    name: '</script>Степа',
+    secondName: 'Степанов',
+  })
 })
 
 app.get('/', (_, res) => {
@@ -28,5 +32,7 @@ app.get('/', (_, res) => {
 })
 
 app.listen(port, () => {
-  console.log(`  ➜ 🎸 Server is listening on port: ${port}`)
+  console.log(
+    `  ➜ 🎸 Server is listening on port: ${port}`
+  )
 })

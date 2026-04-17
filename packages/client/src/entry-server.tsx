@@ -1,8 +1,10 @@
+// вход на сервере, экспортирует render(req) для SSR
+// возвращает html, initialState, helmet, styleTags.
+
 // 6.5 Подключил HOC withAuthGuard вместо ProtectedRoute для непубличных маршрутов
 import React from 'react'
 import ReactDOM from 'react-dom/server'
 import { Provider } from 'react-redux'
-import { ServerStyleSheet } from 'styled-components'
 import { Helmet } from 'react-helmet'
 import { Request as ExpressRequest } from 'express'
 import {
@@ -94,31 +96,24 @@ export const render = async (
     dataRoutes,
     context
   )
-  const sheet = new ServerStyleSheet()
-  try {
-    const html = ReactDOM.renderToString(
-      sheet.collectStyles(
-        <Provider store={store}>
-          <LandingThemeProvider>
-            <StaticRouterProvider
-              router={router}
-              context={context}
-            />
-          </LandingThemeProvider>
-        </Provider>
-      )
-    )
-    const styleTags = sheet.getStyleTags()
+  const html = ReactDOM.renderToString(
+    <Provider store={store}>
+      <LandingThemeProvider>
+        <StaticRouterProvider
+          router={router}
+          context={context}
+        />
+      </LandingThemeProvider>
+    </Provider>
+  )
+  const styleTags = ''
 
-    const helmet = Helmet.renderStatic()
+  const helmet = Helmet.renderStatic()
 
-    return {
-      html,
-      helmet,
-      styleTags,
-      initialState: store.getState(),
-    }
-  } finally {
-    sheet.seal()
+  return {
+    html,
+    helmet,
+    styleTags,
+    initialState: store.getState(),
   }
 }

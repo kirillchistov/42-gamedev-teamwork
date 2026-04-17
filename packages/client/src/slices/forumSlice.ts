@@ -1,4 +1,8 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
+import {
+  createAsyncThunk,
+  createSlice,
+  PayloadAction,
+} from '@reduxjs/toolkit'
 import { RootState } from '../store'
 import type {
   ForumTopic,
@@ -51,7 +55,8 @@ const DEMO_COMMENTS: ForumComment[] = [
     id: 1,
     topicId: 1,
     author: 'dev-2',
-    content: 'Согласен, 15-й уровень слишком сложный. Добавить бы пару ходов.',
+    content:
+      'Согласен, 15-й уровень слишком сложный. Добавить бы пару ходов.',
     createdAt: '2026-03-20T11:00:00Z',
     parentCommentId: null,
   },
@@ -59,7 +64,8 @@ const DEMO_COMMENTS: ForumComment[] = [
     id: 2,
     topicId: 1,
     author: 'dev-1',
-    content: 'Или можно добавить бонусный ход за комбо из 5 элементов.',
+    content:
+      'Или можно добавить бонусный ход за комбо из 5 элементов.',
     createdAt: '2026-03-20T11:30:00Z',
     parentCommentId: 1,
   },
@@ -67,7 +73,8 @@ const DEMO_COMMENTS: ForumComment[] = [
     id: 3,
     topicId: 1,
     author: 'tester-1',
-    content: 'Протестировал — с 3 дополнительными ходами баланс ок 👍',
+    content:
+      'Протестировал — с 3 дополнительными ходами баланс ок 👍',
     createdAt: '2026-03-20T14:00:00Z',
     parentCommentId: null,
   },
@@ -75,7 +82,8 @@ const DEMO_COMMENTS: ForumComment[] = [
     id: 4,
     topicId: 2,
     author: 'dev-1',
-    content: 'Молния — отличная идея! Может очищать случайный ряд или столбец.',
+    content:
+      'Молния — отличная идея! Может очищать случайный ряд или столбец.',
     createdAt: '2026-03-21T15:00:00Z',
     parentCommentId: null,
   },
@@ -83,7 +91,8 @@ const DEMO_COMMENTS: ForumComment[] = [
     id: 5,
     topicId: 2,
     author: 'designer-1',
-    content: 'Нарисую концепт для молнии и диагональной бомбы 🎨',
+    content:
+      'Нарисую концепт для молнии и диагональной бомбы 🎨',
     createdAt: '2026-03-21T15:30:00Z',
     parentCommentId: 4,
   },
@@ -134,15 +143,20 @@ export const fetchTopicsThunk = createAsyncThunk(
   }
 )
 
-export const fetchTopicByIdThunk = createAsyncThunk(
-  'forum/fetchTopicById',
-  async (topicId: number) => {
-    // Sprint 8: return fetch(`${SERVER_HOST}/api/forum/topics/${topicId}`).then(r => r.json())
-    const topic = demoTopics.find(t => t.id === topicId) || null
-    const comments = demoComments.filter(c => c.topicId === topicId)
-    return Promise.resolve({ topic, comments })
-  }
-)
+export const fetchTopicByIdThunk =
+  createAsyncThunk(
+    'forum/fetchTopicById',
+    async (topicId: number) => {
+      // Sprint 8: return fetch(`${SERVER_HOST}/api/forum/topics/${topicId}`).then(r => r.json())
+      const topic =
+        demoTopics.find(t => t.id === topicId) ||
+        null
+      const comments = demoComments.filter(
+        c => c.topicId === topicId
+      )
+      return Promise.resolve({ topic, comments })
+    }
+  )
 
 export const createTopicThunk = createAsyncThunk(
   'forum/createTopic',
@@ -161,26 +175,30 @@ export const createTopicThunk = createAsyncThunk(
   }
 )
 
-export const createCommentThunk = createAsyncThunk(
-  'forum/createComment',
-  async (payload: CreateCommentPayload) => {
-    // Sprint 8: return fetch(`${SERVER_HOST}/api/forum/comments`, { method: 'POST', body: JSON.stringify(payload) }).then(r => r.json())
-    const newComment: ForumComment = {
-      id: nextCommentId++,
-      topicId: payload.topicId,
-      author: payload.author,
-      content: payload.content,
-      createdAt: new Date().toISOString(),
-      parentCommentId: payload.parentCommentId ?? null,
+export const createCommentThunk =
+  createAsyncThunk(
+    'forum/createComment',
+    async (payload: CreateCommentPayload) => {
+      // Sprint 8: return fetch(`${SERVER_HOST}/api/forum/comments`, { method: 'POST', body: JSON.stringify(payload) }).then(r => r.json())
+      const newComment: ForumComment = {
+        id: nextCommentId++,
+        topicId: payload.topicId,
+        author: payload.author,
+        content: payload.content,
+        createdAt: new Date().toISOString(),
+        parentCommentId:
+          payload.parentCommentId ?? null,
+      }
+      demoComments = [...demoComments, newComment]
+      const topic = demoTopics.find(
+        t => t.id === payload.topicId
+      )
+      if (topic) {
+        topic.commentsCount += 1
+      }
+      return Promise.resolve(newComment)
     }
-    demoComments = [...demoComments, newComment]
-    const topic = demoTopics.find(t => t.id === payload.topicId)
-    if (topic) {
-      topic.commentsCount += 1
-    }
-    return Promise.resolve(newComment)
-  }
-)
+  )
 
 export const forumSlice = createSlice({
   name: 'forum',
@@ -188,25 +206,37 @@ export const forumSlice = createSlice({
   reducers: {},
   extraReducers: builder => {
     builder
-      .addCase(fetchTopicsThunk.pending.type, state => {
-        state.isLoading = true
-      })
+      .addCase(
+        fetchTopicsThunk.pending.type,
+        state => {
+          state.isLoading = true
+        }
+      )
       .addCase(
         fetchTopicsThunk.fulfilled.type,
-        (state, { payload }: PayloadAction<ForumTopic[]>) => {
+        (
+          state,
+          { payload }: PayloadAction<ForumTopic[]>
+        ) => {
           state.topics = payload
           state.isLoading = false
         }
       )
-      .addCase(fetchTopicsThunk.rejected.type, state => {
-        state.isLoading = false
-      })
+      .addCase(
+        fetchTopicsThunk.rejected.type,
+        state => {
+          state.isLoading = false
+        }
+      )
 
-      .addCase(fetchTopicByIdThunk.pending.type, state => {
-        state.isLoading = true
-        state.currentTopic = null
-        state.comments = []
-      })
+      .addCase(
+        fetchTopicByIdThunk.pending.type,
+        state => {
+          state.isLoading = true
+          state.currentTopic = null
+          state.comments = []
+        }
+      )
       .addCase(
         fetchTopicByIdThunk.fulfilled.type,
         (
@@ -223,22 +253,41 @@ export const forumSlice = createSlice({
           state.isLoading = false
         }
       )
-      .addCase(fetchTopicByIdThunk.rejected.type, state => {
-        state.isLoading = false
-      })
+      .addCase(
+        fetchTopicByIdThunk.rejected.type,
+        state => {
+          state.isLoading = false
+        }
+      )
 
       .addCase(
         createTopicThunk.fulfilled.type,
-        (state, { payload }: PayloadAction<ForumTopic>) => {
-          state.topics = [payload, ...state.topics]
+        (
+          state,
+          { payload }: PayloadAction<ForumTopic>
+        ) => {
+          state.topics = [
+            payload,
+            ...state.topics,
+          ]
         }
       )
 
       .addCase(
         createCommentThunk.fulfilled.type,
-        (state, { payload }: PayloadAction<ForumComment>) => {
-          state.comments = [...state.comments, payload]
-          if (state.currentTopic && state.currentTopic.id === payload.topicId) {
+        (
+          state,
+          { payload }: PayloadAction<ForumComment>
+        ) => {
+          state.comments = [
+            ...state.comments,
+            payload,
+          ]
+          if (
+            state.currentTopic &&
+            state.currentTopic.id ===
+              payload.topicId
+          ) {
             state.currentTopic.commentsCount += 1
           }
         }
@@ -246,9 +295,16 @@ export const forumSlice = createSlice({
   },
 })
 
-export const selectTopics = (state: RootState) => state.forum.topics
-export const selectCurrentTopic = (state: RootState) => state.forum.currentTopic
-export const selectComments = (state: RootState) => state.forum.comments
-export const selectIsLoadingForum = (state: RootState) => state.forum.isLoading
+export const selectTopics = (state: RootState) =>
+  state.forum.topics
+export const selectCurrentTopic = (
+  state: RootState
+) => state.forum.currentTopic
+export const selectComments = (
+  state: RootState
+) => state.forum.comments
+export const selectIsLoadingForum = (
+  state: RootState
+) => state.forum.isLoading
 
 export default forumSlice.reducer

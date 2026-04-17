@@ -1,3 +1,4 @@
+// 'useAuthCheck' — проверка сессии / пользователя
 import { useEffect } from 'react'
 import {
   useDispatch,
