@@ -91,10 +91,6 @@ export const SignupPage: React.FC = () => {
     }))
   }
 
-  const handleBlur = () => {
-    signupValidate.doValidate(form)
-  }
-
   if (user) {
     return (
       <Navigate
@@ -159,13 +155,22 @@ export const SignupPage: React.FC = () => {
                   placeholder="Имя"
                   value={form.first_name ?? ''}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onFocus={() =>
+                    signupValidate.handleFieldFocus(
+                      'first_name'
+                    )
+                  }
+                  onBlur={e =>
+                    signupValidate.handleFieldBlur(
+                      'first_name',
+                      e.target.value
+                    )
+                  }
                 />
                 <FieldError
-                  message={
-                    signupValidate.errors
-                      .first_name
-                  }
+                  message={signupValidate.getFieldError(
+                    'first_name'
+                  )}
                 />
               </label>
               <label>
@@ -176,13 +181,22 @@ export const SignupPage: React.FC = () => {
                   placeholder="Фамилия"
                   value={form.second_name ?? ''}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onFocus={() =>
+                    signupValidate.handleFieldFocus(
+                      'second_name'
+                    )
+                  }
+                  onBlur={e =>
+                    signupValidate.handleFieldBlur(
+                      'second_name',
+                      e.target.value
+                    )
+                  }
                 />
                 <FieldError
-                  message={
-                    signupValidate.errors
-                      .second_name
-                  }
+                  message={signupValidate.getFieldError(
+                    'second_name'
+                  )}
                 />
               </label>
               <label>
@@ -193,13 +207,22 @@ export const SignupPage: React.FC = () => {
                   placeholder="Никнейм"
                   value={form.display_name ?? ''}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onFocus={() =>
+                    signupValidate.handleFieldFocus(
+                      'display_name'
+                    )
+                  }
+                  onBlur={e =>
+                    signupValidate.handleFieldBlur(
+                      'display_name',
+                      e.target.value
+                    )
+                  }
                 />
                 <FieldError
-                  message={
-                    signupValidate.errors
-                      .display_name
-                  }
+                  message={signupValidate.getFieldError(
+                    'display_name'
+                  )}
                 />
               </label>
               <label>
@@ -210,12 +233,22 @@ export const SignupPage: React.FC = () => {
                   placeholder="user@example.com"
                   value={form.email ?? ''}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onFocus={() =>
+                    signupValidate.handleFieldFocus(
+                      'email'
+                    )
+                  }
+                  onBlur={e =>
+                    signupValidate.handleFieldBlur(
+                      'email',
+                      e.target.value
+                    )
+                  }
                 />
                 <FieldError
-                  message={
-                    signupValidate.errors.email
-                  }
+                  message={signupValidate.getFieldError(
+                    'email'
+                  )}
                 />
               </label>
               <label>
@@ -226,12 +259,22 @@ export const SignupPage: React.FC = () => {
                   placeholder="+7..."
                   value={form.phone ?? ''}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onFocus={() =>
+                    signupValidate.handleFieldFocus(
+                      'phone'
+                    )
+                  }
+                  onBlur={e =>
+                    signupValidate.handleFieldBlur(
+                      'phone',
+                      e.target.value
+                    )
+                  }
                 />
                 <FieldError
-                  message={
-                    signupValidate.errors.phone
-                  }
+                  message={signupValidate.getFieldError(
+                    'phone'
+                  )}
                 />
               </label>
               <label>
@@ -242,13 +285,23 @@ export const SignupPage: React.FC = () => {
                   placeholder="login"
                   value={form.login ?? ''}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onFocus={() =>
+                    signupValidate.handleFieldFocus(
+                      'login'
+                    )
+                  }
+                  onBlur={e =>
+                    signupValidate.handleFieldBlur(
+                      'login',
+                      e.target.value
+                    )
+                  }
                   autoComplete="username"
                 />
                 <FieldError
-                  message={
-                    signupValidate.errors.login
-                  }
+                  message={signupValidate.getFieldError(
+                    'login'
+                  )}
                 />
               </label>
               <label>
@@ -259,13 +312,23 @@ export const SignupPage: React.FC = () => {
                   placeholder="Пароль"
                   value={form.password ?? ''}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onFocus={() =>
+                    signupValidate.handleFieldFocus(
+                      'password'
+                    )
+                  }
+                  onBlur={e =>
+                    signupValidate.handleFieldBlur(
+                      'password',
+                      e.target.value
+                    )
+                  }
                   autoComplete="new-password"
                 />
                 <FieldError
-                  message={
-                    signupValidate.errors.password
-                  }
+                  message={signupValidate.getFieldError(
+                    'password'
+                  )}
                 />
               </label>
 

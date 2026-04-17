@@ -2,7 +2,10 @@ import {
   describe,
   it,
   expect,
+  jest,
+  afterEach,
 } from '@jest/globals'
+import { configureStore } from '@reduxjs/toolkit'
 import userReducer, {
   setUser,
   clearUser,
@@ -149,6 +152,111 @@ describe('userSlice', () => {
       expect(state.data).toBeNull()
       expect(state.isLoading).toBe(false)
       expect(state.isAuthChecked).toBe(true)
+    })
+  })
+
+  describe('login integration', () => {
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('shows friendly message when signin ok but /auth/user returns 401', async () => {
+      const fetchMock = jest.fn() as jest.Mock
+      // POST /auth/signin -> ok
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({}),
+        } as Response)
+      )
+      // GET /auth/user -> 401
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: false,
+          status: 401,
+          json: async () => ({
+            reason: 'Unauthorized',
+          }),
+        } as Response)
+      )
+
+      Object.defineProperty(global, 'fetch', {
+        value: fetchMock,
+        configurable: true,
+        writable: true,
+      })
+
+      const store = configureStore({
+        reducer: { user: userReducer },
+      })
+
+      const action = await store.dispatch(
+        loginThunk({
+          login: 'testuser',
+          password: 'password123',
+        })
+      )
+
+      expect(
+        loginThunk.rejected.match(action)
+      ).toBe(true)
+      expect(action.payload).toBe(
+        'Вход выполнен, но сессия не подтвердилась. Попробуйте войти еще раз.'
+      )
+      expect(store.getState().user.error).toBe(
+        'Вход выполнен, но сессия не подтвердилась. Попробуйте войти еще раз.'
+      )
+    })
+
+    it('shows conflict message when signin returns already in system and /auth/user returns 401', async () => {
+      const fetchMock = jest.fn() as jest.Mock
+      // POST /auth/signin -> "already in system"
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: false,
+          status: 400,
+          json: async () => ({
+            reason: 'User already in system',
+          }),
+        } as Response)
+      )
+      // GET /auth/user -> 401
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: false,
+          status: 401,
+          json: async () => ({
+            reason: 'Unauthorized',
+          }),
+        } as Response)
+      )
+
+      Object.defineProperty(global, 'fetch', {
+        value: fetchMock,
+        configurable: true,
+        writable: true,
+      })
+
+      const store = configureStore({
+        reducer: { user: userReducer },
+      })
+
+      const action = await store.dispatch(
+        loginThunk({
+          login: 'testuser',
+          password: 'password123',
+        })
+      )
+
+      expect(
+        loginThunk.rejected.match(action)
+      ).toBe(true)
+      expect(action.payload).toBe(
+        'Аккаунт уже активен на другом устройстве. Выйдите из аккаунта там и повторите вход.'
+      )
+      expect(store.getState().user.error).toBe(
+        'Аккаунт уже активен на другом устройстве. Выйдите из аккаунта там и повторите вход.'
+      )
     })
   })
 

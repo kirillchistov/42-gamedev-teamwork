@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" role="img" aria-labelledby="title desc">
+  <title id="title">Project meta flow</title>
+  <desc id="desc">Meta-diagram connecting auth, validation, app shell, game engine, canvas rendering, and service worker offline support.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0b1220"/><stop offset="100%" style="stop-color:#1e293b"/></linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .core{fill:#334155;stroke:#94a3b8;stroke-width:1.6;rx:10;animation:glow 10s ease-in-out infinite}
+      .group{fill:#1f2937;stroke:#475569;stroke-width:1;rx:12}
+      .lbl{fill:#f8fafc;font:600 13px system-ui,sans-serif}
+      .sub{fill:#cbd5e1;font:10px ui-monospace,monospace}
+      .arr{stroke:#64748b;stroke-width:2;fill:none;marker-end:url(#m);animation:line 10s ease-in-out infinite}
+      .sync{stroke:#f59e0b;stroke-dasharray:6 4}
+      @keyframes glow{0%,1.2%{stroke:#38bdf8;stroke-width:2.7;fill:#1e3a5f;filter:url(#glow)}3%,100%{stroke:#94a3b8;stroke-width:1.6;fill:#334155;filter:none}}
+      @keyframes line{0%,1.2%{stroke:#38bdf8;stroke-width:2.7}3%,100%{stroke:#64748b;stroke-width:2}}
+      #b1,#l1{animation-delay:0s}#b2,#l2{animation-delay:1s}#b3,#l3{animation-delay:2s}#b4,#l4{animation-delay:3s}
+      #b5,#l5{animation-delay:4s}#b6,#l6{animation-delay:5s}#b7,#l7{animation-delay:6s}#b8,#l8{animation-delay:7s}#b9,#l9{animation-delay:8s}#b10{animation-delay:9s}
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0 0,8 4,0 8" fill="#64748b"/></marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <text x="490" y="34" text-anchor="middle" class="lbl" font-size="17">Project meta-flow (from app entry to gameplay loop)</text>
+  <text x="490" y="52" text-anchor="middle" class="sub">How core systems connect: Auth, Validation, React shell, Engine, Canvas, SW</text>
+
+  <rect x="26" y="78" width="270" height="166" class="group"/>
+  <text x="42" y="96" class="sub">Group: User/session side</text>
+  <rect id="b1" x="44" y="112" width="234" height="52" class="core"/>
+  <g id="t1" transform="translate(161 0)">
+    <text y="136" class="lbl" text-anchor="middle">Validation layer</text>
+    <text y="150" class="sub" text-anchor="middle">useValidate + authValidation</text>
+    <text y="162" class="sub" text-anchor="middle">Module: validation</text>
+  </g>
+  <rect id="b2" x="44" y="176" width="234" height="52" class="core"/>
+  <g id="t2" transform="translate(161 0)">
+    <text y="200" class="lbl" text-anchor="middle">Auth flow</text>
+    <text y="214" class="sub" text-anchor="middle">userSlice + userApi + route guard</text>
+    <text y="226" class="sub" text-anchor="middle">Module: auth</text>
+  </g>
+
+  <rect x="318" y="78" width="344" height="280" class="group"/>
+  <text x="334" y="96" class="sub">Group: Application shell</text>
+  <rect id="b3" x="336" y="112" width="308" height="52" class="core"/>
+  <g id="t3" transform="translate(490 0)">
+    <text y="136" class="lbl" text-anchor="middle">SSR/Router/Redux shell</text>
+    <text y="150" class="sub" text-anchor="middle">main.tsx + routes.tsx + store.ts</text>
+    <text y="162" class="sub" text-anchor="middle">Component: app shell</text>
+  </g>
+  <rect id="b4" x="336" y="176" width="308" height="52" class="core"/>
+  <g id="t4" transform="translate(490 0)">
+    <text y="200" class="lbl" text-anchor="middle">GamePage + Match3Screen</text>
+    <text y="214" class="sub" text-anchor="middle">bridge between declarative and imperative</text>
+    <text y="226" class="sub" text-anchor="middle">Component: game UI bridge</text>
+  </g>
+  <rect id="b5" x="336" y="280" width="308" height="52" class="core"/>
+  <g id="t5" transform="translate(490 0)">
+    <text y="304" class="lbl" text-anchor="middle">Runtime API calls</text>
+    <text y="318" class="sub" text-anchor="middle">start, reset, setTheme, setLevel, onHudChange</text>
+    <text y="330" class="sub" text-anchor="middle">Module: engine runtime</text>
+  </g>
+
+  <rect x="684" y="78" width="270" height="292" class="group"/>
+  <text x="700" y="96" class="sub">Group: Gameplay core</text>
+  <rect id="b6" x="702" y="112" width="234" height="52" class="core"/>
+  <g id="t6" transform="translate(819 0)">
+    <text y="136" class="lbl" text-anchor="middle">Engine state machine</text>
+    <text y="150" class="sub" text-anchor="middle">ready/playing/resolving/finished</text>
+    <text y="162" class="sub" text-anchor="middle">Module: gameState</text>
+  </g>
+  <rect id="b7" x="702" y="176" width="234" height="52" class="core"/>
+  <g id="t7" transform="translate(819 0)">
+    <text y="200" class="lbl" text-anchor="middle">Move pipeline</text>
+    <text y="214" class="sub" text-anchor="middle">swap -> resolve -> HUD sync</text>
+    <text y="226" class="sub" text-anchor="middle">Module: resolvePipeline</text>
+  </g>
+  <rect id="b8" x="702" y="240" width="234" height="52" class="core"/>
+  <g id="t8" transform="translate(819 0)">
+    <text y="264" class="lbl" text-anchor="middle">Canvas render</text>
+    <text y="278" class="sub" text-anchor="middle">board layer + fx layer</text>
+    <text y="290" class="sub" text-anchor="middle">Module: renderer + matchFx</text>
+  </g>
+  <rect id="b9" x="702" y="304" width="234" height="52" class="core"/>
+  <g id="t9" transform="translate(819 0)">
+    <text y="328" class="lbl" text-anchor="middle">HUD/end callbacks</text>
+    <text y="342" class="sub" text-anchor="middle">feedback to React UI</text>
+    <text y="354" class="sub" text-anchor="middle">Callback: onHudChange/end</text>
+  </g>
+
+  <rect x="318" y="360" width="344" height="136" class="group"/>
+  <text x="334" y="378" class="sub">Group: Platform</text>
+  <rect id="b10" x="336" y="396" width="308" height="74" class="core"/>
+  <g id="t10" transform="translate(490 0)">
+    <text y="424" class="lbl" text-anchor="middle">Service Worker support</text>
+    <text y="440" class="sub" text-anchor="middle">cache/install/activate/fetch for offline-ready UX</text>
+    <text y="456" class="sub" text-anchor="middle">sw.ts + vite.config.ts</text>
+  </g>
+
+  <path id="l1" class="arr" d="M 278 138 L 336 138"/>
+  <path id="l2" class="arr" d="M 278 202 L 336 202"/>
+  <path id="l3" class="arr" d="M 644 138 L 702 138"/>
+  <path id="l4" class="arr" d="M 644 202 L 702 202"/>
+  <path id="l5" class="arr" d="M 644 306 L 673 306 L 673 330 L 702 330"/>
+  <path id="l6" class="arr sync" d="M 819 356 L 819 433 L 644 433"/>
+  <path id="l7" class="arr sync" d="M 702 330 L 673 330 L 673 256 L 490 256 L 490 228"/>
+  <path id="l8" class="arr" d="M 490 332 L 490 396"/>
+
+  <text x="24" y="536" class="sub">Use with: react-redux-flow.svg, auth-flow.svg, validation-flow.svg, service-worker-flow.svg, game-engine-flow.svg, game-states-flow.svg, canvas-render-flow.svg, react-canvas-bridge.svg</text>
+</svg>

@@ -50,9 +50,12 @@
 }
 
 .landing--dark-neon .landing-nav button:hover,
-.landing--dark-neon .landing-nav a.btn--flat:hover {
+.landing--dark-neon
+  .landing-nav
+  a.btn--flat:hover {
   color: var(--color-neon-blue);
-  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9), 0 0 14px rgba(168, 85, 247, 0.8);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9),
+    0 0 14px rgba(168, 85, 247, 0.8);
 }
 
 /* мобильная панель навигации — тёмный фон, не «светлое пятно» */
@@ -70,7 +73,8 @@
 }
 
 .landing--dark-neon .landing-settings-btn:hover,
-.landing--dark-neon .landing-fullscreen-btn:hover {
+.landing--dark-neon
+  .landing-fullscreen-btn:hover {
   color: var(--color-neon-blue);
   border-color: rgba(56, 189, 248, 0.75);
 }
@@ -80,23 +84,51 @@
 .landing--dark-neon .benefits__inner,
 .landing--dark-neon .team__inner,
 .landing--dark-neon .contact__inner,
+.landing--dark-neon .how-to-card,
+.landing--dark-neon .leaders-card,
+.landing--dark-neon .blog-card,
 .landing--dark-neon .extra-card,
 .landing--dark-neon .auth-card {
-  background-color: var(--color-bg-card-dark) !important;
-  border-color: var(--color-border-subtle-dark) !important;
+  background-color: var(
+    --color-bg-card-dark
+  ) !important;
+  border-color: var(
+    --color-border-subtle-dark
+  ) !important;
   box-shadow: var(--shadow-neon-card) !important;
 }
 
 /* section subtitles and text */
 
 .landing--dark-neon .section-subtitle,
+.landing--dark-neon .section p,
 .landing--dark-neon .hero__text p,
 .landing--dark-neon .benefits__card p,
 .landing--dark-neon .contact__inner p,
 .landing--dark-neon .extra-card p,
 .landing--dark-neon .extra-card li {
   color: var(--color-text-subtle-dark);
-  text-shadow: none;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+}
+
+.landing--dark-neon .section h2 {
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.26),
+    0 0 14px rgba(56, 189, 248, 0.14);
+}
+
+.landing--dark-neon .how-to-card__screen p {
+  color: var(--color-text-subtle-dark) !important;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+}
+
+.landing--dark-neon .blog-card__sprint,
+.landing--dark-neon .how-to-card__badge {
+  color: var(--color-text-subtle-dark) !important;
+}
+
+.landing--dark-neon .blog-card__sprint {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(125, 211, 252, 0.5);
 }
 
 .landing--dark-neon .team-card__role {
@@ -115,20 +147,29 @@
 /* hero board */
 
 .landing--dark-neon .hero-board {
-  background: radial-gradient(circle at center, #020617 0, #000 100%);
+  background: radial-gradient(
+    circle at center,
+    #020617 0,
+    #000 100%
+  );
   box-shadow: var(--shadow-neon-strong);
   border-color: var(--color-border-subtle-dark);
 }
 
 .landing--dark-neon .hero-board__cell {
   background: rgba(15, 23, 42, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.5);
+  box-shadow: inset 0 0 0 1px
+    rgba(148, 163, 184, 0.5);
 }
 
 .landing--dark-neon .hero-board__cell--match {
   background: rgba(15, 23, 42, 0.96);
   box-shadow: 0 0 16px rgba(56, 189, 248, 0.9),
     inset 0 0 0 1px rgba(56, 189, 248, 0.9);
+}
+
+.landing--dark-neon .hero-board__combo-tag {
+  background: rgba(2, 6, 23, 0.88);
 }
 
 /* дефолтный цвет только если нет модификатора */
@@ -146,13 +187,15 @@
 .landing--dark-neon .team-card {
   background: var(--color-bg-card-dark);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-subtle-dark);
+  border: 1px solid
+    var(--color-border-subtle-dark);
   box-shadow: var(--shadow-neon-card);
 }
 
 .landing--dark-neon .team-card__name {
   color: var(--color-text-main-dark);
-  text-shadow: 0 0 6px rgba(56, 189, 248, 0.6), 0 0 10px rgba(88, 28, 135, 0.5);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.6),
+    0 0 10px rgba(88, 28, 135, 0.5);
 }
 
 .landing--dark-neon .team-card__github {
@@ -161,7 +204,8 @@
 
 .landing--dark-neon .team-card__github:hover {
   color: var(--color-neon-purple);
-  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9), 0 0 12px rgba(168, 85, 247, 0.8);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9),
+    0 0 12px rgba(168, 85, 247, 0.8);
 }
 
 .landing--dark-neon .team-card__avatar {
@@ -170,7 +214,8 @@
     var(--color-neon-blue),
     var(--color-neon-purple)
   );
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.8), 0 0 0 1px rgba(15, 23, 42, 0.9);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.8),
+    0 0 0 1px rgba(15, 23, 42, 0.9);
 }
 
 /* auth in dark theme */
@@ -203,15 +248,15 @@
 
 .landing--dark-neon .auth-link:hover {
   color: var(--color-neon-purple);
-  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9), 0 0 10px rgba(168, 85, 247, 0.8);
+  text-shadow: 0 0 6px rgba(56, 189, 248, 0.9),
+    0 0 10px rgba(168, 85, 247, 0.8);
 }
 
 .landing--dark-neon .auth-page__toast {
   color: var(--color-text-main-dark);
   background: rgba(15, 23, 42, 0.92);
   border-color: rgba(56, 189, 248, 0.45);
-  box-shadow:
-    0 6px 22px rgba(0, 0, 0, 0.45),
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(56, 189, 248, 0.35),
     0 0 18px rgba(56, 189, 248, 0.25);
 }
@@ -220,5 +265,7 @@
 
 .landing--dark-neon .landing-footer {
   background: #020617;
-  border-top-color: var(--color-border-subtle-dark);
+  border-top-color: var(
+    --color-border-subtle-dark
+  );
 }

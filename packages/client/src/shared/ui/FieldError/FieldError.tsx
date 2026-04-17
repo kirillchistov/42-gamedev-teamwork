@@ -7,10 +7,9 @@ interface FieldErrorProps {
   className?: string
 }
 
-export const FieldError: React.FC<FieldErrorProps> = ({
-  message,
-  className,
-}) => {
+export const FieldError: React.FC<
+  FieldErrorProps
+> = ({ message, className }) => {
   if (!message) return null
 
   return (

@@ -1,19 +1,4 @@
-/** Изменения и починка Sprint6 Chores
- * Avatar — вместо проверки только по размеру используем validateAvatarFile,
- * сообщения совпадают с профилем;
- * при ошибке инпут сбрасывается (e.target.value = '').
- * ProfilePage.handleSubmit — отправка на API только после успешной валидации
- * doValidate(profile, async () => { ... }), чтобы не уходил запрос при ошибках полей.
- * Полный путь к аватару из API и обновление аватара с нормализацией URL
- * Починка замены аватара и его отображения после замены
- * Форма смены пароля после клика по ссылке "Сменить пароль"
- * Тостер и консоль-лог при успешном сохранении профиля и аватара
- * Поля смены пароля в профиле валидируются отдельно от других
- * Убран стартовый doValidate для паролей из useEffect.
- * Для профиля handleBlur валидирует profileRef.current, (актуальное состояние после ввода).
- * Кнопка "Сохранить изменения" активируется только после валидации
- *
- * Интеграция с Redux:
+/** Интеграция с Redux:
  * - данные пользователя синхронизированы со стором
  * - профиль обновляется через updateProfileThunk
  * - аватар обновляется через updateAvatarThunk
@@ -23,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
+import clsx from 'clsx'
 import {
   useDispatch,
   useSelector,
@@ -112,8 +98,6 @@ export const ProfilePage: React.FC = () => {
 
   const passwordsRef = useRef(passwords)
   passwordsRef.current = passwords
-  const profileRef = useRef(profile)
-  profileRef.current = profile
 
   const profileValidate = useValidate()
 
@@ -138,7 +122,7 @@ export const ProfilePage: React.FC = () => {
     if (!userFromStore) {
       dispatch(fetchUserThunk())
     } else {
-      setProfile({
+      const nextProfile: ProfileData = {
         first_name:
           userFromStore.first_name || '',
         second_name:
@@ -148,13 +132,14 @@ export const ProfilePage: React.FC = () => {
         email: userFromStore.email || '',
         phone: userFromStore.phone || '',
         login: userFromStore.login || '',
-      })
+      }
+      setProfile(nextProfile)
       const avatarUrl = userFromStore.avatar
         ? resourceFileUrl(userFromStore.avatar)
         : null
       setAvatar(avatarUrl)
-      setSavedProfile({ ...profile })
-      profileValidate.doValidate(profile)
+      setSavedProfile({ ...nextProfile })
+      profileValidate.doValidate(nextProfile)
     }
   }, [dispatch, userFromStore])
 
@@ -187,14 +172,12 @@ export const ProfilePage: React.FC = () => {
     HTMLInputElement
   > = e => {
     const { name, value } = e.target
-    setProfile(prev => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleBlur = () => {
-    profileValidate.doValidate(profileRef.current)
+    setProfile(prev => {
+      return {
+        ...prev,
+        [name]: value,
+      }
+    })
   }
 
   const isProfileDirty =
@@ -213,8 +196,9 @@ export const ProfilePage: React.FC = () => {
       ...prev,
       [field]: true,
     }))
-    passwordsValidate.doValidate(
-      passwordsRef.current
+    passwordsValidate.handleFieldBlur(
+      field,
+      passwordsRef.current[field]
     )
   }
 
@@ -456,13 +440,22 @@ export const ProfilePage: React.FC = () => {
                 placeholder="Имя"
                 value={profile.first_name}
                 onChange={handleChange}
-                onBlur={handleBlur}
+                onFocus={() =>
+                  profileValidate.handleFieldFocus(
+                    'first_name'
+                  )
+                }
+                onBlur={e =>
+                  profileValidate.handleFieldBlur(
+                    'first_name',
+                    e.target.value
+                  )
+                }
               />
               <FieldError
-                message={
-                  profileValidate.errors
-                    .first_name
-                }
+                message={profileValidate.getFieldError(
+                  'first_name'
+                )}
               />
             </label>
 
@@ -474,13 +467,22 @@ export const ProfilePage: React.FC = () => {
                 placeholder="Фамилия"
                 value={profile.second_name}
                 onChange={handleChange}
-                onBlur={handleBlur}
+                onFocus={() =>
+                  profileValidate.handleFieldFocus(
+                    'second_name'
+                  )
+                }
+                onBlur={e =>
+                  profileValidate.handleFieldBlur(
+                    'second_name',
+                    e.target.value
+                  )
+                }
               />
               <FieldError
-                message={
-                  profileValidate.errors
-                    .second_name
-                }
+                message={profileValidate.getFieldError(
+                  'second_name'
+                )}
               />
             </label>
 
@@ -492,12 +494,22 @@ export const ProfilePage: React.FC = () => {
                 placeholder="user@example.com"
                 value={profile.email}
                 onChange={handleChange}
-                onBlur={handleBlur}
+                onFocus={() =>
+                  profileValidate.handleFieldFocus(
+                    'email'
+                  )
+                }
+                onBlur={e =>
+                  profileValidate.handleFieldBlur(
+                    'email',
+                    e.target.value
+                  )
+                }
               />
               <FieldError
-                message={
-                  profileValidate.errors.email
-                }
+                message={profileValidate.getFieldError(
+                  'email'
+                )}
               />
             </label>
 
@@ -509,12 +521,22 @@ export const ProfilePage: React.FC = () => {
                 placeholder="+7..."
                 value={profile.phone}
                 onChange={handleChange}
-                onBlur={handleBlur}
+                onFocus={() =>
+                  profileValidate.handleFieldFocus(
+                    'phone'
+                  )
+                }
+                onBlur={e =>
+                  profileValidate.handleFieldBlur(
+                    'phone',
+                    e.target.value
+                  )
+                }
               />
               <FieldError
-                message={
-                  profileValidate.errors.phone
-                }
+                message={profileValidate.getFieldError(
+                  'phone'
+                )}
               />
             </label>
 
@@ -526,12 +548,22 @@ export const ProfilePage: React.FC = () => {
                 placeholder="login"
                 value={profile.login}
                 onChange={handleChange}
-                onBlur={handleBlur}
+                onFocus={() =>
+                  profileValidate.handleFieldFocus(
+                    'login'
+                  )
+                }
+                onBlur={e =>
+                  profileValidate.handleFieldBlur(
+                    'login',
+                    e.target.value
+                  )
+                }
               />
               <FieldError
-                message={
-                  profileValidate.errors.login
-                }
+                message={profileValidate.getFieldError(
+                  'login'
+                )}
               />
             </label>
 
@@ -543,13 +575,22 @@ export const ProfilePage: React.FC = () => {
                 placeholder="Никнейм"
                 value={profile.display_name}
                 onChange={handleChange}
-                onBlur={handleBlur}
+                onFocus={() =>
+                  profileValidate.handleFieldFocus(
+                    'display_name'
+                  )
+                }
+                onBlur={e =>
+                  profileValidate.handleFieldBlur(
+                    'display_name',
+                    e.target.value
+                  )
+                }
               />
               <FieldError
-                message={
-                  profileValidate.errors
-                    .display_name
-                }
+                message={profileValidate.getFieldError(
+                  'display_name'
+                )}
               />
             </label>
 
@@ -568,11 +609,10 @@ export const ProfilePage: React.FC = () => {
                 type="submit"
                 variant="primary"
                 disabled={!canSaveProfile}
-                className={
-                  (!canSaveProfile
-                    ? 'btn--disabled'
-                    : '') + ' btn btn--primary'
-                }>
+                className={clsx({
+                  'btn--disabled':
+                    !canSaveProfile,
+                })}>
                 {loading
                   ? 'Сохранение...'
                   : 'Сохранить изменения'}
@@ -598,6 +638,11 @@ export const ProfilePage: React.FC = () => {
                     onChange={
                       handleOldPasswordChange
                     }
+                    onFocus={() =>
+                      passwordsValidate.handleFieldFocus(
+                        'oldPassword'
+                      )
+                    }
                     onBlur={() =>
                       handlePasswordFieldBlur(
                         'oldPassword'
@@ -606,10 +651,9 @@ export const ProfilePage: React.FC = () => {
                     autoComplete="current-password"
                   />
                   <FieldError
-                    message={
-                      passwordsValidate.errors
-                        .oldPassword
-                    }
+                    message={passwordsValidate.getFieldError(
+                      'oldPassword'
+                    )}
                   />
                 </label>
                 <label>
@@ -622,6 +666,11 @@ export const ProfilePage: React.FC = () => {
                     onChange={
                       handleNewPasswordChange
                     }
+                    onFocus={() =>
+                      passwordsValidate.handleFieldFocus(
+                        'newPassword'
+                      )
+                    }
                     onBlur={() =>
                       handlePasswordFieldBlur(
                         'newPassword'
@@ -630,10 +679,9 @@ export const ProfilePage: React.FC = () => {
                     autoComplete="new-password"
                   />
                   <FieldError
-                    message={
-                      passwordsValidate.errors
-                        .newPassword
-                    }
+                    message={passwordsValidate.getFieldError(
+                      'newPassword'
+                    )}
                   />
                   {pwdFieldBlurred.oldPassword &&
                   pwdFieldBlurred.newPassword &&
@@ -658,12 +706,10 @@ export const ProfilePage: React.FC = () => {
                     type="submit"
                     variant="primary"
                     disabled={!canSubmitPassword}
-                    className={
-                      (!canSubmitPassword
-                        ? 'btn--disabled'
-                        : '') +
-                      ' btn btn--primary'
-                    }>
+                    className={clsx({
+                      'btn--disabled':
+                        !canSubmitPassword,
+                    })}>
                     Сохранить пароль
                   </Button>
                 </div>

@@ -4,9 +4,10 @@ import clsx from 'clsx'
 
 type CardVariant = 'default' | 'extra'
 
-type CardProps = React.HTMLAttributes<HTMLDivElement> & {
-  variant?: CardVariant
-}
+type CardProps =
+  React.HTMLAttributes<HTMLDivElement> & {
+    variant?: CardVariant
+  }
 
 export const Card: React.FC<CardProps> = ({
   variant = 'default',

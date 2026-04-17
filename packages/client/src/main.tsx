@@ -1,4 +1,6 @@
-﻿import React from 'react'
+﻿// клиентский вход: 'ReactDOM.createRoot', 'Provider', 'RouterProvider' (React Router v6),
+// темы, глобальные стили, ErrorBoundary / AppErrorFallback, оборачивание в 'withAuthGuard'.
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import {
   createBrowserRouter,
@@ -9,7 +11,7 @@ import { ThemeProvider } from '@gravity-ui/uikit'
 import { store } from './store'
 import { routes } from './routes'
 import { LandingThemeProvider } from './contexts/LandingThemeContext'
-import { ProtectedRoute } from './components/ProtectedRoute'
+import { withAuthGuard } from './hoc/withAuthGuard'
 import './shared/styles/normalize.pcss'
 import './shared/styles/base.pcss'
 import './shared/styles/landing.pcss'
@@ -25,6 +27,7 @@ import './shared/styles/forum.pcss'
 import '@gravity-ui/uikit/styles/fonts.css'
 import '@gravity-ui/uikit/styles/styles.css'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { AppErrorFallback } from './components/AppErrorFallback'
 import { isPublicRoutePath } from './router/publicRoutePaths'
 
 const routerBasename = (() => {
@@ -35,16 +38,22 @@ const routerBasename = (() => {
 
 const router = createBrowserRouter(
   routes.map(route => {
+    const commonErrorElement = (
+      <AppErrorFallback />
+    )
+
     if (isPublicRoutePath(route.path))
-      return route
+      return {
+        ...route,
+        errorElement: commonErrorElement,
+      }
     const { Component, ...rest } = route
+    const GuardedComponent =
+      withAuthGuard(Component)
     return {
       ...rest,
-      element: (
-        <ProtectedRoute>
-          <Component />
-        </ProtectedRoute>
-      ),
+      element: <GuardedComponent />,
+      errorElement: commonErrorElement,
     }
   }),
   routerBasename

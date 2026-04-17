@@ -1,88 +1,182 @@
-# CosMatch-3: Описание репозитория (Драфт на 23.03.2026)
+# Структура проекта
 
-## 1. Репозиторий
-Монорепозиторий на основе шаблона Яндекс Практикум — SSR‑шаблон на Express + React + Redux Toolkit с лендингом, auth‑страницами (доступ после логина) и демо‑страницей игры.
+## Общая схема монорепозитория
 
-### Точки входа
-#### Сервер (backend + SSR): packages/server/src/index.ts
-Поднимает Express‑приложение, проксирует API, отдаёт серверный рендер React через общий шаблон.
-#### Клиентский SSR‑сервер: packages/client/server/index.(ts|js)
-Запускается отдельно, в dev‑режиме работает через Vite middlewareMode, в prod — читает собранные dist/client и серверный бандл dist/server/entry-server.js, рендерит React и подмешивает в HTML helmet‑мета и initial state.
+Проект организован как **monorepo** на базе **Lerna** / Yarn workspaces:
 
-#### Клиентская точка входа:
-- packages/client/src/entry-client.tsx — вход на клиенте, монтирует или гидрирует React‑приложение.
+- 'packages/client' — фронтенд (React + TypeScript + Vite + Canvas, SSR на Express).
+- 'packages/server' — отдельный Express API (порт по умолчанию **3001**, см. 'SERVER_PORT' в ['packages/server/index.ts'](../packages/server/index.ts)).
+- 'docs' — проектная и игровая документация.
+- 'docker-compose.yml', 'Dockerfile.*' — локальный и production-запуск в контейнерах.
 
-- packages/client/src/entry-server.tsx — вход на сервере, экспортирует render(req) для SSR (возвращает html, initialState, helmet, styleTags).
+Шаблон на основе курсового **SSR на Express + React + Redux Toolkit**: лендинг, страницы авторизации, закрытые разделы после логина, игра match-3.
 
-### Организация клиентского приложения
-#### Маршруты и инициализация страниц:
-- Конфиг маршрутов и тип PageInitArgs живут в packages/client/src/routes.ts.
-- Каждая страница экспортирует:
--- React‑компонент (LandingPage, LoginPage, SignupPage, GamePage, ForumPage, LeaderboardPage, ProfilePage, FriendsPage, NotFound, Error500Page и т.д.),
+## Точки входа
 
--- функцию initXxxPage(args: PageInitArgs), которая возвращает Promise (часто Promise.all([...dispatch(thunk)])).
+### API-сервер (отдельный пакет)
 
--- Хук usePage({ initPage }) вызывается в начале компонента страницы; он:
+- ['packages/server/index.ts'](../packages/server/index.ts) — поднимает Express, CORS, простые маршруты ('/user', '/friends' и т.д.), а также БД через 'createClientAndConnect'.
 
-на сервере — дергает initPage до SSR, чтобы наполнить Redux store;
+### SSR и отдача клиента
 
-на клиенте — переиспользует уже гидрированный стейт или, при навигации, может триггерить ту же инициализацию.
+- ['packages/client/server/index.ts'](../packages/client/server/index.ts) — Express для SSR: в dev — **Vite** в 'middlewareMode', в prod — статика 'dist/client' и серверный бандл; парсинг cookie, сериализация начального состояния Redux в HTML.
+- ['packages/client/src/entry-server.tsx'](../packages/client/src/entry-server.tsx) — серверный вход React: функция рендера запроса (HTML, 'initialState', Helmet, стили).
+- ['packages/client/src/main.tsx'](../packages/client/src/main.tsx) — клиентский вход: 'ReactDOM.createRoot', **'Provider'**, **'RouterProvider'** (React Router v6), темы, глобальные стили, **ErrorBoundary** / **AppErrorFallback**, оборачивание маршрутов в **'withAuthGuard'**.
 
-#### Главный layout:
-***  Header и Footer *** 
-общие компоненты, подключаются на всех страницах.
+## Клиент ('packages/client')
 
-- Для лендинга/демо страниц используется корневой контейнер .landing + темовые модификаторы (landing--light-flat, landing--light-3d, landing--dark-neon), которые переключаются через контекст LandingThemeContext и переключатель темы в Header.
+### Ключевые директории
 
-*** Сборка страниц и shared‑UI ***
-- Стили: packages/client/src/shared/styles/landing.pcss
-- Описывает layout лендинга, hero, about/benefits, team, contact, auth‑карточки, extra‑секций, темизацию и адаптив.
+- 'src/pages' — страницы ('/game', '/login', '/leaderboard' и т.д.), для многих — пара **компонент + 'initXxxPage'** для данных до первого рендера.
+- 'src/components' — переиспользуемый UI (шапка, футер, лендинг, защита роутов, ошибки).
+- 'src/game/match3' — модуль игры: 'engine' (ядро, рендер, ввод, уровни), 'systems' (рекорды и вспомогательное), ['Match3Screen.tsx'](../packages/client/src/game/match3/Match3Screen.tsx) — связка движка с React.
+- 'src/shared/styles' — глобальные стили, темы, страницы ошибок, форум, match-3.
+- 'src/shared/ui' — мелкие UI-примитивы (кнопки, поля, карточки, ошибки полей).
+- 'src/slices' — Redux Toolkit **слайсы**.
+- 'src/hooks' — 'usePage', 'useAuthCheck', 'useValidate' и др.
 
-*** UI‑компоненты: packages/client/src/shared/ui ***
-Набор мелких компонентов, оборачивающих CSS‑классы:
-- Button — обертка над .btn, варианты primary | outline | flat.
-- LinkButton — такая же кнопка, но через react-router-dom/Link для внутренних переходов.
-- Input, TextArea — обертки над стандартными полями, чтобы унифицировать внешний вид форм (auth/контакт/форум).
-- Card — контейнер под .auth-card / .extra-card.
-- FieldError — компактный вывод текста ошибки под полем формы.
+### Маршруты и жизненный цикл страницы
 
-*** Страницы: *** 
+- Конфиг маршрутов и типы **'PageInitArgs'**, **'PageInitContext'** — в ['src/routes.tsx'](../packages/client/src/routes.tsx). У каждого маршрута: 'path', 'Component', **'fetchData'** (инициализатор страницы).
+- Страница обычно экспортирует React-компонент и функцию **'initXxxPage(args)'**, которая возвращает 'Promise' (часто 'Promise.all([dispatch(thunk), …])').
+- Хук ['usePage'](../packages/client/src/hooks/usePage.ts) в начале компонента страницы:
+  - на **SSR** данные подготавливаются до рендера (через 'fetchData' на сервере);
+  - на **клиенте** при первой загрузке состояние уже в 'window.APP_INITIAL_STATE'; при клиентской навигации 'usePage' снова вызывает 'initPage', если страница не была инициализирована на сервере (логика завязана на ['ssrSlice'](../packages/client/src/slices/ssrSlice.ts)).
 
-- LandingPage — лендинг с hero‑блоком, преимуществами, командой и контактной формой, собранный из секционных компонентов.
-- LoginPage / SignupPage — auth‑страницы, используют Button, Input, FieldError, классическую сетку auth-form auth-form--grid и валидацию через утилиту authValidation.
-- GamePage — отдельная страница с Canvas‑полем и панелью статуса; инициализируется своим хуком, но вписана в тот же layout (AuthPage/landing).
-- Хук usePage и жизненный цикл страниц
-- Тип PageInitArgs: содержит dispatch, state, иногда доп. сервисы (API‑клиент, router context);
-- передаётся в initXxxPage, чтобы страница могла диспатчить асинхронные thunk’и до рендера.
+Так UI, SSR и загрузка данных развязаны: страница декларирует зависимости через 'fetchData', стор одинаково собирается на сервере и клиенте.
 
-usePage({ initPage }):
-на сервере вызывается в ходе SSR (через роутер/entry‑server) и ждёт выполнения initPage;
+### Layout и темы
 
-на клиенте — при прямой загрузке страницы реинициализация не нужна (state уже есть в window.APP_INITIAL_STATE), при client‑side навигации можно повторно вызвать initPage (поведение зависит от реализации хука, но контракт уже соблюдён).
+- [**'Header'**](../packages/client/src/components/Header/index.tsx) и [**'Footer'**](../packages/client/src/components/Footer/index.tsx) подключаются на экранах с общей оболочкой сайта.
+- Лендинг и смежные страницы используют контейнер '.landing' и темы (**'LandingThemeContext'** в ['contexts/LandingThemeContext.tsx'](../packages/client/src/contexts/LandingThemeContext.tsx)); переключатель темы — в шапке.
+- Стили лендинга и секций: ['shared/styles/landing.pcss'](../packages/client/src/shared/styles/landing.pcss).
 
-Этот паттерн позволяет каждой странице сама декларировать, какие данные ей нужны для первого рендера, и переиспользуется для всех роутов.
+### UI-kit ('shared/ui')
 
-#### Работа с данными и Redux store
-*** Настройка стора: ***
-- Redux Toolkit: configureStore с наборами слайсов (userSlice, friendsSlice, и др.).
-- Store создаётся на сервере для каждого запроса, заполняется данными через initPage, сериализуется и пробрасывается на клиент как window.APP_INITIAL_STATE; на клиенте configureStore поднимает тот же state.
-- Слайсы и доступ к данным:
-Пример:
-userSlice — хранит данные текущего пользователя, экспортирует:
-fetchUserThunk для загрузки /auth/user (или аналогичного эндпоинта), селектор selectUser.
+Набор обёрток над CSS-классами:
 
-friendsSlice — хранит список друзей, слайс для fetchFriendsThunk, selectFriends, selectIsLoadingFriends.
+- **Button** — варианты 'primary | outline | flat'.
+- **LinkButton** — то же через 'react-router-dom' / 'Link'.
+- **Input**, **TextArea** — единый вид форм (auth, контакты, форум).
+- **Card** — контейнер карточек.
+- **FieldError** — текст ошибки под полем.
 
-Страницы используют useSelector(selectXxx) и диспатчат thunk’и в initPage.
+### Страницы (примеры назначения)
 
-*** Пример шаблонной страницы (FriendsPage): ***
-В компоненте:
-читает friends, isLoading, user из стора;
-рендерит список/состояние загрузки.
-В initFriendsPage:
-всегда диспатчит fetchFriendsThunk();
-дополнительно дергает fetchUserThunk(), если selectUser(state) вернул null.
+| Файл | Назначение |
+| --- | --- |
+| ['LandingPage.tsx'](../packages/client/src/pages/LandingPage.tsx) | Лендинг: hero, преимущества, команда, контакты, секции из 'components/Landing/'. |
+| ['LoginPage.tsx'](../packages/client/src/pages/LoginPage.tsx) / ['SignupPage.tsx'](../packages/client/src/pages/SignupPage.tsx) | Авторизация и регистрация; валидация через ['authValidation.ts'](../packages/client/src/shared/validation/authValidation.ts). |
+| ['GamePage.tsx'](../packages/client/src/pages/GamePage.tsx) | Игра: оболочка, ['Match3Screen'](../packages/client/src/game/match3/Match3Screen.tsx), полноэкранный режим (**F**), настройки уровня/цели. |
+| ['ForumPage.tsx'](../packages/client/src/pages/ForumPage.tsx), ['ForumTopicPage.tsx'](../packages/client/src/pages/ForumTopicPage.tsx) | Список тем и топик. |
+| ['LeaderboardPage.tsx'](../packages/client/src/pages/LeaderboardPage.tsx) | Лидерборд. |
+| ['ProfilePage.tsx'](../packages/client/src/pages/ProfilePage.tsx) | Профиль, API — ['userApi.ts'](../packages/client/src/shared/api/userApi.ts). |
+| ['Error404Page.tsx'](../packages/client/src/pages/Error404Page.tsx), ['Error500Page.tsx'](../packages/client/src/pages/Error500Page.tsx) | Страницы ошибок; космический layout — ['CosmicErrorLayout'](../packages/client/src/components/CosmicErrorLayout/CosmicErrorLayout.tsx). |
+| ['FriendsPage.tsx'](../packages/client/src/pages/FriendsPage.tsx) | Пример шаблона «страница + thunk»: друзья и пользователь из стора. |
 
-Та же схема потом переиспользуется для форума, лидерборда и демо‑профиля.
+### Ошибки и устойчивость
 
-Такой подход развязывает UI, SSR и загрузку данных: страница описывает только свои зависимости через initPage, хук usePage следит за их вызовом, а store инициализируется одинаково и на сервере, и на клиенте.
+- [**'ErrorBoundary'**](../packages/client/src/components/ErrorBoundary/index.tsx) ловит ошибки рендера в поддереве.
+- [**'AppErrorFallback'**](../packages/client/src/components/AppErrorFallback/index.tsx) — UI для сбоев и 'react-router' errorElement (см. ['main.tsx'](../packages/client/src/main.tsx)).
+
+### Авторизация и защита маршрутов
+
+- [**'useAuthCheck'**](../packages/client/src/hooks/useAuthCheck.ts) — проверка сессии / пользователя.
+- [**'withAuthGuard'**](../packages/client/src/hoc/withAuthGuard.tsx) оборачивает дерево роутера; публичные пути задаются в ['router/publicRoutePaths.ts'](../packages/client/src/router/publicRoutePaths.ts).
+- [**'ProtectedRoute'**](../packages/client/src/components/ProtectedRoute/index.tsx) — редирект неавторизованных с закрытых маршрутов.
+
+## Redux store
+
+- Конфигурация: ['store.ts'](../packages/client/src/store.ts) — **'configureStore'**, 'combineReducers', типы 'RootState', **'AppDispatch'**, обёртки **'useDispatch'**, **'useSelector'**, **'useStore'**.
+- На сервере для запроса создаётся стор, заполняется через **'fetchData'**, сериализуется в **'window.APP_INITIAL_STATE'**; на клиенте 'preloadedState' читает это значение.
+
+### Слайсы
+
+| Слайс | Роль |
+| --- | --- |
+| ['userSlice.ts'](../packages/client/src/slices/userSlice.ts) | Текущий пользователь: thunk’и (например загрузка профиля), селекторы вроде 'selectUser'. |
+| ['friendsSlice.ts'](../packages/client/src/slices/friendsSlice.ts) | Список друзей, загрузка, селекторы. |
+| ['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts) | Данные форума. |
+| ['ssrSlice.ts'](../packages/client/src/slices/ssrSlice.ts) | Флаги SSR/повторной инициализации для **'usePage'**. |
+
+### Пример паттерна страницы
+
+**'FriendsPage':** в компоненте — 'useSelector' для 'friends', загрузки, 'user'; в **'initFriendsPage'** — 'dispatch(fetchFriendsThunk())' и при отсутствии пользователя в сторе — 'fetchUserThunk()'. Тот же подход масштабируется на форум, лидерборд и др.
+
+## Потоки данных (кратко)
+
+- **React UI** — экраны, модалки, HUD, навигация.
+- **Canvas engine** — поле match-3, ввод, анимации, каскады.
+- **Server / API** — авторизация, данные форума и лидерборда, персистентность по мере развития; отдельно **SSR** отдаёт HTML с начальным стором.
+
+## Диаграмма: React + Redux и SSR
+
+Анимированная схема (откройте файл в браузере — подсветка шагов по циклу):
+
+![Поток React + Redux](react-redux-flow.svg)
+
+Логика в виде статичной Mermaid-схемы:
+
+```mermaid
+flowchart TB
+  subgraph client_req["Запрос страницы"]
+    B[Браузер]
+  end
+  subgraph ssr["SSR packages/client/server"]
+    E[Express + Vite middleware]
+    ES[entry-server.tsx]
+  end
+  subgraph init["Инициализация"]
+    R[routes.tsx fetchData / initPage]
+    T[dispatch thunk]
+  end
+  S[(Redux store)]
+  H[HTML + APP_INITIAL_STATE]
+  subgraph browser["Клиент"]
+    M[main.tsx Provider + Router]
+    P[Страница + usePage]
+    UI[useSelector → UI]
+  end
+  B --> E --> ES --> R --> T --> S
+  S --> H --> M --> P --> UI
+```
+
+## Дополнительные анимированные схемы
+
+### Авторизация
+
+![Authentication flow](auth-flow.svg)
+
+### Валидация данных
+
+![Validation flow](validation-flow.svg)
+
+### Service Workers
+
+![Service Worker flow](service-worker-flow.svg)
+
+### Meta-схема проекта
+
+![Project meta flow](project-meta-flow.svg)
+
+## Сервер ('packages/server')
+
+HTTP на Express, CORS, тестовые JSON-маршруты; далее подключаем БД через ['db.ts'](../packages/server/db.ts). Точка входа: ['packages/server/index.ts'](../packages/server/index.ts). Новые маршруты и сервисы добавляем в этот пакет (по мере роста — вынос в 'src/' внутри пакета).
+
+## Документация ('docs')
+
+Требования к игре, бэклог, roadmap, описание движка, гайды по запуску — в этой папке.
+
+## Скрипты верхнего уровня
+
+- 'yarn bootstrap' — установка и инициализация монорепо.
+- 'yarn dev' — клиент и сервер (через Lerna).
+- 'yarn dev:client' / 'yarn dev:server' — отдельно пакет.
+- 'yarn test', 'yarn lint', 'yarn build', 'yarn format'.
+
+## Куда добавлять новый функционал
+
+- Игровая механика — 'packages/client/src/game/match3/engine'.
+- Новые экраны / настройки игры — 'packages/client/src/pages', при необходимости 'Match3Screen.tsx'.
+- API и бизнес-правила на бэкенде — 'packages/server'.
+- Документация — 'docs'.

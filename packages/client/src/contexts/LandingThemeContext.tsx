@@ -10,6 +10,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
@@ -84,10 +85,16 @@ const LandingThemeContext =
 export const LandingThemeProvider: React.FC<{
   children: React.ReactNode
 }> = ({ children }) => {
+  // Avoid SSR warning: useLayoutEffect should run only in browser.
+  const useIsomorphicLayoutEffect =
+    typeof window !== 'undefined'
+      ? useLayoutEffect
+      : useEffect
+
   const [theme, setThemeState] =
     useState<LandingTheme>('light-flat')
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const t = readStoredTheme()
     setThemeState(t)
     if (t === 'light-flat' || t === 'light-3d') {
@@ -104,7 +111,7 @@ export const LandingThemeProvider: React.FC<{
     }
   }, [])
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (typeof document === 'undefined') return
     document.body.classList.remove(
       'landing--light-flat',

@@ -6,7 +6,6 @@ on:
       - main
       - dev
       - sprint_6
-      - feature/6.3-game-visuals
       - sprint_7
   workflow_dispatch:
 

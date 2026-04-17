@@ -2,11 +2,7 @@
  * Сбрасываем серверную сессию при заходе на /login и перед signin,
  * чтобы починить 400 «User already in system» (см. loginThunk).
  */
-import React, {
-  FormEvent,
-  useEffect,
-  useState,
-} from 'react'
+import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
@@ -17,7 +13,12 @@ import { Footer } from '../components/Footer'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
-import { Button, Input } from '../shared/ui'
+import {
+  Button,
+  FieldError,
+  Input,
+} from '../shared/ui'
+import { useValidate } from '../hooks/useValidate'
 import {
   useDispatch,
   useSelector,
@@ -25,13 +26,11 @@ import {
 import {
   fetchUserThunk,
   loginThunk,
-  logoutThunk,
   selectUserError,
   selectUserIsAuthChecked,
   selectUserIsLoading,
 } from '../slices/userSlice'
 
-// Сбрасываем серверную сессию при заходе на /login и перед signin,
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
   const { theme } = useLandingTheme()
@@ -45,35 +44,24 @@ export const LoginPage: React.FC = () => {
     selectUserIsLoading
   )
   const error = useSelector(selectUserError)
+  const loginValidate = useValidate()
 
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
-  const [isLoggingOut, setIsLoggingOut] =
-    useState(false)
-
-  useEffect(() => {
-    if (!isAuthChecked) return
-    let alive = true
-    const reset = async () => {
-      setIsLoggingOut(true)
-      await dispatch(logoutThunk())
-      if (alive) setIsLoggingOut(false)
-    }
-    void reset()
-    return () => {
-      alive = false
-    }
-  }, [dispatch, isAuthChecked])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    await dispatch(logoutThunk())
-    const result = await dispatch(
-      loginThunk({ login, password })
+    loginValidate.doValidate(
+      { login, password },
+      async () => {
+        const result = await dispatch(
+          loginThunk({ login, password })
+        )
+        if (loginThunk.fulfilled.match(result)) {
+          navigate('/game', { replace: true })
+        }
+      }
     )
-    if (loginThunk.fulfilled.match(result)) {
-      navigate('/game', { replace: true })
-    }
   }
 
   return (
@@ -94,10 +82,6 @@ export const LoginPage: React.FC = () => {
           <section className="auth-card auth-card--wide">
             <p>Проверяем текущую сессию...</p>
           </section>
-        ) : isLoggingOut ? (
-          <section className="auth-card auth-card--wide">
-            <p>Выходим из текущей сессии...</p>
-          </section>
         ) : (
           <section className="auth-card auth-card--wide">
             <h1>Вход</h1>
@@ -116,7 +100,23 @@ export const LoginPage: React.FC = () => {
                   onChange={e =>
                     setLogin(e.target.value)
                   }
+                  onFocus={() =>
+                    loginValidate.handleFieldFocus(
+                      'login'
+                    )
+                  }
+                  onBlur={e =>
+                    loginValidate.handleFieldBlur(
+                      'login',
+                      e.target.value
+                    )
+                  }
                   autoComplete="username"
+                />
+                <FieldError
+                  message={loginValidate.getFieldError(
+                    'login'
+                  )}
                 />
               </label>
 
@@ -130,7 +130,23 @@ export const LoginPage: React.FC = () => {
                   onChange={e =>
                     setPassword(e.target.value)
                   }
+                  onFocus={() =>
+                    loginValidate.handleFieldFocus(
+                      'password'
+                    )
+                  }
+                  onBlur={e =>
+                    loginValidate.handleFieldBlur(
+                      'password',
+                      e.target.value
+                    )
+                  }
                   autoComplete="current-password"
+                />
+                <FieldError
+                  message={loginValidate.getFieldError(
+                    'password'
+                  )}
                 />
               </label>
 

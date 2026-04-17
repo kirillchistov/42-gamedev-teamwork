@@ -8,11 +8,17 @@ type CosmicErrorLayoutProps = {
   children: React.ReactNode
   title: string
   description: string
+  showSiteChrome?: boolean
 }
 
 export const CosmicErrorLayout: React.FC<
   CosmicErrorLayoutProps
-> = ({ children, title, description }) => {
+> = ({
+  children,
+  title,
+  description,
+  showSiteChrome = true,
+}) => {
   const { theme } = useLandingTheme()
 
   return (
@@ -41,7 +47,7 @@ export const CosmicErrorLayout: React.FC<
         <div className="cosmic-error-page__comet cosmic-error-page__comet--3" />
       </div>
 
-      <Header />
+      {showSiteChrome ? <Header /> : null}
 
       <main className="cosmic-error-page__main">
         <div className="auth-card auth-card--wide error-card cosmic-error-page__card">
@@ -49,7 +55,7 @@ export const CosmicErrorLayout: React.FC<
         </div>
       </main>
 
-      <Footer />
+      {showSiteChrome ? <Footer /> : null}
     </div>
   )
 }

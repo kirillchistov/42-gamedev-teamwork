@@ -2,12 +2,16 @@
 import React from 'react'
 import clsx from 'clsx'
 
-type ButtonVariant = 'primary' | 'outline' | 'flat'
+type ButtonVariant =
+  | 'primary'
+  | 'outline'
+  | 'flat'
 
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: ButtonVariant
-  as?: 'button'
-}
+type ButtonProps =
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    variant?: ButtonVariant
+    as?: 'button'
+  }
 
 export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',

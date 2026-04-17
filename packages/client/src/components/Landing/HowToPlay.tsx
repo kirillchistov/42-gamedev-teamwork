@@ -2,32 +2,55 @@
 import React from 'react'
 
 export const HowToPlay: React.FC = () => {
+  const cards = [
+    {
+      title: 'Создание комбинации',
+      desc: 'Меняйте соседние фишки местами и собирайте линии 3+, чтобы запускать цепочки.',
+      badge: '3x',
+      screenText: 'Три одинаковых в ряд',
+    },
+    {
+      title: 'Мега-комбо',
+      desc: 'Длинные каскады ускоряют набор очков и дают мощный буст к итоговому результату.',
+      badge: 'x8',
+      screenText: 'Каскад + взрыв + бонус',
+    },
+    {
+      title: 'Бустеры',
+      desc: 'Линейные и зональные эффекты помогают закрывать сложные цели и выходить из тупиков.',
+      badge: 'BOOST',
+      screenText: 'Линия, крест и зона',
+    },
+    {
+      title: 'Блокеры',
+      desc: 'Спец-клетки и препятствия требуют точных ходов, чтобы не терять темп матча.',
+      badge: 'LOCK',
+      screenText: 'Лед, замки и барьеры',
+    },
+  ]
+
   return (
     <section className="section" id="how-to-play">
       <h2>Как играть</h2>
       <p className="section-subtitle">
-        Космический match‑3: обменивайте соседние фишки, чтобы собрать три и
-        более одного цвета по горизонтали или вертикали.
+        Короткий визуальный гайд по основным
+        игровым ситуациям.
       </p>
-      <div className="benefits__inner">
-        <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14 }}>
-          <li>
-            Выберите фишку и обменяйте её с соседней по вертикали или
-            горизонтали.
-          </li>
-          <li>
-            Соберите линию из трёх и более фишек одного цвета, чтобы они
-            исчезли.
-          </li>
-          <li>
-            Фишки сверху падают вниз, а сверху появляются новые — возможны
-            каскады.
-          </li>
-          <li>
-            Собирайте особые комбинации, чтобы создавать бомбы и мощные эффекты.
-          </li>
-          <li>Выполните цели уровня за ограниченное количество ходов.</li>
-        </ol>
+      <div className="how-to-grid">
+        {cards.map(card => (
+          <article
+            key={card.title}
+            className="how-to-card">
+            <div className="how-to-card__screen">
+              <span className="how-to-card__badge">
+                {card.badge}
+              </span>
+              <p>{card.screenText}</p>
+            </div>
+            <h3>{card.title}</h3>
+            <p>{card.desc}</p>
+          </article>
+        ))}
       </div>
     </section>
   )

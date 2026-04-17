@@ -9,11 +9,14 @@ export const Leaderboard: React.FC = () => {
         Лучшие игроки по результатам соревнований.
       </p>
       <p className="auth-note">
-        Сейчас таблица рекордов статична. Данные друзей подгружаются так же, как
-        на FriendsPage.
+        Сейчас таблица рекордов статична. Данные
+        друзей подгружаются так же, как на
+        FriendsPage.
       </p>
 
-      <div className="extra-card" style={{ marginBottom: 16 }}>
+      <div
+        className="extra-card"
+        style={{ marginBottom: 16 }}>
         <h3>Таблица рекордов</h3>
         <table>
           <thead>

@@ -1,7 +1,5 @@
 // Неизвестный маршрут (*): космический фон
-import { useNavigate } from 'react-router-dom'
-
-import { Button } from '../shared/ui'
+import { LinkButton } from '../shared/ui'
 import { usePage } from '../hooks/usePage'
 import {
   CosmicErrorLayout,
@@ -10,7 +8,6 @@ import {
 
 export const NotFoundPage = () => {
   usePage({ initPage: initNotFoundPage })
-  const navigate = useNavigate()
 
   return (
     <CosmicErrorLayout
@@ -35,12 +32,9 @@ export const NotFoundPage = () => {
         Выберите другой курс или проверьте
         написание URL.
       </p>
-      <Button
-        type="button"
-        variant="primary"
-        onClick={() => navigate('/')}>
+      <LinkButton to="/" variant="primary">
         Выйти из гравитационной ловушки
-      </Button>
+      </LinkButton>
     </CosmicErrorLayout>
   )
 }
