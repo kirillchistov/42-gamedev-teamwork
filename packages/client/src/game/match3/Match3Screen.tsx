@@ -41,6 +41,10 @@ type UiPhase =
   | 'ready'
   | 'playing'
   | 'results'
+type PlayerHintsMode =
+  | 'always'
+  | 'never'
+  | 'pauses'
 
 const BORDER_SPARK_COUNT = 34
 const BORDER_SPARK_STEP_MS = 42
@@ -135,6 +139,7 @@ type Match3ScreenProps = {
   /** Полный VFX или упрощённый (без частиц, тряски и «петард» по контуру). */
   vfxQuality?: GameVfxQualityOption
   hintIdleMs?: number
+  playerHintsMode?: PlayerHintsMode
   onOpenSettings?: () => void
   forcePlayMode?: boolean
   onGameFinished?: (
@@ -158,6 +163,7 @@ export const Match3Screen: React.FC<
   soundEnabled = true,
   vfxQuality = 'full',
   hintIdleMs,
+  playerHintsMode = 'always',
   onOpenSettings,
   forcePlayMode = false,
   onGameFinished,
@@ -420,16 +426,28 @@ export const Match3Screen: React.FC<
   }, [uiPhase])
 
   useEffect(() => {
-    try {
-      const hidden =
-        window.localStorage.getItem(
-          MATCH3_HINTS_HIDDEN_KEY
-        ) === '1'
-      setHintsHidden(hidden)
-    } catch {
-      setHintsHidden(false)
+    if (playerHintsMode === 'never') {
+      setHintsHidden(true)
+      try {
+        window.localStorage.setItem(
+          MATCH3_HINTS_HIDDEN_KEY,
+          '1'
+        )
+      } catch {
+        // noop
+      }
+      return
     }
-  }, [])
+    setHintsHidden(false)
+    try {
+      window.localStorage.setItem(
+        MATCH3_HINTS_HIDDEN_KEY,
+        '0'
+      )
+    } catch {
+      // noop
+    }
+  }, [playerHintsMode])
 
   useEffect(() => {
     if (uiPhase !== 'playing') return
@@ -604,27 +622,39 @@ export const Match3Screen: React.FC<
     limitMode === 'moves'
       ? `${Math.max(moveLimit - hud.moves, 0)}`
       : timeLabel
-  const hudHintText = showKeyboardHint
-    ? 'Enter или Space - выбор, Стрелки - переход к цели'
-    : showIdleCoachHint
-    ? isRookieTutorialActive &&
-      playingElapsedSec >= 30
-      ? 'Совет новичку: ищите двойные комбинации и ходы внизу поля — каскады дают больше очков'
-      : 'Следите за подсказками, чтобы не пропустить комбинацию'
-    : isRookieTutorialActive &&
-      playingElapsedSec >= 35 &&
-      comboSuccessCount < 2
-    ? 'Совет новичку: комбинации 4+ и бомбы/ракеты ускоряют набор очков'
-    : isRookieTutorialActive &&
-      playingElapsedSec >= 20 &&
-      comboSuccessCount === 0
-    ? 'Совет новичку: начинайте с нижней части поля, чтобы чаще запускать каскады'
-    : COACH_MESSAGES[
-        Math.min(
-          coachStep,
-          COACH_MESSAGES.length - 1
-        )
-      ]
+  const hudHintText =
+    playerHintsMode === 'pauses'
+      ? showIdleCoachHint
+        ? isRookieTutorialActive &&
+          playingElapsedSec >= 30
+          ? 'Совет новичку: ищите двойные комбинации и ходы внизу поля — каскады дают больше очков'
+          : 'Пауза в игре: проверьте нижние ряды и возможные каскады'
+        : ''
+      : showKeyboardHint
+      ? 'Enter или Space - выбор, Стрелки - переход к цели'
+      : showIdleCoachHint
+      ? isRookieTutorialActive &&
+        playingElapsedSec >= 30
+        ? 'Совет новичку: ищите двойные комбинации и ходы внизу поля — каскады дают больше очков'
+        : 'Следите за подсказками, чтобы не пропустить комбинацию'
+      : isRookieTutorialActive &&
+        playingElapsedSec >= 35 &&
+        comboSuccessCount < 2
+      ? 'Совет новичку: комбинации 4+ и бомбы/ракеты ускоряют набор очков'
+      : isRookieTutorialActive &&
+        playingElapsedSec >= 20 &&
+        comboSuccessCount === 0
+      ? 'Совет новичку: начинайте с нижней части поля, чтобы чаще запускать каскады'
+      : COACH_MESSAGES[
+          Math.min(
+            coachStep,
+            COACH_MESSAGES.length - 1
+          )
+        ]
+  const shouldShowHudHints =
+    !hintsHidden &&
+    (playerHintsMode !== 'pauses' ||
+      showIdleCoachHint)
 
   const handleHideHints = () => {
     setHintsHidden(true)
@@ -761,7 +791,7 @@ export const Match3Screen: React.FC<
                 <span>Заново</span>
               </button>
             </div>
-            {!hintsHidden && (
+            {shouldShowHudHints && (
               <div className="match3__hud-kbd-hint-wrap">
                 {isRookieTutorialCompleted && (
                   <span className="match3__hud-tutorial-badge">
@@ -771,14 +801,16 @@ export const Match3Screen: React.FC<
                 <div className="match3__hud-kbd-hint">
                   {hudHintText}
                 </div>
-                <button
-                  type="button"
-                  className="match3__hud-hint-hide"
-                  onClick={handleHideHints}
-                  aria-label="Скрыть подсказки"
-                  title="Скрыть подсказки">
-                  ✕
-                </button>
+                {playerHintsMode === 'always' && (
+                  <button
+                    type="button"
+                    className="match3__hud-hint-hide"
+                    onClick={handleHideHints}
+                    aria-label="Скрыть подсказки"
+                    title="Скрыть подсказки">
+                    ✕
+                  </button>
+                )}
               </div>
             )}
           </>

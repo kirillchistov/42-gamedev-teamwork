@@ -927,9 +927,13 @@
   border-radius: 10px;
   border: 1px solid rgba(56, 189, 248, 0.45);
   background: rgba(15, 23, 42, 0.64);
-  color: #dbeafe;
+  color: #eef6ff;
   font-size: clamp(14px, 1.7vmin, 20px);
   align-self: center;
+}
+
+.match3__start-info .btn {
+  color: inherit;
 }
 
 .match3__start-actions {
@@ -1501,6 +1505,21 @@ button.match3__results-badge-win-wrap:focus-visible {
     var(--m3-screen-bg);
 }
 
+.match3-start-screen.match3-start-screen--arena-photo {
+  background-color: #030712;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(2, 6, 23, 0.54) 0%,
+      rgba(2, 6, 23, 0.38) 45%,
+      rgba(2, 6, 23, 0.74) 100%
+    ),
+    var(--m3-arena-photo, none);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
 .match3-start-screen__inner {
   width: min(580px, 100%);
   min-height: 90%;
@@ -1583,6 +1602,21 @@ button.match3__results-badge-win-wrap:focus-visible {
 .landing--light-flat .match3-start-screen,
 .landing--light-3d .match3-start-screen {
   background: #eef3fb;
+}
+
+.landing--light-flat
+  .match3-start-screen.match3-start-screen--arena-photo,
+.landing--light-3d
+  .match3-start-screen.match3-start-screen--arena-photo {
+  background-color: #eef3fb;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(238, 243, 251, 0.92) 0%,
+      rgba(238, 243, 251, 0.64) 45%,
+      rgba(226, 232, 244, 0.9) 100%
+    ),
+    var(--m3-arena-photo, none);
 }
 
 .landing--light-flat .match3__start-glow-note,

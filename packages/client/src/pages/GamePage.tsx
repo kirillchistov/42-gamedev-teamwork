@@ -58,12 +58,8 @@ const cosmicBadgeWinUrl =
 const LAST_RESULT_KEY = 'match3:last-result'
 const FIRST_START_COUNTDOWN_DONE_KEY =
   'match3:first-start-countdown-done'
-const ROOKIE_TUTORIAL_GAMES_KEY =
-  'match3:rookie-tutorial-games'
-const ROOKIE_TUTORIAL_DONE_KEY =
-  'match3:rookie-tutorial-done'
-const MATCH3_HINTS_HIDDEN_KEY =
-  'match3:hints-hidden'
+const PLAYER_HINTS_MODE_KEY =
+  'match3:player-hints-mode'
 
 const MOVE_LIMIT_BY_LEVEL: Record<
   string,
@@ -117,12 +113,20 @@ export const GamePage: React.FC = () => {
   )
   const [hintIdleMs, setHintIdleMs] =
     useState(5000)
+  const [playerHintsMode, setPlayerHintsMode] =
+    useState<'always' | 'never' | 'pauses'>(
+      'always'
+    )
   const [soundEnabled, setSoundEnabled] =
     useState(true)
   const [vfxQuality, setVfxQuality] =
     useState<GameVfxQualityOption>('full')
   const [toastMessage, setToastMessage] =
     useState('')
+  const [
+    finishArenaBgIndex,
+    setFinishArenaBgIndex,
+  ] = useState(() => readArenaBgIndex())
   const [, bumpFinishArenaBg] = useReducer(
     (n: number) => n + 1,
     0
@@ -181,6 +185,23 @@ export const GamePage: React.FC = () => {
       window.localStorage.removeItem(
         LAST_RESULT_KEY
       )
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(
+        PLAYER_HINTS_MODE_KEY
+      )
+      if (
+        raw === 'always' ||
+        raw === 'never' ||
+        raw === 'pauses'
+      ) {
+        setPlayerHintsMode(raw)
+      }
+    } catch {
+      // noop: keep default
     }
   }, [])
 
@@ -249,14 +270,24 @@ export const GamePage: React.FC = () => {
     location.pathname === '/game/finish'
 
   const finishArenaPhotoUrl = isFinishRoute
-    ? arenaBgUrlForIndex(readArenaBgIndex())
+    ? arenaBgUrlForIndex(finishArenaBgIndex)
+    : ''
+  const startArenaPhotoUrl = isStartRoute
+    ? arenaBgUrlForIndex(finishArenaBgIndex)
     : ''
 
   const handleCycleFinishArenaBg =
     useCallback(() => {
       cycleArenaBgNext()
+      const next = readArenaBgIndex()
+      setFinishArenaBgIndex(next)
       bumpFinishArenaBg()
     }, [])
+
+  useEffect(() => {
+    if (!isFinishRoute && !isStartRoute) return
+    setFinishArenaBgIndex(readArenaBgIndex())
+  }, [isFinishRoute, isStartRoute])
 
   useEffect(() => {
     if (!isStartRoute) return
@@ -382,31 +413,11 @@ export const GamePage: React.FC = () => {
         JSON.stringify(next)
       )
       advanceArenaBgAfterGame()
+      setFinishArenaBgIndex(readArenaBgIndex())
       navigate('/game/finish')
     },
     [navigate]
   )
-
-  const handleResetTutorialHints = () => {
-    try {
-      window.localStorage.removeItem(
-        ROOKIE_TUTORIAL_GAMES_KEY
-      )
-      window.localStorage.removeItem(
-        ROOKIE_TUTORIAL_DONE_KEY
-      )
-      window.localStorage.removeItem(
-        MATCH3_HINTS_HIDDEN_KEY
-      )
-      setToastMessage(
-        'Подсказки и обучение сброшены'
-      )
-    } catch {
-      setToastMessage(
-        'Не удалось сбросить подсказки'
-      )
-    }
-  }
 
   return (
     <div
@@ -509,7 +520,19 @@ export const GamePage: React.FC = () => {
       )}
 
       {isStartRoute && (
-        <section className="match3-start-screen">
+        <section
+          className={clsx(
+            'match3-start-screen',
+            startArenaPhotoUrl &&
+              'match3-start-screen--arena-photo'
+          )}
+          style={
+            startArenaPhotoUrl
+              ? ({
+                  ['--m3-arena-photo' as string]: `url("${startArenaPhotoUrl}")`,
+                } as React.CSSProperties)
+              : undefined
+          }>
           <div className="match3-start-screen__inner">
             {startCountdown > 0 ? (
               <div className="match3-start-screen__countdown">
@@ -918,6 +941,39 @@ export const GamePage: React.FC = () => {
                         </select>
                       </label>
                       <label className="match3-page__settings-label">
+                        Советы игроку
+                        <select
+                          value={playerHintsMode}
+                          onChange={e => {
+                            const next = e.target
+                              .value as
+                              | 'always'
+                              | 'never'
+                              | 'pauses'
+                            setPlayerHintsMode(
+                              next
+                            )
+                            try {
+                              window.localStorage.setItem(
+                                PLAYER_HINTS_MODE_KEY,
+                                next
+                              )
+                            } catch {
+                              // noop
+                            }
+                          }}>
+                          <option value="always">
+                            Показывать всегда
+                          </option>
+                          <option value="never">
+                            Не показывать
+                          </option>
+                          <option value="pauses">
+                            Показывать при паузах
+                          </option>
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
                         Цель (очки)
                         <input
                           type="number"
@@ -945,14 +1001,6 @@ export const GamePage: React.FC = () => {
                           }}
                         />
                       </label>
-                      <button
-                        type="button"
-                        className="btn btn--outline"
-                        onClick={
-                          handleResetTutorialHints
-                        }>
-                        Показать советы снова
-                      </button>
                     </div>
                   </div>
                 )}
@@ -988,6 +1036,7 @@ export const GamePage: React.FC = () => {
             soundEnabled={soundEnabled}
             vfxQuality={vfxQuality}
             hintIdleMs={hintIdleMs}
+            playerHintsMode={playerHintsMode}
             forcePlayMode
             onGameFinished={handleGameFinished}
           />
