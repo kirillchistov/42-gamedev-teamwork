@@ -75,6 +75,14 @@ export const GAME_ICON_THEME_OPTIONS = [
 export type GameIconThemeOption =
   typeof GAME_ICON_THEME_OPTIONS[number]
 
+/** Визуал рамки и клеток поля (космос / тёплая «кухня» под еду). */
+export const BOARD_FIELD_THEME_OPTIONS = [
+  'space',
+  'food',
+] as const
+export type BoardFieldThemeOption =
+  typeof BOARD_FIELD_THEME_OPTIONS[number]
+
 /** Полный VFX (частицы, вспышка, тряска) или упрощённый (только подсветка на поле). */
 export const GAME_VFX_QUALITY_OPTIONS = [
   'full',

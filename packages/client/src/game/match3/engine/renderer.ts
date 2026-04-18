@@ -14,7 +14,7 @@
  * Добавил отрисовку подсказки: пунктирная желтая рамка на клетках возможного свопа
  * 6.3.1 VFX при матче (частицы + вспышка):
  * Экспорт boardLayout(board, canvasW, canvasH) — общая геометрия клетки и отступов
- * renderBoard и pickCellAt используют boardLayout, чтобы matchFx совпадал с отрисовкой
+ * renderBoard, pickCellAt и matchFx используют {@link MATCH3_BOARD_LOGICAL_PX} как логический размер поля
  * 6.3.3 Улучшенный HUD (сбоку на ПК, компактная шапка в мобильной версии)
  * 6.3.4 Улучшенная геометрия поля (ширина поля на 20% больше высоты)
  * 6.3.5 Добавлен выбор тематики фишек
@@ -28,6 +28,7 @@ import {
 } from './core/cell'
 import {
   TILE_COLORS_BY_THEME,
+  type BoardFieldThemeOption,
   type GameIconThemeOption,
   type GameThemeOption,
 } from './config'
@@ -51,9 +52,17 @@ export type RenderOpts = {
   hintTo?: CellRC | null
   theme?: GameThemeOption
   iconTheme?: GameIconThemeOption
+  /** Оформление поля: космическая сетка или светлая «столешница» под иконки еды. */
+  boardField?: BoardFieldThemeOption
   iceGrid?: number[][]
   goalGrid?: number[][]
 }
+
+/**
+ * Координаты отрисовки и {@link boardLayout} — в этой логической системе;
+ * буфер канваса увеличивается по `devicePixelRatio` в bootstrap (резкие SVG).
+ */
+export const MATCH3_BOARD_LOGICAL_PX = 480
 
 const COSMIC_ICON_PATHS = [
   ...MATCH3_COSMIC_ICON_URLS,
@@ -500,6 +509,83 @@ function drawIceOverlay(
   ctx.restore()
 }
 
+/** Доля площади клетки под SVG-иконку еды (остальное — поле и рамка). */
+const FOOD_ICON_AREA_RATIO = 0.98
+
+/** Фон клетки с фишкой (еда). */
+const FOOD_TILE_FILL = '#424242'
+
+/**
+ * Акцент конца градиента рамки (1 синий … 6 коричневый; 7+ — фиолет., оранж., бирюз., индиго).
+ * Индекс: `Math.abs(kind) % length`.
+ */
+const FOOD_TILE_BORDER_ACCENTS: readonly string[] =
+  [
+    '#2563eb',
+    '#16a34a',
+    '#ca8a04',
+    '#dc2626',
+    '#db2777',
+    '#92400e',
+    '#7c3aed',
+    '#ea580c',
+    '#0d9488',
+    '#4338ca',
+  ]
+
+function foodTileBorderAccent(
+  kind: number
+): string {
+  const idx =
+    Math.abs(kind) %
+    FOOD_TILE_BORDER_ACCENTS.length
+  return (
+    FOOD_TILE_BORDER_ACCENTS[idx] ??
+    FOOD_TILE_BORDER_ACCENTS[0]
+  )
+}
+
+function strokeFoodCellBorderByKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  /** `null` — пустая клетка: золото → приглушённый серый */
+  kindOrNull: number | null
+) {
+  const lw = Math.max(
+    1.5,
+    Math.min(3.8, cell * 0.048)
+  )
+  const inset = lw / 2
+  const accentEnd =
+    kindOrNull === null
+      ? '#4f4f4f'
+      : foodTileBorderAccent(kindOrNull)
+
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  g.addColorStop(0, '#fff2c4')
+  g.addColorStop(0.22, '#f0cf6e')
+  g.addColorStop(0.55, '#e8b84a')
+  g.addColorStop(0.82, accentEnd)
+  g.addColorStop(1, accentEnd)
+  ctx.strokeStyle = g
+  ctx.lineWidth = lw
+  ctx.strokeRect(
+    x + inset,
+    y + inset,
+    cell - lw,
+    cell - lw
+  )
+  ctx.restore()
+}
+
 function drawGoalOverlay(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -555,13 +641,14 @@ export function pickCellAt(
   const rect = canvas.getBoundingClientRect()
   const { x: cx, y: cy } = getClientXY(ev)
   const px =
-    (cx - rect.left) * (canvas.width / rect.width)
+    (cx - rect.left) *
+    (MATCH3_BOARD_LOGICAL_PX / rect.width)
   const py =
     (cy - rect.top) *
-    (canvas.height / rect.height)
+    (MATCH3_BOARD_LOGICAL_PX / rect.height)
 
-  const W = canvas.width
-  const H = canvas.height
+  const W = MATCH3_BOARD_LOGICAL_PX
+  const H = MATCH3_BOARD_LOGICAL_PX
   const layout = boardLayout(board, W, H)
   if (!layout) return null
   const { cell, ox, oy } = layout
@@ -581,10 +668,13 @@ export function renderBoard(
   const theme = opts?.theme ?? 'standard'
   const iconTheme = opts?.iconTheme ?? 'cosmic'
   const themeIcons = iconsForTheme(iconTheme)
+  const boardField: BoardFieldThemeOption =
+    opts?.boardField ?? 'space'
+  const isFoodField = boardField === 'food'
 
   const { rows, cols } = dims(board)
-  const W = ctx.canvas.width
-  const H = ctx.canvas.height
+  const W = MATCH3_BOARD_LOGICAL_PX
+  const H = MATCH3_BOARD_LOGICAL_PX
 
   ctx.clearRect(0, 0, W, H)
   if (rows === 0 || cols === 0) return
@@ -607,23 +697,50 @@ export function renderBoard(
 
   // frame
   ctx.save()
-  ctx.fillStyle = 'rgba(5, 12, 28, 0.95)'
-  ctx.fillRect(
-    ox - 10,
-    oy - 10,
-    cols * cell + 20,
-    rows * cell + 20
-  )
-  ctx.shadowColor = 'rgba(90, 219, 255, 0.75)'
-  ctx.shadowBlur = 20
-  ctx.strokeStyle = 'rgba(97, 222, 255, 0.9)'
-  ctx.lineWidth = 2
-  ctx.strokeRect(
-    ox - 6,
-    oy - 6,
-    cols * cell + 12,
-    rows * cell + 12
-  )
+  if (isFoodField) {
+    const pad = 10
+    const fw = cols * cell + pad * 2
+    const fh = rows * cell + pad * 2
+    const gx = ctx.createLinearGradient(
+      ox - pad,
+      oy - pad,
+      ox - pad + fw,
+      oy - pad + fh
+    )
+    gx.addColorStop(0, '#6b3f2a')
+    gx.addColorStop(0.45, '#4a2c1c')
+    gx.addColorStop(1, '#2d1810')
+    ctx.fillStyle = gx
+    ctx.fillRect(ox - pad, oy - pad, fw, fh)
+    ctx.shadowColor = 'rgba(251, 191, 36, 0.35)'
+    ctx.shadowBlur = 18
+    ctx.strokeStyle = 'rgba(254, 243, 199, 0.88)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(
+      ox - 6,
+      oy - 6,
+      cols * cell + 12,
+      rows * cell + 12
+    )
+  } else {
+    ctx.fillStyle = 'rgba(5, 12, 28, 0.95)'
+    ctx.fillRect(
+      ox - 10,
+      oy - 10,
+      cols * cell + 20,
+      rows * cell + 20
+    )
+    ctx.shadowColor = 'rgba(90, 219, 255, 0.75)'
+    ctx.shadowBlur = 20
+    ctx.strokeStyle = 'rgba(97, 222, 255, 0.9)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(
+      ox - 6,
+      oy - 6,
+      cols * cell + 12,
+      rows * cell + 12
+    )
+  }
   ctx.restore()
 
   for (let r = 0; r < rows; r += 1) {
@@ -633,14 +750,30 @@ export function renderBoard(
       const x = ox + c * cell
       const y = oy + r * cell
 
-      // base
-      ctx.fillStyle = 'rgba(18, 28, 53, 0.95)'
-      ctx.fillRect(x, y, cell, cell)
-      ctx.strokeStyle = 'rgba(95, 140, 210, 0.35)'
-      ctx.strokeRect(x, y, cell, cell)
-
       const v = row[c]
-      if (typeof v !== 'number' || v < 0) continue
+      const hasTile =
+        typeof v === 'number' && v >= 0
+
+      // base
+      if (isFoodField) {
+        ctx.fillStyle = FOOD_TILE_FILL
+        ctx.fillRect(x, y, cell, cell)
+        strokeFoodCellBorderByKind(
+          ctx,
+          x,
+          y,
+          cell,
+          hasTile ? v : null
+        )
+      } else {
+        ctx.fillStyle = 'rgba(18, 28, 53, 0.95)'
+        ctx.fillRect(x, y, cell, cell)
+        ctx.strokeStyle =
+          'rgba(95, 140, 210, 0.35)'
+        ctx.strokeRect(x, y, cell, cell)
+      }
+
+      if (!hasTile) continue
       const motion = motionByDest.get(`${r},${c}`)
       const drawX = motion
         ? ox +
@@ -666,24 +799,37 @@ export function renderBoard(
         typeof icon.naturalWidth === 'number' &&
         icon.naturalWidth > 0
       ) {
-        const pad = Math.max(
-          4,
-          Math.floor(cell * 0.14)
-        )
         ctx.save()
-        ctx.shadowColor =
-          'rgba(148, 163, 184, 0.45)'
+        ctx.shadowColor = isFoodField
+          ? 'rgba(62, 39, 24, 0.28)'
+          : 'rgba(148, 163, 184, 0.45)'
         ctx.shadowBlur = Math.max(
           4,
           Math.floor(cell * 0.12)
         )
-        ctx.drawImage(
-          icon,
-          drawX + pad,
-          drawY + pad,
-          cell - pad * 2,
-          cell - pad * 2
-        )
+        if (isFoodField) {
+          const side =
+            cell * Math.sqrt(FOOD_ICON_AREA_RATIO)
+          const inset = (cell - side) / 2
+          const dx = drawX + inset
+          const dy = drawY + inset
+          const s = Math.round(side * 2) / 2
+          const ix = Math.round(dx * 2) / 2
+          const iy = Math.round(dy * 2) / 2
+          ctx.drawImage(icon, ix, iy, s, s)
+        } else {
+          const pad = Math.max(
+            4,
+            Math.floor(cell * 0.14)
+          )
+          ctx.drawImage(
+            icon,
+            drawX + pad,
+            drawY + pad,
+            cell - pad * 2,
+            cell - pad * 2
+          )
+        }
         ctx.restore()
       } else {
         const color = colorForKind(v, theme)
@@ -774,8 +920,15 @@ export function renderBoard(
       const y = oy + r * cell
       ctx.save()
       ctx.lineWidth = 4
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)'
-      ctx.shadowColor = 'rgba(255,255,255,0.8)'
+      if (isFoodField) {
+        ctx.strokeStyle =
+          'rgba(154, 52, 18, 0.95)'
+        ctx.shadowColor =
+          'rgba(251, 146, 60, 0.55)'
+      } else {
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)'
+        ctx.shadowColor = 'rgba(255,255,255,0.8)'
+      }
       ctx.shadowBlur = 8
       ctx.strokeRect(
         x + 1,
@@ -806,8 +959,17 @@ export function renderBoard(
       ctx.save()
       ctx.lineWidth = 3
       ctx.setLineDash([6, 4])
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)'
-      ctx.shadowColor = 'rgba(56, 189, 248, 0.85)'
+      if (isFoodField) {
+        ctx.strokeStyle =
+          'rgba(194, 65, 12, 0.95)'
+        ctx.shadowColor =
+          'rgba(234, 88, 12, 0.75)'
+      } else {
+        ctx.strokeStyle =
+          'rgba(56, 189, 248, 0.95)'
+        ctx.shadowColor =
+          'rgba(56, 189, 248, 0.85)'
+      }
       ctx.shadowBlur = pulseBlur
       ctx.strokeRect(
         x + pulseInset,

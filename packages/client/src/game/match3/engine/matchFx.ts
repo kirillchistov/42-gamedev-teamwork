@@ -22,7 +22,10 @@ const FLASH_DECAY_PER_K = Math.pow(
   0.92,
   1 / VFX_PACE
 )
-import { boardLayout } from './renderer'
+import {
+  boardLayout,
+  MATCH3_BOARD_LOGICAL_PX,
+} from './renderer'
 import type { LineOrientation } from './core/cell'
 
 type Particle = {
@@ -83,8 +86,8 @@ export function createMatchFx(
   ) {
     const L = boardLayout(
       board,
-      ctx.canvas.width,
-      ctx.canvas.height
+      MATCH3_BOARD_LOGICAL_PX,
+      MATCH3_BOARD_LOGICAL_PX
     )
     if (!L || matches.length === 0) return
 
@@ -152,8 +155,8 @@ export function createMatchFx(
   ) {
     const L = boardLayout(
       board,
-      ctx.canvas.width,
-      ctx.canvas.height
+      MATCH3_BOARD_LOGICAL_PX,
+      MATCH3_BOARD_LOGICAL_PX
     )
     if (!L || cells.length === 0) return
 
@@ -245,8 +248,8 @@ export function createMatchFx(
   ) {
     const L = boardLayout(
       board,
-      ctx.canvas.width,
-      ctx.canvas.height
+      MATCH3_BOARD_LOGICAL_PX,
+      MATCH3_BOARD_LOGICAL_PX
     )
     if (!L || cells.length === 0 || score <= 0)
       return
@@ -284,8 +287,8 @@ export function createMatchFx(
   ) {
     const L = boardLayout(
       board,
-      ctx.canvas.width,
-      ctx.canvas.height
+      MATCH3_BOARD_LOGICAL_PX,
+      MATCH3_BOARD_LOGICAL_PX
     )
     if (!L || activations.length === 0) return
     const { cell, ox, oy } = L
@@ -361,8 +364,8 @@ export function createMatchFx(
   ) {
     const L = boardLayout(
       board,
-      ctx.canvas.width,
-      ctx.canvas.height
+      MATCH3_BOARD_LOGICAL_PX,
+      MATCH3_BOARD_LOGICAL_PX
     )
     if (!L || cells.length === 0) return
     const { cell, ox, oy } = L
@@ -421,8 +424,8 @@ export function createMatchFx(
   }
 
   function draw() {
-    const w = ctx.canvas.width
-    const h = ctx.canvas.height
+    const w = MATCH3_BOARD_LOGICAL_PX
+    const h = MATCH3_BOARD_LOGICAL_PX
     ctx.clearRect(0, 0, w, h)
 
     const hasParticles = particles.length > 0
@@ -542,8 +545,8 @@ export function createMatchFx(
     ctx.clearRect(
       0,
       0,
-      ctx.canvas.width,
-      ctx.canvas.height
+      MATCH3_BOARD_LOGICAL_PX,
+      MATCH3_BOARD_LOGICAL_PX
     )
   }
 

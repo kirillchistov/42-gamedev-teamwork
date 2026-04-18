@@ -12,6 +12,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
+import clsx from 'clsx'
 import './match3.pcss'
 import {
   createMatch3Game,
@@ -21,6 +22,7 @@ import {
 import {
   GAME_DURATION_SEC,
   PRESTART_COUNTDOWN_SEC,
+  type BoardFieldThemeOption,
   type BoardSizeOption,
   type GameDurationOption,
   type GameIconThemeOption,
@@ -127,6 +129,8 @@ type Match3ScreenProps = {
   durationSec?: GameDurationOption
   tileKinds?: number
   iconThemeOption?: GameIconThemeOption
+  /** Оформление клеток и рамки: космос или светлое поле под еду. */
+  boardFieldTheme?: BoardFieldThemeOption
   soundEnabled?: boolean
   /** Полный VFX или упрощённый (без частиц, тряски и «петард» по контуру). */
   vfxQuality?: GameVfxQualityOption
@@ -150,6 +154,7 @@ export const Match3Screen: React.FC<
   durationSec,
   tileKinds,
   iconThemeOption = 'cosmic',
+  boardFieldTheme = 'space',
   soundEnabled = true,
   vfxQuality = 'full',
   hintIdleMs,
@@ -389,6 +394,12 @@ export const Match3Screen: React.FC<
     if (!game) return
     game.setIconTheme(iconThemeOption)
   }, [iconThemeOption])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setBoardField(boardFieldTheme)
+  }, [boardFieldTheme])
 
   useEffect(() => {
     const game = gameRef.current
@@ -774,20 +785,24 @@ export const Match3Screen: React.FC<
         )}
 
         {showBoard && uiPhase !== 'results' && (
-          <div className="match3__board-wrap">
+          <div
+            className={clsx(
+              'match3__board-wrap',
+              boardFieldTheme === 'food' &&
+                'match3__board-wrap--food'
+            )}>
             <div
-              className={
-                'match3__board match3__board--stack' +
+              className={clsx(
+                'match3__board',
+                'match3__board--stack',
                 (uiPhase === 'countdown' ||
-                uiPhase === 'ready'
-                  ? ' is-overlay-only'
-                  : '') +
-                (boardShakeLevel === 'light'
-                  ? ' match3__board--shake-light'
-                  : boardShakeLevel === 'strong'
-                  ? ' match3__board--shake-strong'
-                  : '')
-              }>
+                  uiPhase === 'ready') &&
+                  'is-overlay-only',
+                boardShakeLevel === 'light' &&
+                  'match3__board--shake-light',
+                boardShakeLevel === 'strong' &&
+                  'match3__board--shake-strong'
+              )}>
               <canvas
                 ref={canvasRef}
                 className="match3__canvas match3__canvas--board"
@@ -846,14 +861,10 @@ export const Match3Screen: React.FC<
                       {appliedLevel.boardSize}
                     </div>
                     <div>
-                      Тема:{' '}
-                      {appliedLevel.theme ===
-                      'standard'
-                        ? 'Стандарт'
-                        : appliedLevel.theme ===
-                          'space'
-                        ? 'Космос'
-                        : 'Продуктовая'}
+                      Поле:{' '}
+                      {boardFieldTheme === 'food'
+                        ? 'Еда'
+                        : 'Космос'}
                     </div>
                     <div>
                       {limitMode === 'moves'

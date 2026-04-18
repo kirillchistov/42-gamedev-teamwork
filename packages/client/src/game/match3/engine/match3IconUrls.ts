@@ -11,14 +11,7 @@ import cosmic6 from '@match3-public/icons/cosmic6.png?url'
 import cosmic7 from '@match3-public/icons/cosmic7.png?url'
 import cosmic8 from '@match3-public/icons/cosmic8.png?url'
 
-import foodBurger from '@match3-icons/food/burger.svg?url'
-import foodPizza from '@match3-icons/food/pizza.svg?url'
-import foodDonut from '@match3-icons/food/donut.svg?url'
-import foodCupcake from '@match3-icons/food/cupcake.svg?url'
-import foodIcecream from '@match3-icons/food/icecream.svg?url'
-import foodSushi from '@match3-icons/food/sushi.svg?url'
-import foodFries from '@match3-icons/food/fries.svg?url'
-import foodCake from '@match3-icons/food/cake.svg?url'
+export { MATCH3_FOOD_ICON_URLS } from './match3FoodIconUrls'
 
 export const MATCH3_COSMIC_ICON_URLS: readonly string[] =
   [
@@ -30,16 +23,4 @@ export const MATCH3_COSMIC_ICON_URLS: readonly string[] =
     cosmic6,
     cosmic7,
     cosmic8,
-  ]
-
-export const MATCH3_FOOD_ICON_URLS: readonly string[] =
-  [
-    foodBurger,
-    foodPizza,
-    foodDonut,
-    foodCupcake,
-    foodIcecream,
-    foodSushi,
-    foodFries,
-    foodCake,
   ]

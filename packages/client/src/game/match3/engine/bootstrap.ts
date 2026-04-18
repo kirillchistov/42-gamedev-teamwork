@@ -56,6 +56,7 @@ import {
   type MoveCandidate,
 } from './core/possibleMoves'
 import {
+  MATCH3_BOARD_LOGICAL_PX,
   pickCellAt,
   preloadIconTheme,
   type RenderOpts,
@@ -63,6 +64,7 @@ import {
 } from './renderer'
 import {
   GAME_DURATION_SEC,
+  type BoardFieldThemeOption,
   type GameLimitMode,
   match3AnimMs,
   type MoveLimitOption,
@@ -195,13 +197,53 @@ export function createMatch3Game(
   let matchFx: MatchFxApi | null = null
   let fxRafId: number | null = null
   let fxLastTs = 0
+  let fxCtx: CanvasRenderingContext2D | null =
+    null
 
   if (fxCanvas) {
     const fxCtxMaybe = fxCanvas.getContext('2d')
     if (fxCtxMaybe) {
-      matchFx = createMatchFx(fxCtxMaybe)
+      fxCtx = fxCtxMaybe
+      matchFx = createMatchFx(fxCtx)
     }
   }
+
+  const syncBoardCanvasDpr = () => {
+    const dpr = Math.min(
+      2.5,
+      typeof window !== 'undefined'
+        ? window.devicePixelRatio || 1
+        : 1
+    )
+    const buf = Math.max(
+      1,
+      Math.round(MATCH3_BOARD_LOGICAL_PX * dpr)
+    )
+    canvas.width = buf
+    canvas.height = buf
+    if (typeof ctx.setTransform === 'function') {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+    ctx.imageSmoothingEnabled = true
+    if ('imageSmoothingQuality' in ctx) {
+      ctx.imageSmoothingQuality = 'high'
+    }
+    if (fxCanvas && fxCtx) {
+      fxCanvas.width = buf
+      fxCanvas.height = buf
+      if (
+        typeof fxCtx.setTransform === 'function'
+      ) {
+        fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      }
+      fxCtx.imageSmoothingEnabled = true
+      if ('imageSmoothingQuality' in fxCtx) {
+        fxCtx.imageSmoothingQuality = 'high'
+      }
+    }
+  }
+
+  syncBoardCanvasDpr()
 
   let gameVfxQuality: GameVfxQualityOption =
     initialVfxQuality ?? 'full'
@@ -259,6 +301,8 @@ export function createMatch3Game(
   let gameTheme: GameThemeOption = 'standard'
   let gameIconTheme: GameIconThemeOption =
     'cosmic'
+  let gameBoardField: BoardFieldThemeOption =
+    'space'
   let soundEnabled = true
   let scoreMode: ScoreMode = 'x1'
   let gameIceMultiplier: 1 | 2 | 4 = 1
@@ -290,7 +334,19 @@ export function createMatch3Game(
       ...opts,
       theme: gameTheme,
       iconTheme: gameIconTheme,
+      boardField: gameBoardField,
     })
+  }
+
+  const onBoardCanvasResize = () => {
+    syncBoardCanvasDpr()
+    drawBoard()
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener(
+      'resize',
+      onBoardCanvasResize
+    )
   }
 
   let audioCtx: AudioContext | null = null
@@ -1119,6 +1175,13 @@ export function createMatch3Game(
     })
   }
 
+  const setBoardField = (
+    field: BoardFieldThemeOption
+  ) => {
+    gameBoardField = field
+    drawBoard()
+  }
+
   const setLevel = (level: LevelConfig) => {
     boardSize = level.boardSize
     gameDurationSec = level.durationSec
@@ -1219,6 +1282,12 @@ export function createMatch3Game(
       'keyup',
       match3Input.onKeyUp
     )
+    if (typeof window !== 'undefined') {
+      window.removeEventListener(
+        'resize',
+        onBoardCanvasResize
+      )
+    }
     stopTimer()
     stopHintTimer()
     stopIconThemeRedraw()
@@ -1241,6 +1310,7 @@ export function createMatch3Game(
     setMoveLimit,
     setTheme,
     setIconTheme,
+    setBoardField,
     setSoundEnabled,
     setVfxQuality,
     setInputBlocked,

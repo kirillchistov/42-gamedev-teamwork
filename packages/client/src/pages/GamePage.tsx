@@ -15,6 +15,7 @@ import {
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { usePage } from '../hooks/usePage'
+import { BoardFieldThemePreview } from '../game/match3/BoardFieldThemePreview'
 import { Match3Screen } from '../game/match3/Match3Screen'
 import type {
   GameEndPayload,
@@ -32,6 +33,7 @@ import {
   GAME_DURATION_OPTIONS,
   MOVE_LIMIT_OPTIONS,
   TILE_KINDS_BY_BOARD_SIZE,
+  type BoardFieldThemeOption,
   type BoardSizeOption,
   type GameDurationOption,
   type GameIconThemeOption,
@@ -85,13 +87,12 @@ export const GamePage: React.FC = () => {
     useState<BoardSizeOption>(
       initialLevel.boardSize
     )
-  const themeOption: GameThemeOption = 'space'
+  const [boardFieldTheme, setBoardFieldTheme] =
+    useState<BoardFieldThemeOption>('space')
   const [durationSec, setDurationSec] =
     useState<GameDurationOption>(
       initialLevel.durationSec
     )
-  const iconThemeOption: GameIconThemeOption =
-    'cosmic'
   const [rankingMode, setRankingMode] = useState<
     'yes' | 'friends' | 'no'
   >('yes')
@@ -130,6 +131,7 @@ export const GamePage: React.FC = () => {
     selectedLevelId,
     boardSize,
     tileKinds,
+    boardFieldTheme,
   })
   const routeState = location.state as {
     notice?: string
@@ -142,6 +144,7 @@ export const GamePage: React.FC = () => {
       selectedLevelId: string
       boardSize: BoardSizeOption
       tileKinds: number
+      boardFieldTheme?: BoardFieldThemeOption
     }
   } | null
   const notice = routeState?.notice
@@ -188,6 +191,9 @@ export const GamePage: React.FC = () => {
     setSelectedLevelId(settings.selectedLevelId)
     setBoardSize(settings.boardSize)
     setTileKinds(settings.tileKinds)
+    if (settings.boardFieldTheme !== undefined) {
+      setBoardFieldTheme(settings.boardFieldTheme)
+    }
   }, [routeState?.gameSettings])
 
   useEffect(() => {
@@ -273,12 +279,29 @@ export const GamePage: React.FC = () => {
     [selectedLevelId]
   )
 
+  const paletteTheme: GameThemeOption = useMemo(
+    () =>
+      boardFieldTheme === 'food'
+        ? 'standard'
+        : 'space',
+    [boardFieldTheme]
+  )
+
+  const resolvedIconTheme: GameIconThemeOption =
+    useMemo(
+      () =>
+        boardFieldTheme === 'food'
+          ? 'food'
+          : 'cosmic',
+      [boardFieldTheme]
+    )
+
   const appliedLevel = useMemo(
     () => ({
       ...selectedLevel,
       goalValue: goalScore,
       boardSize,
-      theme: themeOption,
+      theme: paletteTheme,
       durationSec,
       tileKinds,
     }),
@@ -286,7 +309,7 @@ export const GamePage: React.FC = () => {
       selectedLevel,
       goalScore,
       boardSize,
-      themeOption,
+      paletteTheme,
       durationSec,
       tileKinds,
     ]
@@ -516,7 +539,10 @@ export const GamePage: React.FC = () => {
                     onClick={() =>
                       setShowSettingsPanel(true)
                     }>
-                    Тема: Космос
+                    Поле:{' '}
+                    {boardFieldTheme === 'food'
+                      ? 'Еда'
+                      : 'Космос'}
                   </button>
                   <button
                     type="button"
@@ -656,19 +682,26 @@ export const GamePage: React.FC = () => {
                         </select>
                       </label>
                       <label className="match3-page__settings-label">
-                        Тематика
-                        <input
-                          value="Космос"
-                          readOnly
-                        />
+                        Тема поля
+                        <select
+                          value={boardFieldTheme}
+                          onChange={e => {
+                            setBoardFieldTheme(
+                              e.target
+                                .value as BoardFieldThemeOption
+                            )
+                          }}>
+                          <option value="space">
+                            Космос
+                          </option>
+                          <option value="food">
+                            Еда
+                          </option>
+                        </select>
                       </label>
-                      <label className="match3-page__settings-label">
-                        Иконки
-                        <input
-                          value="Космос"
-                          readOnly
-                        />
-                      </label>
+                      <BoardFieldThemePreview
+                        theme={boardFieldTheme}
+                      />
                       <label className="match3-page__settings-label">
                         Участвовать в рейтинге
                         <select
@@ -911,10 +944,11 @@ export const GamePage: React.FC = () => {
             limitMode={limitMode}
             moveLimit={moveLimit}
             boardSize={boardSize}
-            themeOption={themeOption}
+            themeOption={paletteTheme}
             durationSec={durationSec}
             tileKinds={tileKinds}
-            iconThemeOption={iconThemeOption}
+            iconThemeOption={resolvedIconTheme}
+            boardFieldTheme={boardFieldTheme}
             soundEnabled={soundEnabled}
             vfxQuality={vfxQuality}
             hintIdleMs={hintIdleMs}
