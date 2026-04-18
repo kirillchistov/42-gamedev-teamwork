@@ -202,6 +202,8 @@
 .match3-page__field-preview-wrap {
   grid-column: 1 / -1;
   margin-top: 4px;
+  width: 100%;
+  min-width: 0;
 }
 
 .match3-page__settings-label--full {
@@ -231,7 +233,9 @@
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 3px;
-  max-width: 280px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 8px;
   border-radius: 10px;
   background: linear-gradient(
