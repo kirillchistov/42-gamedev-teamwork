@@ -71,6 +71,7 @@ export const GAME_ICON_THEME_OPTIONS = [
   'standard',
   'cosmic',
   'food',
+  'coder',
 ] as const
 export type GameIconThemeOption =
   typeof GAME_ICON_THEME_OPTIONS[number]
@@ -79,6 +80,7 @@ export type GameIconThemeOption =
 export const BOARD_FIELD_THEME_OPTIONS = [
   'space',
   'food',
+  'coder',
 ] as const
 export type BoardFieldThemeOption =
   typeof BOARD_FIELD_THEME_OPTIONS[number]

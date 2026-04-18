@@ -12,6 +12,7 @@ import cosmic7 from '@match3-public/icons/cosmic7.png?url'
 import cosmic8 from '@match3-public/icons/cosmic8.png?url'
 
 export { MATCH3_FOOD_ICON_URLS } from './match3FoodIconUrls'
+export { MATCH3_TECH_ICON_URLS } from './match3TechIconUrls'
 
 export const MATCH3_COSMIC_ICON_URLS: readonly string[] =
   [

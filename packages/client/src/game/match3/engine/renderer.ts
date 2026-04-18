@@ -35,6 +35,7 @@ import {
 import {
   MATCH3_COSMIC_ICON_URLS,
   MATCH3_FOOD_ICON_URLS,
+  MATCH3_TECH_ICON_URLS,
 } from './match3IconUrls'
 
 export type RenderOpts = {
@@ -71,6 +72,7 @@ const COSMIC_ICON_PATHS = [
 ]
 
 const FOOD_ICON_PATHS = [...MATCH3_FOOD_ICON_URLS]
+const TECH_ICON_PATHS = [...MATCH3_TECH_ICON_URLS]
 
 const iconCache: Partial<
   Record<GameIconThemeOption, HTMLImageElement[]>
@@ -195,7 +197,9 @@ function iconsForTheme(
   const paths =
     theme === 'cosmic'
       ? COSMIC_ICON_PATHS
-      : FOOD_ICON_PATHS
+      : theme === 'food'
+      ? FOOD_ICON_PATHS
+      : TECH_ICON_PATHS
   const icons = loadIcons(paths)
   iconCache[theme] = icons
   return icons
@@ -518,32 +522,34 @@ const FOOD_ICON_AREA_RATIO = 0.98
 const FOOD_TILE_FILL = '#424242'
 
 /**
- * Акцент конца градиента рамки (1 синий … 6 коричневый; 7+ — фиолет., оранж., бирюз., индиго).
- * Индекс: `Math.abs(kind) % length`.
+ * Толщина градиентной рамки клетки — одна для «Космос», «Еда», «Кодер».
  */
-const FOOD_TILE_BORDER_ACCENTS: readonly string[] =
+const MATCH3_CELL_BORDER_LINE_WIDTH = 2.5
+
+/**
+ * Доминирующий акцент рамки по типу фишки (10 шагов по радуге), одинаковая логика для всех тем поля.
+ */
+const TILE_KIND_RAINBOW_ACCENTS: readonly string[] =
   [
-    '#2563eb',
-    '#16a34a',
-    '#ca8a04',
-    '#dc2626',
-    '#db2777',
-    '#92400e',
-    '#7c3aed',
-    '#ea580c',
-    '#0d9488',
-    '#4338ca',
+    '#ef4444',
+    '#f97316',
+    '#eab308',
+    '#84cc16',
+    '#22c55e',
+    '#14b8a6',
+    '#3b82f6',
+    '#6366f1',
+    '#a855f7',
+    '#ec4899',
   ]
 
-function foodTileBorderAccent(
-  kind: number
-): string {
+function kindRainbowAccent(kind: number): string {
   const idx =
     Math.abs(kind) %
-    FOOD_TILE_BORDER_ACCENTS.length
+    TILE_KIND_RAINBOW_ACCENTS.length
   return (
-    FOOD_TILE_BORDER_ACCENTS[idx] ??
-    FOOD_TILE_BORDER_ACCENTS[0]
+    TILE_KIND_RAINBOW_ACCENTS[idx] ??
+    TILE_KIND_RAINBOW_ACCENTS[0]
   )
 }
 
@@ -552,16 +558,15 @@ function strokeFoodCellBorderByKind(
   x: number,
   y: number,
   cell: number,
-  /** `null` — пустая клетка: золото → приглушённый серый */
+  /** `null` — пустая клетка */
   kindOrNull: number | null
 ) {
-  // Фиксированная толщина для стабильной читаемости фаски.
-  const lw = 4
+  const lw = MATCH3_CELL_BORDER_LINE_WIDTH
   const inset = lw / 2
-  const accentEnd =
+  const accent =
     kindOrNull === null
-      ? '#4f4f4f'
-      : foodTileBorderAccent(kindOrNull)
+      ? '#6b5344'
+      : kindRainbowAccent(kindOrNull)
 
   ctx.save()
   const g = ctx.createLinearGradient(
@@ -570,12 +575,11 @@ function strokeFoodCellBorderByKind(
     x + cell,
     y + cell
   )
-  g.addColorStop(0, '#fff6d6')
-  // Усиливаем 2-й цвет для объема
-  g.addColorStop(0.16, '#ffd24f')
-  g.addColorStop(0.46, '#f0b83f')
-  g.addColorStop(0.82, accentEnd)
-  g.addColorStop(1, accentEnd)
+  g.addColorStop(0, 'rgba(255, 246, 210, 0.5)')
+  g.addColorStop(0.28, 'rgba(200, 155, 88, 0.78)')
+  g.addColorStop(0.52, 'rgba(110, 72, 44, 0.9)')
+  g.addColorStop(0.72, accent)
+  g.addColorStop(1, 'rgba(36, 22, 14, 0.96)')
   ctx.strokeStyle = g
   ctx.lineWidth = lw
   ctx.strokeRect(
@@ -584,48 +588,107 @@ function strokeFoodCellBorderByKind(
     cell - lw,
     cell - lw
   )
-  // Блестящая фаска: светлый блик сверху/слева
-  ctx.lineWidth = Math.max(1.2, lw * 0.24)
-  ctx.strokeStyle = 'rgba(255, 248, 220, 0.72)'
-  ctx.beginPath()
-  ctx.moveTo(
-    x + inset + lw * 0.35,
-    y + inset + lw * 0.42
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(255, 248, 220, 0.1)'
+  ctx.strokeRect(
+    x + inset + 0.6,
+    y + inset + 0.6,
+    cell - lw - 1.2,
+    cell - lw - 1.2
   )
-  ctx.lineTo(
-    x + cell - inset - lw * 0.5,
-    y + inset + lw * 0.42
+  ctx.restore()
+}
+
+/** Рамка клетки «Космос»: как у «Кодер» по толщине/структуре, холодные стопы + радуга по типу. */
+function strokeSpaceCellBorderByKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  kindOrNull: number | null
+) {
+  const lw = MATCH3_CELL_BORDER_LINE_WIDTH
+  const inset = lw / 2
+  const accent =
+    kindOrNull === null
+      ? 'rgba(100, 130, 190, 0.5)'
+      : kindRainbowAccent(kindOrNull)
+
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
   )
-  ctx.moveTo(
-    x + inset + lw * 0.42,
-    y + inset + lw * 0.35
+  g.addColorStop(0, 'rgba(148, 190, 255, 0.48)')
+  g.addColorStop(0.35, 'rgba(38, 58, 102, 0.92)')
+  g.addColorStop(0.72, accent)
+  g.addColorStop(1, 'rgba(8, 14, 32, 0.97)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lw
+  ctx.strokeRect(
+    x + inset,
+    y + inset,
+    cell - lw,
+    cell - lw
   )
-  ctx.lineTo(
-    x + inset + lw * 0.42,
-    y + cell - inset - lw * 0.5
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(186, 230, 253, 0.08)'
+  ctx.strokeRect(
+    x + inset + 0.6,
+    y + inset + 0.6,
+    cell - lw - 1.2,
+    cell - lw - 1.2
   )
-  ctx.stroke()
-  // Тень фаски снизу/справа для глубины
-  ctx.lineWidth = Math.max(1, lw * 0.2)
-  ctx.strokeStyle = 'rgba(24, 16, 10, 0.55)'
-  ctx.beginPath()
-  ctx.moveTo(
-    x + inset + lw * 0.55,
-    y + cell - inset - lw * 0.38
+  ctx.restore()
+}
+
+/** Фон клетки темы «Кодер». */
+const CODER_TILE_FILL = '#141c2e'
+
+/** Рамка клетки: тёмная «панель», тонкий акцент по типу фишки (та же радуга, что у других тем). */
+function strokeCoderCellBorderByKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  kindOrNull: number | null
+) {
+  const lw = MATCH3_CELL_BORDER_LINE_WIDTH
+  const inset = lw / 2
+  const accent =
+    kindOrNull === null
+      ? '#475569'
+      : kindRainbowAccent(kindOrNull)
+
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
   )
-  ctx.lineTo(
-    x + cell - inset - lw * 0.25,
-    y + cell - inset - lw * 0.38
+  g.addColorStop(0, 'rgba(148, 163, 184, 0.55)')
+  g.addColorStop(0.35, 'rgba(51, 65, 85, 0.9)')
+  g.addColorStop(0.72, accent)
+  g.addColorStop(1, 'rgba(15, 23, 42, 0.95)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lw
+  ctx.strokeRect(
+    x + inset,
+    y + inset,
+    cell - lw,
+    cell - lw
   )
-  ctx.moveTo(
-    x + cell - inset - lw * 0.38,
-    y + inset + lw * 0.55
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)'
+  ctx.strokeRect(
+    x + inset + 0.6,
+    y + inset + 0.6,
+    cell - lw - 1.2,
+    cell - lw - 1.2
   )
-  ctx.lineTo(
-    x + cell - inset - lw * 0.38,
-    y + cell - inset - lw * 0.25
-  )
-  ctx.stroke()
   ctx.restore()
 }
 
@@ -771,6 +834,7 @@ export function renderBoard(
   const boardField: BoardFieldThemeOption =
     opts?.boardField ?? 'space'
   const isFoodField = boardField === 'food'
+  const isCoderField = boardField === 'coder'
 
   const { rows, cols } = dims(board)
   const W = MATCH3_BOARD_LOGICAL_PX
@@ -822,6 +886,31 @@ export function renderBoard(
       cols * cell + 12,
       rows * cell + 12
     )
+  } else if (isCoderField) {
+    const pad = 10
+    const fw = cols * cell + pad * 2
+    const fh = rows * cell + pad * 2
+    const gx = ctx.createLinearGradient(
+      ox - pad,
+      oy - pad,
+      ox - pad + fw,
+      oy - pad + fh
+    )
+    gx.addColorStop(0, '#0f172a')
+    gx.addColorStop(0.48, '#111827')
+    gx.addColorStop(1, '#020617')
+    ctx.fillStyle = gx
+    ctx.fillRect(ox - pad, oy - pad, fw, fh)
+    ctx.shadowColor = 'rgba(34, 211, 238, 0.22)'
+    ctx.shadowBlur = 18
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(
+      ox - 6,
+      oy - 6,
+      cols * cell + 12,
+      rows * cell + 12
+    )
   } else {
     ctx.fillStyle = 'rgba(5, 12, 28, 0.95)'
     ctx.fillRect(
@@ -865,12 +954,26 @@ export function renderBoard(
           cell,
           hasTile ? v : null
         )
+      } else if (isCoderField) {
+        ctx.fillStyle = CODER_TILE_FILL
+        ctx.fillRect(x, y, cell, cell)
+        strokeCoderCellBorderByKind(
+          ctx,
+          x,
+          y,
+          cell,
+          hasTile ? v : null
+        )
       } else {
         ctx.fillStyle = 'rgba(18, 28, 53, 0.95)'
         ctx.fillRect(x, y, cell, cell)
-        ctx.strokeStyle =
-          'rgba(95, 140, 210, 0.35)'
-        ctx.strokeRect(x, y, cell, cell)
+        strokeSpaceCellBorderByKind(
+          ctx,
+          x,
+          y,
+          cell,
+          hasTile ? v : null
+        )
       }
 
       if (!hasTile) continue
@@ -902,6 +1005,8 @@ export function renderBoard(
         ctx.save()
         ctx.shadowColor = isFoodField
           ? 'rgba(62, 39, 24, 0.28)'
+          : isCoderField
+          ? 'rgba(15, 23, 42, 0.55)'
           : 'rgba(148, 163, 184, 0.45)'
         ctx.shadowBlur = Math.max(
           4,

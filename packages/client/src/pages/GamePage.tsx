@@ -275,6 +275,9 @@ export const GamePage: React.FC = () => {
   const startArenaPhotoUrl = isStartRoute
     ? arenaBgUrlForIndex(finishArenaBgIndex)
     : ''
+  const playArenaPhotoUrl = isPlayRoute
+    ? arenaBgUrlForIndex(finishArenaBgIndex)
+    : ''
 
   const handleCycleFinishArenaBg =
     useCallback(() => {
@@ -285,9 +288,14 @@ export const GamePage: React.FC = () => {
     }, [])
 
   useEffect(() => {
-    if (!isFinishRoute && !isStartRoute) return
+    if (
+      !isFinishRoute &&
+      !isStartRoute &&
+      !isPlayRoute
+    )
+      return
     setFinishArenaBgIndex(readArenaBgIndex())
-  }, [isFinishRoute, isStartRoute])
+  }, [isFinishRoute, isStartRoute, isPlayRoute])
 
   useEffect(() => {
     if (!isStartRoute) return
@@ -341,13 +349,13 @@ export const GamePage: React.FC = () => {
   )
 
   const resolvedIconTheme: GameIconThemeOption =
-    useMemo(
-      () =>
-        boardFieldTheme === 'food'
-          ? 'food'
-          : 'cosmic',
-      [boardFieldTheme]
-    )
+    useMemo(() => {
+      if (boardFieldTheme === 'food')
+        return 'food'
+      if (boardFieldTheme === 'coder')
+        return 'coder'
+      return 'cosmic'
+    }, [boardFieldTheme])
 
   const appliedLevel = useMemo(
     () => ({
@@ -589,6 +597,9 @@ export const GamePage: React.FC = () => {
                     Поле:{' '}
                     {boardFieldTheme === 'food'
                       ? 'Еда'
+                      : boardFieldTheme ===
+                        'coder'
+                      ? 'Кодер'
                       : 'Космос'}
                   </button>
                   <button
@@ -751,6 +762,9 @@ export const GamePage: React.FC = () => {
                           </option>
                           <option value="food">
                             Еда
+                          </option>
+                          <option value="coder">
+                            Кодер
                           </option>
                         </select>
                       </label>
@@ -1011,7 +1025,19 @@ export const GamePage: React.FC = () => {
       )}
 
       {isPlayRoute && (
-        <section className="match3-play-screen">
+        <section
+          className={clsx(
+            'match3-play-screen',
+            playArenaPhotoUrl &&
+              'match3-play-screen--arena-photo'
+          )}
+          style={
+            playArenaPhotoUrl
+              ? ({
+                  ['--m3-arena-photo' as string]: `url("${playArenaPhotoUrl}")`,
+                } as React.CSSProperties)
+              : undefined
+          }>
           {toastMessage && (
             <div
               role="status"

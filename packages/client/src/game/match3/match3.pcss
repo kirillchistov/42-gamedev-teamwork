@@ -579,6 +579,14 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
+.match3__board-wrap--coder {
+  border-radius: 12px;
+  box-shadow:
+    0 14px 40px rgba(15, 23, 42, 0.55),
+    0 0 0 1px rgba(56, 189, 248, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
 .match3__board-wrap .match3__board {
   width: 100%;
   height: 100%;
@@ -1697,9 +1705,42 @@ button.match3__results-badge-win-wrap:focus-visible {
   --m3-main-pad-y: 0px;
 }
 
+.match3-play-screen.match3-play-screen--arena-photo {
+  background-color: #030712;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(2, 6, 23, 0.54) 0%,
+      rgba(2, 6, 23, 0.38) 45%,
+      rgba(2, 6, 23, 0.74) 100%
+    ),
+    var(--m3-arena-photo, none);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
 .landing--light-flat .match3-play-screen,
 .landing--light-3d .match3-play-screen {
   background: #eef3fb;
+}
+
+.landing--light-flat
+  .match3-play-screen.match3-play-screen--arena-photo,
+.landing--light-3d
+  .match3-play-screen.match3-play-screen--arena-photo {
+  background-color: #eef3fb;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(238, 243, 251, 0.92) 0%,
+      rgba(238, 243, 251, 0.64) 45%,
+      rgba(226, 232, 244, 0.9) 100%
+    ),
+    var(--m3-arena-photo, none);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
 }
 
 .landing--light-flat .match3-play-screen .match3,

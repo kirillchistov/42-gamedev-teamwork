@@ -821,7 +821,9 @@ export const Match3Screen: React.FC<
             className={clsx(
               'match3__board-wrap',
               boardFieldTheme === 'food' &&
-                'match3__board-wrap--food'
+                'match3__board-wrap--food',
+              boardFieldTheme === 'coder' &&
+                'match3__board-wrap--coder'
             )}>
             <div
               className={clsx(
@@ -896,6 +898,9 @@ export const Match3Screen: React.FC<
                       Поле:{' '}
                       {boardFieldTheme === 'food'
                         ? 'Еда'
+                        : boardFieldTheme ===
+                          'coder'
+                        ? 'Кодер'
                         : 'Космос'}
                     </div>
                     <div>
