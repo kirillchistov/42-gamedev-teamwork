@@ -20,9 +20,12 @@ import { usePage } from '../hooks/usePage'
 import { BoardFieldThemePreview } from '../game/match3/BoardFieldThemePreview'
 import {
   advanceArenaBgAfterGame,
-  arenaBgUrlForIndex,
+  ARENA_BG_CHANGED_EVENT,
+  clearArenaCustomPhotoUrl,
   cycleArenaBgNext,
-  readArenaBgIndex,
+  readArenaCustomPhotoUrl,
+  readResolvedArenaPhotoUrl,
+  setArenaCustomPhotoUrl,
 } from '../game/match3/match3ArenaBackground'
 import { Match3Screen } from '../game/match3/Match3Screen'
 import type {
@@ -123,14 +126,14 @@ export const GamePage: React.FC = () => {
     useState<GameVfxQualityOption>('full')
   const [toastMessage, setToastMessage] =
     useState('')
-  const [
-    finishArenaBgIndex,
-    setFinishArenaBgIndex,
-  ] = useState(() => readArenaBgIndex())
   const [, bumpFinishArenaBg] = useReducer(
     (n: number) => n + 1,
     0
   )
+  const [
+    arenaCustomUrlDraft,
+    setArenaCustomUrlDraft,
+  ] = useState(() => readArenaCustomPhotoUrl())
   const [startCountdown, setStartCountdown] =
     useState(3)
   const [lastResult, setLastResult] = useState<{
@@ -269,22 +272,51 @@ export const GamePage: React.FC = () => {
   const isFinishRoute =
     location.pathname === '/game/finish'
 
+  const resolvedArenaPhotoUrl =
+    readResolvedArenaPhotoUrl()
   const finishArenaPhotoUrl = isFinishRoute
-    ? arenaBgUrlForIndex(finishArenaBgIndex)
+    ? resolvedArenaPhotoUrl
     : ''
   const startArenaPhotoUrl = isStartRoute
-    ? arenaBgUrlForIndex(finishArenaBgIndex)
+    ? resolvedArenaPhotoUrl
     : ''
   const playArenaPhotoUrl = isPlayRoute
-    ? arenaBgUrlForIndex(finishArenaBgIndex)
+    ? resolvedArenaPhotoUrl
     : ''
 
   const handleCycleFinishArenaBg =
     useCallback(() => {
+      if (readArenaCustomPhotoUrl()) {
+        clearArenaCustomPhotoUrl()
+      }
       cycleArenaBgNext()
-      const next = readArenaBgIndex()
-      setFinishArenaBgIndex(next)
-      bumpFinishArenaBg()
+    }, [])
+
+  const handleArenaCustomApply =
+    useCallback(() => {
+      const t = arenaCustomUrlDraft.trim()
+      if (!t) {
+        clearArenaCustomPhotoUrl()
+        setToastMessage(
+          'Свой фон отключён, снова пресеты'
+        )
+        return
+      }
+      const ok = setArenaCustomPhotoUrl(t)
+      if (!ok) {
+        setToastMessage(
+          'Некорректный адрес. Разрешены https://…, http://… или путь с сайта (например /icons/…).'
+        )
+        return
+      }
+      setToastMessage('Свой фон сохранён')
+    }, [arenaCustomUrlDraft])
+
+  const handleArenaCustomClear =
+    useCallback(() => {
+      clearArenaCustomPhotoUrl()
+      setArenaCustomUrlDraft('')
+      setToastMessage('Свой фон сброшен')
     }, [])
 
   useEffect(() => {
@@ -294,8 +326,29 @@ export const GamePage: React.FC = () => {
       !isPlayRoute
     )
       return
-    setFinishArenaBgIndex(readArenaBgIndex())
+    bumpFinishArenaBg()
   }, [isFinishRoute, isStartRoute, isPlayRoute])
+
+  useEffect(() => {
+    const on = () => bumpFinishArenaBg()
+    window.addEventListener(
+      ARENA_BG_CHANGED_EVENT,
+      on
+    )
+    return () =>
+      window.removeEventListener(
+        ARENA_BG_CHANGED_EVENT,
+        on
+      )
+  }, [])
+
+  useEffect(() => {
+    if (showSettingsPanel && isStartRoute) {
+      setArenaCustomUrlDraft(
+        readArenaCustomPhotoUrl()
+      )
+    }
+  }, [showSettingsPanel, isStartRoute])
 
   useEffect(() => {
     if (!isStartRoute) return
@@ -421,7 +474,6 @@ export const GamePage: React.FC = () => {
         JSON.stringify(next)
       )
       advanceArenaBgAfterGame()
-      setFinishArenaBgIndex(readArenaBgIndex())
       navigate('/game/finish')
     },
     [navigate]
@@ -771,6 +823,49 @@ export const GamePage: React.FC = () => {
                       <BoardFieldThemePreview
                         theme={boardFieldTheme}
                       />
+                      <label className="match3-page__settings-label match3-page__settings-label--full">
+                        Фон (свой URL)
+                        <input
+                          type="url"
+                          inputMode="url"
+                          placeholder="https://… или /icons/…"
+                          value={
+                            arenaCustomUrlDraft
+                          }
+                          onChange={e =>
+                            setArenaCustomUrlDraft(
+                              e.target.value
+                            )
+                          }
+                        />
+                        <span className="match3-page__settings-hint">
+                          Хранится в этом браузере
+                          (localStorage). Позже
+                          можно подключить
+                          загрузку через API
+                          (например, вложения чата
+                          Практикума) и сохранять
+                          ссылку с сервера.
+                        </span>
+                        <span className="match3-page__settings-actions">
+                          <button
+                            type="button"
+                            className="btn btn--outline"
+                            onClick={
+                              handleArenaCustomApply
+                            }>
+                            Применить URL
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn--flat"
+                            onClick={
+                              handleArenaCustomClear
+                            }>
+                            Сбросить свой
+                          </button>
+                        </span>
+                      </label>
                       <label className="match3-page__settings-label">
                         Участвовать в рейтинге
                         <select

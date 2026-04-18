@@ -1,0 +1,51 @@
+/* Фон арены за авторизованными страницами (профиль, форум, лидерборд и т.д.).
+ * Игра `/game/*` задаёт фон сама — оболочка без фото, чтобы не дублировать слой. */
+
+.user-app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.user-app-shell--arena-photo {
+  background-color: #030712;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(2, 6, 23, 0.54) 0%,
+      rgba(2, 6, 23, 0.38) 45%,
+      rgba(2, 6, 23, 0.74) 100%
+    ),
+    var(--m3-arena-photo, none);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
+.user-app-shell--arena-photo[data-user-theme='light-flat'],
+.user-app-shell--arena-photo[data-user-theme='light-3d'] {
+  background-color: #eef3fb;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(238, 243, 251, 0.92) 0%,
+      rgba(238, 243, 251, 0.64) 45%,
+      rgba(226, 232, 244, 0.9) 100%
+    ),
+    var(--m3-arena-photo, none);
+}
+
+/* Пропускаем фото к внешнему слою: виден .user-app-shell */
+.user-app-shell--arena-photo .landing,
+.user-app-shell--arena-photo .AuthPage {
+  background: transparent;
+}
+
+.user-app-shell--arena-photo .App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: transparent;
+}
