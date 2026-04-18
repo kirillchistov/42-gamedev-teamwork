@@ -116,7 +116,7 @@ export const GamePage: React.FC = () => {
     initialLevel.tileKinds
   )
   const [hintIdleMs, setHintIdleMs] =
-    useState(4000)
+    useState(5000)
   const [soundEnabled, setSoundEnabled] =
     useState(true)
   const [vfxQuality, setVfxQuality] =
@@ -370,21 +370,22 @@ export const GamePage: React.FC = () => {
     }
   }, [lastResult, goalScore])
 
-  const handleGameFinished = (
-    payload: GameEndPayload
-  ) => {
-    const next = {
-      snapshot: payload.snapshot,
-      reason: payload.reason,
-    }
-    setLastResult(next)
-    window.localStorage.setItem(
-      LAST_RESULT_KEY,
-      JSON.stringify(next)
-    )
-    advanceArenaBgAfterGame()
-    navigate('/game/finish')
-  }
+  const handleGameFinished = useCallback(
+    (payload: GameEndPayload) => {
+      const next = {
+        snapshot: payload.snapshot,
+        reason: payload.reason,
+      }
+      setLastResult(next)
+      window.localStorage.setItem(
+        LAST_RESULT_KEY,
+        JSON.stringify(next)
+      )
+      advanceArenaBgAfterGame()
+      navigate('/game/finish')
+    },
+    [navigate]
+  )
 
   const handleResetTutorialHints = () => {
     try {
@@ -609,7 +610,7 @@ export const GamePage: React.FC = () => {
                     onClick={
                       handleCycleFinishArenaBg
                     }>
-                    BG
+                    Фон
                   </button>
                   <button
                     type="button"
@@ -892,23 +893,27 @@ export const GamePage: React.FC = () => {
                         <select
                           value={hintIdleMs}
                           onChange={e => {
+                            const next = Number(
+                              e.target.value
+                            )
                             setHintIdleMs(
-                              Number(
-                                e.target.value
-                              )
+                              Math.max(5000, next)
                             )
                           }}>
-                          <option value={2000}>
-                            2 сек
-                          </option>
-                          <option value={4000}>
-                            4 сек
-                          </option>
-                          <option value={6000}>
-                            6 сек
+                          <option value={5000}>
+                            5 сек
                           </option>
                           <option value={10000}>
                             10 сек
+                          </option>
+                          <option value={15000}>
+                            15 сек
+                          </option>
+                          <option value={20000}>
+                            20 сек
+                          </option>
+                          <option value={30000}>
+                            30 сек
                           </option>
                         </select>
                       </label>
@@ -1139,7 +1144,7 @@ export const GamePage: React.FC = () => {
                   onClick={
                     handleCycleFinishArenaBg
                   }>
-                  BG
+                  Фон
                 </button>
                 <button
                   type="button"
