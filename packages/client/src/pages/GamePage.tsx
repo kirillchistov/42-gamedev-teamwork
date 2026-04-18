@@ -1,7 +1,9 @@
 // Страница /game: Cosmic Match (match-3), тосты, настройки-заглушки, оболочка под тему лендинга
 import React, {
+  useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from 'react'
@@ -16,6 +18,12 @@ import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { usePage } from '../hooks/usePage'
 import { BoardFieldThemePreview } from '../game/match3/BoardFieldThemePreview'
+import {
+  advanceArenaBgAfterGame,
+  arenaBgUrlForIndex,
+  cycleArenaBgNext,
+  readArenaBgIndex,
+} from '../game/match3/match3ArenaBackground'
 import { Match3Screen } from '../game/match3/Match3Screen'
 import type {
   GameEndPayload,
@@ -115,6 +123,10 @@ export const GamePage: React.FC = () => {
     useState<GameVfxQualityOption>('full')
   const [toastMessage, setToastMessage] =
     useState('')
+  const [, bumpFinishArenaBg] = useReducer(
+    (n: number) => n + 1,
+    0
+  )
   const [startCountdown, setStartCountdown] =
     useState(3)
   const [lastResult, setLastResult] = useState<{
@@ -235,6 +247,16 @@ export const GamePage: React.FC = () => {
     location.pathname === '/game/play'
   const isFinishRoute =
     location.pathname === '/game/finish'
+
+  const finishArenaPhotoUrl = isFinishRoute
+    ? arenaBgUrlForIndex(readArenaBgIndex())
+    : ''
+
+  const handleCycleFinishArenaBg =
+    useCallback(() => {
+      cycleArenaBgNext()
+      bumpFinishArenaBg()
+    }, [])
 
   useEffect(() => {
     if (!isStartRoute) return
@@ -360,6 +382,7 @@ export const GamePage: React.FC = () => {
       LAST_RESULT_KEY,
       JSON.stringify(next)
     )
+    advanceArenaBgAfterGame()
     navigate('/game/finish')
   }
 
@@ -579,6 +602,14 @@ export const GamePage: React.FC = () => {
                     {showSettingsPanel
                       ? 'Скрыть настройки'
                       : 'Настройки'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--outline"
+                    onClick={
+                      handleCycleFinishArenaBg
+                    }>
+                    BG
                   </button>
                   <button
                     type="button"
@@ -964,8 +995,17 @@ export const GamePage: React.FC = () => {
             'match3-finish-screen',
             finishStats?.isWin
               ? 'match3-finish-screen--win'
-              : 'match3-finish-screen--lose'
-          )}>
+              : 'match3-finish-screen--lose',
+            finishArenaPhotoUrl &&
+              'match3-finish-screen--arena-photo'
+          )}
+          style={
+            finishArenaPhotoUrl
+              ? ({
+                  ['--m3-arena-photo' as string]: `url("${finishArenaPhotoUrl}")`,
+                } as React.CSSProperties)
+              : undefined
+          }>
           <div className="match3-finish-screen__inner">
             <div
               className={clsx(
@@ -976,15 +1016,32 @@ export const GamePage: React.FC = () => {
                   : 'is-lose'
               )}>
               {finishStats?.isWin ? (
-                <img
-                  src={cosmicBadgeWinUrl}
-                  alt="Победа"
-                  className="match3__results-badge match3__results-badge--win"
-                />
+                <button
+                  type="button"
+                  className="match3__results-badge-win-wrap"
+                  onClick={
+                    handleCycleFinishArenaBg
+                  }
+                  aria-label="Сменить фон">
+                  <img
+                    src={cosmicBadgeWinUrl}
+                    alt=""
+                    className="match3__results-badge match3__results-badge--win"
+                  />
+                </button>
               ) : (
-                <div className="match3__results-badge">
-                  LOSE
-                </div>
+                <button
+                  type="button"
+                  className={clsx(
+                    'match3__results-badge',
+                    'match3__results-badge--lose-emoji'
+                  )}
+                  onClick={
+                    handleCycleFinishArenaBg
+                  }
+                  aria-label="Сменить фон">
+                  😢
+                </button>
               )}
               <h3 className="match3__results-title">
                 {finishStats?.isWin
@@ -1075,6 +1132,14 @@ export const GamePage: React.FC = () => {
                     })
                   }>
                   Настройки
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--outline"
+                  onClick={
+                    handleCycleFinishArenaBg
+                  }>
+                  BG
                 </button>
                 <button
                   type="button"

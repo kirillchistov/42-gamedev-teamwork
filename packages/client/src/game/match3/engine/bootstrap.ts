@@ -315,9 +315,10 @@ export function createMatch3Game(
   let targetCell: CellRC | null = null
   let targetPulse = false
   let hintMove: MoveCandidate | null = null
+  let hintPulsePhase = 0
   let hintIdleMs = DEFAULT_HINT_IDLE_MS
   let inputBlocked = false
-  let iconThemeRedrawId: number | null = null
+  let hintPulseRedrawId: number | null = null
   const DRAG_SWAP_THRESHOLD_PX = 12
 
   const emitHud = () => onHudChange?.({ ...hud })
@@ -329,6 +330,7 @@ export function createMatch3Game(
     renderBoard(ctx, board, {
       hintFrom: hintMove?.from ?? null,
       hintTo: hintMove?.to ?? null,
+      hintPulsePhase,
       iceGrid,
       goalGrid,
       ...opts,
@@ -623,7 +625,13 @@ export function createMatch3Game(
       Boolean(firstPick || targetCell),
     getCurrentHintMove: () => hintMove,
     setHintMove: m => {
+      const hadHint = hintMove != null
       hintMove = m
+      if (hintMove) {
+        startHintPulseAnimation()
+      } else if (hadHint) {
+        stopHintPulseAnimation()
+      }
     },
     getFirstMoveCandidate: () =>
       findPossibleMoves(getMatchBoard())[0],
@@ -636,11 +644,26 @@ export function createMatch3Game(
   const markPlayerActivity = () =>
     idleHint.markActivity()
 
-  const stopIconThemeRedraw = () => {
-    if (iconThemeRedrawId !== null) {
-      window.clearInterval(iconThemeRedrawId)
-      iconThemeRedrawId = null
+  const stopHintPulseAnimation = () => {
+    if (hintPulseRedrawId !== null) {
+      window.clearInterval(hintPulseRedrawId)
+      hintPulseRedrawId = null
     }
+    hintPulsePhase = 0
+  }
+
+  const startHintPulseAnimation = () => {
+    if (hintPulseRedrawId !== null) return
+    hintPulseRedrawId = window.setInterval(() => {
+      if (!hintMove || phase !== 'playing') {
+        stopHintPulseAnimation()
+        drawBoard()
+        return
+      }
+      hintPulsePhase =
+        (performance.now() % 1650) / 1650
+      drawBoard()
+    }, 42)
   }
 
   let roundTimer: ReturnType<
@@ -1168,7 +1191,6 @@ export function createMatch3Game(
   ) => {
     gameIconTheme = iconTheme
     drawBoard()
-    stopIconThemeRedraw()
     void preloadIconTheme(iconTheme).then(() => {
       if (phase === 'ended') return
       drawBoard()
@@ -1290,7 +1312,7 @@ export function createMatch3Game(
     }
     stopTimer()
     stopHintTimer()
-    stopIconThemeRedraw()
+    stopHintPulseAnimation()
     cancelFxLoop()
     matchFx?.reset()
     if (audioCtx) {

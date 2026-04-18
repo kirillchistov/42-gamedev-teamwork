@@ -50,6 +50,8 @@ export type RenderOpts = {
   targetPulse?: boolean
   hintFrom?: CellRC | null
   hintTo?: CellRC | null
+  /** 0..1 циклическая фаза анимации idle-подсказки (3 вспышки за цикл). */
+  hintPulsePhase?: number
   theme?: GameThemeOption
   iconTheme?: GameIconThemeOption
   /** Оформление поля: космическая сетка или светлая «столешница» под иконки еды. */
@@ -553,10 +555,8 @@ function strokeFoodCellBorderByKind(
   /** `null` — пустая клетка: золото → приглушённый серый */
   kindOrNull: number | null
 ) {
-  const lw = Math.max(
-    1.5,
-    Math.min(3.8, cell * 0.048)
-  )
+  // Фиксированная толщина для стабильной читаемости фаски.
+  const lw = 4
   const inset = lw / 2
   const accentEnd =
     kindOrNull === null
@@ -570,9 +570,10 @@ function strokeFoodCellBorderByKind(
     x + cell,
     y + cell
   )
-  g.addColorStop(0, '#fff2c4')
-  g.addColorStop(0.22, '#f0cf6e')
-  g.addColorStop(0.55, '#e8b84a')
+  g.addColorStop(0, '#fff6d6')
+  // Усиливаем 2-й цвет для объема
+  g.addColorStop(0.16, '#ffd24f')
+  g.addColorStop(0.46, '#f0b83f')
   g.addColorStop(0.82, accentEnd)
   g.addColorStop(1, accentEnd)
   ctx.strokeStyle = g
@@ -583,7 +584,106 @@ function strokeFoodCellBorderByKind(
     cell - lw,
     cell - lw
   )
+  // Блестящая фаска: светлый блик сверху/слева
+  ctx.lineWidth = Math.max(1.2, lw * 0.24)
+  ctx.strokeStyle = 'rgba(255, 248, 220, 0.72)'
+  ctx.beginPath()
+  ctx.moveTo(
+    x + inset + lw * 0.35,
+    y + inset + lw * 0.42
+  )
+  ctx.lineTo(
+    x + cell - inset - lw * 0.5,
+    y + inset + lw * 0.42
+  )
+  ctx.moveTo(
+    x + inset + lw * 0.42,
+    y + inset + lw * 0.35
+  )
+  ctx.lineTo(
+    x + inset + lw * 0.42,
+    y + cell - inset - lw * 0.5
+  )
+  ctx.stroke()
+  // Тень фаски снизу/справа для глубины
+  ctx.lineWidth = Math.max(1, lw * 0.2)
+  ctx.strokeStyle = 'rgba(24, 16, 10, 0.55)'
+  ctx.beginPath()
+  ctx.moveTo(
+    x + inset + lw * 0.55,
+    y + cell - inset - lw * 0.38
+  )
+  ctx.lineTo(
+    x + cell - inset - lw * 0.25,
+    y + cell - inset - lw * 0.38
+  )
+  ctx.moveTo(
+    x + cell - inset - lw * 0.38,
+    y + inset + lw * 0.55
+  )
+  ctx.lineTo(
+    x + cell - inset - lw * 0.38,
+    y + cell - inset - lw * 0.25
+  )
+  ctx.stroke()
   ctx.restore()
+}
+
+function drawMutedGoldSelection(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  opts?: {
+    pulse?: boolean
+  }
+) {
+  const pulse = Boolean(opts?.pulse)
+  const inset = pulse ? 1.2 : 1.8
+  const lineW = pulse ? 3.8 : 3.2
+  const r = Math.max(4, cell * 0.15)
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  g.addColorStop(0, 'rgba(255, 236, 176, 0.9)')
+  g.addColorStop(0.45, 'rgba(212, 169, 85, 0.86)')
+  g.addColorStop(1, 'rgba(144, 107, 44, 0.82)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lineW
+  ctx.shadowColor = pulse
+    ? 'rgba(251, 191, 36, 0.52)'
+    : 'rgba(212, 169, 85, 0.42)'
+  ctx.shadowBlur = pulse ? 12 : 8
+  ctx.beginPath()
+  pathRoundRect(
+    ctx,
+    x + inset,
+    y + inset,
+    cell - inset * 2,
+    cell - inset * 2,
+    r
+  )
+  ctx.stroke()
+  ctx.restore()
+}
+
+function hintBurstIntensity(
+  phaseRaw: number
+): number {
+  const phase = ((phaseRaw % 1) + 1) % 1
+  const centers = [1 / 6, 0.5, 5 / 6] as const
+  let out = 0
+  for (const c of centers) {
+    const dist = Math.abs(phase - c)
+    const wrapped = Math.min(dist, 1 - dist)
+    const t = Math.max(0, 1 - wrapped / 0.14)
+    out = Math.max(out, t)
+  }
+  return out
 }
 
 function drawGoalOverlay(
@@ -918,25 +1018,9 @@ export function renderBoard(
     ) {
       const x = ox + c * cell
       const y = oy + r * cell
-      ctx.save()
-      ctx.lineWidth = 4
-      if (isFoodField) {
-        ctx.strokeStyle =
-          'rgba(154, 52, 18, 0.95)'
-        ctx.shadowColor =
-          'rgba(251, 146, 60, 0.55)'
-      } else {
-        ctx.strokeStyle = 'rgba(255,255,255,0.9)'
-        ctx.shadowColor = 'rgba(255,255,255,0.8)'
-      }
-      ctx.shadowBlur = 8
-      ctx.strokeRect(
-        x + 1,
-        y + 1,
-        cell - 2,
-        cell - 2
-      )
-      ctx.restore()
+      drawMutedGoldSelection(ctx, x, y, cell, {
+        pulse: false,
+      })
     }
   }
 
@@ -953,32 +1037,9 @@ export function renderBoard(
     ) {
       const x = ox + c * cell
       const y = oy + r * cell
-      const pulseInset = opts.targetPulse ? 0 : 2
-      const pulseBlur = opts.targetPulse ? 14 : 9
-
-      ctx.save()
-      ctx.lineWidth = 3
-      ctx.setLineDash([6, 4])
-      if (isFoodField) {
-        ctx.strokeStyle =
-          'rgba(194, 65, 12, 0.95)'
-        ctx.shadowColor =
-          'rgba(234, 88, 12, 0.75)'
-      } else {
-        ctx.strokeStyle =
-          'rgba(56, 189, 248, 0.95)'
-        ctx.shadowColor =
-          'rgba(56, 189, 248, 0.85)'
-      }
-      ctx.shadowBlur = pulseBlur
-      ctx.strokeRect(
-        x + pulseInset,
-        y + pulseInset,
-        cell - pulseInset * 2,
-        cell - pulseInset * 2
-      )
-      ctx.setLineDash([])
-      ctx.restore()
+      drawMutedGoldSelection(ctx, x, y, cell, {
+        pulse: Boolean(opts.targetPulse),
+      })
     }
   }
 
@@ -992,24 +1053,65 @@ export function renderBoard(
       p.r < rows &&
       p.c < cols
     if (inBounds(a) && inBounds(b)) {
+      const burst = hintBurstIntensity(
+        opts?.hintPulsePhase ?? 0
+      )
       const drawHintCell = (p: CellRC) => {
         const x = ox + p.c * cell
         const y = oy + p.r * cell
-        ctx.save()
-        ctx.lineWidth = 3
-        ctx.setLineDash([4, 4])
-        ctx.strokeStyle =
-          'rgba(250, 204, 21, 0.95)'
-        ctx.shadowColor =
-          'rgba(250, 204, 21, 0.7)'
-        ctx.shadowBlur = 8
-        ctx.strokeRect(
-          x + 2,
-          y + 2,
-          cell - 4,
-          cell - 4
+        const ringInset = Math.max(
+          0.8,
+          cell * 0.03
         )
-        ctx.setLineDash([])
+        const ringSize = cell - ringInset * 2
+        ctx.save()
+        const alpha = 0.2 + burst * 0.7
+        const glowBlur = 4 + burst * 14
+        const lineW = 1.6 + burst * 2.2
+        const radius = Math.max(4, cell * 0.16)
+        const core = ctx.createLinearGradient(
+          x,
+          y,
+          x + cell,
+          y + cell
+        )
+        core.addColorStop(
+          0,
+          `rgba(255, 243, 176, ${alpha})`
+        )
+        core.addColorStop(
+          1,
+          `rgba(227, 163, 61, ${alpha})`
+        )
+        ctx.strokeStyle = core
+        ctx.lineWidth = lineW
+        ctx.shadowColor = `rgba(251, 191, 36, ${
+          0.35 + burst * 0.55
+        })`
+        ctx.shadowBlur = glowBlur
+        ctx.beginPath()
+        pathRoundRect(
+          ctx,
+          x + ringInset,
+          y + ringInset,
+          ringSize,
+          ringSize,
+          radius
+        )
+        ctx.stroke()
+        ctx.globalAlpha = 0.16 + burst * 0.28
+        ctx.lineWidth = Math.max(1, lineW * 0.58)
+        ctx.shadowBlur = glowBlur * 0.45
+        ctx.beginPath()
+        pathRoundRect(
+          ctx,
+          x + ringInset - 1.6,
+          y + ringInset - 1.6,
+          ringSize + 3.2,
+          ringSize + 3.2,
+          radius + 1.5
+        )
+        ctx.stroke()
         ctx.restore()
       }
       drawHintCell(a)

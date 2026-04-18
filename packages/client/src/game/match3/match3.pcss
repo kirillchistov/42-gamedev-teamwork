@@ -1086,6 +1086,40 @@
     ease-in-out infinite;
 }
 
+button.match3__results-badge-win-wrap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+
+button.match3__results-badge-win-wrap:focus-visible {
+  outline: 2px solid rgba(250, 204, 21, 0.85);
+  outline-offset: 3px;
+}
+
+.match3__results-badge--lose-emoji {
+  font-size: clamp(26px, 5.5vw, 36px);
+  line-height: 1;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.match3__results-badge--lose-emoji:focus-visible {
+  outline: 2px solid rgba(252, 165, 165, 0.95);
+  outline-offset: 3px;
+}
+
 @keyframes match3-win-badge-pulse {
   0%,
   100% {
@@ -1696,9 +1730,39 @@
   background: var(--m3-screen-bg);
 }
 
+.match3-finish-screen.match3-finish-screen--arena-photo {
+  background-color: #030712;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(2, 6, 23, 0.55) 0%,
+      rgba(2, 6, 23, 0.36) 42%,
+      rgba(2, 6, 23, 0.72) 100%
+    ),
+    var(--m3-arena-photo, none);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
 .landing--light-flat .match3-finish-screen,
 .landing--light-3d .match3-finish-screen {
   background: #eef3fb;
+}
+
+.landing--light-flat
+  .match3-finish-screen.match3-finish-screen--arena-photo,
+.landing--light-3d
+  .match3-finish-screen.match3-finish-screen--arena-photo {
+  background-color: #eef3fb;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(238, 243, 251, 0.9) 0%,
+      rgba(238, 243, 251, 0.62) 45%,
+      rgba(226, 232, 244, 0.88) 100%
+    ),
+    var(--m3-arena-photo, none);
 }
 
 .match3-finish-screen__inner {
