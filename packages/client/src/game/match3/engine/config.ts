@@ -81,6 +81,7 @@ export const BOARD_FIELD_THEME_OPTIONS = [
   'space',
   'food',
   'coder',
+  'hieroglyph',
 ] as const
 export type BoardFieldThemeOption =
   typeof BOARD_FIELD_THEME_OPTIONS[number]

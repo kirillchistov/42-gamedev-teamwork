@@ -278,6 +278,46 @@
   pointer-events: none;
 }
 
+.match3-page__field-preview--hiero {
+  background: linear-gradient(
+    160deg,
+    #3d2a1f 0%,
+    #2a1a12 100%
+  );
+}
+
+.match3-page__field-preview-cell--hiero {
+  container-type: size;
+  background: linear-gradient(
+    165deg,
+    #fffef8 0%,
+    #f5ebe0 45%,
+    #e8dcc8 100%
+  );
+  border: 1px solid rgba(120, 90, 60, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.match3-page__field-preview-hanzi {
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'SimSun',
+    serif;
+  /* ≈2× от прежнего превью; в поддерживающих браузерах — ~76% стороны клетки */
+  font-size: clamp(20px, 5.6vw, 36px);
+  font-weight: 700;
+  color: #1a1510;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+}
+
+@supports (font-size: 1cqw) {
+  .match3-page__field-preview-cell--hiero
+    .match3-page__field-preview-hanzi {
+    font-size: min(76cqw, 76cqh);
+  }
+}
+
 .landing--dark-neon .match3-page__settings-modal {
   background: rgba(2, 6, 23, 0.82);
 }
@@ -612,6 +652,149 @@
     0 14px 40px rgba(15, 23, 42, 0.55),
     0 0 0 1px rgba(56, 189, 248, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.match3__board-wrap--hieroglyph {
+  border-radius: 14px;
+  box-shadow:
+    0 12px 34px rgba(20, 14, 10, 0.55),
+    0 0 0 1px rgba(254, 243, 199, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Карточка иероглифа поверх области поля */
+.m3-hiero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: clamp(6px, 2vw, 14px);
+  background: rgba(15, 10, 8, 0.52);
+  backdrop-filter: blur(5px);
+}
+
+.m3-hiero-card {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 14px;
+  background: linear-gradient(
+    165deg,
+    #fffdf7 0%,
+    #f4ead8 42%,
+    #e8dcc8 100%
+  );
+  border: 1px solid rgba(90, 60, 40, 0.35);
+  box-shadow:
+    0 18px 48px rgba(15, 10, 8, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  overflow: auto;
+}
+
+.m3-hiero-card__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #431407;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.m3-hiero-card__close:hover {
+  background: #fff;
+}
+
+.m3-hiero-card__body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(12px, 3vw, 24px);
+  padding: clamp(16px, 4vw, 28px)
+    clamp(16px, 4vw, 32px)
+    clamp(20px, 4vw, 32px);
+  padding-top: 52px;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 720px) {
+  .m3-hiero-card__body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.m3-hiero-card__visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+}
+
+.m3-hiero-card__svg {
+  width: min(100%, 280px);
+  height: auto;
+  max-height: 42vh;
+}
+
+.m3-hiero-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+}
+
+.m3-hiero-card__pinyin {
+  margin: 0;
+  font-size: clamp(22px, 4vw, 30px);
+  font-weight: 700;
+  color: #7f1d1d;
+}
+
+.m3-hiero-card__meanings {
+  margin: 0;
+  font-size: clamp(16px, 2.6vw, 19px);
+  line-height: 1.45;
+  color: #334155;
+}
+
+.m3-hiero-card__section {
+  margin: 8px 0 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.m3-hiero-card__examples {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.m3-hiero-card__examples li {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(148, 120, 90, 0.25);
+  font-size: 15px;
+  line-height: 1.45;
+  color: #1e293b;
+}
+
+.m3-hiero-card__examples li:last-child {
+  border-bottom: none;
+}
+
+.m3-hiero-card__zh {
+  font-weight: 700;
+  margin-right: 8px;
 }
 
 .match3__board-wrap .match3__board {

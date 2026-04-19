@@ -407,6 +407,8 @@ export const GamePage: React.FC = () => {
         return 'food'
       if (boardFieldTheme === 'coder')
         return 'coder'
+      if (boardFieldTheme === 'hieroglyph')
+        return 'cosmic'
       return 'cosmic'
     }, [boardFieldTheme])
 
@@ -652,6 +654,9 @@ export const GamePage: React.FC = () => {
                       : boardFieldTheme ===
                         'coder'
                       ? 'Кодер'
+                      : boardFieldTheme ===
+                        'hieroglyph'
+                      ? 'Иероглиф'
                       : 'Космос'}
                   </button>
                   <button
@@ -817,6 +822,9 @@ export const GamePage: React.FC = () => {
                           </option>
                           <option value="coder">
                             Кодер
+                          </option>
+                          <option value="hieroglyph">
+                            Иероглиф
                           </option>
                         </select>
                       </label>

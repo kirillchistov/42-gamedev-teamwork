@@ -135,6 +135,12 @@ type CreateParams = {
   onHudChange?: (next: GameHudState) => void
   onGameEnd?: (payload: GameEndPayload) => void
   /**
+   * Тема поля «Иероглиф»: повторный тап по уже выбранной фишке открывает карточку.
+   */
+  onHieroglyphCardOpen?: (payload: {
+    kind: number
+  }) => void
+  /**
    * Каскадный множитель текущего прохода (1 = первый матч, 2+ = комбо).
    * UI может использовать для лёгкого screen shake при chain ≥ 3.
    */
@@ -182,6 +188,7 @@ export function createMatch3Game(
     fxCanvas,
     onHudChange,
     onGameEnd,
+    onHieroglyphCardOpen,
     onComboShake,
     onPremiumMatchBorder,
     vfxQuality: initialVfxQuality,
@@ -318,6 +325,8 @@ export function createMatch3Game(
   let hintPulsePhase = 0
   let hintIdleMs = DEFAULT_HINT_IDLE_MS
   let inputBlocked = false
+  /** Пауза таймера режима «на время» (карточка иероглифа). */
+  let roundTimerPaused = false
   let hintPulseRedrawId: number | null = null
   const DRAG_SWAP_THRESHOLD_PX = 12
 
@@ -675,6 +684,7 @@ export function createMatch3Game(
       reason === 'goalReached' ? 'win' : 'lose'
     )
     phase = 'ended'
+    roundTimerPaused = false
     roundTimer?.stop()
     stopHintTimer()
     clearHint()
@@ -692,6 +702,7 @@ export function createMatch3Game(
   roundTimer = createRoundTimer({
     getPhase: () => phase,
     getInputBlocked: () => inputBlocked,
+    getTimerPaused: () => roundTimerPaused,
     getTimeLeftSec: () => hud.timeLeftSec,
     setTimeLeftSec: next => {
       hud.timeLeftSec = next
@@ -931,6 +942,24 @@ export function createMatch3Game(
       return
     }
 
+    if (
+      gameBoardField === 'hieroglyph' &&
+      isSameCell(firstPick, cell)
+    ) {
+      const v = board[cell.r]?.[cell.c]
+      if (typeof v === 'number' && v >= 0) {
+        onHieroglyphCardOpen?.({
+          kind: Math.abs(v),
+        })
+      }
+      firstPick = null
+      targetCell = null
+      targetPulse = false
+      renderInteraction()
+      emitHud()
+      return
+    }
+
     targetCell = cell
     targetPulse = true
     renderInteraction()
@@ -1081,6 +1110,7 @@ export function createMatch3Game(
   )
 
   const resetIdle = () => {
+    roundTimerPaused = false
     stopTimer()
     stopHintTimer()
     clearHint()
@@ -1109,6 +1139,7 @@ export function createMatch3Game(
   }
 
   const startPlay = () => {
+    roundTimerPaused = false
     stopTimer()
     stopHintTimer()
     clearHint()
@@ -1323,6 +1354,12 @@ export function createMatch3Game(
 
   resetIdle()
 
+  const setRoundTimerPaused = (
+    paused: boolean
+  ) => {
+    roundTimerPaused = Boolean(paused)
+  }
+
   return {
     resetIdle,
     startPlay,
@@ -1336,6 +1373,7 @@ export function createMatch3Game(
     setSoundEnabled,
     setVfxQuality,
     setInputBlocked,
+    setRoundTimerPaused,
     setLevel,
     setScoreMode,
     setHintIdleMs,

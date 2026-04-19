@@ -37,6 +37,7 @@ import {
   MATCH3_FOOD_ICON_URLS,
   MATCH3_TECH_ICON_URLS,
 } from './match3IconUrls'
+import { getHieroglyphForKind } from '../hieroglyphData'
 
 export type RenderOpts = {
   tileMotions?: {
@@ -521,6 +522,9 @@ const FOOD_ICON_AREA_RATIO = 0.98
 /** Фон клетки с фишкой (еда). */
 const FOOD_TILE_FILL = '#424242'
 
+/** Фон клетки под «костяные» фишки иероглифов. */
+const HIEROGLYPH_TILE_FILL = '#3d3428'
+
 /**
  * Толщина градиентной рамки клетки — одна для «Космос», «Еда», «Кодер».
  */
@@ -551,6 +555,139 @@ function kindRainbowAccent(kind: number): string {
     TILE_KIND_RAINBOW_ACCENTS[idx] ??
     TILE_KIND_RAINBOW_ACCENTS[0]
   )
+}
+
+function strokeHieroglyphCellBorderByKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  kindOrNull: number | null
+) {
+  const lw = MATCH3_CELL_BORDER_LINE_WIDTH
+  const inset = lw / 2
+  const accent =
+    kindOrNull === null
+      ? '#8b7355'
+      : kindRainbowAccent(kindOrNull)
+
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  g.addColorStop(0, 'rgba(255, 250, 235, 0.55)')
+  g.addColorStop(
+    0.35,
+    'rgba(200, 175, 130, 0.85)'
+  )
+  g.addColorStop(0.55, accent)
+  g.addColorStop(1, 'rgba(62, 48, 36, 0.95)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lw
+  ctx.strokeRect(
+    x + inset,
+    y + inset,
+    cell - lw,
+    cell - lw
+  )
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(255, 252, 245, 0.12)'
+  ctx.strokeRect(
+    x + inset + 0.6,
+    y + inset + 0.6,
+    cell - lw - 1.2,
+    cell - lw - 1.2
+  )
+  ctx.restore()
+}
+
+/**
+ * Фишка «из кости»: скруглённый прямоугольник с градиентом и иероглифом.
+ */
+function drawHieroglyphBoneTile(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  kind: number
+) {
+  const { hanzi } = getHieroglyphForKind(kind)
+  const pad = Math.max(5, cell * 0.12)
+  const w = cell - pad * 2
+  const h = cell - pad * 2
+  const rx = Math.max(6, cell * 0.14)
+  const bx = x + pad
+  const by = y + pad
+
+  ctx.save()
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.35)'
+  ctx.shadowBlur = Math.max(3, cell * 0.08)
+  ctx.shadowOffsetY = Math.max(1, cell * 0.02)
+
+  const body = ctx.createLinearGradient(
+    bx,
+    by,
+    bx + w,
+    by + h
+  )
+  body.addColorStop(0, '#fffef6')
+  body.addColorStop(0.45, '#f3ead8')
+  body.addColorStop(0.72, '#e4d6c2')
+  body.addColorStop(1, '#d2c2aa')
+  ctx.fillStyle = body
+  ctx.beginPath()
+  pathRoundRect(ctx, bx, by, w, h, rx)
+  ctx.fill()
+
+  ctx.shadowColor = 'transparent'
+  ctx.shadowBlur = 0
+  ctx.shadowOffsetY = 0
+
+  ctx.strokeStyle = 'rgba(90, 70, 52, 0.55)'
+  ctx.lineWidth = Math.max(1, cell * 0.035)
+  ctx.beginPath()
+  pathRoundRect(ctx, bx, by, w, h, rx)
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)'
+  ctx.lineWidth = Math.max(0.8, cell * 0.018)
+  ctx.beginPath()
+  pathRoundRect(
+    ctx,
+    bx + cell * 0.02,
+    by + cell * 0.02,
+    w - cell * 0.04,
+    h - cell * 0.04,
+    rx * 0.85
+  )
+  ctx.stroke()
+
+  const sealR = Math.max(3, cell * 0.07)
+  ctx.fillStyle = 'rgba(185, 28, 28, 0.22)'
+  ctx.beginPath()
+  ctx.rect(
+    bx + w - sealR * 2.2,
+    by + h * 0.08,
+    sealR * 1.6,
+    sealR * 1.6
+  )
+  ctx.fill()
+
+  const fontPx = Math.floor(Math.min(w, h) * 0.8)
+  ctx.fillStyle = '#3f0f0f'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = `700 ${fontPx}px "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",serif`
+  ctx.fillText(
+    hanzi,
+    bx + w / 2,
+    by + h / 2 + h * 0.02
+  )
+
+  ctx.restore()
 }
 
 function strokeFoodCellBorderByKind(
@@ -835,6 +972,8 @@ export function renderBoard(
     opts?.boardField ?? 'space'
   const isFoodField = boardField === 'food'
   const isCoderField = boardField === 'coder'
+  const isHieroglyphField =
+    boardField === 'hieroglyph'
 
   const { rows, cols } = dims(board)
   const W = MATCH3_BOARD_LOGICAL_PX
@@ -879,6 +1018,31 @@ export function renderBoard(
     ctx.shadowColor = 'rgba(251, 191, 36, 0.35)'
     ctx.shadowBlur = 18
     ctx.strokeStyle = 'rgba(254, 243, 199, 0.88)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(
+      ox - 6,
+      oy - 6,
+      cols * cell + 12,
+      rows * cell + 12
+    )
+  } else if (isHieroglyphField) {
+    const pad = 10
+    const fw = cols * cell + pad * 2
+    const fh = rows * cell + pad * 2
+    const gx = ctx.createLinearGradient(
+      ox - pad,
+      oy - pad,
+      ox - pad + fw,
+      oy - pad + fh
+    )
+    gx.addColorStop(0, '#4a3f32')
+    gx.addColorStop(0.5, '#352a22')
+    gx.addColorStop(1, '#1f1812')
+    ctx.fillStyle = gx
+    ctx.fillRect(ox - pad, oy - pad, fw, fh)
+    ctx.shadowColor = 'rgba(253, 224, 200, 0.25)'
+    ctx.shadowBlur = 16
+    ctx.strokeStyle = 'rgba(254, 243, 199, 0.72)'
     ctx.lineWidth = 2
     ctx.strokeRect(
       ox - 6,
@@ -954,6 +1118,16 @@ export function renderBoard(
           cell,
           hasTile ? v : null
         )
+      } else if (isHieroglyphField) {
+        ctx.fillStyle = HIEROGLYPH_TILE_FILL
+        ctx.fillRect(x, y, cell, cell)
+        strokeHieroglyphCellBorderByKind(
+          ctx,
+          x,
+          y,
+          cell,
+          hasTile ? v : null
+        )
       } else if (isCoderField) {
         ctx.fillStyle = CODER_TILE_FILL
         ctx.fillRect(x, y, cell, cell)
@@ -993,11 +1167,22 @@ export function renderBoard(
             cell
         : y
 
+      if (isHieroglyphField) {
+        drawHieroglyphBoneTile(
+          ctx,
+          drawX,
+          drawY,
+          cell,
+          v
+        )
+      }
+
       const icon =
         themeIcons?.[
           Math.abs(v) % themeIcons.length
         ]
       if (
+        !isHieroglyphField &&
         icon &&
         typeof icon.naturalWidth === 'number' &&
         icon.naturalWidth > 0
@@ -1036,7 +1221,7 @@ export function renderBoard(
           )
         }
         ctx.restore()
-      } else {
+      } else if (!isHieroglyphField) {
         const color = colorForKind(v, theme)
         drawShape(
           ctx,

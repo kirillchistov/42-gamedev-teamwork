@@ -19,6 +19,7 @@ import {
   type GameEndPayload,
   type GameHudState,
 } from './engine/bootstrap'
+import { HieroglyphCardOverlay } from './HieroglyphCardOverlay'
 import {
   GAME_DURATION_SEC,
   PRESTART_COUNTDOWN_SEC,
@@ -233,6 +234,14 @@ export const Match3Screen: React.FC<
   ] = useState(0)
   const [hintsHidden, setHintsHidden] =
     useState(false)
+  const [
+    hieroglyphOverlayKind,
+    setHieroglyphOverlayKind,
+  ] = useState<number | null>(null)
+  const hieroglyphFieldRef = useRef(
+    boardFieldTheme
+  )
+  hieroglyphFieldRef.current = boardFieldTheme
   const shakeResetRef = useRef<number | null>(
     null
   )
@@ -295,6 +304,16 @@ export const Match3Screen: React.FC<
       onHudChange: setHud,
       onComboShake,
       onPremiumMatchBorder,
+      onHieroglyphCardOpen: ({ kind }) => {
+        if (
+          hieroglyphFieldRef.current !==
+          'hieroglyph'
+        ) {
+          return
+        }
+        setHieroglyphOverlayKind(kind)
+        game.setRoundTimerPaused(true)
+      },
       onGameEnd: payload => {
         if (forcePlayMode && onGameFinished) {
           onGameFinished(payload)
@@ -405,6 +424,12 @@ export const Match3Screen: React.FC<
     const game = gameRef.current
     if (!game) return
     game.setBoardField(boardFieldTheme)
+  }, [boardFieldTheme])
+
+  useEffect(() => {
+    if (boardFieldTheme === 'hieroglyph') return
+    setHieroglyphOverlayKind(null)
+    gameRef.current?.setRoundTimerPaused(false)
   }, [boardFieldTheme])
 
   useEffect(() => {
@@ -622,7 +647,7 @@ export const Match3Screen: React.FC<
     limitMode === 'moves'
       ? `${Math.max(moveLimit - hud.moves, 0)}`
       : timeLabel
-  const hudHintText =
+  const hudHintCore =
     playerHintsMode === 'pauses'
       ? showIdleCoachHint
         ? isRookieTutorialActive &&
@@ -651,6 +676,17 @@ export const Match3Screen: React.FC<
             COACH_MESSAGES.length - 1
           )
         ]
+  const hieroglyphHudTip =
+    boardFieldTheme === 'hieroglyph' &&
+    uiPhase === 'playing'
+      ? 'Повторный тап по уже выбранной фишке — карточка иероглифа; в режиме на время таймер стоит, пока карточка открыта.'
+      : ''
+  const hudHintText = [
+    hudHintCore,
+    hieroglyphHudTip,
+  ]
+    .filter(Boolean)
+    .join(' ')
   const shouldShowHudHints =
     !hintsHidden &&
     (playerHintsMode !== 'pauses' ||
@@ -667,6 +703,11 @@ export const Match3Screen: React.FC<
       // noop: optional persistence
     }
   }
+
+  const closeHieroglyphCard = useCallback(() => {
+    setHieroglyphOverlayKind(null)
+    gameRef.current?.setRoundTimerPaused(false)
+  }, [])
 
   const handlePlay = () => {
     setUiPhase('playing')
@@ -823,7 +864,9 @@ export const Match3Screen: React.FC<
               boardFieldTheme === 'food' &&
                 'match3__board-wrap--food',
               boardFieldTheme === 'coder' &&
-                'match3__board-wrap--coder'
+                'match3__board-wrap--coder',
+              boardFieldTheme === 'hieroglyph' &&
+                'match3__board-wrap--hieroglyph'
             )}>
             <div
               className={clsx(
@@ -851,6 +894,15 @@ export const Match3Screen: React.FC<
                 height={480}
                 aria-hidden
               />
+
+              {boardFieldTheme === 'hieroglyph' &&
+                uiPhase === 'playing' && (
+                  <HieroglyphCardOverlay
+                    kind={hieroglyphOverlayKind}
+                    soundEnabled={soundEnabled}
+                    onClose={closeHieroglyphCard}
+                  />
+                )}
 
               {uiPhase === 'countdown' &&
                 countdownVal > 0 && (
@@ -901,6 +953,9 @@ export const Match3Screen: React.FC<
                         : boardFieldTheme ===
                           'coder'
                         ? 'Кодер'
+                        : boardFieldTheme ===
+                          'hieroglyph'
+                        ? 'Иероглиф'
                         : 'Космос'}
                     </div>
                     <div>
