@@ -62,8 +62,11 @@ const router = createBrowserRouter(
     : {}
 )
 
-ReactDOM.hydrateRoot(
-  document.getElementById('root') as HTMLElement,
+const rootElement = document.getElementById(
+  'root'
+) as HTMLElement
+
+const app = (
   <Provider store={store}>
     <LandingThemeProvider>
       <ThemeProvider theme="light">
@@ -74,3 +77,13 @@ ReactDOM.hydrateRoot(
     </LandingThemeProvider>
   </Provider>
 )
+
+/** Статический деплой (GitHub Pages): в `#root` нет HTML от `renderToString`, только плейсхолдер SSR. */
+const canHydrate =
+  rootElement.firstElementChild != null
+
+if (canHydrate) {
+  ReactDOM.hydrateRoot(rootElement, app)
+} else {
+  ReactDOM.createRoot(rootElement).render(app)
+}

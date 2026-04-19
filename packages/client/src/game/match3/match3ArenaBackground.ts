@@ -1,3 +1,5 @@
+import { publicAssetUrl } from '../../utils/publicAssetUrl'
+
 /**
  * Фоны экрана результата (`/game/finish`): `public/icons/bg*.jpg`.
  * Индекс в `localStorage` — после партии сдвигается, вручную: `cycleArenaBgNext()`.
@@ -11,11 +13,11 @@
  */
 export const MATCH3_ARENA_BG_URLS: readonly string[] =
   [
-    '/icons/bgcosmic1.jpg',
-    '/icons/bgcosmic2.jpg',
-    '/icons/bgcosmic3.jpg',
-    '/icons/bgcosmic4.jpg',
-    '/icons/bgcosmic5.jpg',
+    publicAssetUrl('icons/bgcosmic1.jpg'),
+    publicAssetUrl('icons/bgcosmic2.jpg'),
+    publicAssetUrl('icons/bgcosmic3.jpg'),
+    publicAssetUrl('icons/bgcosmic4.jpg'),
+    publicAssetUrl('icons/bgcosmic5.jpg'),
   ]
 
 const STORAGE_KEY = 'match3:arena-bg-index'
@@ -103,9 +105,24 @@ export function readArenaCustomPhotoUrl(): string {
 }
 
 /** Пресет по индексу или свой URL, если задан и валиден. */
+/** Путь с корня сайта (`/icons/…`) — дополняем `BASE_URL` для GitHub Pages и т.п. */
+function resolveSitePathIfNeeded(
+  href: string
+): string {
+  const s = href.trim()
+  if (!s.startsWith('/') || s.startsWith('//'))
+    return href
+  return publicAssetUrl(s.slice(1))
+}
+
 export function readResolvedArenaPhotoUrl(): string {
   const custom = readArenaCustomPhotoUrl()
-  if (custom) return custom
+  if (custom) {
+    if (custom.startsWith('/')) {
+      return resolveSitePathIfNeeded(custom)
+    }
+    return custom
+  }
   return arenaBgUrlForIndex(readArenaBgIndex())
 }
 
