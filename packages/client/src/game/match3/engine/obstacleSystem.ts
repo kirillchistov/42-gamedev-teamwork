@@ -100,18 +100,26 @@ export function createGoalGrid(
   count: number,
   hp: number
 ): OverlayGrid {
+  const layout = createGoalLayout(srcBoard, count)
+  return createGoalGridFromLayout(
+    srcBoard,
+    layout,
+    hp
+  )
+}
+
+export function createGoalLayout(
+  srcBoard: Board,
+  count: number
+): CellRC[] {
   const rows = srcBoard.length
   const cols =
     rows > 0 ? srcBoard[0]?.length ?? 0 : 0
-  const grid: OverlayGrid = Array.from(
-    { length: rows },
-    () => Array.from({ length: cols }, () => 0)
-  )
   const capped = Math.max(
     0,
     Math.min(rows * cols, Math.floor(count))
   )
-  if (capped <= 0) return grid
+  if (capped <= 0) return []
   const candidates: CellRC[] = []
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < cols; c += 1) {
@@ -120,9 +128,35 @@ export function createGoalGrid(
     }
   }
   shuffleInPlace(candidates)
-  for (let i = 0; i < capped; i += 1) {
-    const cell = candidates[i]
+  return candidates.slice(0, capped)
+}
+
+export function createGoalGridFromLayout(
+  srcBoard: Board,
+  layout: CellRC[],
+  hp: number
+): OverlayGrid {
+  const rows = srcBoard.length
+  const cols =
+    rows > 0 ? srcBoard[0]?.length ?? 0 : 0
+  const grid: OverlayGrid = Array.from(
+    { length: rows },
+    () => Array.from({ length: cols }, () => 0)
+  )
+  if (layout.length === 0) return grid
+  for (let i = 0; i < layout.length; i += 1) {
+    const cell = layout[i]
     if (!cell) break
+    if (
+      cell.r < 0 ||
+      cell.c < 0 ||
+      cell.r >= rows ||
+      cell.c >= cols
+    ) {
+      continue
+    }
+    if ((srcBoard[cell.r]?.[cell.c] ?? -1) < 0)
+      continue
     const row = grid[cell.r]
     if (!row) continue
     row[cell.c] = hp

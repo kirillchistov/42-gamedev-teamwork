@@ -112,7 +112,8 @@ import {
 import { classifySwapCelebration } from './resolvePipeline'
 import {
   countPositiveCells,
-  createGoalGrid,
+  createGoalGridFromLayout,
+  createGoalLayout,
   createIceGrid,
   type OverlayGrid,
 } from './obstacleSystem'
@@ -324,6 +325,7 @@ export function createMatch3Game(
   let scoreMode: ScoreMode = 'x1'
   let gameIceMultiplier: 1 | 2 | 4 = 1
   let gameTargetCells = 0
+  let goalLayout: CellRC[] = []
   let gameQuests = sanitizeLevelQuests(undefined)
   let questProgress =
     createInitialQuestProgress(gameQuests)
@@ -983,9 +985,24 @@ export function createMatch3Game(
       computeIceCount(),
       ICE_HP
     )
-    goalGrid = createGoalGrid(
+    const isLayoutCompatible =
+      goalLayout.length > 0 &&
+      goalLayout.every(
+        cell =>
+          cell.r >= 0 &&
+          cell.c >= 0 &&
+          cell.r < board.length &&
+          cell.c < (board[0]?.length ?? 0)
+      )
+    if (!isLayoutCompatible) {
+      goalLayout = createGoalLayout(
+        board,
+        gameTargetCells
+      )
+    }
+    goalGrid = createGoalGridFromLayout(
       board,
-      gameTargetCells,
+      goalLayout,
       TARGET_HP
     )
     hud.goalTargetsTotal = gameTargetCells
@@ -1241,6 +1258,7 @@ export function createMatch3Game(
     })
     questProgress =
       createInitialQuestProgress(gameQuests)
+    goalLayout = []
     firstPick = null
 
     rebuildBoard()
@@ -1255,6 +1273,7 @@ export function createMatch3Game(
     if (!Number.isInteger(size) || size < 4)
       return
     boardSize = size
+    goalLayout = []
     if (phase === 'playing') {
       rebuildBoard()
       void resolveBoard().then(() => emitHud())
@@ -1332,6 +1351,7 @@ export function createMatch3Game(
       0,
       level.targetCells ?? 0
     )
+    goalLayout = []
     gameQuests = sanitizeLevelQuests(level.quests)
     questProgress =
       createInitialQuestProgress(gameQuests)
