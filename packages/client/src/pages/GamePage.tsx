@@ -31,6 +31,16 @@ import {
   hasSeenGameLanding,
   markGameLandingSeen,
 } from '../game/match3/gameLandingGate'
+import {
+  GAME_BEAT_WIN_INTERVAL,
+  GAME_COMPANIONS,
+  readActiveCompanionId,
+  readLastShownBeatIndex,
+  readNarrativeWinsTotal,
+  writeActiveCompanionId,
+  writeLastShownBeatIndex,
+  writeNarrativeWinsTotal,
+} from '../game/match3/gameCompanions'
 import { Match3Screen } from '../game/match3/Match3Screen'
 import type {
   GameEndPayload,
@@ -77,6 +87,79 @@ const MOVE_LIMIT_BY_LEVEL: Record<
   ace: 100,
 }
 
+const IconHelpCircle: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="14"
+    height="14"
+    aria-hidden="true">
+    <circle
+      cx="12"
+      cy="12"
+      r="9"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    />
+    <path
+      d="M9.9 9.2a2.2 2.2 0 1 1 3.8 1.5c-.5.5-1.1.9-1.5 1.3-.4.4-.6.8-.6 1.4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle
+      cx="12"
+      cy="16.9"
+      r="1.1"
+      fill="currentColor"
+    />
+  </svg>
+)
+
+const IconUpload: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    aria-hidden="true">
+    <path
+      d="M12 16V6m0 0-3 3m3-3 3 3"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M5 15.8V18a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.2"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
+const IconTrash: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    aria-hidden="true">
+    <path
+      d="M5.5 7h13M10 4.8h4M9 10.2V16m6-5.8V16M8.2 7l.8 11a1 1 0 0 0 1 .9h4a1 1 0 0 0 1-.9l.8-11"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+)
+
 export const GamePage: React.FC = () => {
   usePage({ initPage: initGamePage })
   const { theme } = useLandingTheme()
@@ -86,6 +169,8 @@ export const GamePage: React.FC = () => {
     showSettingsPanel,
     setShowSettingsPanel,
   ] = useState(false)
+  const [showDiaryPanel, setShowDiaryPanel] =
+    useState(false)
   const [selectedLevelId, setSelectedLevelId] =
     useState(DEFAULT_MATCH3_LEVEL_ID)
   const initialLevel = getMatch3LevelById(
@@ -132,6 +217,17 @@ export const GamePage: React.FC = () => {
     debugBoostersMode,
     setDebugBoostersMode,
   ] = useState(false)
+  const [
+    activeCompanionId,
+    setActiveCompanionId,
+  ] = useState(readActiveCompanionId)
+  const [winsTotal, setWinsTotal] = useState(
+    readNarrativeWinsTotal
+  )
+  const [
+    lastShownBeatIndex,
+    setLastShownBeatIndex,
+  ] = useState(readLastShownBeatIndex)
   const [toastMessage, setToastMessage] =
     useState('')
   const [, bumpFinishArenaBg] = useReducer(
@@ -160,6 +256,7 @@ export const GamePage: React.FC = () => {
     tileKinds,
     boardFieldTheme,
     debugBoostersMode,
+    activeCompanionId,
   })
   const routeState = location.state as {
     notice?: string
@@ -174,12 +271,28 @@ export const GamePage: React.FC = () => {
       tileKinds: number
       boardFieldTheme?: BoardFieldThemeOption
       debugBoostersMode?: boolean
+      activeCompanionId?: string
     }
   } | null
   const notice = routeState?.notice
   const openSettingsOnStart = Boolean(
     routeState?.openSettings
   )
+  const [
+    narrativeDebugRaw,
+    setNarrativeDebugRaw,
+  ] = useState(() => ({
+    winsRaw: readNarrativeWinsTotal(),
+    beatRaw: readLastShownBeatIndex(),
+  }))
+
+  const syncNarrativeDebugRaw =
+    useCallback(() => {
+      setNarrativeDebugRaw({
+        winsRaw: readNarrativeWinsTotal(),
+        beatRaw: readLastShownBeatIndex(),
+      })
+    }, [])
 
   useEffect(() => {
     const raw = window.localStorage.getItem(
@@ -240,6 +353,14 @@ export const GamePage: React.FC = () => {
     setDebugBoostersMode(
       Boolean(settings.debugBoostersMode)
     )
+    if (settings.activeCompanionId) {
+      setActiveCompanionId(
+        settings.activeCompanionId
+      )
+      writeActiveCompanionId(
+        settings.activeCompanionId
+      )
+    }
     if (settings.boardFieldTheme !== undefined) {
       setBoardFieldTheme(settings.boardFieldTheme)
     }
@@ -252,6 +373,18 @@ export const GamePage: React.FC = () => {
     }, 2500)
     return () => clearTimeout(id)
   }, [toastMessage])
+
+  useEffect(() => {
+    writeActiveCompanionId(activeCompanionId)
+  }, [activeCompanionId])
+
+  useEffect(() => {
+    syncNarrativeDebugRaw()
+  }, [
+    winsTotal,
+    lastShownBeatIndex,
+    syncNarrativeDebugRaw,
+  ])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -389,6 +522,7 @@ export const GamePage: React.FC = () => {
       return
     }
     setShowSettingsPanel(false)
+    setShowDiaryPanel(false)
     setStartCountdown(3)
   }, [isStartRoute, openSettingsOnStart])
 
@@ -453,6 +587,15 @@ export const GamePage: React.FC = () => {
     ]
   )
 
+  const activeCompanion = useMemo(
+    () =>
+      GAME_COMPANIONS.find(
+        companion =>
+          companion.id === activeCompanionId
+      ) ?? GAME_COMPANIONS[0],
+    [activeCompanionId]
+  )
+
   const finishStats = useMemo(() => {
     if (!lastResult) return null
     const { snapshot, reason } = lastResult
@@ -486,6 +629,68 @@ export const GamePage: React.FC = () => {
     }
   }, [lastResult, goalScore])
 
+  const storyBeat = useMemo(() => {
+    if (!finishStats?.isWin || !activeCompanion) {
+      return null
+    }
+    const beatIndex = Math.floor(
+      winsTotal / GAME_BEAT_WIN_INTERVAL
+    )
+    if (
+      beatIndex <= 0 ||
+      beatIndex <= lastShownBeatIndex
+    ) {
+      return null
+    }
+    const beats = activeCompanion.diaryBeats
+    const beatText =
+      beats[(beatIndex - 1) % beats.length] ??
+      null
+    if (!beatText) return null
+    return {
+      beatIndex,
+      beatText,
+    }
+  }, [
+    finishStats?.isWin,
+    activeCompanion,
+    winsTotal,
+    lastShownBeatIndex,
+  ])
+
+  const winsToNextBeat = useMemo(() => {
+    const progress =
+      winsTotal % GAME_BEAT_WIN_INTERVAL
+    return progress === 0
+      ? GAME_BEAT_WIN_INTERVAL
+      : GAME_BEAT_WIN_INTERVAL - progress
+  }, [winsTotal])
+
+  const unlockedDiaryEntries = useMemo(() => {
+    if (!activeCompanion) return []
+    const unlockedCount = Math.floor(
+      winsTotal / GAME_BEAT_WIN_INTERVAL
+    )
+    if (unlockedCount <= 0) return []
+    return Array.from(
+      { length: unlockedCount },
+      (_, index) => {
+        const beatNumber = index + 1
+        const beatText =
+          activeCompanion.diaryBeats[
+            index %
+              activeCompanion.diaryBeats.length
+          ] ?? ''
+        return {
+          beatNumber,
+          unlockAtWins:
+            beatNumber * GAME_BEAT_WIN_INTERVAL,
+          beatText,
+        }
+      }
+    ).reverse()
+  }, [activeCompanion, winsTotal])
+
   const handleGameFinished = useCallback(
     (payload: GameEndPayload) => {
       const next = {
@@ -497,11 +702,24 @@ export const GamePage: React.FC = () => {
         LAST_RESULT_KEY,
         JSON.stringify(next)
       )
+      if (payload.reason === 'goalReached') {
+        const currentWins =
+          readNarrativeWinsTotal()
+        const nextWins = currentWins + 1
+        writeNarrativeWinsTotal(nextWins)
+        setWinsTotal(nextWins)
+      }
       advanceArenaBgAfterGame()
       navigate('/game/finish')
     },
     [navigate]
   )
+
+  useEffect(() => {
+    if (!storyBeat) return
+    setLastShownBeatIndex(storyBeat.beatIndex)
+    writeLastShownBeatIndex(storyBeat.beatIndex)
+  }, [storyBeat])
 
   return (
     <div
@@ -535,6 +753,28 @@ export const GamePage: React.FC = () => {
               Подходит для коротких сессий и
               соревновательной игры.
             </p>
+            {activeCompanion && (
+              <div className="match3-companion">
+                <img
+                  src={activeCompanion.imageUrl}
+                  alt={activeCompanion.title}
+                  className="match3-companion__avatar"
+                />
+                <div className="match3-companion__meta">
+                  <strong>
+                    {activeCompanion.title}
+                  </strong>
+                  <p>
+                    {activeCompanion.lineStart}
+                  </p>
+                  <p className="match3-companion__progress">
+                    Побед: {winsTotal}. Следующая
+                    страница дневника через{' '}
+                    {winsToNextBeat} побед.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <button
               type="button"
@@ -639,6 +879,32 @@ export const GamePage: React.FC = () => {
                 <p className="match3__start-glow-note">
                   Собирай комбо, закрывай цель!
                 </p>
+                {activeCompanion && (
+                  <div className="match3-companion match3-companion--compact">
+                    <img
+                      src={
+                        activeCompanion.imageUrl
+                      }
+                      alt={activeCompanion.title}
+                      className="match3-companion__avatar"
+                    />
+                    <div className="match3-companion__meta">
+                      <strong>
+                        {activeCompanion.title}
+                      </strong>
+                      <p>
+                        {
+                          activeCompanion.lineStart
+                        }
+                      </p>
+                      <p className="match3-companion__progress">
+                        Побед: {winsTotal}. До
+                        следующей страницы:{' '}
+                        {winsToNextBeat}.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="match3__start-info">
                   <button
                     type="button"
@@ -729,6 +995,16 @@ export const GamePage: React.FC = () => {
                   </button>
                   <button
                     type="button"
+                    className="btn btn--outline match3__settings-play-btn"
+                    onClick={() =>
+                      setShowDiaryPanel(v => !v)
+                    }>
+                    {showDiaryPanel
+                      ? 'Скрыть дневник'
+                      : 'Дневник'}
+                  </button>
+                  <button
+                    type="button"
                     className="btn btn--outline"
                     onClick={
                       handleCycleFinishArenaBg
@@ -749,6 +1025,57 @@ export const GamePage: React.FC = () => {
                     Играть
                   </button>
                 </div>
+                {showDiaryPanel && (
+                  <div className="match3-start-screen__diary-panel">
+                    <div className="match3-page__settings-head">
+                      <h2 className="match3-page__settings-title">
+                        Дневник навигатора
+                      </h2>
+                      <button
+                        type="button"
+                        className="btn btn--flat"
+                        onClick={() =>
+                          setShowDiaryPanel(false)
+                        }>
+                        Закрыть
+                      </button>
+                    </div>
+                    {unlockedDiaryEntries.length ===
+                    0 ? (
+                      <p className="match3-start-screen__diary-empty">
+                        Пока нет открытых страниц.
+                        Первая откроется после{' '}
+                        {GAME_BEAT_WIN_INTERVAL}{' '}
+                        побед.
+                      </p>
+                    ) : (
+                      <ul className="match3-start-screen__diary-list">
+                        {unlockedDiaryEntries.map(
+                          entry => (
+                            <li
+                              key={`diary-${entry.beatNumber}`}
+                              className="match3-start-screen__diary-item">
+                              <strong>
+                                Запись #
+                                {entry.beatNumber}
+                              </strong>
+                              <span>
+                                Открыта на{' '}
+                                {
+                                  entry.unlockAtWins
+                                }
+                                -й победе
+                              </span>
+                              <p>
+                                {entry.beatText}
+                              </p>
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    )}
+                  </div>
+                )}
                 {showSettingsPanel && (
                   <div className="match3-start-screen__settings-panel">
                     <div className="match3-page__settings-head">
@@ -867,75 +1194,114 @@ export const GamePage: React.FC = () => {
                         </select>
                       </label>
                       <label className="match3-page__settings-label">
-                        Тема поля
+                        Герой-компаньон
                         <select
-                          value={boardFieldTheme}
+                          value={
+                            activeCompanionId
+                          }
                           onChange={e => {
-                            setBoardFieldTheme(
-                              e.target
-                                .value as BoardFieldThemeOption
+                            const nextId =
+                              e.target.value
+                            setActiveCompanionId(
+                              nextId
+                            )
+                            writeActiveCompanionId(
+                              nextId
                             )
                           }}>
-                          <option value="space">
-                            Космос
-                          </option>
-                          <option value="food">
-                            Еда
-                          </option>
-                          <option value="coder">
-                            Кодер
-                          </option>
-                          <option value="hieroglyph">
-                            Иероглиф
-                          </option>
+                          {GAME_COMPANIONS.map(
+                            companion => (
+                              <option
+                                key={companion.id}
+                                value={
+                                  companion.id
+                                }>
+                                {companion.title}
+                              </option>
+                            )
+                          )}
                         </select>
                       </label>
+                      <div className="match3-page__theme-bg-row">
+                        <label className="match3-page__settings-label">
+                          Тема поля
+                          <select
+                            value={
+                              boardFieldTheme
+                            }
+                            onChange={e => {
+                              setBoardFieldTheme(
+                                e.target
+                                  .value as BoardFieldThemeOption
+                              )
+                            }}>
+                            <option value="space">
+                              Космос
+                            </option>
+                            <option value="food">
+                              Еда
+                            </option>
+                            <option value="coder">
+                              Кодер
+                            </option>
+                            <option value="hieroglyph">
+                              Иероглиф
+                            </option>
+                          </select>
+                        </label>
+                        <label className="match3-page__settings-label match3-page__settings-label--bg-url">
+                          <span className="match3-page__settings-label-head">
+                            Фон (свой URL)
+                            <button
+                              type="button"
+                              className="match3-page__hint-icon"
+                              aria-label="О подсказке хранения URL"
+                              title="Хранится в этом браузере (localStorage). Позже можно подключить загрузку через API (например, вложения чата Практикума) и сохранять ссылку с сервера.">
+                              <IconHelpCircle />
+                            </button>
+                          </span>
+                          <span className="match3-page__bg-url-line">
+                            <input
+                              type="url"
+                              inputMode="url"
+                              placeholder="https://… или /icons/…"
+                              value={
+                                arenaCustomUrlDraft
+                              }
+                              onChange={e =>
+                                setArenaCustomUrlDraft(
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <span className="match3-page__settings-actions">
+                              <button
+                                type="button"
+                                className="match3-page__icon-btn"
+                                aria-label="Применить URL"
+                                title="Применить URL"
+                                onClick={
+                                  handleArenaCustomApply
+                                }>
+                                <IconUpload />
+                              </button>
+                              <button
+                                type="button"
+                                className="match3-page__icon-btn match3-page__icon-btn--danger"
+                                aria-label="Сбросить свой URL"
+                                title="Сбросить свой URL"
+                                onClick={
+                                  handleArenaCustomClear
+                                }>
+                                <IconTrash />
+                              </button>
+                            </span>
+                          </span>
+                        </label>
+                      </div>
                       <BoardFieldThemePreview
                         theme={boardFieldTheme}
                       />
-                      <label className="match3-page__settings-label match3-page__settings-label--full">
-                        Фон (свой URL)
-                        <input
-                          type="url"
-                          inputMode="url"
-                          placeholder="https://… или /icons/…"
-                          value={
-                            arenaCustomUrlDraft
-                          }
-                          onChange={e =>
-                            setArenaCustomUrlDraft(
-                              e.target.value
-                            )
-                          }
-                        />
-                        <span className="match3-page__settings-hint">
-                          Хранится в этом браузере
-                          (localStorage). Позже
-                          можно подключить
-                          загрузку через API
-                          (например, вложения чата
-                          Практикума) и сохранять
-                          ссылку с сервера.
-                        </span>
-                        <span className="match3-page__settings-actions">
-                          <button
-                            type="button"
-                            className="btn btn--outline"
-                            onClick={
-                              handleArenaCustomApply
-                            }>
-                            Применить URL
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn--flat"
-                            onClick={
-                              handleArenaCustomClear
-                            }>
-                            Сбросить свой
-                          </button>
-                        </span>
-                      </label>
                       <label className="match3-page__settings-label">
                         Участвовать в рейтинге
                         <select
@@ -1180,6 +1546,36 @@ export const GamePage: React.FC = () => {
                           }}
                         />
                       </label>
+                      <div className="match3-page__settings-debug">
+                        <strong>
+                          Dev: narrative raw
+                          values
+                        </strong>
+                        <span>
+                          state winsTotal:{' '}
+                          {winsTotal}, state
+                          lastShownBeatIndex:{' '}
+                          {lastShownBeatIndex}
+                        </span>
+                        <span>
+                          localStorage winsRaw:{' '}
+                          {
+                            narrativeDebugRaw.winsRaw
+                          }
+                          , localStorage beatRaw:{' '}
+                          {
+                            narrativeDebugRaw.beatRaw
+                          }
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn--flat"
+                          onClick={
+                            syncNarrativeDebugRaw
+                          }>
+                          Обновить raw
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1294,6 +1690,39 @@ export const GamePage: React.FC = () => {
                   ? 'Победа!'
                   : 'Поражение'}
               </h3>
+              {activeCompanion && (
+                <div className="match3-companion match3-companion--compact">
+                  <img
+                    src={activeCompanion.imageUrl}
+                    alt={activeCompanion.title}
+                    className="match3-companion__avatar"
+                  />
+                  <div className="match3-companion__meta">
+                    <strong>
+                      {activeCompanion.title}
+                    </strong>
+                    <p>
+                      {finishStats?.isWin
+                        ? activeCompanion.lineWin
+                        : activeCompanion.lineLose}
+                    </p>
+                    {finishStats?.isWin && (
+                      <p className="match3-companion__progress">
+                        Побед всего: {winsTotal}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {storyBeat && (
+                <div className="match3-storybeat">
+                  <h4>
+                    Дневник Навигатора #
+                    {storyBeat.beatIndex}
+                  </h4>
+                  <p>{storyBeat.beatText}</p>
+                </div>
+              )}
               <p
                 className={clsx(
                   'match3__results-verdict',
