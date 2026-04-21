@@ -253,6 +253,12 @@ export const Match3Screen: React.FC<
     useState(false)
   const [isQuestListOpen, setIsQuestListOpen] =
     useState(false)
+  const [
+    justCompletedQuestIds,
+    setJustCompletedQuestIds,
+  ] = useState<string[]>([])
+  const [questToastText, setQuestToastText] =
+    useState('')
   const initialHintShownRef = useRef(false)
   const [
     playingElapsedSec,
@@ -279,6 +285,12 @@ export const Match3Screen: React.FC<
   )
   const prevScoreRef = useRef(0)
   const playSessionTrackedRef = useRef(false)
+  const prevCompletedQuestIdsRef = useRef<
+    Set<string>
+  >(new Set())
+  const questToastTimerRef = useRef<
+    number | null
+  >(null)
 
   const onComboShake = useCallback(
     (chain: number) => {
@@ -363,6 +375,12 @@ export const Match3Screen: React.FC<
       if (sparkResetRef.current !== null) {
         window.clearTimeout(sparkResetRef.current)
         sparkResetRef.current = null
+      }
+      if (questToastTimerRef.current !== null) {
+        window.clearTimeout(
+          questToastTimerRef.current
+        )
+        questToastTimerRef.current = null
       }
       game.destroy()
       gameRef.current = null
@@ -830,10 +848,100 @@ export const Match3Screen: React.FC<
     uiPhase === 'countdown' || uiPhase === 'ready'
   const showBoard = forcePlayMode || !isStartPhase
   const questSummary = useMemo(() => {
-    const totalCount = quests.length
-    const completedCount = 0
-    return { totalCount, completedCount }
-  }, [quests])
+    const progress = hud.questProgress
+    if (!progress) {
+      return {
+        totalCount: quests.length,
+        completedCount: 0,
+        quests: quests.map(quest => ({
+          id: quest.id,
+          title: quest.title,
+          progress: 0,
+          target: quest.targetCount ?? 1,
+        })),
+      }
+    }
+    return {
+      totalCount: progress.totalCount,
+      completedCount: progress.completedCount,
+      quests: progress.quests.map(quest => ({
+        id: quest.id,
+        title: quest.title,
+        progress: quest.progress,
+        target: quest.target,
+        completed: quest.completed,
+      })),
+    }
+  }, [hud.questProgress, quests])
+
+  useEffect(() => {
+    if (uiPhase !== 'playing') {
+      setQuestToastText('')
+      prevCompletedQuestIdsRef.current = new Set()
+      if (questToastTimerRef.current !== null) {
+        window.clearTimeout(
+          questToastTimerRef.current
+        )
+        questToastTimerRef.current = null
+      }
+    }
+  }, [uiPhase])
+
+  useEffect(() => {
+    const progress = hud.questProgress
+    if (!progress) return
+    const completedQuests =
+      progress.quests.filter(q => q.completed)
+    const nowCompleted = new Set(
+      completedQuests.map(q => q.id)
+    )
+    const justCompletedQuests =
+      completedQuests.filter(
+        q =>
+          !prevCompletedQuestIdsRef.current.has(
+            q.id
+          )
+      )
+    const justCompleted = justCompletedQuests.map(
+      q => q.id
+    )
+    prevCompletedQuestIdsRef.current =
+      nowCompleted
+    if (justCompleted.length === 0) return
+    setJustCompletedQuestIds(prev =>
+      Array.from(
+        new Set([...prev, ...justCompleted])
+      )
+    )
+    const flatReward = justCompletedQuests.reduce(
+      (acc, quest) =>
+        acc + (quest.reward?.flatScore ?? 0),
+      0
+    )
+    if (flatReward > 0) {
+      setQuestToastText(
+        `Квест выполнен: +${flatReward}`
+      )
+      if (questToastTimerRef.current !== null) {
+        window.clearTimeout(
+          questToastTimerRef.current
+        )
+      }
+      questToastTimerRef.current =
+        window.setTimeout(() => {
+          setQuestToastText('')
+          questToastTimerRef.current = null
+        }, 1700)
+    }
+    const timeout = window.setTimeout(() => {
+      setJustCompletedQuestIds(prev =>
+        prev.filter(
+          id => !justCompleted.includes(id)
+        )
+      )
+    }, 1800)
+    return () => window.clearTimeout(timeout)
+  }, [hud.questProgress])
   const hudColsCount =
     4 +
     (hud.goalTargetsTotal > 0 ? 1 : 0) +
@@ -965,6 +1073,11 @@ export const Match3Screen: React.FC<
                 </button>
               )}
             </div>
+            {questToastText ? (
+              <div className="match3__quest-toast">
+                {questToastText}
+              </div>
+            ) : null}
             {questSummary.totalCount > 0 &&
               isQuestListOpen && (
                 <div className="match3__quests-panel">
@@ -974,15 +1087,31 @@ export const Match3Screen: React.FC<
                     {questSummary.totalCount}
                   </strong>
                   <ul>
-                    {quests.map(quest => (
-                      <li key={quest.id}>
-                        <span>{quest.title}</span>
-                        <span>
-                          0/
-                          {quest.targetCount ?? 1}
-                        </span>
-                      </li>
-                    ))}
+                    {questSummary.quests.map(
+                      quest => (
+                        <li
+                          key={quest.id}
+                          className={clsx(
+                            quest.completed &&
+                              'match3__quest-item--done',
+                            justCompletedQuestIds.includes(
+                              quest.id
+                            ) &&
+                              'match3__quest-item--just-done'
+                          )}>
+                          <span>
+                            {quest.title}
+                          </span>
+                          <span>
+                            {quest.completed
+                              ? '✓ '
+                              : ''}
+                            {quest.progress}/
+                            {quest.target}
+                          </span>
+                        </li>
+                      )
+                    )}
                   </ul>
                 </div>
               )}

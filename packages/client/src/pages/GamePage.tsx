@@ -787,9 +787,13 @@ export const GamePage: React.FC = () => {
         setWinsTotal(nextWins)
       }
       advanceArenaBgAfterGame()
-      navigate('/game/finish')
+      navigate('/game/finish', {
+        state: {
+          gameSettings: buildGameSettingsState(),
+        },
+      })
     },
-    [navigate]
+    [buildGameSettingsState, navigate]
   )
 
   useEffect(() => {
@@ -866,7 +870,11 @@ export const GamePage: React.FC = () => {
               className="btn btn--outline"
               onClick={() =>
                 navigate('/game/start', {
-                  state: { openSettings: true },
+                  state: {
+                    openSettings: true,
+                    gameSettings:
+                      buildGameSettingsState(),
+                  },
                 })
               }>
               Настройки
@@ -2062,6 +2070,23 @@ export const GamePage: React.FC = () => {
                     {finishStats?.effectiveGoalScore ??
                       goalScore}
                   </li>
+                  {lastResult.snapshot
+                    .questProgress?.totalCount ? (
+                    <li>
+                      Квесты:{' '}
+                      {
+                        lastResult.snapshot
+                          .questProgress
+                          .completedCount
+                      }
+                      /
+                      {
+                        lastResult.snapshot
+                          .questProgress
+                          .totalCount
+                      }
+                    </li>
+                  ) : null}
                   <li>
                     Осталось до цели:{' '}
                     {finishStats?.goalRemain ?? 0}
@@ -2099,6 +2124,8 @@ export const GamePage: React.FC = () => {
                     navigate('/game/start', {
                       state: {
                         openSettings: true,
+                        gameSettings:
+                          buildGameSettingsState(),
                       },
                     })
                   }>
@@ -2119,6 +2146,8 @@ export const GamePage: React.FC = () => {
                     navigate('/game/start', {
                       state: {
                         openSettings: true,
+                        gameSettings:
+                          buildGameSettingsState(),
                       },
                     })
                   }>

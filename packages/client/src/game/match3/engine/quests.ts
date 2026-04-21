@@ -1,5 +1,3 @@
-import type { LevelConfig } from './levels'
-
 export type QuestColor =
   | 'blue'
   | 'green'
@@ -72,9 +70,119 @@ export type ResolveQuestDelta = {
 }
 
 export function sanitizeLevelQuests(
-  level: LevelConfig
+  quests: QuestConfig[] | undefined
 ): QuestConfig[] {
-  return Array.isArray(level.quests)
-    ? level.quests.slice(0, 4)
+  return Array.isArray(quests)
+    ? quests.slice(0, 4)
     : []
+}
+
+function toRuntimeQuest(
+  quest: QuestConfig
+): QuestRuntimeState {
+  const target = Math.max(
+    1,
+    Math.min(999, quest.targetCount ?? 1)
+  )
+  return {
+    id: quest.id,
+    title: quest.title,
+    type: quest.type,
+    progress: 0,
+    target,
+    completed: false,
+    completedAtMove: null,
+    color: quest.color,
+    specialKind: quest.specialKind,
+    parts: Array.isArray(quest.parts)
+      ? quest.parts
+          .map(toRuntimeQuest)
+          .slice(0, 4)
+      : undefined,
+    reward: quest.reward,
+  }
+}
+
+export function createInitialQuestProgress(
+  quests: QuestConfig[] | undefined
+): QuestProgress {
+  const runtime = sanitizeLevelQuests(quests).map(
+    toRuntimeQuest
+  )
+  return {
+    quests: runtime,
+    completedCount: 0,
+    totalCount: runtime.length,
+    activeScoreMultiplier: 1,
+    pendingFlatScoreReward: 0,
+  }
+}
+
+function recomputeCounters(
+  progress: QuestProgress
+): void {
+  progress.totalCount = progress.quests.length
+  progress.completedCount =
+    progress.quests.filter(
+      q => q.completed
+    ).length
+  progress.activeScoreMultiplier = progress.quests
+    .filter(q => q.completed)
+    .reduce((acc, q) => {
+      const m = q.reward?.scoreMultiplier
+      if (!m || m <= 0) return acc
+      return acc * m
+    }, 1)
+}
+
+function questColorCount(
+  delta: ResolveQuestDelta,
+  color: QuestColor | undefined
+): number {
+  if (!color || color === 'any') {
+    return Object.values(
+      delta.clearedByColor
+    ).reduce((acc, n) => acc + (n ?? 0), 0)
+  }
+  return delta.clearedByColor[color] ?? 0
+}
+
+export function applyQuestDelta(
+  progress: QuestProgress,
+  delta: ResolveQuestDelta,
+  moveNumber: number
+): void {
+  for (const quest of progress.quests) {
+    if (quest.completed) continue
+    if (quest.type === 'clearColor') {
+      quest.progress = Math.min(
+        quest.target,
+        quest.progress +
+          questColorCount(delta, quest.color)
+      )
+    } else if (quest.type === 'clearBlockers') {
+      quest.progress = Math.min(
+        quest.target,
+        quest.progress + delta.clearedBlockers
+      )
+    }
+    if (quest.progress >= quest.target) {
+      quest.completed = true
+      quest.completedAtMove = moveNumber
+      progress.pendingFlatScoreReward +=
+        quest.reward?.flatScore ?? 0
+    }
+  }
+  recomputeCounters(progress)
+}
+
+export function consumePendingFlatReward(
+  progress: QuestProgress
+): number {
+  const reward = Math.max(
+    0,
+    Math.floor(progress.pendingFlatScoreReward)
+  )
+  progress.pendingFlatScoreReward = 0
+  return reward
 }

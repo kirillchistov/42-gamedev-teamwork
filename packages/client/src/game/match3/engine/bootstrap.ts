@@ -86,6 +86,12 @@ import {
 } from './gameState'
 import type { LevelConfig } from './levels'
 import {
+  applyQuestDelta,
+  consumePendingFlatReward,
+  createInitialQuestProgress,
+  sanitizeLevelQuests,
+} from './quests'
+import {
   isAdjacentCell,
   isSameCell,
   clampCursor,
@@ -318,6 +324,9 @@ export function createMatch3Game(
   let scoreMode: ScoreMode = 'x1'
   let gameIceMultiplier: 1 | 2 | 4 = 1
   let gameTargetCells = 0
+  let gameQuests = sanitizeLevelQuests(undefined)
+  let questProgress =
+    createInitialQuestProgress(gameQuests)
   let phase: Phase = 'idle'
   let isAnimating = false
   let isResolving = false
@@ -370,7 +379,16 @@ export function createMatch3Game(
     }
   }
 
-  const emitHud = () => onHudChange?.({ ...hud })
+  const emitHud = () =>
+    onHudChange?.({
+      ...hud,
+      questProgress: {
+        ...questProgress,
+        quests: questProgress.quests.map(q => ({
+          ...q,
+        })),
+      },
+    })
 
   const scoreMult = () =>
     scoreMultiplier(scoreMode)
@@ -855,7 +873,7 @@ export function createMatch3Game(
 
       while (pass < maxPasses) {
         pass += 1
-        const { matched, nextChain } =
+        const { matched, nextChain, questDelta } =
           await runOneResolvePass({
             board,
             getMatchBoard,
@@ -891,8 +909,20 @@ export function createMatch3Game(
             clearHint,
             emitHud,
             delay,
+            activeScoreMultiplier: () =>
+              questProgress.activeScoreMultiplier,
           })
         if (!matched) break
+        applyQuestDelta(
+          questProgress,
+          questDelta,
+          hud.moves
+        )
+        const questReward =
+          consumePendingFlatReward(questProgress)
+        if (questReward > 0) {
+          hud.score += questReward
+        }
         maxChain = Math.max(maxChain, chain)
         chain = nextChain
       }
@@ -1186,6 +1216,8 @@ export function createMatch3Game(
       goalTargetsTotal: gameTargetCells,
       goalTargetsLeft: gameTargetCells,
     })
+    questProgress =
+      createInitialQuestProgress(gameQuests)
     drawBoard()
     emitHud()
   }
@@ -1207,6 +1239,8 @@ export function createMatch3Game(
       goalTargetsTotal: gameTargetCells,
       goalTargetsLeft: gameTargetCells,
     })
+    questProgress =
+      createInitialQuestProgress(gameQuests)
     firstPick = null
 
     rebuildBoard()
@@ -1298,6 +1332,9 @@ export function createMatch3Game(
       0,
       level.targetCells ?? 0
     )
+    gameQuests = sanitizeLevelQuests(level.quests)
+    questProgress =
+      createInitialQuestProgress(gameQuests)
 
     if (phase === 'playing') {
       rebuildBoard()
