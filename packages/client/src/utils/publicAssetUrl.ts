@@ -9,9 +9,13 @@ export function publicAssetUrl(
   const path = raw.startsWith('/')
     ? raw.slice(1)
     : raw
-  const base = (
-    import.meta.env.BASE_URL || '/'
-  ).replace(/\/+$/, '')
+  const appBase =
+    (
+      globalThis as {
+        __APP_BASE_URL__?: string
+      }
+    ).__APP_BASE_URL__ || '/'
+  const base = appBase.replace(/\/+$/, '')
   if (!base) return `/${path}`
   return `${base}/${path}`
 }

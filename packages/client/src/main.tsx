@@ -33,6 +33,11 @@ import { isPublicRoutePath } from './router/publicRoutePaths'
 
 const routerBasename = (() => {
   const base = import.meta.env.BASE_URL || '/'
+  ;(
+    globalThis as {
+      __APP_BASE_URL__?: string
+    }
+  ).__APP_BASE_URL__ = base
   const trimmed = base.replace(/\/+$/, '')
   return trimmed === '' ? undefined : trimmed
 })()
