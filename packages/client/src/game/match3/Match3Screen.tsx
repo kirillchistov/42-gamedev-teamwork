@@ -124,6 +124,19 @@ function IconRestart() {
   )
 }
 
+function IconPause() {
+  return (
+    <svg
+      width={14}
+      height={14}
+      viewBox="0 0 24 24"
+      aria-hidden
+      fill="currentColor">
+      <path d="M7 5h4v14H7V5zm6 0h4v14h-4V5z" />
+    </svg>
+  )
+}
+
 type Match3ScreenProps = {
   selectedLevelId?: string
   goalScore?: number
@@ -226,6 +239,8 @@ export const Match3Screen: React.FC<
   ] = useState(false)
   const [showInitialHint, setShowInitialHint] =
     useState(false)
+  const [isPauseOpen, setIsPauseOpen] =
+    useState(false)
   const initialHintShownRef = useRef(false)
   const [
     playingElapsedSec,
@@ -311,7 +326,6 @@ export const Match3Screen: React.FC<
           return
         }
         setHieroglyphOverlayKind(kind)
-        game.setRoundTimerPaused(true)
       },
       onGameEnd: payload => {
         if (forcePlayMode && onGameFinished) {
@@ -428,8 +442,27 @@ export const Match3Screen: React.FC<
   useEffect(() => {
     if (boardFieldTheme === 'hieroglyph') return
     setHieroglyphOverlayKind(null)
-    gameRef.current?.setRoundTimerPaused(false)
   }, [boardFieldTheme])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    const shouldPauseTimer =
+      isPauseOpen ||
+      (boardFieldTheme === 'hieroglyph' &&
+        hieroglyphOverlayKind !== null)
+    game.setRoundTimerPaused(shouldPauseTimer)
+  }, [
+    isPauseOpen,
+    boardFieldTheme,
+    hieroglyphOverlayKind,
+  ])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setInputBlocked(isPauseOpen)
+  }, [isPauseOpen])
 
   useEffect(() => {
     const game = gameRef.current
@@ -439,6 +472,7 @@ export const Match3Screen: React.FC<
 
   useEffect(() => {
     if (uiPhase !== 'playing') {
+      setIsPauseOpen(false)
       playSessionTrackedRef.current = false
       setPlayingElapsedSec(0)
       return
@@ -713,15 +747,16 @@ export const Match3Screen: React.FC<
 
   const closeHieroglyphCard = useCallback(() => {
     setHieroglyphOverlayKind(null)
-    gameRef.current?.setRoundTimerPaused(false)
   }, [])
 
   const handlePlay = () => {
+    setIsPauseOpen(false)
     setUiPhase('playing')
     gameRef.current?.startPlay()
   }
 
   const handlePlayAgain = () => {
+    setIsPauseOpen(false)
     setResultSnapshot(null)
     setGameEndReason(null)
     setCountdownVal(PRESTART_COUNTDOWN_SEC)
@@ -730,6 +765,7 @@ export const Match3Screen: React.FC<
   }
   const handleRestartFromHud = () => {
     if (uiPhase !== 'playing') return
+    setIsPauseOpen(false)
     gameRef.current?.resetIdle()
     if (forcePlayMode) {
       gameRef.current?.startPlay()
@@ -775,6 +811,11 @@ export const Match3Screen: React.FC<
   const isStartPhase =
     uiPhase === 'countdown' || uiPhase === 'ready'
   const showBoard = forcePlayMode || !isStartPhase
+  const hudColsCount =
+    4 +
+    (hud.goalTargetsTotal > 0 ? 1 : 0) +
+    1 +
+    (limitMode === 'time' ? 1 : 0)
 
   return (
     <section
@@ -791,7 +832,14 @@ export const Match3Screen: React.FC<
         }>
         {uiPhase === 'playing' && (
           <>
-            <div className="match3__hud-top">
+            <div
+              className="match3__hud-top"
+              style={
+                {
+                  ['--match3-hud-cols' as string]:
+                    String(hudColsCount),
+                } as React.CSSProperties
+              }>
               <div className="match3__hud-mobile-item">
                 <span>Счёт</span>
                 <strong>{hud.score}</strong>
@@ -832,12 +880,52 @@ export const Match3Screen: React.FC<
               <button
                 type="button"
                 className="match3__hud-restart"
-                onClick={handleRestartFromHud}
-                aria-label="Начать заново"
-                title="Начать заново">
-                <IconRestart />
-                <span>Заново</span>
+                onClick={
+                  isPauseOpen
+                    ? () => setIsPauseOpen(false)
+                    : handleRestartFromHud
+                }
+                aria-label={
+                  isPauseOpen
+                    ? 'Продолжить игру'
+                    : 'Начать заново'
+                }
+                title={
+                  isPauseOpen
+                    ? 'Продолжить игру'
+                    : 'Начать заново'
+                }>
+                {isPauseOpen ? (
+                  <>
+                    <span className="match3__hud-btn-label">
+                      Играть
+                    </span>
+                    <IconRestart />
+                  </>
+                ) : (
+                  <>
+                    <span className="match3__hud-btn-label">
+                      Заново
+                    </span>
+                    <IconRestart />
+                  </>
+                )}
               </button>
+              {limitMode === 'time' && (
+                <button
+                  type="button"
+                  className="match3__hud-pause"
+                  onClick={() =>
+                    setIsPauseOpen(true)
+                  }
+                  aria-label="Пауза"
+                  title="Пауза">
+                  <span className="match3__hud-btn-label">
+                    Пауза
+                  </span>
+                  <IconPause />
+                </button>
+              )}
             </div>
             {shouldShowHudHints && (
               <div className="match3__hud-kbd-hint-wrap">
@@ -1015,6 +1103,23 @@ export const Match3Screen: React.FC<
                   </div>
                 </div>
               )}
+
+              {uiPhase === 'playing' &&
+                isPauseOpen && (
+                  <div className="match3__overlay match3__overlay--pause">
+                    <p className="match3__pause-title">
+                      Игра на паузе
+                    </p>
+                    <button
+                      type="button"
+                      className="btn btn--primary match3__play-btn"
+                      onClick={() =>
+                        setIsPauseOpen(false)
+                      }>
+                      Играть дальше
+                    </button>
+                  </div>
+                )}
             </div>
             {borderSpark !== 'off' && (
               <div

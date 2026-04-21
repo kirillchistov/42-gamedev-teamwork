@@ -327,6 +327,8 @@ export function createMatch3Game(
   let inputBlocked = false
   /** Пауза таймера режима «на время» (карточка иероглифа). */
   let roundTimerPaused = false
+  /** Таймер режима «на время» запускаем после первого действия игрока. */
+  let roundTimerStarted = false
   let hintPulseRedrawId: number | null = null
   const DRAG_SWAP_THRESHOLD_PX = 12
 
@@ -650,8 +652,10 @@ export function createMatch3Game(
   const clearHint = () => idleHint.clearHint()
   const stopHintTimer = () => idleHint.stopTimer()
   const scheduleHint = () => idleHint.schedule()
-  const markPlayerActivity = () =>
+  const markPlayerActivity = () => {
+    ensureStartedTimeModeTimer()
     idleHint.markActivity()
+  }
 
   const stopHintPulseAnimation = () => {
     if (hintPulseRedrawId !== null) {
@@ -685,6 +689,7 @@ export function createMatch3Game(
     )
     phase = 'ended'
     roundTimerPaused = false
+    roundTimerStarted = false
     roundTimer?.stop()
     stopHintTimer()
     clearHint()
@@ -713,6 +718,13 @@ export function createMatch3Game(
 
   const stopTimer = () => roundTimer?.stop()
   const startGameTimer = () => roundTimer?.start()
+  const ensureStartedTimeModeTimer = () => {
+    if (phase !== 'playing') return
+    if (gameLimitMode !== 'time') return
+    if (roundTimerStarted) return
+    startGameTimer()
+    roundTimerStarted = true
+  }
 
   const renderInteraction = () => {
     const target =
@@ -1111,6 +1123,7 @@ export function createMatch3Game(
 
   const resetIdle = () => {
     roundTimerPaused = false
+    roundTimerStarted = false
     stopTimer()
     stopHintTimer()
     clearHint()
@@ -1140,6 +1153,7 @@ export function createMatch3Game(
 
   const startPlay = () => {
     roundTimerPaused = false
+    roundTimerStarted = false
     stopTimer()
     stopHintTimer()
     clearHint()
@@ -1158,9 +1172,6 @@ export function createMatch3Game(
 
     rebuildBoard()
     void resolveBoard().then(() => {
-      if (gameLimitMode === 'time') {
-        startGameTimer()
-      }
       emitHud()
       scheduleHint()
     })
@@ -1199,9 +1210,11 @@ export function createMatch3Game(
     gameLimitMode = mode
     if (phase === 'playing') {
       if (mode === 'time') {
-        startGameTimer()
+        stopTimer()
+        roundTimerStarted = false
       } else {
         stopTimer()
+        roundTimerStarted = false
       }
     }
   }
