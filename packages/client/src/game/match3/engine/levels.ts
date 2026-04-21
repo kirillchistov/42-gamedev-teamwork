@@ -11,6 +11,7 @@ import {
   type GameDurationOption,
   type GameThemeOption,
 } from './config'
+import type { QuestConfig } from './quests'
 
 export type LevelGoalType = 'score'
 
@@ -28,6 +29,7 @@ export type LevelConfig = {
   iceMultiplier?: 1 | 2 | 4
   /** Количество целевых клеток для механики bomb-target. */
   targetCells?: number
+  quests?: QuestConfig[]
 }
 
 export const MATCH3_LEVELS: LevelConfig[] = [
@@ -44,6 +46,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     theme: 'standard',
     iceMultiplier: 1,
     targetCells: undefined,
+    quests: [],
   },
   {
     id: 'pilot',
@@ -58,6 +61,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     theme: 'space',
     iceMultiplier: 2,
     targetCells: 4,
+    quests: [],
   },
   {
     id: 'ace',
@@ -72,6 +76,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     theme: 'math',
     iceMultiplier: 4,
     targetCells: 8,
+    quests: [],
   },
 ]
 

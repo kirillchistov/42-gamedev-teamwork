@@ -47,6 +47,12 @@ type PlayerHintsMode =
   | 'never'
   | 'pauses'
 
+type QuestPreview = {
+  id: string
+  title: string
+  targetCount?: number
+}
+
 const BORDER_SPARK_COUNT = 34
 const BORDER_SPARK_STEP_MS = 42
 const BORDER_SPARK_CLEAR_MS =
@@ -153,6 +159,7 @@ type Match3ScreenProps = {
   /** Полный VFX или упрощённый (без частиц, тряски и «петард» по контуру). */
   vfxQuality?: GameVfxQualityOption
   debugBoostersMode?: boolean
+  quests?: QuestPreview[]
   hintIdleMs?: number
   playerHintsMode?: PlayerHintsMode
   onOpenSettings?: () => void
@@ -178,6 +185,7 @@ export const Match3Screen: React.FC<
   soundEnabled = true,
   vfxQuality = 'full',
   debugBoostersMode = false,
+  quests = [],
   hintIdleMs,
   playerHintsMode = 'always',
   onOpenSettings,
@@ -242,6 +250,8 @@ export const Match3Screen: React.FC<
   const [showInitialHint, setShowInitialHint] =
     useState(false)
   const [isPauseOpen, setIsPauseOpen] =
+    useState(false)
+  const [isQuestListOpen, setIsQuestListOpen] =
     useState(false)
   const initialHintShownRef = useRef(false)
   const [
@@ -819,10 +829,16 @@ export const Match3Screen: React.FC<
   const isStartPhase =
     uiPhase === 'countdown' || uiPhase === 'ready'
   const showBoard = forcePlayMode || !isStartPhase
+  const questSummary = useMemo(() => {
+    const totalCount = quests.length
+    const completedCount = 0
+    return { totalCount, completedCount }
+  }, [quests])
   const hudColsCount =
     4 +
     (hud.goalTargetsTotal > 0 ? 1 : 0) +
     1 +
+    (questSummary.totalCount > 0 ? 1 : 0) +
     (limitMode === 'time' ? 1 : 0)
 
   return (
@@ -885,6 +901,20 @@ export const Match3Screen: React.FC<
                     : ''}
                 </strong>
               </div>
+              {questSummary.totalCount > 0 && (
+                <button
+                  type="button"
+                  className="match3__hud-mobile-item match3__hud-mobile-item--quests"
+                  onClick={() =>
+                    setIsQuestListOpen(v => !v)
+                  }>
+                  <span>Квесты</span>
+                  <strong>
+                    {questSummary.completedCount}/
+                    {questSummary.totalCount}
+                  </strong>
+                </button>
+              )}
               <button
                 type="button"
                 className="match3__hud-restart"
@@ -935,6 +965,27 @@ export const Match3Screen: React.FC<
                 </button>
               )}
             </div>
+            {questSummary.totalCount > 0 &&
+              isQuestListOpen && (
+                <div className="match3__quests-panel">
+                  <strong>
+                    Квесты:{' '}
+                    {questSummary.completedCount}/
+                    {questSummary.totalCount}
+                  </strong>
+                  <ul>
+                    {quests.map(quest => (
+                      <li key={quest.id}>
+                        <span>{quest.title}</span>
+                        <span>
+                          0/
+                          {quest.targetCount ?? 1}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             {shouldShowHudHints && (
               <div className="match3__hud-kbd-hint-wrap">
                 <div className="match3__hud-kbd-hint">

@@ -215,6 +215,48 @@
   gap: 8px;
 }
 
+.match3-page__quests-editor {
+  grid-column: 1 / -1;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(15, 23, 42, 0.36);
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.match3-page__quests-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.match3-page__quests-empty {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.match3-page__quests-list {
+  display: grid;
+  gap: 10px;
+}
+
+.match3-page__quest-item {
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.42);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(140px, 1fr)
+  );
+  gap: 8px;
+  align-items: end;
+}
+
 .match3-page__theme-bg-row {
   grid-column: 1 / -1;
   display: grid;
@@ -698,6 +740,40 @@
 
 .match3__hud-mobile-item strong {
   font-size: 13px;
+}
+
+.match3__hud-mobile-item--quests {
+  border-style: dashed;
+}
+
+.match3__quests-panel {
+  margin-top: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(15, 23, 42, 0.64);
+  color: #e2e8f0;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.match3__quests-panel strong {
+  font-size: 12px;
+}
+
+.match3__quests-panel ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.match3__quests-panel li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
 }
 
 .match3__hud-restart {
@@ -2447,6 +2523,30 @@ button.match3__results-badge-win-wrap:focus-visible {
 
 .landing--light-flat .match3-page__settings-debug strong,
 .landing--light-3d .match3-page__settings-debug strong {
+  color: #0f172a;
+}
+
+.landing--light-flat .match3-page__quests-editor,
+.landing--light-3d .match3-page__quests-editor {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(15, 23, 42, 0.2);
+}
+
+.landing--light-flat .match3-page__quests-empty,
+.landing--light-3d .match3-page__quests-empty {
+  color: #475569;
+}
+
+.landing--light-flat .match3-page__quest-item,
+.landing--light-3d .match3-page__quest-item {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
+.landing--light-flat .match3__quests-panel,
+.landing--light-3d .match3__quests-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(15, 23, 42, 0.2);
   color: #0f172a;
 }
 

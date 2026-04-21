@@ -53,6 +53,10 @@ import {
   getMatch3LevelById,
   MATCH3_LEVELS,
 } from '../game/match3/engine/levels'
+import type {
+  QuestColor,
+  QuestConfig,
+} from '../game/match3/engine/quests'
 import {
   BOARD_SIZE_OPTIONS,
   GAME_DURATION_OPTIONS,
@@ -86,6 +90,29 @@ const MOVE_LIMIT_BY_LEVEL: Record<
   pilot: 75,
   ace: 100,
 }
+
+const QUEST_TYPE_OPTIONS: Array<{
+  value: QuestConfig['type']
+  label: string
+}> = [
+  { value: 'clearColor', label: 'Очистить цвет' },
+  {
+    value: 'clearBlockers',
+    label: 'Очистить блокеры',
+  },
+]
+
+const QUEST_COLOR_OPTIONS: Array<{
+  value: QuestColor
+  label: string
+}> = [
+  { value: 'any', label: 'Любой' },
+  { value: 'blue', label: 'Синий' },
+  { value: 'green', label: 'Зеленый' },
+  { value: 'yellow', label: 'Желтый' },
+  { value: 'red', label: 'Красный' },
+  { value: 'pink', label: 'Розовый' },
+]
 
 const IconHelpCircle: React.FC = () => (
   <svg
@@ -221,6 +248,9 @@ export const GamePage: React.FC = () => {
     activeCompanionId,
     setActiveCompanionId,
   ] = useState(readActiveCompanionId)
+  const [quests, setQuests] = useState<
+    QuestConfig[]
+  >(initialLevel.quests ?? [])
   const [winsTotal, setWinsTotal] = useState(
     readNarrativeWinsTotal
   )
@@ -257,6 +287,7 @@ export const GamePage: React.FC = () => {
     boardFieldTheme,
     debugBoostersMode,
     activeCompanionId,
+    quests,
   })
   const routeState = location.state as {
     notice?: string
@@ -272,6 +303,7 @@ export const GamePage: React.FC = () => {
       boardFieldTheme?: BoardFieldThemeOption
       debugBoostersMode?: boolean
       activeCompanionId?: string
+      quests?: QuestConfig[]
     }
   } | null
   const notice = routeState?.notice
@@ -363,6 +395,9 @@ export const GamePage: React.FC = () => {
     }
     if (settings.boardFieldTheme !== undefined) {
       setBoardFieldTheme(settings.boardFieldTheme)
+    }
+    if (Array.isArray(settings.quests)) {
+      setQuests(settings.quests.slice(0, 4))
     }
   }, [routeState?.gameSettings])
 
@@ -576,6 +611,7 @@ export const GamePage: React.FC = () => {
       theme: paletteTheme,
       durationSec,
       tileKinds,
+      quests,
     }),
     [
       selectedLevel,
@@ -584,6 +620,7 @@ export const GamePage: React.FC = () => {
       paletteTheme,
       durationSec,
       tileKinds,
+      quests,
     ]
   )
 
@@ -690,6 +727,46 @@ export const GamePage: React.FC = () => {
       }
     ).reverse()
   }, [activeCompanion, winsTotal])
+
+  const handleAddQuest = useCallback(() => {
+    setQuests(prev => {
+      if (prev.length >= 4) return prev
+      const nextQuest: QuestConfig = {
+        id: `quest-${Date.now()}-${prev.length}`,
+        title: `Квест ${prev.length + 1}`,
+        type: 'clearColor',
+        targetCount: 12,
+        color: 'any',
+        reward: { flatScore: 150 },
+      }
+      return [...prev, nextQuest]
+    })
+  }, [])
+
+  const handleQuestFieldChange = useCallback(
+    (
+      questId: string,
+      patch: Partial<QuestConfig>
+    ) => {
+      setQuests(prev =>
+        prev.map(quest =>
+          quest.id === questId
+            ? { ...quest, ...patch }
+            : quest
+        )
+      )
+    },
+    []
+  )
+
+  const handleRemoveQuest = useCallback(
+    (questId: string) => {
+      setQuests(prev =>
+        prev.filter(quest => quest.id !== questId)
+      )
+    },
+    []
+  )
 
   const handleGameFinished = useCallback(
     (payload: GameEndPayload) => {
@@ -1125,6 +1202,12 @@ export const GamePage: React.FC = () => {
                             setTileKinds(
                               preset.tileKinds
                             )
+                            setQuests(
+                              (
+                                preset.quests ??
+                                []
+                              ).slice(0, 4)
+                            )
                             setDebugBoostersMode(
                               false
                             )
@@ -1546,6 +1629,216 @@ export const GamePage: React.FC = () => {
                           }}
                         />
                       </label>
+                      <div className="match3-page__quests-editor">
+                        <div className="match3-page__quests-head">
+                          <strong>
+                            Квесты уровня (
+                            {quests.length}/4)
+                          </strong>
+                          <button
+                            type="button"
+                            className="btn btn--flat"
+                            disabled={
+                              quests.length >= 4
+                            }
+                            onClick={
+                              handleAddQuest
+                            }>
+                            + Квест
+                          </button>
+                        </div>
+                        {quests.length === 0 ? (
+                          <p className="match3-page__quests-empty">
+                            Пока квестов нет.
+                            Добавьте до 4 задач.
+                          </p>
+                        ) : (
+                          <div className="match3-page__quests-list">
+                            {quests.map(quest => (
+                              <div
+                                key={quest.id}
+                                className="match3-page__quest-item">
+                                <label className="match3-page__settings-label">
+                                  Название
+                                  <input
+                                    type="text"
+                                    value={
+                                      quest.title
+                                    }
+                                    onChange={e =>
+                                      handleQuestFieldChange(
+                                        quest.id,
+                                        {
+                                          title:
+                                            e
+                                              .target
+                                              .value,
+                                        }
+                                      )
+                                    }
+                                  />
+                                </label>
+                                <label className="match3-page__settings-label">
+                                  Тип
+                                  <select
+                                    value={
+                                      quest.type
+                                    }
+                                    onChange={e => {
+                                      const nextType =
+                                        e.target
+                                          .value as QuestConfig['type']
+                                      handleQuestFieldChange(
+                                        quest.id,
+                                        {
+                                          type: nextType,
+                                          color:
+                                            nextType ===
+                                            'clearColor'
+                                              ? quest.color ??
+                                                'any'
+                                              : undefined,
+                                        }
+                                      )
+                                    }}>
+                                    {QUEST_TYPE_OPTIONS.map(
+                                      option => (
+                                        <option
+                                          key={
+                                            option.value
+                                          }
+                                          value={
+                                            option.value
+                                          }>
+                                          {
+                                            option.label
+                                          }
+                                        </option>
+                                      )
+                                    )}
+                                  </select>
+                                </label>
+                                <label className="match3-page__settings-label">
+                                  Цель (шт)
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={999}
+                                    value={
+                                      quest.targetCount ??
+                                      1
+                                    }
+                                    onChange={e =>
+                                      handleQuestFieldChange(
+                                        quest.id,
+                                        {
+                                          targetCount:
+                                            Math.max(
+                                              1,
+                                              Math.min(
+                                                999,
+                                                Number(
+                                                  e
+                                                    .target
+                                                    .value
+                                                ) ||
+                                                  1
+                                              )
+                                            ),
+                                        }
+                                      )
+                                    }
+                                  />
+                                </label>
+                                {quest.type ===
+                                  'clearColor' && (
+                                  <label className="match3-page__settings-label">
+                                    Цвет
+                                    <select
+                                      value={
+                                        quest.color ??
+                                        'any'
+                                      }
+                                      onChange={e =>
+                                        handleQuestFieldChange(
+                                          quest.id,
+                                          {
+                                            color:
+                                              e
+                                                .target
+                                                .value as QuestColor,
+                                          }
+                                        )
+                                      }>
+                                      {QUEST_COLOR_OPTIONS.map(
+                                        option => (
+                                          <option
+                                            key={
+                                              option.value
+                                            }
+                                            value={
+                                              option.value
+                                            }>
+                                            {
+                                              option.label
+                                            }
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                  </label>
+                                )}
+                                <label className="match3-page__settings-label">
+                                  Награда (очки)
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={9999}
+                                    value={
+                                      quest.reward
+                                        ?.flatScore ??
+                                      0
+                                    }
+                                    onChange={e =>
+                                      handleQuestFieldChange(
+                                        quest.id,
+                                        {
+                                          reward:
+                                            {
+                                              flatScore:
+                                                Math.max(
+                                                  0,
+                                                  Math.min(
+                                                    9999,
+                                                    Number(
+                                                      e
+                                                        .target
+                                                        .value
+                                                    ) ||
+                                                      0
+                                                  )
+                                                ),
+                                            },
+                                        }
+                                      )
+                                    }
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  className="btn btn--flat"
+                                  onClick={() =>
+                                    handleRemoveQuest(
+                                      quest.id
+                                    )
+                                  }>
+                                  Удалить
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <div className="match3-page__settings-debug">
                         <strong>
                           Dev: narrative raw
@@ -1627,6 +1920,9 @@ export const GamePage: React.FC = () => {
             playerHintsMode={playerHintsMode}
             forcePlayMode
             onGameFinished={handleGameFinished}
+            {...({
+              quests: appliedLevel.quests ?? [],
+            } as Record<string, unknown>)}
           />
         </section>
       )}
