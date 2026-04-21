@@ -858,6 +858,7 @@ export const Match3Screen: React.FC<
           title: quest.title,
           progress: 0,
           target: quest.targetCount ?? 1,
+          completed: false,
         })),
       }
     }
