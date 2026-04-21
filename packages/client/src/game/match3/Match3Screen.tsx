@@ -224,10 +224,9 @@ export const Match3Screen: React.FC<
     isRookieTutorialActive,
     setIsRookieTutorialActive,
   ] = useState(false)
-  const [
-    isRookieTutorialCompleted,
-    setIsRookieTutorialCompleted,
-  ] = useState(false)
+  const [showInitialHint, setShowInitialHint] =
+    useState(false)
+  const initialHintShownRef = useRef(false)
   const [
     playingElapsedSec,
     setPlayingElapsedSec,
@@ -480,7 +479,6 @@ export const Match3Screen: React.FC<
     playSessionTrackedRef.current = true
     if (selectedLevel.id !== 'rookie') {
       setIsRookieTutorialActive(false)
-      setIsRookieTutorialCompleted(false)
       return
     }
 
@@ -513,10 +511,18 @@ export const Match3Screen: React.FC<
     setIsRookieTutorialActive(
       nextGamesCount <= ROOKIE_TUTORIAL_MAX_GAMES
     )
-    setIsRookieTutorialCompleted(
-      nextGamesCount > ROOKIE_TUTORIAL_MAX_GAMES
-    )
   }, [uiPhase, selectedLevel.id])
+
+  useEffect(() => {
+    if (uiPhase !== 'playing') return
+    if (initialHintShownRef.current) return
+    initialHintShownRef.current = true
+    setShowInitialHint(true)
+    const id = window.setTimeout(() => {
+      setShowInitialHint(false)
+    }, 5000)
+    return () => window.clearTimeout(id)
+  }, [uiPhase])
 
   useEffect(() => {
     if (uiPhase !== 'playing') return
@@ -647,35 +653,36 @@ export const Match3Screen: React.FC<
     limitMode === 'moves'
       ? `${Math.max(moveLimit - hud.moves, 0)}`
       : timeLabel
-  const hudHintCore =
-    playerHintsMode === 'pauses'
-      ? showIdleCoachHint
-        ? isRookieTutorialActive &&
-          playingElapsedSec >= 30
-          ? 'Совет новичку: ищите двойные комбинации и ходы внизу поля — каскады дают больше очков'
-          : 'Пауза в игре: проверьте нижние ряды и возможные каскады'
-        : ''
-      : showKeyboardHint
-      ? 'Enter или Space - выбор, Стрелки - переход к цели'
-      : showIdleCoachHint
+  const hudHintCore = showInitialHint
+    ? 'Следите за подсказками, чтобы не пропустить комбинацию'
+    : playerHintsMode === 'pauses'
+    ? showIdleCoachHint
       ? isRookieTutorialActive &&
         playingElapsedSec >= 30
         ? 'Совет новичку: ищите двойные комбинации и ходы внизу поля — каскады дают больше очков'
-        : 'Следите за подсказками, чтобы не пропустить комбинацию'
-      : isRookieTutorialActive &&
-        playingElapsedSec >= 35 &&
-        comboSuccessCount < 2
-      ? 'Совет новичку: комбинации 4+ и бомбы/ракеты ускоряют набор очков'
-      : isRookieTutorialActive &&
-        playingElapsedSec >= 20 &&
-        comboSuccessCount === 0
-      ? 'Совет новичку: начинайте с нижней части поля, чтобы чаще запускать каскады'
-      : COACH_MESSAGES[
-          Math.min(
-            coachStep,
-            COACH_MESSAGES.length - 1
-          )
-        ]
+        : 'Пауза в игре: проверьте нижние ряды и возможные каскады'
+      : ''
+    : showKeyboardHint
+    ? 'Enter или Space - выбор, Стрелки - переход к цели'
+    : showIdleCoachHint
+    ? isRookieTutorialActive &&
+      playingElapsedSec >= 30
+      ? 'Совет новичку: ищите двойные комбинации и ходы внизу поля — каскады дают больше очков'
+      : 'Пауза в игре: проверьте нижние ряды и возможные каскады'
+    : isRookieTutorialActive &&
+      playingElapsedSec >= 35 &&
+      comboSuccessCount < 2
+    ? 'Совет новичку: комбинации 4+ и бомбы/ракеты ускоряют набор очков'
+    : isRookieTutorialActive &&
+      playingElapsedSec >= 20 &&
+      comboSuccessCount === 0
+    ? 'Совет новичку: начинайте с нижней части поля, чтобы чаще запускать каскады'
+    : COACH_MESSAGES[
+        Math.min(
+          coachStep,
+          COACH_MESSAGES.length - 1
+        )
+      ]
   const hieroglyphHudTip =
     boardFieldTheme === 'hieroglyph' &&
     uiPhase === 'playing'
@@ -834,13 +841,31 @@ export const Match3Screen: React.FC<
             </div>
             {shouldShowHudHints && (
               <div className="match3__hud-kbd-hint-wrap">
-                {isRookieTutorialCompleted && (
-                  <span className="match3__hud-tutorial-badge">
-                    Обучение завершено
-                  </span>
-                )}
                 <div className="match3__hud-kbd-hint">
                   {hudHintText}
+                </div>
+                <div className="match3__hud-legend">
+                  <span className="match3__hud-legend-item">
+                    <span className="match3__hud-chip">
+                      |
+                    </span>
+                    Столбец
+                  </span>
+                  <span className="match3__hud-legend-item">
+                    <span className="match3__hud-chip match3__hud-chip--row">
+                      |
+                    </span>
+                    Строка
+                  </span>
+                  <span className="match3__hud-legend-item">
+                    <span className="match3__hud-chip match3__hud-chip--target">
+                      <span className="match3__hud-target-crosshair" />
+                      <span className="match3__hud-target-bomb">
+                        💣
+                      </span>
+                    </span>
+                    Блокер: взрыв
+                  </span>
                 </div>
                 {playerHintsMode === 'always' && (
                   <button

@@ -423,45 +423,86 @@ function drawSpecialMarker(
   const cx = x + cell / 2
   const cy = y + cell / 2
   ctx.save()
-  ctx.strokeStyle = 'rgba(255,255,255,0.95)'
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.68)'
-  ctx.lineWidth = Math.max(1.5, cell * 0.06)
+  ctx.lineWidth = Math.max(1.3, cell * 0.05)
 
   if (specialType === 'line') {
     const orientation = getLineOrientation(value)
-    if (orientation === 'row') {
-      const h = Math.max(3, cell * 0.12)
+    ctx.fillStyle = 'rgba(3, 105, 161, 0.34)'
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.98)'
+    if (orientation === 'row' || !orientation) {
+      const h = Math.max(5, cell * 0.18)
       ctx.beginPath()
       pathRoundRect(
         ctx,
-        x + cell * 0.18,
+        x + cell * 0.14,
         cy - h / 2,
-        cell * 0.64,
+        cell * 0.72,
         h,
         h / 2
       )
       ctx.fill()
       ctx.stroke()
+      ctx.fillStyle = 'rgba(224, 242, 254, 0.95)'
+      const stripeH = Math.max(1, cell * 0.045)
+      for (let i = 0; i < 3; i += 1) {
+        const sy = cy - h * 0.24 + i * (h * 0.24)
+        ctx.fillRect(
+          x + cell * 0.2,
+          sy,
+          cell * 0.6,
+          stripeH
+        )
+      }
     } else {
-      const w = Math.max(3, cell * 0.12)
+      const w = Math.max(5, cell * 0.18)
       ctx.beginPath()
       pathRoundRect(
         ctx,
         cx - w / 2,
-        y + cell * 0.18,
+        y + cell * 0.14,
         w,
-        cell * 0.64,
+        cell * 0.72,
         w / 2
       )
       ctx.fill()
       ctx.stroke()
+      ctx.fillStyle = 'rgba(224, 242, 254, 0.95)'
+      const stripeW = Math.max(1, cell * 0.045)
+      for (let i = 0; i < 3; i += 1) {
+        const sx = cx - w * 0.24 + i * (w * 0.24)
+        ctx.fillRect(
+          sx,
+          y + cell * 0.2,
+          stripeW,
+          cell * 0.6
+        )
+      }
     }
   } else {
-    const radius = Math.max(5, cell * 0.18)
+    const radius = Math.max(6, cell * 0.2)
+    ctx.fillStyle = 'rgba(220, 38, 38, 0.34)'
+    ctx.strokeStyle = 'rgba(254, 226, 226, 0.96)'
     ctx.beginPath()
     ctx.arc(cx, cy, radius, 0, Math.PI * 2)
     ctx.fill()
     ctx.stroke()
+    ctx.fillStyle = 'rgba(254, 242, 242, 0.92)'
+    for (let i = 0; i < 8; i += 1) {
+      const a = (Math.PI * 2 * i) / 8
+      const sx =
+        cx + Math.cos(a) * (radius * 1.15)
+      const sy =
+        cy + Math.sin(a) * (radius * 1.15)
+      ctx.beginPath()
+      ctx.arc(
+        sx,
+        sy,
+        Math.max(1, radius * 0.14),
+        0,
+        Math.PI * 2
+      )
+      ctx.fill()
+    }
     ctx.beginPath()
     ctx.moveTo(cx, cy - radius - cell * 0.08)
     ctx.lineTo(cx, cy + radius + cell * 0.08)
@@ -481,10 +522,28 @@ function drawIceOverlay(
   hp: number
 ) {
   const alpha =
-    hp >= 3 ? 0.46 : hp === 2 ? 0.34 : 0.24
+    hp >= 3 ? 0.58 : hp === 2 ? 0.46 : 0.34
   ctx.save()
-  ctx.fillStyle = `rgba(167, 243, 255, ${alpha})`
-  ctx.strokeStyle = 'rgba(226, 248, 255, 0.75)'
+  const iceG = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  iceG.addColorStop(
+    0,
+    `rgba(186, 230, 253, ${alpha + 0.08})`
+  )
+  iceG.addColorStop(
+    0.55,
+    `rgba(125, 211, 252, ${alpha})`
+  )
+  iceG.addColorStop(
+    1,
+    `rgba(56, 189, 248, ${alpha - 0.06})`
+  )
+  ctx.fillStyle = iceG
+  ctx.strokeStyle = 'rgba(224, 242, 254, 0.95)'
   ctx.lineWidth = Math.max(1, cell * 0.04)
   const inset = Math.max(1, cell * 0.06)
   ctx.beginPath()
@@ -499,7 +558,7 @@ function drawIceOverlay(
   ctx.fill()
   ctx.stroke()
 
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)'
+  ctx.strokeStyle = 'rgba(240, 249, 255, 0.78)'
   ctx.lineWidth = Math.max(1, cell * 0.025)
   ctx.beginPath()
   ctx.moveTo(x + cell * 0.28, y + cell * 0.35)
@@ -513,17 +572,26 @@ function drawIceOverlay(
     ctx.lineTo(x + cell * 0.64, y + cell * 0.3)
   }
   ctx.stroke()
+
+  const cx = x + cell / 2
+  const cy = y + cell / 2
+  const r = Math.max(3, cell * 0.12)
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.86)'
+  ctx.lineWidth = Math.max(1, cell * 0.03)
+  ctx.beginPath()
+  for (let i = 0; i < 6; i += 1) {
+    const a = -Math.PI / 2 + (Math.PI * i) / 3
+    const dx = Math.cos(a) * r
+    const dy = Math.sin(a) * r
+    ctx.moveTo(cx, cy)
+    ctx.lineTo(cx + dx, cy + dy)
+  }
+  ctx.stroke()
   ctx.restore()
 }
 
 /** Доля площади клетки под SVG-иконку еды (остальное — поле и рамка). */
 const FOOD_ICON_AREA_RATIO = 0.98
-
-/** Фон клетки с фишкой (еда). */
-const FOOD_TILE_FILL = '#424242'
-
-/** Фон клетки под «костяные» фишки иероглифов. */
-const HIEROGLYPH_TILE_FILL = '#3d3428'
 
 /**
  * Толщина градиентной рамки клетки — одна для «Космос», «Еда», «Кодер».
@@ -554,6 +622,89 @@ function kindRainbowAccent(kind: number): string {
   return (
     TILE_KIND_RAINBOW_ACCENTS[idx] ??
     TILE_KIND_RAINBOW_ACCENTS[0]
+  )
+}
+
+function kindDominantHue(kind: number): number {
+  const goldenAngle = 137.50776405
+  const raw = Math.abs(kind) * goldenAngle
+  return ((raw % 360) + 360) % 360
+}
+
+function tileFillByThemeAndKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  opts: {
+    kindOrNull: number | null
+    boardField: BoardFieldThemeOption
+  }
+) {
+  const { kindOrNull, boardField } = opts
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  if (kindOrNull === null) {
+    if (boardField === 'food') {
+      g.addColorStop(0, '#453727')
+      g.addColorStop(1, '#2e2118')
+    } else if (boardField === 'coder') {
+      g.addColorStop(0, '#18233a')
+      g.addColorStop(1, '#0f172a')
+    } else if (boardField === 'hieroglyph') {
+      g.addColorStop(0, '#4a3c2c')
+      g.addColorStop(1, '#2f251b')
+    } else {
+      g.addColorStop(0, '#1f2d4e')
+      g.addColorStop(1, '#121d35')
+    }
+    return g
+  }
+
+  const hue = kindDominantHue(kindOrNull)
+  if (boardField === 'food') {
+    g.addColorStop(0, `hsl(${hue} 48% 52%)`)
+    g.addColorStop(0.45, `hsl(${hue} 62% 36%)`)
+    g.addColorStop(1, '#2d1f14')
+  } else if (boardField === 'coder') {
+    g.addColorStop(0, `hsl(${hue} 72% 40%)`)
+    g.addColorStop(0.52, `hsl(${hue} 64% 26%)`)
+    g.addColorStop(1, '#0c1426')
+  } else if (boardField === 'hieroglyph') {
+    g.addColorStop(0, `hsl(${hue} 42% 46%)`)
+    g.addColorStop(0.52, `hsl(${hue} 36% 31%)`)
+    g.addColorStop(1, '#2b1f16')
+  } else {
+    g.addColorStop(0, `hsl(${hue} 74% 44%)`)
+    g.addColorStop(0.48, `hsl(${hue} 70% 28%)`)
+    g.addColorStop(1, '#0b1328')
+  }
+  return g
+}
+
+function tileWobbleRadians(
+  r: number,
+  c: number,
+  nowMs: number
+): number {
+  const periodMs = 10000
+  const burstMs = 1250
+  const t =
+    ((nowMs % periodMs) + periodMs) % periodMs
+  if (t > burstMs) return 0
+  const p = t / burstMs
+  const swings = 5
+  const envelope = Math.sin(Math.PI * p)
+  const degBase = 5 + ((r * 17 + c * 31) % 3)
+  const radAmp = (degBase * Math.PI) / 180
+  return (
+    Math.sin(2 * Math.PI * swings * p) *
+    radAmp *
+    envelope
   )
 }
 
@@ -781,9 +932,6 @@ function strokeSpaceCellBorderByKind(
   ctx.restore()
 }
 
-/** Фон клетки темы «Кодер». */
-const CODER_TILE_FILL = '#141c2e'
-
 /** Рамка клетки: тёмная «панель», тонкий акцент по типу фишки (та же радуга, что у других тем). */
 function strokeCoderCellBorderByKind(
   ctx: CanvasRenderingContext2D,
@@ -894,22 +1042,59 @@ function drawGoalOverlay(
 ) {
   const cx = x + cell / 2
   const cy = y + cell / 2
-  const r = Math.max(4, cell * 0.2)
+  const bodyW = Math.max(10, cell * 0.42)
+  const bodyH = Math.max(8, cell * 0.3)
+  const shackleR = Math.max(5, cell * 0.16)
   ctx.save()
-  ctx.lineWidth = Math.max(1.4, cell * 0.05)
-  ctx.strokeStyle = 'rgba(251, 191, 36, 0.95)'
-  ctx.fillStyle = 'rgba(120, 53, 15, 0.2)'
+  ctx.filter = 'blur(0.5px)'
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.58)'
   ctx.beginPath()
-  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  pathRoundRect(
+    ctx,
+    x + cell * 0.15,
+    y + cell * 0.14,
+    cell * 0.7,
+    cell * 0.72,
+    cell * 0.12
+  )
+  ctx.fill()
+
+  ctx.filter = 'none'
+  ctx.lineWidth = Math.max(1.3, cell * 0.05)
+  ctx.strokeStyle = 'rgba(226, 232, 240, 0.95)'
+  ctx.fillStyle = 'rgba(51, 65, 85, 0.86)'
+  ctx.beginPath()
+  pathRoundRect(
+    ctx,
+    cx - bodyW / 2,
+    cy - bodyH * 0.05,
+    bodyW,
+    bodyH,
+    bodyH * 0.22
+  )
   ctx.fill()
   ctx.stroke()
-  ctx.strokeStyle = 'rgba(254, 240, 138, 0.9)'
+
   ctx.beginPath()
-  ctx.moveTo(cx - r * 0.55, cy)
-  ctx.lineTo(cx + r * 0.55, cy)
-  ctx.moveTo(cx, cy - r * 0.55)
-  ctx.lineTo(cx, cy + r * 0.55)
+  ctx.arc(
+    cx,
+    cy - bodyH * 0.08,
+    shackleR,
+    Math.PI,
+    Math.PI * 2
+  )
   ctx.stroke()
+
+  ctx.fillStyle = 'rgba(248, 250, 252, 0.95)'
+  ctx.beginPath()
+  ctx.arc(
+    cx,
+    cy + bodyH * 0.18,
+    Math.max(1.2, cell * 0.045),
+    0,
+    Math.PI * 2
+  )
+  ctx.fill()
   ctx.restore()
 }
 
@@ -985,6 +1170,7 @@ export function renderBoard(
   const layout = boardLayout(board, W, H)
   if (!layout) return
   const { cell, ox, oy } = layout
+  const nowMs = performance.now()
   const motionProgress = Math.max(
     0,
     Math.min(1, opts?.motionProgress ?? 1)
@@ -1109,7 +1295,16 @@ export function renderBoard(
 
       // base
       if (isFoodField) {
-        ctx.fillStyle = FOOD_TILE_FILL
+        ctx.fillStyle = tileFillByThemeAndKind(
+          ctx,
+          x,
+          y,
+          cell,
+          {
+            kindOrNull: hasTile ? v : null,
+            boardField: 'food',
+          }
+        )
         ctx.fillRect(x, y, cell, cell)
         strokeFoodCellBorderByKind(
           ctx,
@@ -1119,7 +1314,16 @@ export function renderBoard(
           hasTile ? v : null
         )
       } else if (isHieroglyphField) {
-        ctx.fillStyle = HIEROGLYPH_TILE_FILL
+        ctx.fillStyle = tileFillByThemeAndKind(
+          ctx,
+          x,
+          y,
+          cell,
+          {
+            kindOrNull: hasTile ? v : null,
+            boardField: 'hieroglyph',
+          }
+        )
         ctx.fillRect(x, y, cell, cell)
         strokeHieroglyphCellBorderByKind(
           ctx,
@@ -1129,7 +1333,16 @@ export function renderBoard(
           hasTile ? v : null
         )
       } else if (isCoderField) {
-        ctx.fillStyle = CODER_TILE_FILL
+        ctx.fillStyle = tileFillByThemeAndKind(
+          ctx,
+          x,
+          y,
+          cell,
+          {
+            kindOrNull: hasTile ? v : null,
+            boardField: 'coder',
+          }
+        )
         ctx.fillRect(x, y, cell, cell)
         strokeCoderCellBorderByKind(
           ctx,
@@ -1139,7 +1352,16 @@ export function renderBoard(
           hasTile ? v : null
         )
       } else {
-        ctx.fillStyle = 'rgba(18, 28, 53, 0.95)'
+        ctx.fillStyle = tileFillByThemeAndKind(
+          ctx,
+          x,
+          y,
+          cell,
+          {
+            kindOrNull: hasTile ? v : null,
+            boardField: 'space',
+          }
+        )
         ctx.fillRect(x, y, cell, cell)
         strokeSpaceCellBorderByKind(
           ctx,
@@ -1166,6 +1388,21 @@ export function renderBoard(
               motionProgress) *
             cell
         : y
+      const iceHp = opts?.iceGrid?.[r]?.[c] ?? 0
+      const hasGoal =
+        (opts?.goalGrid?.[r]?.[c] ?? 0) > 0
+      const blockedTile = iceHp > 0 || hasGoal
+      const wobbleRad = blockedTile
+        ? 0
+        : tileWobbleRadians(r, c, nowMs)
+      if (wobbleRad !== 0) {
+        const px = drawX + cell / 2
+        const py = drawY + cell / 2
+        ctx.save()
+        ctx.translate(px, py)
+        ctx.rotate(wobbleRad)
+        ctx.translate(-px, -py)
+      }
 
       if (isHieroglyphField) {
         drawHieroglyphBoneTile(
@@ -1239,7 +1476,9 @@ export function renderBoard(
         drawY,
         cell
       )
-      const iceHp = opts?.iceGrid?.[r]?.[c] ?? 0
+      if (wobbleRad !== 0) {
+        ctx.restore()
+      }
       if (iceHp > 0) {
         drawIceOverlay(
           ctx,
@@ -1249,8 +1488,6 @@ export function renderBoard(
           iceHp
         )
       }
-      const hasGoal =
-        (opts?.goalGrid?.[r]?.[c] ?? 0) > 0
       if (hasGoal) {
         drawGoalOverlay(ctx, drawX, drawY, cell)
       }
