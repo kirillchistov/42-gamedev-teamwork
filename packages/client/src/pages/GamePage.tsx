@@ -27,6 +27,10 @@ import {
   readResolvedArenaPhotoUrl,
   setArenaCustomPhotoUrl,
 } from '../game/match3/match3ArenaBackground'
+import {
+  hasSeenGameLanding,
+  markGameLandingSeen,
+} from '../game/match3/gameLandingGate'
 import { Match3Screen } from '../game/match3/Match3Screen'
 import type {
   GameEndPayload,
@@ -271,6 +275,15 @@ export const GamePage: React.FC = () => {
     location.pathname === '/game/play'
   const isFinishRoute =
     location.pathname === '/game/finish'
+
+  useEffect(() => {
+    if (!isGameLandingRoute) return
+    if (hasSeenGameLanding()) {
+      navigate('/game/start', { replace: true })
+      return
+    }
+    markGameLandingSeen()
+  }, [isGameLandingRoute, navigate])
 
   const resolvedArenaPhotoUrl =
     readResolvedArenaPhotoUrl()
@@ -522,6 +535,16 @@ export const GamePage: React.FC = () => {
               }>
               Играть
             </button>
+            <button
+              type="button"
+              className="btn btn--outline"
+              onClick={() =>
+                navigate('/game/start', {
+                  state: { openSettings: true },
+                })
+              }>
+              Настройки
+            </button>
 
             <div className="match3-home-screen__cards">
               <article className="match3-home-screen__card">
@@ -542,11 +565,11 @@ export const GamePage: React.FC = () => {
                 </p>
               </article>
               <article className="match3-home-screen__card">
-                <h2>Что дальше</h2>
+                <h2>Настройки</h2>
                 <p>
-                  В ближайших релизах: игра по
-                  ходам, бустеры, расширенные
-                  цели, мета‑прогресс и события.
+                  Выбирайте дизайн поля, уровень
+                  сложности и количество фишек на
+                  свое усмотрение.
                 </p>
               </article>
             </div>
@@ -1328,10 +1351,9 @@ export const GamePage: React.FC = () => {
                   type="button"
                   className="btn btn--primary match3__play-btn"
                   onClick={() =>
-                    navigate('/game/play', {
+                    navigate('/game/start', {
                       state: {
-                        gameSettings:
-                          buildGameSettingsState(),
+                        openSettings: true,
                       },
                     })
                   }>
