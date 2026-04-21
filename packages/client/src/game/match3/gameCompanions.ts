@@ -1,3 +1,5 @@
+import { publicAssetUrl } from '../../utils/publicAssetUrl'
+
 export type GameCompanion = {
   id: string
   title: string
@@ -20,7 +22,9 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-1',
     title: 'Навигатор Астра',
-    imageUrl: '/icons/swcharacter1.png',
+    imageUrl: publicAssetUrl(
+      '/icons/swcharacter1.png'
+    ),
     lineStart:
       'Курс задан. Найди первую сильную комбинацию.',
     lineWin:
@@ -36,7 +40,9 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-2',
     title: 'Навигатор Ион',
-    imageUrl: '/icons/swcharacter2.png',
+    imageUrl: publicAssetUrl(
+      '/icons/swcharacter2.png'
+    ),
     lineStart:
       'Держим темп. Низ поля даст хороший каскад.',
     lineWin:
@@ -52,7 +58,9 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-3',
     title: 'Навигатор Нова',
-    imageUrl: '/icons/swcharacter3.png',
+    imageUrl: publicAssetUrl(
+      '/icons/swcharacter3.png'
+    ),
     lineStart:
       'Смотри на связки 4+ — они решают исход.',
     lineWin:
@@ -68,7 +76,9 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-4',
     title: 'Навигатор Вега',
-    imageUrl: '/icons/swcharacter4.png',
+    imageUrl: publicAssetUrl(
+      '/icons/swcharacter4.png'
+    ),
     lineStart:
       'Собери ритм. Один точный ход запустит серию.',
     lineWin:
@@ -84,7 +94,9 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-5',
     title: 'Навигатор Пульсар',
-    imageUrl: '/icons/swcharacter5.png',
+    imageUrl: publicAssetUrl(
+      '/icons/swcharacter5.png'
+    ),
     lineStart:
       'Приоритет — быстрые спецфишки и контроль поля.',
     lineWin:
@@ -100,7 +112,9 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-6',
     title: 'Навигатор Квазар',
-    imageUrl: '/icons/swcharacter6.png',
+    imageUrl: publicAssetUrl(
+      '/icons/swcharacter6.png'
+    ),
     lineStart:
       'Начинаем миссию. Выжми максимум из первых ходов.',
     lineWin:
@@ -116,7 +130,9 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-7',
     title: 'Навигатор Орбис',
-    imageUrl: '/icons/swcharacter7.png',
+    imageUrl: publicAssetUrl(
+      '/icons/swcharacter7.png'
+    ),
     lineStart:
       'Действуй смело. Каскад даст нам преимущество.',
     lineWin:
