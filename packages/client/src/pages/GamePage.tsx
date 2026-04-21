@@ -128,6 +128,10 @@ export const GamePage: React.FC = () => {
     useState(true)
   const [vfxQuality, setVfxQuality] =
     useState<GameVfxQualityOption>('full')
+  const [
+    debugBoostersMode,
+    setDebugBoostersMode,
+  ] = useState(false)
   const [toastMessage, setToastMessage] =
     useState('')
   const [, bumpFinishArenaBg] = useReducer(
@@ -155,6 +159,7 @@ export const GamePage: React.FC = () => {
     boardSize,
     tileKinds,
     boardFieldTheme,
+    debugBoostersMode,
   })
   const routeState = location.state as {
     notice?: string
@@ -168,6 +173,7 @@ export const GamePage: React.FC = () => {
       boardSize: BoardSizeOption
       tileKinds: number
       boardFieldTheme?: BoardFieldThemeOption
+      debugBoostersMode?: boolean
     }
   } | null
   const notice = routeState?.notice
@@ -231,6 +237,9 @@ export const GamePage: React.FC = () => {
     setSelectedLevelId(settings.selectedLevelId)
     setBoardSize(settings.boardSize)
     setTileKinds(settings.tileKinds)
+    setDebugBoostersMode(
+      Boolean(settings.debugBoostersMode)
+    )
     if (settings.boardFieldTheme !== undefined) {
       setBoardFieldTheme(settings.boardFieldTheme)
     }
@@ -789,6 +798,9 @@ export const GamePage: React.FC = () => {
                             setTileKinds(
                               preset.tileKinds
                             )
+                            setDebugBoostersMode(
+                              false
+                            )
                           }}>
                           {MATCH3_LEVELS.map(
                             level => (
@@ -804,11 +816,35 @@ export const GamePage: React.FC = () => {
                       <label className="match3-page__settings-label">
                         Размер поля
                         <select
-                          value={boardSize}
+                          value={
+                            debugBoostersMode &&
+                            boardSize === 12
+                              ? '12-turbo'
+                              : String(boardSize)
+                          }
                           onChange={e => {
-                            const next = Number(
+                            const raw =
                               e.target.value
+                            if (
+                              raw === '12-turbo'
+                            ) {
+                              setDebugBoostersMode(
+                                true
+                              )
+                              setBoardSize(12)
+                              setTileKinds(4)
+                              setLimitMode(
+                                'moves'
+                              )
+                              setMoveLimit(100)
+                              return
+                            }
+                            const next = Number(
+                              raw
                             ) as BoardSizeOption
+                            setDebugBoostersMode(
+                              false
+                            )
                             setBoardSize(next)
                             setTileKinds(
                               TILE_KINDS_BY_BOARD_SIZE[
@@ -825,6 +861,9 @@ export const GamePage: React.FC = () => {
                               </option>
                             )
                           )}
+                          <option value="12-turbo">
+                            12x12 турбо
+                          </option>
                         </select>
                       </label>
                       <label className="match3-page__settings-label">
@@ -1187,6 +1226,7 @@ export const GamePage: React.FC = () => {
             boardFieldTheme={boardFieldTheme}
             soundEnabled={soundEnabled}
             vfxQuality={vfxQuality}
+            debugBoostersMode={debugBoostersMode}
             hintIdleMs={hintIdleMs}
             playerHintsMode={playerHintsMode}
             forcePlayMode

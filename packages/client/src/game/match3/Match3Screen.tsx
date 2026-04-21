@@ -152,6 +152,7 @@ type Match3ScreenProps = {
   soundEnabled?: boolean
   /** Полный VFX или упрощённый (без частиц, тряски и «петард» по контуру). */
   vfxQuality?: GameVfxQualityOption
+  debugBoostersMode?: boolean
   hintIdleMs?: number
   playerHintsMode?: PlayerHintsMode
   onOpenSettings?: () => void
@@ -176,6 +177,7 @@ export const Match3Screen: React.FC<
   boardFieldTheme = 'space',
   soundEnabled = true,
   vfxQuality = 'full',
+  debugBoostersMode = false,
   hintIdleMs,
   playerHintsMode = 'always',
   onOpenSettings,
@@ -367,6 +369,12 @@ export const Match3Screen: React.FC<
     if (!game) return
     game.setVfxQuality(vfxQuality)
   }, [vfxQuality])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    game.setDebugBoostersMode(debugBoostersMode)
+  }, [debugBoostersMode])
 
   useEffect(() => {
     if (forcePlayMode || uiPhase !== 'countdown')

@@ -24,7 +24,7 @@ export const COUNT_OF_TILE_TYPES =
 export const BOARD_SIZE = 8
 
 export const BOARD_SIZE_OPTIONS = [
-  8, 12, 16, 20,
+  8, 12, 16,
 ] as const
 export type BoardSizeOption =
   typeof BOARD_SIZE_OPTIONS[number]
@@ -37,7 +37,6 @@ export const TILE_KINDS_BY_BOARD_SIZE: Record<
   8: COUNT_OF_TILE_TYPES,
   12: COUNT_OF_TILE_TYPES + 1,
   16: COUNT_OF_TILE_TYPES + 1,
-  20: COUNT_OF_TILE_TYPES + 2,
 }
 
 export const GAME_DURATION_SEC = 3 * 60

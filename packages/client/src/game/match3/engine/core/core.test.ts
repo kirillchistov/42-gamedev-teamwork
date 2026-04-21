@@ -5,7 +5,10 @@ import {
   findPossibleMoves,
   shuffleBoardUntilPlayable,
 } from './possibleMoves'
-import { getSpecialType } from './cell'
+import {
+  getSpecialType,
+  encodeLineCell,
+} from './cell'
 
 describe('match3 core', () => {
   test('findMatches treats special cells by base kind', () => {
@@ -64,6 +67,24 @@ describe('match3 core', () => {
       return getSpecialType(v) !== null
     })
     expect(specials.length).toBeGreaterThan(0)
+  })
+
+  test('line special in match clears full row', () => {
+    const board = [
+      [2, encodeLineCell(2, 'row'), 2, 0, 1],
+      [0, 1, 3, 4, 2],
+      [2, 3, 4, 5, 0],
+    ]
+    const matches = findMatches(board)
+    expect(matches).toEqual(
+      expect.arrayContaining([
+        { r: 0, c: 0 },
+        { r: 0, c: 1 },
+        { r: 0, c: 2 },
+      ])
+    )
+    clearAndScore(board, matches)
+    expect(board[0]).toEqual([-1, -1, -1, -1, -1])
   })
 
   test('possible moves and shuffle recover dead board', () => {

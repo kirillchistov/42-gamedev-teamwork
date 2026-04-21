@@ -92,6 +92,10 @@ import {
   createMatch3InputController,
 } from './inputController'
 import {
+  encodeBombCell,
+  encodeLineCell,
+} from './core/cell'
+import {
   createIdleHintController,
   createRoundTimer,
 } from './sessionRuntime'
@@ -329,8 +333,42 @@ export function createMatch3Game(
   let roundTimerPaused = false
   /** Таймер режима «на время» запускаем после первого действия игрока. */
   let roundTimerStarted = false
+  let debugBoostersMode = false
   let hintPulseRedrawId: number | null = null
   const DRAG_SWAP_THRESHOLD_PX = 12
+
+  const applyDebugBoosterPreset = (
+    nextBoard: Board
+  ) => {
+    if (!debugBoostersMode) return
+    const rows = nextBoard.length
+    const cols =
+      rows > 0 ? nextBoard[0]?.length ?? 0 : 0
+    if (rows === 0 || cols === 0) return
+    const kindsSafe = Math.max(3, tileKinds)
+    for (let r = 0; r < rows; r += 1) {
+      for (let c = 0; c < cols; c += 1) {
+        const kind = Math.abs(
+          (r * 3 + c * 5) % kindsSafe
+        )
+        if ((r + c) % 7 === 0) {
+          nextBoard[r][c] = encodeBombCell(kind)
+        } else if (r % 3 === 0) {
+          nextBoard[r][c] = encodeLineCell(
+            kind,
+            'row'
+          )
+        } else if (c % 3 === 0) {
+          nextBoard[r][c] = encodeLineCell(
+            kind,
+            'col'
+          )
+        } else {
+          nextBoard[r][c] = kind
+        }
+      }
+    }
+  }
 
   const emitHud = () => onHudChange?.({ ...hud })
 
@@ -909,6 +947,7 @@ export function createMatch3Game(
     )
     tileKinds = next.tileKinds
     board = next.board
+    applyDebugBoosterPreset(board)
     iceGrid = createIceGrid(
       board,
       computeIceCount(),
@@ -1305,6 +1344,19 @@ export function createMatch3Game(
     }
   }
 
+  const setDebugBoostersMode = (
+    enabled: boolean
+  ) => {
+    debugBoostersMode = Boolean(enabled)
+    if (phase === 'playing') {
+      rebuildBoard()
+      void resolveBoard().then(() => emitHud())
+      return
+    }
+    rebuildBoard()
+    emitHud()
+  }
+
   const setInputBlocked = (blocked: boolean) => {
     inputBlocked = Boolean(blocked)
     if (inputBlocked) {
@@ -1385,6 +1437,7 @@ export function createMatch3Game(
     setBoardField,
     setSoundEnabled,
     setVfxQuality,
+    setDebugBoostersMode,
     setInputBlocked,
     setRoundTimerPaused,
     setLevel,
