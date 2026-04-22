@@ -9,8 +9,8 @@ import {
   selectPageHasBeenInitializedOnServer,
 } from '../slices/ssrSlice'
 import {
-  PageInitArgs,
   PageInitContext,
+  PageInitFn,
 } from '../routes'
 
 const getCookie = (name: string) => {
@@ -35,9 +35,7 @@ const createContext = (): PageInitContext => ({
 })
 
 type PageProps = {
-  initPage: (
-    data: PageInitArgs
-  ) => Promise<unknown>
+  initPage: PageInitFn
 }
 
 export const usePage = ({
@@ -57,10 +55,17 @@ export const usePage = ({
       )
       return
     }
-    initPage({
-      dispatch,
-      state: store.getState(),
-      ctx: createContext(),
+    void Promise.resolve(
+      initPage({
+        dispatch,
+        state: store.getState(),
+        ctx: createContext(),
+      })
+    ).catch(e => {
+      console.error(
+        'Ошибка инициализации страницы на клиенте',
+        e
+      )
     })
   }, [])
 }
