@@ -1,7 +1,7 @@
-# Мысли про Express и серверный рендеринг
+# Express SSR: формальные требования без перестройки монорепозитория
 
-Здесь описано **фактическое состояние** и гипотезы решения **с примерами кода** по задаче 7.1 Express SSR (включая статические страницы без Redux). 
-Цель документа: решить задачу, не ломая текущую структуру.
+Здесь описано **фактическое состояние после до-настройки** по задаче Express SSR, включая формальный маршрут React SSR **без Redux**.
+Цель: закрыть требования задачи, не ломая текущую структуру `packages/client` + `packages/server`.
 
 ## 1. Карта текущего проекта
 
@@ -31,11 +31,14 @@ SSR в этом проекте живет **не в `packages/server`**, а **в
 
 Файл уже создан: **'packages/client/server/index.ts'**. Он компилируется в JS командой из скрипта 'dev' / 'build' клиента ('tsc --project tsconfig.server.json'), затем запускается 'node server/index.js' из каталога 'packages/client'.
 
-Скрипты клиента:
+Скрипты клиента (актуальные):
 
-- 'yarn dev' в scope 'client' (или 'yarn dev:client' из корня через Lerna) — dev + Vite 'middlewareMode'.
-- 'yarn build' в 'client' — клиентский бандл + SSR-бандл ('vite build --ssr src/entry-server.tsx --outDir dist/server').
-- 'yarn preview' в 'client' — production-режим: статика из 'dist/client' + импорт 'dist/server/entry-server.js'.
+- `yarn dev` — компиляция `server/*.ts(x)` + запуск Express в `NODE_ENV=development` + Vite `middlewareMode`.
+- `yarn build:ssr-server` — `tsc --project tsconfig.server.json`.
+- `yarn build:client` — production-сборка клиентских ассетов.
+- `yarn build:ssr-client` — SSR-бандл `src/entry-server.tsx` в `dist/server`.
+- `yarn build` — полный production-набор для SSR.
+- `yarn preview` / `yarn start:ssr` — запуск Express в `NODE_ENV=production`.
 
 Маршрут «главной» здесь реализован как **catch-all** 'app.get('*', …)': любой URL отдаётся через один SSR-обработчик (подходит для SPA с роутингом на клиенте).
 
@@ -76,122 +79,23 @@ yarn build && yarn preview
 
 ---
 
-## 3. Важно про «страницы без Redux» в **текущем** коде
+## 3. Важно про «страницы без Redux» в текущем коде
 
-Сейчас `entry-server.tsx` **всегда** оборачивает дерево в `<Provider store={…}>` и использует данные из Redux (`configureStore`, `fetchData`, сериализация `initialState` в HTML).
+`entry-server.tsx` **всегда** рендерит основное приложение через `<Provider store={…}>` и использует данные Redux (`configureStore`, `fetchData`, сериализация `initialState` в HTML).
 
-Чтобы выполнить требование «статические React-страницы **без** Redux», не ломая остальную структуру, есть два пути:
+Чтобы выполнить формальное требование «статические React-страницы **без** Redux», в сервер добавлен отдельный маршрут:
 
-1. **Формализованный (отдельный маленький пример)** — отдельный файл рендера только для демо-маршрута (см. раздел 5). Тогда нужно согласовать **тот же** React-узел на клиенте при гидратации (`main.tsx`), иначе будет рассинхрон.
-2. **Аскетичный** — задание уже выполнено в существующей связке Express + `renderToString` + статика, а «без Redux» описать как **возможное упрощение** дерева в `render` для отдельных путей (ветвление по `req.path`). Это надо обсудить...
+1. `/ssr-static` — отдельная React-страница, отрендеренная `ReactDOMServer.renderToString()` без роутера и без Redux.
+2. Основной SSR (`app.get('*')`) остаётся как был: для полноценного приложения с Router + Redux.
 
-Ниже — врезки, которые можно добавить **без перестройки монорепозитория**.
+Также в `server/index.ts` добавлены:
 
----
-
-## 4. Врезка: middleware обработки ошибок SSR
-
-После регистрации маршрута `app.get('*', …)` в `packages/client/server/index.ts` имеет смысл добавить **Express error handler** (четыре аргумента `(err, req, res, next)`), чтобы в production не «висеть» на необработанном исключении и логировать причину.
-
-Добавим **после** `app.get('*', async …)` и **до** `app.listen`:
-
-```ts
-app.use(
-  (
-    err: unknown,
-    _req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction
-  ) => {
-    console.error(err)
-    res.status(500).type('text/plain').send('SSR error')
-  }
-)
-```
-
-При необходимости в development можно отдавать текст стека (только для локальной отладки).
+- `/health` для базовой проверки доступности сервера;
+- централизованный `error handler`, чтобы SSR-ошибки не оставляли запрос «висящим».
 
 ---
 
-## 5. Врезка: пример «статической» страницы без Redux (по шаблону ЯП)
-
-Ниже — **образец** отдельного модуля на только `react` и `react-dom/server`. Чтобы **`yarn dev` / `tsc --project tsconfig.server.json`** продолжали собирать сервер без расширения области `src/`, файл лучше положить **рядом с** `server/index.ts`, а не под `src/`: тогда он попадает в ту же компиляцию CommonJS, что и текущий SSR-сервер.
-
-**Шаг A — расширение** `packages/client/tsconfig.server.json`:
-
-- В `compilerOptions` добавим **`"jsx": "react-jsx"`**, иначе `tsc` не соберёт `.tsx` в каталоге `server/`.
-- В массив `include` добавим файл компонента:
-
-```json
-"compilerOptions": {
-  "ignoreDeprecations": "6.0",
-  "composite": true,
-  "target": "es2019",
-  "module": "commonjs",
-  "moduleResolution": "node",
-  "allowSyntheticDefaultImports": true,
-  "esModuleInterop": true,
-  "skipLibCheck": true,
-  "lib": ["es2019"],
-  "types": ["node"],
-  "jsx": "react-jsx"
-},
-"include": [
-  "server/index.ts",
-  "server/StaticHello.tsx",
-  "server/**/*.d.ts"
-]
-```
-
-(остальные поля `compilerOptions` оставим как в репозитории; в примере показаны только нужные для JSX строки.)
-
-**Шаг B — файл** `packages/client/server/StaticHello.tsx`:
-
-```tsx
-import React from 'react'
-
-export function StaticHello() {
-  return (
-    <html lang="ru">
-      <head>
-        <meta charSet="utf-8" />
-        <title>Static SSR demo</title>
-      </head>
-      <body>
-        <div id="root">Привет с сервера (без Redux)</div>
-      </body>
-    </html>
-  )
-}
-```
-
-**Шаг C — врезка в** `packages/client/server/index.ts` (разместить **до** `app.get('*', …)`). Используется `React.createElement`, чтобы не переводить `index.ts` в `index.tsx`:
-
-```ts
-import React from 'react'
-import ReactDOM from 'react-dom/server'
-import { StaticHello } from './StaticHello'
-
-app.get('/__ssr_static_demo', (_req, res) => {
-  const html =
-    '<!DOCTYPE html>' +
-    ReactDOM.renderToString(
-      React.createElement(StaticHello)
-    )
-  res.status(200).type('text/html').send(html)
-})
-```
-
-Ограничения шаблона:
-
-- Это **не** гидратация существующего `main.tsx`: отдельный HTML без того же дерева, что в `index.html`.
-- Для выполнения задачи такой маршрут демонстрирует **`renderToString` + `res.send`/`type`** без Redux и без общего роутера.
-
-Если нужна гидратация той же разметки, придётся добавить отдельный клиентский entry (второй `<script type="module">`) или условную ветку в `main.tsx` — это уже расширение за рамки «маленькой врезки».
-
----
-
-## 6. Связка с `packages/server` (не путать с SSR)
+## 4. Связка с `packages/server` (не путать с SSR)
 
 `packages/server/index.ts` — это **другой** процесс Express (API). Проксирование API в SSR-процесс в репозитории **не обязательно**: клиент ходит на URL из `__EXTERNAL_SERVER_URL__` / `__INTERNAL_SERVER_URL__` (см. `packages/client/vite.config.ts` и скрипты `dev` в `packages/client/package.json`).
 
@@ -199,7 +103,7 @@ app.get('/__ssr_static_demo', (_req, res) => {
 
 ---
 
-## 7. Контрольный чеклист по заданию
+## 5. Контрольный чеклист по заданию
 
 | Требование | Где в проекте |
 |------------|----------------|
@@ -207,7 +111,21 @@ app.get('/__ssr_static_demo', (_req, res) => {
 | Файл сервера | `packages/client/server/index.ts` (+ компиляция через `tsconfig.server.json`) |
 | `renderToString` | `packages/client/src/entry-server.tsx` |
 | `res` + HTML | `packages/client/server/index.ts` (сборка из шаблона `index.html`) |
+| React SSR без Redux | `GET /ssr-static` + `packages/client/server/static-page.tsx` |
 | Статика CSS/JS | dev: Vite middleware; prod: `express.static('dist/client')` |
+| Healthcheck | `GET /health` |
 | Запуск и проверка | `yarn dev` / `yarn build && yarn preview` в `packages/client` |
 
-После добавления врезок из разделов 4–5 перезапускаем dev-сервер клиента и проверяем `/__ssr_static_demo` и основные маршруты приложения.
+## 6. Smoke-проверки
+
+Из `packages/client`:
+
+```bash
+yarn dev
+```
+
+Проверки:
+
+- `http://localhost:80/health` (или порт из `PORT`) возвращает JSON с `ok: true`;
+- `http://localhost:80/ssr-static` возвращает HTML, созданный через `renderToString` без Redux;
+- `http://localhost:80/` и клиентские маршруты продолжают работать через основной SSR.
