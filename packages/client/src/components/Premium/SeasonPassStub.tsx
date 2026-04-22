@@ -5,7 +5,7 @@ import { Button } from '../../shared/ui'
 const freeTrack = [
   {
     tier: 'T1',
-    reward: '50 credits',
+    reward: '50 кредитов',
     status: 'Получено',
   },
   {
@@ -20,7 +20,7 @@ const freeTrack = [
   },
   {
     tier: 'T4',
-    reward: '150 credits',
+    reward: '150 кредитов',
     status: 'Заблокировано',
   },
 ]
@@ -28,7 +28,7 @@ const freeTrack = [
 const premiumTrack = [
   {
     tier: 'T1',
-    reward: '300 crystals',
+    reward: '300 кристаллов',
     status: 'Премиум',
   },
   {

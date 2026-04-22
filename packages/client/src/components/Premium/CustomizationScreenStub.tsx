@@ -7,25 +7,25 @@ const cosmeticCategories = [
     name: 'Персонаж',
     rarity: 'Премиум',
     badgeKind: 'premium',
-    price: '140 crystals',
+    price: '140 кристаллов',
   },
   {
     name: 'Оформление поля',
     rarity: 'Скидка',
     badgeKind: 'discount',
-    price: '95 crystals',
+    price: '95 кристаллов',
   },
   {
     name: 'Спецэффекты',
     rarity: 'Лимит',
     badgeKind: 'limited',
-    price: '180 crystals',
+    price: '180 кристаллов',
   },
   {
     name: 'Профиль и рамки',
     rarity: 'Новинка',
     badgeKind: 'new',
-    price: '450 credits',
+    price: '450 кредитов',
   },
 ]
 

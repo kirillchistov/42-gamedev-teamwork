@@ -8,19 +8,19 @@ const sections = [
     items: [
       {
         name: 'Ракета x3',
-        price: '320 credits',
+        price: '320 кредитов',
         badge: 'Скидка',
         badgeKind: 'discount',
       },
       {
         name: 'Бомба 3x3 x2',
-        price: '35 crystals',
+        price: '35 кристаллов',
         badge: 'Премиум',
         badgeKind: 'premium',
       },
       {
         name: 'Перемешивание x1',
-        price: '220 credits',
+        price: '220 кредитов',
         badge: 'Новинка',
         badgeKind: 'new',
       },
@@ -31,19 +31,19 @@ const sections = [
     items: [
       {
         name: 'Скин "Nova Pilot"',
-        price: '180 crystals',
+        price: '180 кристаллов',
         badge: 'Премиум',
         badgeKind: 'premium',
       },
       {
         name: 'Тема поля "Nebula"',
-        price: '120 crystals',
+        price: '120 кристаллов',
         badge: 'Скидка',
         badgeKind: 'discount',
       },
       {
         name: 'VFX "Comet Trail"',
-        price: '70 crystals',
+        price: '70 кристаллов',
         badge: 'Новинка',
         badgeKind: 'new',
       },

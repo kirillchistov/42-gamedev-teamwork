@@ -32,8 +32,8 @@ export const ClanHubStub: React.FC = () => {
           </p>
           <ul>
             <li>Вступление: бесплатно</li>
-            <li>Создание: 2500 credits</li>
-            <li>Смена названия: 80 crystals</li>
+            <li>Создание: 2500 кредитов</li>
+            <li>Смена названия: 80 кристаллов</li>
           </ul>
           <div className="premium-stack">
             <Button variant="primary">
@@ -68,9 +68,11 @@ export const ClanHubStub: React.FC = () => {
             </span>
           </div>
           <ul>
-            <li>Эмблема клана - 120 crystals</li>
-            <li>Баннер сезона - 80 crystals</li>
-            <li>Рамка профиля - 60 crystals</li>
+            <li>
+              Эмблема клана - 120 кристаллов
+            </li>
+            <li>Баннер сезона - 80 кристаллов</li>
+            <li>Рамка профиля - 60 кристаллов</li>
           </ul>
           <Button variant="flat">
             Открыть витрину
