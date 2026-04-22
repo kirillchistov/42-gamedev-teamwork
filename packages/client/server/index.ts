@@ -5,7 +5,9 @@ dotenv.config()
 
 import { HelmetData } from 'react-helmet'
 import express, {
+  NextFunction,
   Request as ExpressRequest,
+  Response,
 } from 'express'
 import path from 'path'
 
@@ -16,11 +18,107 @@ import {
 } from 'vite'
 import serialize from 'serialize-javascript'
 import cookieParser from 'cookie-parser'
+import { renderStaticPageHtml } from './static-page'
 
-const port = process.env.PORT || 80
+const port = Number(process.env.PORT) || 80
 const clientPath = path.join(__dirname, '..')
 const isDev =
   process.env.NODE_ENV === 'development'
+
+type SsrRenderResult = {
+  html: string
+  initialState: unknown
+  helmet: HelmetData
+  styleTags: string
+}
+
+type SsrRender = (
+  req: ExpressRequest
+) => Promise<SsrRenderResult>
+
+async function resolveSsrRender(
+  vite: ViteDevServer | undefined,
+  url: string
+): Promise<{
+  render: SsrRender
+  template: string
+}> {
+  if (vite) {
+    let template = await fs.readFile(
+      path.resolve(clientPath, 'index.html'),
+      'utf-8'
+    )
+    template = await vite.transformIndexHtml(
+      url,
+      template
+    )
+    const ssrModule = await vite.ssrLoadModule(
+      path.join(
+        clientPath,
+        'src/entry-server.tsx'
+      )
+    )
+    return {
+      render: ssrModule.render as SsrRender,
+      template,
+    }
+  }
+
+  const template = await fs.readFile(
+    path.join(
+      clientPath,
+      'dist/client/index.html'
+    ),
+    'utf-8'
+  )
+  const pathToServer = path.join(
+    clientPath,
+    'dist/server/entry-server.js'
+  )
+  const ssrModule = await import(pathToServer)
+  return {
+    render: ssrModule.render as SsrRender,
+    template,
+  }
+}
+
+function registerCommonRoutes(
+  app: express.Express
+) {
+  app.get('/health', (_req, res) => {
+    res.status(200).json({
+      ok: true,
+      mode: isDev ? 'development' : 'production',
+    })
+  })
+
+  // Формальный SSR-маршрут без Redux: демонстрирует renderToString + res.send.
+  app.get('/ssr-static', (_req, res) => {
+    res
+      .status(200)
+      .set({ 'Content-Type': 'text/html' })
+      .send(renderStaticPageHtml())
+  })
+}
+
+function registerErrorHandler(
+  app: express.Express
+) {
+  app.use(
+    (
+      err: unknown,
+      _req: express.Request,
+      res: Response,
+      _next: NextFunction
+    ) => {
+      console.error(err)
+      res
+        .status(500)
+        .type('text/plain')
+        .send('SSR error')
+    }
+  )
+}
 
 async function createServer() {
   const app = express()
@@ -43,61 +141,14 @@ async function createServer() {
       )
     )
   }
+  registerCommonRoutes(app)
 
   app.get('*', async (req, res, next) => {
     const url = req.originalUrl
 
     try {
-      // Получаю файл client/index.html и создаю переменные
-      let render: (
-        req: ExpressRequest
-      ) => Promise<{
-        html: string
-        initialState: unknown
-        helmet: HelmetData
-        styleTags: string
-      }>
-      let template: string
-      if (vite) {
-        template = await fs.readFile(
-          path.resolve(clientPath, 'index.html'),
-          'utf-8'
-        )
-
-        // Применяю встроенные HTML-преобразования vite и плагинов
-        template = await vite.transformIndexHtml(
-          url,
-          template
-        )
-
-        // Загружаю модуль клиента, который будет рендерить HTML
-        render = (
-          await vite.ssrLoadModule(
-            path.join(
-              clientPath,
-              'src/entry-server.tsx'
-            )
-          )
-        ).render
-      } else {
-        template = await fs.readFile(
-          path.join(
-            clientPath,
-            'dist/client/index.html'
-          ),
-          'utf-8'
-        )
-
-        // Получаю путь до собранного модуля клиента
-        const pathToServer = path.join(
-          clientPath,
-          'dist/server/entry-server.js'
-        )
-
-        // Импортирю этот модуль и вызываю с начальным стейтом
-        render = (await import(pathToServer))
-          .render
-      }
+      const { render, template } =
+        await resolveSsrRender(vite, url)
 
       // Получаю HTML-строку из JSX
       const {
@@ -135,6 +186,7 @@ async function createServer() {
       next(e)
     }
   })
+  registerErrorHandler(app)
 
   app.listen(port, () => {
     console.log(
