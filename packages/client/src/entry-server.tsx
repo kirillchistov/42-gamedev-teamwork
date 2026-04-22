@@ -22,11 +22,7 @@ import {
 } from './entry-server.utils'
 import { LandingThemeProvider } from './contexts/LandingThemeContext'
 import { reducer } from './store'
-import {
-  AppRoute,
-  PageInitFn,
-  routes,
-} from './routes'
+import { PageInitFn, routes } from './routes'
 import { withAuthGuard } from './hoc/withAuthGuard'
 import './index.css'
 import { setPageHasBeenInitializedOnServer } from './slices/ssrSlice'
@@ -46,6 +42,11 @@ const guardedRoutes = routes.map(route => {
     element: <GuardedComponent />,
   }
 })
+
+type GuardedRoute = {
+  path?: string
+  fetchData?: PageInitFn
+}
 
 function hasFetchData(
   fetchData: PageInitFn | undefined
@@ -71,7 +72,7 @@ export const render = async (
 
   const url = createUrl(req)
 
-  const foundRoutes = matchRoutes<AppRoute>(
+  const foundRoutes = matchRoutes<GuardedRoute>(
     guardedRoutes,
     url.pathname
   )

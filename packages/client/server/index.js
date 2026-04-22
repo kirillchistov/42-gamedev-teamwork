@@ -92,6 +92,37 @@ function registerErrorHandler(app) {
             .send('SSR error');
     });
 }
+async function tryHandleRouterResponse(maybeResponse, res) {
+    var _a;
+    if (!isRouterResponse(maybeResponse)) {
+        return false;
+    }
+    const location = maybeResponse.headers.get('location');
+    if (location) {
+        res.redirect(maybeResponse.status || 302, location);
+        return true;
+    }
+    const text = await maybeResponse
+        .text()
+        .catch(() => '');
+    res
+        .status(maybeResponse.status || 500)
+        .set({
+        'Content-Type': (_a = maybeResponse.headers.get('content-type')) !== null && _a !== void 0 ? _a : 'text/plain',
+    })
+        .send(text);
+    return true;
+}
+function isRouterResponse(value) {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+    const candidate = value;
+    return (typeof candidate.status === 'number' &&
+        typeof candidate.text === 'function' &&
+        !!candidate.headers &&
+        typeof candidate.headers.get === 'function');
+}
 async function createServer() {
     const app = (0, express_1.default)();
     app.use((0, cookie_parser_1.default)());
@@ -129,6 +160,9 @@ async function createServer() {
                 .end(html);
         }
         catch (e) {
+            if (await tryHandleRouterResponse(e, res)) {
+                return;
+            }
             vite === null || vite === void 0 ? void 0 : vite.ssrFixStacktrace(e);
             next(e);
         }
