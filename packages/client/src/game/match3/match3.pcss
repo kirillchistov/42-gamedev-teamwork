@@ -1560,7 +1560,7 @@
 }
 
 .match3__start-info {
-  width: min(92%, 460px);
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(
     2,
@@ -2086,9 +2086,8 @@ button.match3__results-badge-win-wrap:focus-visible {
 
 .match3-companion {
   width: min(560px, 100%);
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  gap: 10px;
   border-radius: 14px;
   border: 1px solid rgba(56, 189, 248, 0.26);
   background: rgba(3, 10, 30, 0.76);
@@ -2098,6 +2097,12 @@ button.match3__results-badge-win-wrap:focus-visible {
 
 .match3-companion--compact {
   width: 100%;
+}
+
+.match3-companion__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .match3-companion__avatar {
@@ -2133,6 +2138,176 @@ button.match3__results-badge-win-wrap:focus-visible {
   margin-top: 4px;
   color: #93c5fd;
   font-size: 12px;
+}
+
+.match3-companion__story-btn {
+  margin-top: 8px;
+}
+
+.match3-companion__story-btn--text {
+  margin-top: 10px;
+  justify-self: start;
+  align-self: start;
+  padding-inline: 10px;
+}
+
+.match3-companion__story-btn-icon {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 212, 134, 0.55);
+  background: rgba(245, 212, 134, 0.14);
+  color: #f5d486;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1000px) {
+  .match3-companion__story-btn-icon {
+    display: none;
+  }
+}
+
+@media (min-width: 1001px) {
+  .match3-companion__story-btn--text {
+    display: none;
+  }
+}
+
+.match3-companion__story-panel {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.match3-hero-meta {
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: rgba(15, 23, 42, 0.58);
+  padding: 10px 12px;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+}
+
+.match3-hero-meta h3 {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.match3-hero-meta p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.match3-hero-meta__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.match3-hero-meta__results li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  background: rgba(2, 10, 30, 0.52);
+  padding: 6px 8px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.match3-hero-chat {
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: rgba(15, 23, 42, 0.58);
+  padding: 10px 12px;
+  text-align: left;
+  display: grid;
+  gap: 8px;
+}
+
+.match3-hero-chat h3 {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.match3-hero-chat__list {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.match3-hero-chat__item {
+  border-radius: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  background: rgba(2, 10, 30, 0.52);
+  padding: 8px;
+}
+
+.match3-hero-chat__item header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.match3-hero-chat__item strong {
+  color: #e2e8f0;
+  font-size: 12px;
+}
+
+.match3-hero-chat__item span {
+  color: #93c5fd;
+  font-size: 11px;
+}
+
+.match3-hero-chat__item p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.match3-hero-chat__emoji {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.match3-hero-chat__emoji-btn {
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  background: rgba(2, 10, 30, 0.42);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.match3-hero-chat textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  background: rgba(15, 23, 42, 0.88);
+  color: #e2e8f0;
+  padding: 8px 10px;
+}
+
+.match3-hero-chat__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .match3-storybeat {
@@ -2219,6 +2394,22 @@ button.match3__results-badge-win-wrap:focus-visible {
 }
 
 .landing--light-flat
+  .match3-companion__story-btn--text,
+.landing--light-3d
+  .match3-companion__story-btn--text {
+  color: inherit;
+}
+
+.landing--light-flat
+  .match3-companion__story-btn-icon,
+.landing--light-3d
+  .match3-companion__story-btn-icon {
+  color: #b8872e;
+  border-color: rgba(184, 135, 46, 0.45);
+  background: rgba(184, 135, 46, 0.14);
+}
+
+.landing--light-flat
   .match3-companion__meta
   .match3-companion__progress,
 .landing--light-3d
@@ -2240,6 +2431,28 @@ button.match3__results-badge-win-wrap:focus-visible {
 
 .landing--light-flat .match3-storybeat p,
 .landing--light-3d .match3-storybeat p {
+  color: #334155;
+}
+
+.landing--light-flat .match3-hero-meta,
+.landing--light-3d .match3-hero-meta,
+.landing--light-flat .match3-hero-chat,
+.landing--light-3d .match3-hero-chat {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
+.landing--light-flat .match3-hero-meta h3,
+.landing--light-3d .match3-hero-meta h3,
+.landing--light-flat .match3-hero-chat h3,
+.landing--light-3d .match3-hero-chat h3 {
+  color: #0f172a;
+}
+
+.landing--light-flat .match3-hero-meta p,
+.landing--light-3d .match3-hero-meta p,
+.landing--light-flat .match3-hero-chat__item p,
+.landing--light-3d .match3-hero-chat__item p {
   color: #334155;
 }
 
@@ -2342,6 +2555,30 @@ button.match3__results-badge-win-wrap:focus-visible {
   margin: 0;
   color: #cbd5e1;
   text-align: left;
+}
+
+.match3-start-screen__hero-profile {
+  margin: 0 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: rgba(15, 23, 42, 0.58);
+  padding: 10px 12px;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+}
+
+.match3-start-screen__hero-profile h3 {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.match3-start-screen__hero-profile p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .match3-start-screen__diary-list {
@@ -2478,6 +2715,32 @@ button.match3__results-badge-win-wrap:focus-visible {
   .match3-start-screen__diary-empty,
 .landing--light-3d
   .match3-start-screen__diary-empty {
+  color: #334155;
+}
+
+.landing--light-flat
+  .match3-start-screen__hero-profile,
+.landing--light-3d
+  .match3-start-screen__hero-profile {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
+.landing--light-flat
+  .match3-start-screen__hero-profile
+  h3,
+.landing--light-3d
+  .match3-start-screen__hero-profile
+  h3 {
+  color: #0f172a;
+}
+
+.landing--light-flat
+  .match3-start-screen__hero-profile
+  p,
+.landing--light-3d
+  .match3-start-screen__hero-profile
+  p {
   color: #334155;
 }
 

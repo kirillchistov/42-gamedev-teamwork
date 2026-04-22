@@ -1,15 +1,9 @@
-import swcharacter1 from '@match3-public/icons/swcharacter1.png?url'
-import swcharacter2 from '@match3-public/icons/swcharacter2.png?url'
-import swcharacter3 from '@match3-public/icons/swcharacter3.png?url'
-import swcharacter4 from '@match3-public/icons/swcharacter4.png?url'
-import swcharacter5 from '@match3-public/icons/swcharacter5.png?url'
-import swcharacter6 from '@match3-public/icons/swcharacter6.png?url'
-import swcharacter7 from '@match3-public/icons/swcharacter7.png?url'
-
 export type GameCompanion = {
   id: string
   title: string
   imageUrl: string
+  heroProfile: string
+  introNarrative: string
   lineStart: string
   lineWin: string
   lineLose: string
@@ -28,7 +22,11 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-1',
     title: 'Навигатор Астра',
-    imageUrl: swcharacter1,
+    imageUrl: '/icons/swcharacter1.png',
+    heroProfile:
+      'Опытный звездный наставник и первопроходец, ведущий экипаж через опасные секторы.',
+    introNarrative:
+      'После Матч-Бури Астра собирает фрагменты утраченной карты. Каждая победа возвращает маршрут домой.',
     lineStart:
       'Курс задан. Найди первую сильную комбинацию.',
     lineWin:
@@ -44,7 +42,11 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-2',
     title: 'Навигатор Ион',
-    imageUrl: swcharacter2,
+    imageUrl: '/icons/swcharacter2.png',
+    heroProfile:
+      'Тактик полевых маневров: видит каскады заранее и умеет стабилизировать маршрут в критический момент.',
+    introNarrative:
+      'Ион ведет корабль через пояс астероидов и отмечает безопасные коридоры в журнале экспедиции.',
     lineStart:
       'Держим темп. Низ поля даст хороший каскад.',
     lineWin:
@@ -60,7 +62,11 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-3',
     title: 'Навигатор Нова',
-    imageUrl: swcharacter3,
+    imageUrl: '/icons/swcharacter3.png',
+    heroProfile:
+      'Специалист по импульсным связкам 4+: превращает рискованные траектории в быстрый прорыв.',
+    introNarrative:
+      'Нова расшифровывает звездные координаты и открывает короткие пути у красных гигантов.',
     lineStart:
       'Смотри на связки 4+ — они решают исход.',
     lineWin:
@@ -76,7 +82,11 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-4',
     title: 'Навигатор Вега',
-    imageUrl: swcharacter4,
+    imageUrl: '/icons/swcharacter4.png',
+    heroProfile:
+      'Навигатор ритма и стабильности, который выигрывает за счет точного темпа и контроля поля.',
+    introNarrative:
+      'Вега ищет аномальные источники энергии и собирает устойчивый путь к ядру сектора.',
     lineStart:
       'Собери ритм. Один точный ход запустит серию.',
     lineWin:
@@ -92,7 +102,11 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-5',
     title: 'Навигатор Пульсар',
-    imageUrl: swcharacter5,
+    imageUrl: '/icons/swcharacter5.png',
+    heroProfile:
+      'Командир ускоренных операций: фокусируется на спецфишках и резких тактических разворотах.',
+    introNarrative:
+      'Пульсар синхронизирует маршрут через импульсный коридор и прокладывает путь к внешнему кольцу.',
     lineStart:
       'Приоритет — быстрые спецфишки и контроль поля.',
     lineWin:
@@ -108,7 +122,11 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-6',
     title: 'Навигатор Квазар',
-    imageUrl: swcharacter6,
+    imageUrl: '/icons/swcharacter6.png',
+    heroProfile:
+      'Лидер дальних миссий, который берет максимум из первых ходов и не теряет темп под давлением.',
+    introNarrative:
+      'Квазар открыл устойчивый коридор и ведет команду к новому рубежу галактики.',
     lineStart:
       'Начинаем миссию. Выжми максимум из первых ходов.',
     lineWin:
@@ -124,7 +142,11 @@ export const GAME_COMPANIONS: GameCompanion[] = [
   {
     id: 'sw-7',
     title: 'Навигатор Орбис',
-    imageUrl: swcharacter7,
+    imageUrl: '/icons/swcharacter7.png',
+    heroProfile:
+      'Навигатор высокой смелости: играет от мощных каскадов и умеет быстро возвращать инициативу.',
+    introNarrative:
+      'Орбис восстанавливает сеть орбитальных шлюзов и готовит сектор к следующей экспедиции.',
     lineStart:
       'Действуй смело. Каскад даст нам преимущество.',
     lineWin:
