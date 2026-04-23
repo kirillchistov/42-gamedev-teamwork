@@ -47,9 +47,67 @@ const vite_1 = require("vite");
 const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const static_page_1 = require("./static-page");
-const port = Number(process.env.PORT) || 80;
 const clientPath = path_1.default.join(__dirname, '..');
 const isDev = process.env.NODE_ENV === 'development';
+const DEFAULT_PORT_FALLBACK_CHAIN = [
+    3000,
+    5000,
+    9000,
+    8080,
+];
+function parsePort(value) {
+    if (!value)
+        return null;
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed) ||
+        parsed <= 0 ||
+        parsed > 65535) {
+        return null;
+    }
+    return parsed;
+}
+function resolvePortCandidates() {
+    const preferred = [
+        parsePort(process.env.PORT),
+        parsePort(process.env.CLIENT_PORT),
+    ].filter((p) => p !== null);
+    const all = [
+        ...preferred,
+        ...DEFAULT_PORT_FALLBACK_CHAIN,
+    ];
+    return Array.from(new Set(all));
+}
+function listenOnPort(app, port) {
+    return new Promise((resolve, reject) => {
+        const server = app.listen(port, () => {
+            server.off('error', onError);
+            resolve();
+        });
+        const onError = (error) => {
+            server.off('error', onError);
+            reject(error);
+        };
+        server.on('error', onError);
+    });
+}
+async function startServerWithPortFallback(app) {
+    const candidates = resolvePortCandidates();
+    let lastError = null;
+    for (const candidate of candidates) {
+        try {
+            await listenOnPort(app, candidate);
+            return candidate;
+        }
+        catch (error) {
+            const e = error;
+            if ((e === null || e === void 0 ? void 0 : e.code) !== 'EADDRINUSE') {
+                throw error;
+            }
+            lastError = error;
+        }
+    }
+    throw (lastError !== null && lastError !== void 0 ? lastError : new Error(`No available port in chain: ${candidates.join(', ')}`));
+}
 async function resolveSsrRender(vite, url) {
     if (vite) {
         let template = await promises_1.default.readFile(path_1.default.resolve(clientPath, 'index.html'), 'utf-8');
@@ -168,8 +226,7 @@ async function createServer() {
         }
     });
     registerErrorHandler(app);
-    app.listen(port, () => {
-        console.log(`Client is listening on port: ${port}`);
-    });
+    const actualPort = await startServerWithPortFallback(app);
+    console.log(`Client is listening on port: ${actualPort}`);
 }
 createServer();

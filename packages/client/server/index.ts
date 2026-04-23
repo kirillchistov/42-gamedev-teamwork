@@ -20,10 +20,83 @@ import serialize from 'serialize-javascript'
 import cookieParser from 'cookie-parser'
 import { renderStaticPageHtml } from './static-page'
 
-const port = Number(process.env.PORT) || 80
 const clientPath = path.join(__dirname, '..')
 const isDev =
   process.env.NODE_ENV === 'development'
+const DEFAULT_PORT_FALLBACK_CHAIN = [
+  3000, 5000, 9000, 8080,
+]
+
+function parsePort(
+  value: string | undefined
+): number | null {
+  if (!value) return null
+  const parsed = Number(value)
+  if (
+    !Number.isInteger(parsed) ||
+    parsed <= 0 ||
+    parsed > 65535
+  ) {
+    return null
+  }
+  return parsed
+}
+
+function resolvePortCandidates(): number[] {
+  const preferred = [
+    parsePort(process.env.PORT),
+    parsePort(process.env.CLIENT_PORT),
+  ].filter((p): p is number => p !== null)
+  const all = [
+    ...preferred,
+    ...DEFAULT_PORT_FALLBACK_CHAIN,
+  ]
+  return Array.from(new Set(all))
+}
+
+function listenOnPort(
+  app: express.Express,
+  port: number
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port, () => {
+      server.off('error', onError)
+      resolve()
+    })
+    const onError = (error: unknown) => {
+      server.off('error', onError)
+      reject(error)
+    }
+    server.on('error', onError)
+  })
+}
+
+async function startServerWithPortFallback(
+  app: express.Express
+): Promise<number> {
+  const candidates = resolvePortCandidates()
+  let lastError: unknown = null
+  for (const candidate of candidates) {
+    try {
+      await listenOnPort(app, candidate)
+      return candidate
+    } catch (error) {
+      const e = error as NodeJS.ErrnoException
+      if (e?.code !== 'EADDRINUSE') {
+        throw error
+      }
+      lastError = error
+    }
+  }
+  throw (
+    lastError ??
+    new Error(
+      `No available port in chain: ${candidates.join(
+        ', '
+      )}`
+    )
+  )
+}
 
 type SsrRenderResult = {
   html: string
@@ -250,11 +323,11 @@ async function createServer() {
   })
   registerErrorHandler(app)
 
-  app.listen(port, () => {
-    console.log(
-      `Client is listening on port: ${port}`
-    )
-  })
+  const actualPort =
+    await startServerWithPortFallback(app)
+  console.log(
+    `Client is listening on port: ${actualPort}`
+  )
 }
 
 createServer()
