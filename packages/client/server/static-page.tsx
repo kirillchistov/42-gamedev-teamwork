@@ -1,3 +1,4 @@
+// 7.1.2 Добавил статическую React-страницу через ReactDOMServer.renderToString()
 import React from 'react'
 import ReactDOMServer from 'react-dom/server'
 
@@ -11,15 +12,18 @@ function StaticPage() {
           'Inter, system-ui, sans-serif',
         lineHeight: 1.5,
       }}>
-      <h1>SSR static page is working</h1>
+      <h1>
+        Статичная SSR-страничка появилась в
+        галлактике{' '}
+      </h1>
       <p>
-        This route is rendered on the server with
-        ReactDOMServer.renderToString().
+        Этот путь астронавты проходят с помощью
+        серверного рендера. Да поможет вам
+        ReactDOMServer.renderToString()!
       </p>
       <p>
-        It is intentionally independent from Redux
-        and app router to satisfy the formal task
-        requirement.
+        Эта страничка не использует Redux, ибо так
+        предписано в звездном Завете.
       </p>
     </main>
   )
