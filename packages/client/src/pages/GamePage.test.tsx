@@ -41,6 +41,13 @@ jest.mock('../game/match3/Match3Screen', () => ({
   ),
 }))
 
+jest.mock(
+  '../game/match3/BoardFieldThemePreview',
+  () => ({
+    BoardFieldThemePreview: () => null,
+  })
+)
+
 function renderGamePage(
   initialRoute = '/game/start'
 ) {

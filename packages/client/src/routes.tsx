@@ -61,6 +61,10 @@ import {
   Error500Page,
   initError500Page,
 } from './pages/Error500Page'
+import {
+  PremiumPage,
+  initPremiumPage,
+} from './pages/Premium'
 
 export type PageInitContext = {
   clientToken?: string
@@ -162,6 +166,11 @@ export const routes = [
     path: '/leaderboard',
     Component: LeaderboardPage,
     fetchData: initLeaderboardPage,
+  },
+  {
+    path: '/premium',
+    Component: PremiumPage,
+    fetchData: initPremiumPage,
   },
   {
     path: '/error404',

@@ -21,9 +21,11 @@ import './shared/styles/error-pages.pcss'
 import './shared/styles/cosmic-error.pcss'
 import './shared/styles/leaderboard.pcss'
 import './shared/styles/themes.pcss'
+import './shared/styles/user-shell.pcss'
 import './shared/styles/match3-theme.pcss'
 import './shared/styles/responsive.pcss'
 import './shared/styles/forum.pcss'
+import './shared/styles/premium.pcss'
 import '@gravity-ui/uikit/styles/fonts.css'
 import '@gravity-ui/uikit/styles/styles.css'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -32,6 +34,11 @@ import { isPublicRoutePath } from './router/publicRoutePaths'
 
 const routerBasename = (() => {
   const base = import.meta.env.BASE_URL || '/'
+  ;(
+    globalThis as {
+      __APP_BASE_URL__?: string
+    }
+  ).__APP_BASE_URL__ = base
   const trimmed = base.replace(/\/+$/, '')
   return trimmed === '' ? undefined : trimmed
 })()
@@ -61,8 +68,11 @@ const router = createBrowserRouter(
     : {}
 )
 
-ReactDOM.hydrateRoot(
-  document.getElementById('root') as HTMLElement,
+const rootElement = document.getElementById(
+  'root'
+) as HTMLElement
+
+const app = (
   <Provider store={store}>
     <LandingThemeProvider>
       <ThemeProvider theme="light">
@@ -73,3 +83,13 @@ ReactDOM.hydrateRoot(
     </LandingThemeProvider>
   </Provider>
 )
+
+/** Статический деплой (GitHub Pages): в `#root` нет HTML от `renderToString`, только плейсхолдер SSR. */
+const canHydrate =
+  rootElement.firstElementChild != null
+
+if (canHydrate) {
+  ReactDOM.hydrateRoot(rootElement, app)
+} else {
+  ReactDOM.createRoot(rootElement).render(app)
+}
