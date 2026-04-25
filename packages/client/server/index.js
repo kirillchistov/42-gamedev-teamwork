@@ -84,7 +84,9 @@ function registerCommonRoutes(app) {
     });
 }
 function registerErrorHandler(app) {
-    app.use((err, _req, res, _next) => {
+    app.use((err, _req, res, next) => {
+        // Error handler must keep 4 args signature for Express.
+        void next;
         console.error(err);
         res
             .status(500)

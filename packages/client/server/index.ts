@@ -114,8 +114,10 @@ function registerErrorHandler(
       err: unknown,
       _req: express.Request,
       res: Response,
-      _next: NextFunction
+      next: NextFunction
     ) => {
+      // Error handler must keep 4 args signature for Express.
+      void next
       console.error(err)
       res
         .status(500)
