@@ -1,5 +1,10 @@
 // Express для SSR: в dev — Vite в 'middlewareMode', в prod — статика 'dist/client' и серверный бандл;
 // парсинг cookie, сериализация начального состояния Redux в HTML.
+// 7.1.1 Добавил GET /health, GET /ssr-static (отдельный render-функционал)
+// 7.1.1 Вынес загрузку SSR-модуля в helper (resolveSsrRender)
+// 7.1.1 Добавил централизованный error handler
+// 7.1.1 Сохранил текущий app.get('*') для основного SSR "из коробки"
+
 import dotenv from 'dotenv'
 dotenv.config()
 
