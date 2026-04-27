@@ -97,7 +97,7 @@ function registerCommonRoutes(
     })
   })
 
-  // Формальный SSR-маршрут без Redux: демонстрирует renderToString + res.send.
+  // SSR-маршрут без Redux: только renderToString + res.send.
   app.get('/ssr-static', (_req, res) => {
     res
       .status(200)
