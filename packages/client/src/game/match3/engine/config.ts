@@ -24,7 +24,7 @@ export const COUNT_OF_TILE_TYPES =
 export const BOARD_SIZE = 8
 
 export const BOARD_SIZE_OPTIONS = [
-  8, 12, 16, 20,
+  8, 12, 16,
 ] as const
 export type BoardSizeOption =
   typeof BOARD_SIZE_OPTIONS[number]
@@ -37,7 +37,6 @@ export const TILE_KINDS_BY_BOARD_SIZE: Record<
   8: COUNT_OF_TILE_TYPES,
   12: COUNT_OF_TILE_TYPES + 1,
   16: COUNT_OF_TILE_TYPES + 1,
-  20: COUNT_OF_TILE_TYPES + 2,
 }
 
 export const GAME_DURATION_SEC = 3 * 60
@@ -51,6 +50,14 @@ export const GAME_DURATION_OPTIONS = [
 export type GameDurationOption =
   typeof GAME_DURATION_OPTIONS[number]
 
+export const MOVE_LIMIT_OPTIONS = [
+  50, 75, 100,
+] as const
+export type MoveLimitOption =
+  typeof MOVE_LIMIT_OPTIONS[number]
+
+export type GameLimitMode = 'time' | 'moves'
+
 export const GAME_THEME_OPTIONS = [
   'standard',
   'space',
@@ -63,9 +70,20 @@ export const GAME_ICON_THEME_OPTIONS = [
   'standard',
   'cosmic',
   'food',
+  'coder',
 ] as const
 export type GameIconThemeOption =
   typeof GAME_ICON_THEME_OPTIONS[number]
+
+/** Визуал рамки и клеток поля (космос / тёплая «кухня» под еду). */
+export const BOARD_FIELD_THEME_OPTIONS = [
+  'space',
+  'food',
+  'coder',
+  'hieroglyph',
+] as const
+export type BoardFieldThemeOption =
+  typeof BOARD_FIELD_THEME_OPTIONS[number]
 
 /** Полный VFX (частицы, вспышка, тряска) или упрощённый (только подсветка на поле). */
 export const GAME_VFX_QUALITY_OPTIONS = [

@@ -27,6 +27,11 @@ import {
   type GameVfxQualityOption,
 } from './config'
 import type { MatchFxApi } from './matchFx'
+import { getCellKind } from './core/cell'
+import type {
+  QuestColor,
+  ResolveQuestDelta,
+} from './quests'
 
 export const RESOLVE_FALL_ANIM_MS =
   match3AnimMs(190)
@@ -37,6 +42,13 @@ export type ResolveTileMotion = {
 }
 
 const COMBO_SHAKE_MIN_CHAIN = 3
+const COLOR_BY_KIND_INDEX: QuestColor[] = [
+  'blue',
+  'green',
+  'yellow',
+  'red',
+  'pink',
+]
 
 export type Match3ResolvePassEnv = {
   board: Board
@@ -79,6 +91,7 @@ export type Match3ResolvePassEnv = {
   clearHint: () => void
   emitHud: () => void
   delay: (ms: number) => Promise<void>
+  activeScoreMultiplier: () => number
 }
 
 export async function runOneResolvePass(
@@ -86,12 +99,19 @@ export async function runOneResolvePass(
 ): Promise<{
   matched: boolean
   nextChain: number
+  questDelta: ResolveQuestDelta
 }> {
   const matches = findMatches(env.getMatchBoard())
   if (matches.length === 0) {
     return {
       matched: false,
       nextChain: env.chain,
+      questDelta: {
+        clearedByColor: {},
+        clearedSpecialByColor: {},
+        clearedSpecialByKind: {},
+        clearedBlockers: 0,
+      },
     }
   }
 
@@ -128,6 +148,23 @@ export async function runOneResolvePass(
     matches,
     specialActivations
   )
+  const clearedByColor: Record<string, number> =
+    {}
+  for (const cell of clearedCells) {
+    const value =
+      boardBeforeClear[cell.r]?.[cell.c]
+    if (typeof value !== 'number' || value < 0) {
+      continue
+    }
+    const kind = getCellKind(value)
+    const color =
+      COLOR_BY_KIND_INDEX[
+        Math.abs(kind) %
+          COLOR_BY_KIND_INDEX.length
+      ] ?? 'blue'
+    clearedByColor[color] =
+      (clearedByColor[color] ?? 0) + 1
+  }
 
   const base = clearAndScore(env.board, matches, {
     isCellClearable: (r, c) =>
@@ -159,7 +196,10 @@ export async function runOneResolvePass(
   syncGoalProgress(env.hud)
 
   const gained = Math.floor(
-    base * env.chain * env.scoreMult()
+    base *
+      env.chain *
+      env.scoreMult() *
+      env.activeScoreMultiplier()
   )
   env.hud.score +=
     gained + iceDamage.score + goalDamage.score
@@ -220,5 +260,11 @@ export async function runOneResolvePass(
   return {
     matched: true,
     nextChain: env.chain + 1,
+    questDelta: {
+      clearedByColor,
+      clearedSpecialByColor: {},
+      clearedSpecialByKind: {},
+      clearedBlockers: goalDamage.hits.length,
+    },
   }
 }

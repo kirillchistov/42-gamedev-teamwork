@@ -17,8 +17,10 @@ function viteBaseFromEnv(): string {
 }
 
 // https://vitejs.dev/config/
+const viteBase = viteBaseFromEnv()
+
 export default defineConfig({
-  base: viteBaseFromEnv(),
+  base: viteBase,
   resolve: {
     alias: {
       '@match3-public': path.join(
@@ -49,6 +51,26 @@ export default defineConfig({
     format: 'cjs',
   },
   plugins: [
+    {
+      name: 'html-public-links-for-subpath',
+      transformIndexHtml(html) {
+        if (viteBase === '/' || viteBase === '')
+          return html
+        const prefix = viteBase.replace(
+          /\/+$/,
+          ''
+        )
+        return html
+          .replace(
+            /href="\/vite\.svg"/g,
+            `href="${prefix}/vite.svg"`
+          )
+          .replace(
+            /href="\/manifest\.json"/g,
+            `href="${prefix}/manifest.json"`
+          )
+      },
+    },
     react(),
     VitePWA({
       strategies: 'injectManifest',

@@ -14,7 +14,7 @@
  * Добавил отрисовку подсказки: пунктирная желтая рамка на клетках возможного свопа
  * 6.3.1 VFX при матче (частицы + вспышка):
  * Экспорт boardLayout(board, canvasW, canvasH) — общая геометрия клетки и отступов
- * renderBoard и pickCellAt используют boardLayout, чтобы matchFx совпадал с отрисовкой
+ * renderBoard, pickCellAt и matchFx используют {@link MATCH3_BOARD_LOGICAL_PX} как логический размер поля
  * 6.3.3 Улучшенный HUD (сбоку на ПК, компактная шапка в мобильной версии)
  * 6.3.4 Улучшенная геометрия поля (ширина поля на 20% больше высоты)
  * 6.3.5 Добавлен выбор тематики фишек
@@ -28,13 +28,16 @@ import {
 } from './core/cell'
 import {
   TILE_COLORS_BY_THEME,
+  type BoardFieldThemeOption,
   type GameIconThemeOption,
   type GameThemeOption,
 } from './config'
 import {
   MATCH3_COSMIC_ICON_URLS,
   MATCH3_FOOD_ICON_URLS,
+  MATCH3_TECH_ICON_URLS,
 } from './match3IconUrls'
+import { getHieroglyphForKind } from '../hieroglyphData'
 
 export type RenderOpts = {
   tileMotions?: {
@@ -47,20 +50,30 @@ export type RenderOpts = {
   selected?: CellRC | null
   target?: CellRC | null
   targetPulse?: boolean
-  showSwapArrow?: boolean
   hintFrom?: CellRC | null
   hintTo?: CellRC | null
+  /** 0..1 циклическая фаза анимации idle-подсказки (3 вспышки за цикл). */
+  hintPulsePhase?: number
   theme?: GameThemeOption
   iconTheme?: GameIconThemeOption
+  /** Оформление поля: космическая сетка или светлая «столешница» под иконки еды. */
+  boardField?: BoardFieldThemeOption
   iceGrid?: number[][]
   goalGrid?: number[][]
 }
+
+/**
+ * Координаты отрисовки и {@link boardLayout} — в этой логической системе;
+ * буфер канваса увеличивается по `devicePixelRatio` в bootstrap (резкие SVG).
+ */
+export const MATCH3_BOARD_LOGICAL_PX = 480
 
 const COSMIC_ICON_PATHS = [
   ...MATCH3_COSMIC_ICON_URLS,
 ]
 
 const FOOD_ICON_PATHS = [...MATCH3_FOOD_ICON_URLS]
+const TECH_ICON_PATHS = [...MATCH3_TECH_ICON_URLS]
 
 const iconCache: Partial<
   Record<GameIconThemeOption, HTMLImageElement[]>
@@ -185,7 +198,9 @@ function iconsForTheme(
   const paths =
     theme === 'cosmic'
       ? COSMIC_ICON_PATHS
-      : FOOD_ICON_PATHS
+      : theme === 'food'
+      ? FOOD_ICON_PATHS
+      : TECH_ICON_PATHS
   const icons = loadIcons(paths)
   iconCache[theme] = icons
   return icons
@@ -408,45 +423,86 @@ function drawSpecialMarker(
   const cx = x + cell / 2
   const cy = y + cell / 2
   ctx.save()
-  ctx.strokeStyle = 'rgba(255,255,255,0.95)'
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.68)'
-  ctx.lineWidth = Math.max(1.5, cell * 0.06)
+  ctx.lineWidth = Math.max(1.3, cell * 0.05)
 
   if (specialType === 'line') {
     const orientation = getLineOrientation(value)
-    if (orientation === 'row') {
-      const h = Math.max(3, cell * 0.12)
+    ctx.fillStyle = 'rgba(3, 105, 161, 0.34)'
+    ctx.strokeStyle = 'rgba(186, 230, 253, 0.98)'
+    if (orientation === 'row' || !orientation) {
+      const h = Math.max(5, cell * 0.18)
       ctx.beginPath()
       pathRoundRect(
         ctx,
-        x + cell * 0.18,
+        x + cell * 0.14,
         cy - h / 2,
-        cell * 0.64,
+        cell * 0.72,
         h,
         h / 2
       )
       ctx.fill()
       ctx.stroke()
+      ctx.fillStyle = 'rgba(224, 242, 254, 0.95)'
+      const stripeH = Math.max(1, cell * 0.045)
+      for (let i = 0; i < 3; i += 1) {
+        const sy = cy - h * 0.24 + i * (h * 0.24)
+        ctx.fillRect(
+          x + cell * 0.2,
+          sy,
+          cell * 0.6,
+          stripeH
+        )
+      }
     } else {
-      const w = Math.max(3, cell * 0.12)
+      const w = Math.max(5, cell * 0.18)
       ctx.beginPath()
       pathRoundRect(
         ctx,
         cx - w / 2,
-        y + cell * 0.18,
+        y + cell * 0.14,
         w,
-        cell * 0.64,
+        cell * 0.72,
         w / 2
       )
       ctx.fill()
       ctx.stroke()
+      ctx.fillStyle = 'rgba(224, 242, 254, 0.95)'
+      const stripeW = Math.max(1, cell * 0.045)
+      for (let i = 0; i < 3; i += 1) {
+        const sx = cx - w * 0.24 + i * (w * 0.24)
+        ctx.fillRect(
+          sx,
+          y + cell * 0.2,
+          stripeW,
+          cell * 0.6
+        )
+      }
     }
   } else {
-    const radius = Math.max(5, cell * 0.18)
+    const radius = Math.max(6, cell * 0.2)
+    ctx.fillStyle = 'rgba(220, 38, 38, 0.34)'
+    ctx.strokeStyle = 'rgba(254, 226, 226, 0.96)'
     ctx.beginPath()
     ctx.arc(cx, cy, radius, 0, Math.PI * 2)
     ctx.fill()
     ctx.stroke()
+    ctx.fillStyle = 'rgba(254, 242, 242, 0.92)'
+    for (let i = 0; i < 8; i += 1) {
+      const a = (Math.PI * 2 * i) / 8
+      const sx =
+        cx + Math.cos(a) * (radius * 1.15)
+      const sy =
+        cy + Math.sin(a) * (radius * 1.15)
+      ctx.beginPath()
+      ctx.arc(
+        sx,
+        sy,
+        Math.max(1, radius * 0.14),
+        0,
+        Math.PI * 2
+      )
+      ctx.fill()
+    }
     ctx.beginPath()
     ctx.moveTo(cx, cy - radius - cell * 0.08)
     ctx.lineTo(cx, cy + radius + cell * 0.08)
@@ -466,10 +522,28 @@ function drawIceOverlay(
   hp: number
 ) {
   const alpha =
-    hp >= 3 ? 0.46 : hp === 2 ? 0.34 : 0.24
+    hp >= 3 ? 0.58 : hp === 2 ? 0.46 : 0.34
   ctx.save()
-  ctx.fillStyle = `rgba(167, 243, 255, ${alpha})`
-  ctx.strokeStyle = 'rgba(226, 248, 255, 0.75)'
+  const iceG = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  iceG.addColorStop(
+    0,
+    `rgba(186, 230, 253, ${alpha + 0.08})`
+  )
+  iceG.addColorStop(
+    0.55,
+    `rgba(125, 211, 252, ${alpha})`
+  )
+  iceG.addColorStop(
+    1,
+    `rgba(56, 189, 248, ${alpha - 0.06})`
+  )
+  ctx.fillStyle = iceG
+  ctx.strokeStyle = 'rgba(224, 242, 254, 0.95)'
   ctx.lineWidth = Math.max(1, cell * 0.04)
   const inset = Math.max(1, cell * 0.06)
   ctx.beginPath()
@@ -484,7 +558,7 @@ function drawIceOverlay(
   ctx.fill()
   ctx.stroke()
 
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)'
+  ctx.strokeStyle = 'rgba(240, 249, 255, 0.78)'
   ctx.lineWidth = Math.max(1, cell * 0.025)
   ctx.beginPath()
   ctx.moveTo(x + cell * 0.28, y + cell * 0.35)
@@ -498,7 +572,466 @@ function drawIceOverlay(
     ctx.lineTo(x + cell * 0.64, y + cell * 0.3)
   }
   ctx.stroke()
+
+  const cx = x + cell / 2
+  const cy = y + cell / 2
+  const r = Math.max(3, cell * 0.12)
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.86)'
+  ctx.lineWidth = Math.max(1, cell * 0.03)
+  ctx.beginPath()
+  for (let i = 0; i < 6; i += 1) {
+    const a = -Math.PI / 2 + (Math.PI * i) / 3
+    const dx = Math.cos(a) * r
+    const dy = Math.sin(a) * r
+    ctx.moveTo(cx, cy)
+    ctx.lineTo(cx + dx, cy + dy)
+  }
+  ctx.stroke()
   ctx.restore()
+}
+
+/** Доля площади клетки под SVG-иконку еды (остальное — поле и рамка). */
+const FOOD_ICON_AREA_RATIO = 0.98
+
+/**
+ * Толщина градиентной рамки клетки — одна для «Космос», «Еда», «Кодер».
+ */
+const MATCH3_CELL_BORDER_LINE_WIDTH = 2.5
+
+/**
+ * Доминирующий акцент рамки по типу фишки (10 шагов по радуге), одинаковая логика для всех тем поля.
+ */
+const TILE_KIND_RAINBOW_ACCENTS: readonly string[] =
+  [
+    '#ef4444',
+    '#f97316',
+    '#eab308',
+    '#84cc16',
+    '#22c55e',
+    '#14b8a6',
+    '#3b82f6',
+    '#6366f1',
+    '#a855f7',
+    '#ec4899',
+  ]
+
+function kindRainbowAccent(kind: number): string {
+  const idx =
+    Math.abs(kind) %
+    TILE_KIND_RAINBOW_ACCENTS.length
+  return (
+    TILE_KIND_RAINBOW_ACCENTS[idx] ??
+    TILE_KIND_RAINBOW_ACCENTS[0]
+  )
+}
+
+function kindDominantHue(kind: number): number {
+  const goldenAngle = 137.50776405
+  const raw = Math.abs(kind) * goldenAngle
+  return ((raw % 360) + 360) % 360
+}
+
+function tileFillByThemeAndKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  opts: {
+    kindOrNull: number | null
+    boardField: BoardFieldThemeOption
+  }
+) {
+  const { kindOrNull, boardField } = opts
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  if (kindOrNull === null) {
+    if (boardField === 'food') {
+      g.addColorStop(0, '#453727')
+      g.addColorStop(1, '#2e2118')
+    } else if (boardField === 'coder') {
+      g.addColorStop(0, '#18233a')
+      g.addColorStop(1, '#0f172a')
+    } else if (boardField === 'hieroglyph') {
+      g.addColorStop(0, '#4a3c2c')
+      g.addColorStop(1, '#2f251b')
+    } else {
+      g.addColorStop(0, '#1f2d4e')
+      g.addColorStop(1, '#121d35')
+    }
+    return g
+  }
+
+  const hue = kindDominantHue(kindOrNull)
+  if (boardField === 'food') {
+    g.addColorStop(0, `hsl(${hue} 48% 52%)`)
+    g.addColorStop(0.45, `hsl(${hue} 62% 36%)`)
+    g.addColorStop(1, '#2d1f14')
+  } else if (boardField === 'coder') {
+    g.addColorStop(0, `hsl(${hue} 72% 40%)`)
+    g.addColorStop(0.52, `hsl(${hue} 64% 26%)`)
+    g.addColorStop(1, '#0c1426')
+  } else if (boardField === 'hieroglyph') {
+    g.addColorStop(0, `hsl(${hue} 42% 46%)`)
+    g.addColorStop(0.52, `hsl(${hue} 36% 31%)`)
+    g.addColorStop(1, '#2b1f16')
+  } else {
+    g.addColorStop(0, `hsl(${hue} 74% 44%)`)
+    g.addColorStop(0.48, `hsl(${hue} 70% 28%)`)
+    g.addColorStop(1, '#0b1328')
+  }
+  return g
+}
+
+function tileWobbleRadians(
+  r: number,
+  c: number,
+  nowMs: number
+): number {
+  const periodMs = 10000
+  const burstMs = 1250
+  const t =
+    ((nowMs % periodMs) + periodMs) % periodMs
+  if (t > burstMs) return 0
+  const p = t / burstMs
+  const swings = 5
+  const envelope = Math.sin(Math.PI * p)
+  const degBase = 5 + ((r * 17 + c * 31) % 3)
+  const radAmp = (degBase * Math.PI) / 180
+  return (
+    Math.sin(2 * Math.PI * swings * p) *
+    radAmp *
+    envelope
+  )
+}
+
+function strokeHieroglyphCellBorderByKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  kindOrNull: number | null
+) {
+  const lw = MATCH3_CELL_BORDER_LINE_WIDTH
+  const inset = lw / 2
+  const accent =
+    kindOrNull === null
+      ? '#8b7355'
+      : kindRainbowAccent(kindOrNull)
+
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  g.addColorStop(0, 'rgba(255, 250, 235, 0.55)')
+  g.addColorStop(
+    0.35,
+    'rgba(200, 175, 130, 0.85)'
+  )
+  g.addColorStop(0.55, accent)
+  g.addColorStop(1, 'rgba(62, 48, 36, 0.95)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lw
+  ctx.strokeRect(
+    x + inset,
+    y + inset,
+    cell - lw,
+    cell - lw
+  )
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(255, 252, 245, 0.12)'
+  ctx.strokeRect(
+    x + inset + 0.6,
+    y + inset + 0.6,
+    cell - lw - 1.2,
+    cell - lw - 1.2
+  )
+  ctx.restore()
+}
+
+/**
+ * Фишка «из кости»: скруглённый прямоугольник с градиентом и иероглифом.
+ */
+function drawHieroglyphBoneTile(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  kind: number
+) {
+  const { hanzi } = getHieroglyphForKind(kind)
+  const pad = Math.max(5, cell * 0.12)
+  const w = cell - pad * 2
+  const h = cell - pad * 2
+  const rx = Math.max(6, cell * 0.14)
+  const bx = x + pad
+  const by = y + pad
+
+  ctx.save()
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.35)'
+  ctx.shadowBlur = Math.max(3, cell * 0.08)
+  ctx.shadowOffsetY = Math.max(1, cell * 0.02)
+
+  const body = ctx.createLinearGradient(
+    bx,
+    by,
+    bx + w,
+    by + h
+  )
+  body.addColorStop(0, '#fffef6')
+  body.addColorStop(0.45, '#f3ead8')
+  body.addColorStop(0.72, '#e4d6c2')
+  body.addColorStop(1, '#d2c2aa')
+  ctx.fillStyle = body
+  ctx.beginPath()
+  pathRoundRect(ctx, bx, by, w, h, rx)
+  ctx.fill()
+
+  ctx.shadowColor = 'transparent'
+  ctx.shadowBlur = 0
+  ctx.shadowOffsetY = 0
+
+  ctx.strokeStyle = 'rgba(90, 70, 52, 0.55)'
+  ctx.lineWidth = Math.max(1, cell * 0.035)
+  ctx.beginPath()
+  pathRoundRect(ctx, bx, by, w, h, rx)
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)'
+  ctx.lineWidth = Math.max(0.8, cell * 0.018)
+  ctx.beginPath()
+  pathRoundRect(
+    ctx,
+    bx + cell * 0.02,
+    by + cell * 0.02,
+    w - cell * 0.04,
+    h - cell * 0.04,
+    rx * 0.85
+  )
+  ctx.stroke()
+
+  const sealR = Math.max(3, cell * 0.07)
+  ctx.fillStyle = 'rgba(185, 28, 28, 0.22)'
+  ctx.beginPath()
+  ctx.rect(
+    bx + w - sealR * 2.2,
+    by + h * 0.08,
+    sealR * 1.6,
+    sealR * 1.6
+  )
+  ctx.fill()
+
+  const fontPx = Math.floor(Math.min(w, h) * 0.8)
+  ctx.fillStyle = '#3f0f0f'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = `700 ${fontPx}px "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",serif`
+  ctx.fillText(
+    hanzi,
+    bx + w / 2,
+    by + h / 2 + h * 0.02
+  )
+
+  ctx.restore()
+}
+
+function strokeFoodCellBorderByKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  /** `null` — пустая клетка */
+  kindOrNull: number | null
+) {
+  const lw = MATCH3_CELL_BORDER_LINE_WIDTH
+  const inset = lw / 2
+  const accent =
+    kindOrNull === null
+      ? '#6b5344'
+      : kindRainbowAccent(kindOrNull)
+
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  g.addColorStop(0, 'rgba(255, 246, 210, 0.5)')
+  g.addColorStop(0.28, 'rgba(200, 155, 88, 0.78)')
+  g.addColorStop(0.52, 'rgba(110, 72, 44, 0.9)')
+  g.addColorStop(0.72, accent)
+  g.addColorStop(1, 'rgba(36, 22, 14, 0.96)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lw
+  ctx.strokeRect(
+    x + inset,
+    y + inset,
+    cell - lw,
+    cell - lw
+  )
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(255, 248, 220, 0.1)'
+  ctx.strokeRect(
+    x + inset + 0.6,
+    y + inset + 0.6,
+    cell - lw - 1.2,
+    cell - lw - 1.2
+  )
+  ctx.restore()
+}
+
+/** Рамка клетки «Космос»: как у «Кодер» по толщине/структуре, холодные стопы + радуга по типу. */
+function strokeSpaceCellBorderByKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  kindOrNull: number | null
+) {
+  const lw = MATCH3_CELL_BORDER_LINE_WIDTH
+  const inset = lw / 2
+  const accent =
+    kindOrNull === null
+      ? 'rgba(100, 130, 190, 0.5)'
+      : kindRainbowAccent(kindOrNull)
+
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  g.addColorStop(0, 'rgba(148, 190, 255, 0.48)')
+  g.addColorStop(0.35, 'rgba(38, 58, 102, 0.92)')
+  g.addColorStop(0.72, accent)
+  g.addColorStop(1, 'rgba(8, 14, 32, 0.97)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lw
+  ctx.strokeRect(
+    x + inset,
+    y + inset,
+    cell - lw,
+    cell - lw
+  )
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(186, 230, 253, 0.08)'
+  ctx.strokeRect(
+    x + inset + 0.6,
+    y + inset + 0.6,
+    cell - lw - 1.2,
+    cell - lw - 1.2
+  )
+  ctx.restore()
+}
+
+/** Рамка клетки: тёмная «панель», тонкий акцент по типу фишки (та же радуга, что у других тем). */
+function strokeCoderCellBorderByKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  kindOrNull: number | null
+) {
+  const lw = MATCH3_CELL_BORDER_LINE_WIDTH
+  const inset = lw / 2
+  const accent =
+    kindOrNull === null
+      ? '#475569'
+      : kindRainbowAccent(kindOrNull)
+
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  g.addColorStop(0, 'rgba(148, 163, 184, 0.55)')
+  g.addColorStop(0.35, 'rgba(51, 65, 85, 0.9)')
+  g.addColorStop(0.72, accent)
+  g.addColorStop(1, 'rgba(15, 23, 42, 0.95)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lw
+  ctx.strokeRect(
+    x + inset,
+    y + inset,
+    cell - lw,
+    cell - lw
+  )
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)'
+  ctx.strokeRect(
+    x + inset + 0.6,
+    y + inset + 0.6,
+    cell - lw - 1.2,
+    cell - lw - 1.2
+  )
+  ctx.restore()
+}
+
+function drawMutedGoldSelection(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  opts?: {
+    pulse?: boolean
+  }
+) {
+  const pulse = Boolean(opts?.pulse)
+  const inset = pulse ? 1.2 : 1.8
+  const lineW = pulse ? 3.8 : 3.2
+  const r = Math.max(4, cell * 0.15)
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  g.addColorStop(0, 'rgba(255, 236, 176, 0.9)')
+  g.addColorStop(0.45, 'rgba(212, 169, 85, 0.86)')
+  g.addColorStop(1, 'rgba(144, 107, 44, 0.82)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lineW
+  ctx.shadowColor = pulse
+    ? 'rgba(251, 191, 36, 0.52)'
+    : 'rgba(212, 169, 85, 0.42)'
+  ctx.shadowBlur = pulse ? 12 : 8
+  ctx.beginPath()
+  pathRoundRect(
+    ctx,
+    x + inset,
+    y + inset,
+    cell - inset * 2,
+    cell - inset * 2,
+    r
+  )
+  ctx.stroke()
+  ctx.restore()
+}
+
+function hintBurstIntensity(
+  phaseRaw: number
+): number {
+  const phase = ((phaseRaw % 1) + 1) % 1
+  const centers = [1 / 6, 0.5, 5 / 6] as const
+  let out = 0
+  for (const c of centers) {
+    const dist = Math.abs(phase - c)
+    const wrapped = Math.min(dist, 1 - dist)
+    const t = Math.max(0, 1 - wrapped / 0.14)
+    out = Math.max(out, t)
+  }
+  return out
 }
 
 function drawGoalOverlay(
@@ -509,22 +1042,59 @@ function drawGoalOverlay(
 ) {
   const cx = x + cell / 2
   const cy = y + cell / 2
-  const r = Math.max(4, cell * 0.2)
+  const bodyW = Math.max(10, cell * 0.42)
+  const bodyH = Math.max(8, cell * 0.3)
+  const shackleR = Math.max(5, cell * 0.16)
   ctx.save()
-  ctx.lineWidth = Math.max(1.4, cell * 0.05)
-  ctx.strokeStyle = 'rgba(251, 191, 36, 0.95)'
-  ctx.fillStyle = 'rgba(120, 53, 15, 0.2)'
+  ctx.filter = 'blur(0.5px)'
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.58)'
   ctx.beginPath()
-  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  pathRoundRect(
+    ctx,
+    x + cell * 0.15,
+    y + cell * 0.14,
+    cell * 0.7,
+    cell * 0.72,
+    cell * 0.12
+  )
+  ctx.fill()
+
+  ctx.filter = 'none'
+  ctx.lineWidth = Math.max(1.3, cell * 0.05)
+  ctx.strokeStyle = 'rgba(226, 232, 240, 0.95)'
+  ctx.fillStyle = 'rgba(51, 65, 85, 0.86)'
+  ctx.beginPath()
+  pathRoundRect(
+    ctx,
+    cx - bodyW / 2,
+    cy - bodyH * 0.05,
+    bodyW,
+    bodyH,
+    bodyH * 0.22
+  )
   ctx.fill()
   ctx.stroke()
-  ctx.strokeStyle = 'rgba(254, 240, 138, 0.9)'
+
   ctx.beginPath()
-  ctx.moveTo(cx - r * 0.55, cy)
-  ctx.lineTo(cx + r * 0.55, cy)
-  ctx.moveTo(cx, cy - r * 0.55)
-  ctx.lineTo(cx, cy + r * 0.55)
+  ctx.arc(
+    cx,
+    cy - bodyH * 0.08,
+    shackleR,
+    Math.PI,
+    Math.PI * 2
+  )
   ctx.stroke()
+
+  ctx.fillStyle = 'rgba(248, 250, 252, 0.95)'
+  ctx.beginPath()
+  ctx.arc(
+    cx,
+    cy + bodyH * 0.18,
+    Math.max(1.2, cell * 0.045),
+    0,
+    Math.PI * 2
+  )
+  ctx.fill()
   ctx.restore()
 }
 
@@ -556,13 +1126,14 @@ export function pickCellAt(
   const rect = canvas.getBoundingClientRect()
   const { x: cx, y: cy } = getClientXY(ev)
   const px =
-    (cx - rect.left) * (canvas.width / rect.width)
+    (cx - rect.left) *
+    (MATCH3_BOARD_LOGICAL_PX / rect.width)
   const py =
     (cy - rect.top) *
-    (canvas.height / rect.height)
+    (MATCH3_BOARD_LOGICAL_PX / rect.height)
 
-  const W = canvas.width
-  const H = canvas.height
+  const W = MATCH3_BOARD_LOGICAL_PX
+  const H = MATCH3_BOARD_LOGICAL_PX
   const layout = boardLayout(board, W, H)
   if (!layout) return null
   const { cell, ox, oy } = layout
@@ -582,10 +1153,16 @@ export function renderBoard(
   const theme = opts?.theme ?? 'standard'
   const iconTheme = opts?.iconTheme ?? 'cosmic'
   const themeIcons = iconsForTheme(iconTheme)
+  const boardField: BoardFieldThemeOption =
+    opts?.boardField ?? 'space'
+  const isFoodField = boardField === 'food'
+  const isCoderField = boardField === 'coder'
+  const isHieroglyphField =
+    boardField === 'hieroglyph'
 
   const { rows, cols } = dims(board)
-  const W = ctx.canvas.width
-  const H = ctx.canvas.height
+  const W = MATCH3_BOARD_LOGICAL_PX
+  const H = MATCH3_BOARD_LOGICAL_PX
 
   ctx.clearRect(0, 0, W, H)
   if (rows === 0 || cols === 0) return
@@ -593,6 +1170,7 @@ export function renderBoard(
   const layout = boardLayout(board, W, H)
   if (!layout) return
   const { cell, ox, oy } = layout
+  const nowMs = performance.now()
   const motionProgress = Math.max(
     0,
     Math.min(1, opts?.motionProgress ?? 1)
@@ -608,23 +1186,100 @@ export function renderBoard(
 
   // frame
   ctx.save()
-  ctx.fillStyle = 'rgba(5, 12, 28, 0.95)'
-  ctx.fillRect(
-    ox - 10,
-    oy - 10,
-    cols * cell + 20,
-    rows * cell + 20
-  )
-  ctx.shadowColor = 'rgba(90, 219, 255, 0.75)'
-  ctx.shadowBlur = 20
-  ctx.strokeStyle = 'rgba(97, 222, 255, 0.9)'
-  ctx.lineWidth = 2
-  ctx.strokeRect(
-    ox - 6,
-    oy - 6,
-    cols * cell + 12,
-    rows * cell + 12
-  )
+  if (isFoodField) {
+    const pad = 10
+    const fw = cols * cell + pad * 2
+    const fh = rows * cell + pad * 2
+    const gx = ctx.createLinearGradient(
+      ox - pad,
+      oy - pad,
+      ox - pad + fw,
+      oy - pad + fh
+    )
+    gx.addColorStop(0, '#6b3f2a')
+    gx.addColorStop(0.45, '#4a2c1c')
+    gx.addColorStop(1, '#2d1810')
+    ctx.fillStyle = gx
+    ctx.fillRect(ox - pad, oy - pad, fw, fh)
+    ctx.shadowColor = 'rgba(251, 191, 36, 0.35)'
+    ctx.shadowBlur = 18
+    ctx.strokeStyle = 'rgba(254, 243, 199, 0.88)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(
+      ox - 6,
+      oy - 6,
+      cols * cell + 12,
+      rows * cell + 12
+    )
+  } else if (isHieroglyphField) {
+    const pad = 10
+    const fw = cols * cell + pad * 2
+    const fh = rows * cell + pad * 2
+    const gx = ctx.createLinearGradient(
+      ox - pad,
+      oy - pad,
+      ox - pad + fw,
+      oy - pad + fh
+    )
+    gx.addColorStop(0, '#4a3f32')
+    gx.addColorStop(0.5, '#352a22')
+    gx.addColorStop(1, '#1f1812')
+    ctx.fillStyle = gx
+    ctx.fillRect(ox - pad, oy - pad, fw, fh)
+    ctx.shadowColor = 'rgba(253, 224, 200, 0.25)'
+    ctx.shadowBlur = 16
+    ctx.strokeStyle = 'rgba(254, 243, 199, 0.72)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(
+      ox - 6,
+      oy - 6,
+      cols * cell + 12,
+      rows * cell + 12
+    )
+  } else if (isCoderField) {
+    const pad = 10
+    const fw = cols * cell + pad * 2
+    const fh = rows * cell + pad * 2
+    const gx = ctx.createLinearGradient(
+      ox - pad,
+      oy - pad,
+      ox - pad + fw,
+      oy - pad + fh
+    )
+    gx.addColorStop(0, '#0f172a')
+    gx.addColorStop(0.48, '#111827')
+    gx.addColorStop(1, '#020617')
+    ctx.fillStyle = gx
+    ctx.fillRect(ox - pad, oy - pad, fw, fh)
+    ctx.shadowColor = 'rgba(34, 211, 238, 0.22)'
+    ctx.shadowBlur = 18
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(
+      ox - 6,
+      oy - 6,
+      cols * cell + 12,
+      rows * cell + 12
+    )
+  } else {
+    ctx.fillStyle = 'rgba(5, 12, 28, 0.95)'
+    ctx.fillRect(
+      ox - 10,
+      oy - 10,
+      cols * cell + 20,
+      rows * cell + 20
+    )
+    ctx.shadowColor = 'rgba(90, 219, 255, 0.75)'
+    ctx.shadowBlur = 20
+    ctx.strokeStyle = 'rgba(97, 222, 255, 0.9)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(
+      ox - 6,
+      oy - 6,
+      cols * cell + 12,
+      rows * cell + 12
+    )
+  }
   ctx.restore()
 
   for (let r = 0; r < rows; r += 1) {
@@ -634,14 +1289,90 @@ export function renderBoard(
       const x = ox + c * cell
       const y = oy + r * cell
 
-      // base
-      ctx.fillStyle = 'rgba(18, 28, 53, 0.95)'
-      ctx.fillRect(x, y, cell, cell)
-      ctx.strokeStyle = 'rgba(95, 140, 210, 0.35)'
-      ctx.strokeRect(x, y, cell, cell)
-
       const v = row[c]
-      if (typeof v !== 'number' || v < 0) continue
+      const hasTile =
+        typeof v === 'number' && v >= 0
+
+      // base
+      if (isFoodField) {
+        ctx.fillStyle = tileFillByThemeAndKind(
+          ctx,
+          x,
+          y,
+          cell,
+          {
+            kindOrNull: hasTile ? v : null,
+            boardField: 'food',
+          }
+        )
+        ctx.fillRect(x, y, cell, cell)
+        strokeFoodCellBorderByKind(
+          ctx,
+          x,
+          y,
+          cell,
+          hasTile ? v : null
+        )
+      } else if (isHieroglyphField) {
+        ctx.fillStyle = tileFillByThemeAndKind(
+          ctx,
+          x,
+          y,
+          cell,
+          {
+            kindOrNull: hasTile ? v : null,
+            boardField: 'hieroglyph',
+          }
+        )
+        ctx.fillRect(x, y, cell, cell)
+        strokeHieroglyphCellBorderByKind(
+          ctx,
+          x,
+          y,
+          cell,
+          hasTile ? v : null
+        )
+      } else if (isCoderField) {
+        ctx.fillStyle = tileFillByThemeAndKind(
+          ctx,
+          x,
+          y,
+          cell,
+          {
+            kindOrNull: hasTile ? v : null,
+            boardField: 'coder',
+          }
+        )
+        ctx.fillRect(x, y, cell, cell)
+        strokeCoderCellBorderByKind(
+          ctx,
+          x,
+          y,
+          cell,
+          hasTile ? v : null
+        )
+      } else {
+        ctx.fillStyle = tileFillByThemeAndKind(
+          ctx,
+          x,
+          y,
+          cell,
+          {
+            kindOrNull: hasTile ? v : null,
+            boardField: 'space',
+          }
+        )
+        ctx.fillRect(x, y, cell, cell)
+        strokeSpaceCellBorderByKind(
+          ctx,
+          x,
+          y,
+          cell,
+          hasTile ? v : null
+        )
+      }
+
+      if (!hasTile) continue
       const motion = motionByDest.get(`${r},${c}`)
       const drawX = motion
         ? ox +
@@ -657,36 +1388,77 @@ export function renderBoard(
               motionProgress) *
             cell
         : y
+      const iceHp = opts?.iceGrid?.[r]?.[c] ?? 0
+      const hasGoal =
+        (opts?.goalGrid?.[r]?.[c] ?? 0) > 0
+      const blockedTile = iceHp > 0 || hasGoal
+      const wobbleRad = blockedTile
+        ? 0
+        : tileWobbleRadians(r, c, nowMs)
+      if (wobbleRad !== 0) {
+        const px = drawX + cell / 2
+        const py = drawY + cell / 2
+        ctx.save()
+        ctx.translate(px, py)
+        ctx.rotate(wobbleRad)
+        ctx.translate(-px, -py)
+      }
+
+      if (isHieroglyphField) {
+        drawHieroglyphBoneTile(
+          ctx,
+          drawX,
+          drawY,
+          cell,
+          v
+        )
+      }
 
       const icon =
         themeIcons?.[
           Math.abs(v) % themeIcons.length
         ]
       if (
+        !isHieroglyphField &&
         icon &&
         typeof icon.naturalWidth === 'number' &&
         icon.naturalWidth > 0
       ) {
-        const pad = Math.max(
-          4,
-          Math.floor(cell * 0.14)
-        )
         ctx.save()
-        ctx.shadowColor =
-          'rgba(148, 163, 184, 0.45)'
+        ctx.shadowColor = isFoodField
+          ? 'rgba(62, 39, 24, 0.28)'
+          : isCoderField
+          ? 'rgba(15, 23, 42, 0.55)'
+          : 'rgba(148, 163, 184, 0.45)'
         ctx.shadowBlur = Math.max(
           4,
           Math.floor(cell * 0.12)
         )
-        ctx.drawImage(
-          icon,
-          drawX + pad,
-          drawY + pad,
-          cell - pad * 2,
-          cell - pad * 2
-        )
+        if (isFoodField) {
+          const side =
+            cell * Math.sqrt(FOOD_ICON_AREA_RATIO)
+          const inset = (cell - side) / 2
+          const dx = drawX + inset
+          const dy = drawY + inset
+          const s = Math.round(side * 2) / 2
+          const ix = Math.round(dx * 2) / 2
+          const iy = Math.round(dy * 2) / 2
+          ctx.drawImage(icon, ix, iy, s, s)
+        } else {
+          const pad = Math.max(
+            4,
+            Math.floor(cell * 0.14)
+          )
+          ctx.drawImage(
+            icon,
+            drawX + pad,
+            drawY + pad,
+            cell - pad * 2,
+            cell - pad * 2
+          )
+        }
         ctx.restore()
-      } else {
+      } else if (!isHieroglyphField) {
         const color = colorForKind(v, theme)
         drawShape(
           ctx,
@@ -704,7 +1476,9 @@ export function renderBoard(
         drawY,
         cell
       )
-      const iceHp = opts?.iceGrid?.[r]?.[c] ?? 0
+      if (wobbleRad !== 0) {
+        ctx.restore()
+      }
       if (iceHp > 0) {
         drawIceOverlay(
           ctx,
@@ -714,8 +1488,6 @@ export function renderBoard(
           iceHp
         )
       }
-      const hasGoal =
-        (opts?.goalGrid?.[r]?.[c] ?? 0) > 0
       if (hasGoal) {
         drawGoalOverlay(ctx, drawX, drawY, cell)
       }
@@ -773,18 +1545,9 @@ export function renderBoard(
     ) {
       const x = ox + c * cell
       const y = oy + r * cell
-      ctx.save()
-      ctx.lineWidth = 4
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)'
-      ctx.shadowColor = 'rgba(255,255,255,0.8)'
-      ctx.shadowBlur = 8
-      ctx.strokeRect(
-        x + 1,
-        y + 1,
-        cell - 2,
-        cell - 2
-      )
-      ctx.restore()
+      drawMutedGoldSelection(ctx, x, y, cell, {
+        pulse: false,
+      })
     }
   }
 
@@ -801,89 +1564,9 @@ export function renderBoard(
     ) {
       const x = ox + c * cell
       const y = oy + r * cell
-      const pulseInset = opts.targetPulse ? 0 : 2
-      const pulseBlur = opts.targetPulse ? 14 : 9
-
-      ctx.save()
-      ctx.lineWidth = 3
-      ctx.setLineDash([6, 4])
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)'
-      ctx.shadowColor = 'rgba(56, 189, 248, 0.85)'
-      ctx.shadowBlur = pulseBlur
-      ctx.strokeRect(
-        x + pulseInset,
-        y + pulseInset,
-        cell - pulseInset * 2,
-        cell - pulseInset * 2
-      )
-      ctx.setLineDash([])
-      ctx.restore()
-    }
-  }
-
-  // Линия/стрелка между первой и второй клеткой
-  if (
-    opts?.showSwapArrow &&
-    opts?.selected &&
-    opts?.target
-  ) {
-    const a = opts.selected
-    const b = opts.target
-    const inBounds = (p: CellRC) =>
-      p.r >= 0 &&
-      p.c >= 0 &&
-      p.r < rows &&
-      p.c < cols
-    if (inBounds(a) && inBounds(b)) {
-      const ax = ox + a.c * cell + cell / 2
-      const ay = oy + a.r * cell + cell / 2
-      const bx = ox + b.c * cell + cell / 2
-      const by = oy + b.r * cell + cell / 2
-      const dx = bx - ax
-      const dy = by - ay
-      const len = Math.hypot(dx, dy)
-      if (len > 1) {
-        const ux = dx / len
-        const uy = dy / len
-        const startX = ax + ux * (cell * 0.2)
-        const startY = ay + uy * (cell * 0.2)
-        const endX = bx - ux * (cell * 0.28)
-        const endY = by - uy * (cell * 0.28)
-
-        ctx.save()
-        ctx.strokeStyle =
-          'rgba(125, 211, 252, 0.95)'
-        ctx.lineWidth = 3
-        ctx.shadowColor =
-          'rgba(56, 189, 248, 0.9)'
-        ctx.shadowBlur = 10
-        ctx.beginPath()
-        ctx.moveTo(startX, startY)
-        ctx.lineTo(endX, endY)
-        ctx.stroke()
-
-        const headLen = Math.max(8, cell * 0.18)
-        const headW = Math.max(6, cell * 0.14)
-        const nx = -uy
-        const ny = ux
-        const hx1 =
-          endX - ux * headLen + nx * headW * 0.5
-        const hy1 =
-          endY - uy * headLen + ny * headW * 0.5
-        const hx2 =
-          endX - ux * headLen - nx * headW * 0.5
-        const hy2 =
-          endY - uy * headLen - ny * headW * 0.5
-        ctx.fillStyle =
-          'rgba(125, 211, 252, 0.98)'
-        ctx.beginPath()
-        ctx.moveTo(endX, endY)
-        ctx.lineTo(hx1, hy1)
-        ctx.lineTo(hx2, hy2)
-        ctx.closePath()
-        ctx.fill()
-        ctx.restore()
-      }
+      drawMutedGoldSelection(ctx, x, y, cell, {
+        pulse: Boolean(opts.targetPulse),
+      })
     }
   }
 
@@ -897,24 +1580,65 @@ export function renderBoard(
       p.r < rows &&
       p.c < cols
     if (inBounds(a) && inBounds(b)) {
+      const burst = hintBurstIntensity(
+        opts?.hintPulsePhase ?? 0
+      )
       const drawHintCell = (p: CellRC) => {
         const x = ox + p.c * cell
         const y = oy + p.r * cell
-        ctx.save()
-        ctx.lineWidth = 3
-        ctx.setLineDash([4, 4])
-        ctx.strokeStyle =
-          'rgba(250, 204, 21, 0.95)'
-        ctx.shadowColor =
-          'rgba(250, 204, 21, 0.7)'
-        ctx.shadowBlur = 8
-        ctx.strokeRect(
-          x + 2,
-          y + 2,
-          cell - 4,
-          cell - 4
+        const ringInset = Math.max(
+          0.8,
+          cell * 0.03
         )
-        ctx.setLineDash([])
+        const ringSize = cell - ringInset * 2
+        ctx.save()
+        const alpha = 0.2 + burst * 0.7
+        const glowBlur = 4 + burst * 14
+        const lineW = 1.6 + burst * 2.2
+        const radius = Math.max(4, cell * 0.16)
+        const core = ctx.createLinearGradient(
+          x,
+          y,
+          x + cell,
+          y + cell
+        )
+        core.addColorStop(
+          0,
+          `rgba(255, 243, 176, ${alpha})`
+        )
+        core.addColorStop(
+          1,
+          `rgba(227, 163, 61, ${alpha})`
+        )
+        ctx.strokeStyle = core
+        ctx.lineWidth = lineW
+        ctx.shadowColor = `rgba(251, 191, 36, ${
+          0.35 + burst * 0.55
+        })`
+        ctx.shadowBlur = glowBlur
+        ctx.beginPath()
+        pathRoundRect(
+          ctx,
+          x + ringInset,
+          y + ringInset,
+          ringSize,
+          ringSize,
+          radius
+        )
+        ctx.stroke()
+        ctx.globalAlpha = 0.16 + burst * 0.28
+        ctx.lineWidth = Math.max(1, lineW * 0.58)
+        ctx.shadowBlur = glowBlur * 0.45
+        ctx.beginPath()
+        pathRoundRect(
+          ctx,
+          x + ringInset - 1.6,
+          y + ringInset - 1.6,
+          ringSize + 3.2,
+          ringSize + 3.2,
+          radius + 1.5
+        )
+        ctx.stroke()
         ctx.restore()
       }
       drawHintCell(a)

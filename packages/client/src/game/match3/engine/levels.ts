@@ -3,7 +3,7 @@
  * levels.ts - файл с конфигом уровней
  * LevelConfig с полями: id, title, description, goalType, goalValue,
  * boardSize, durationSec, tileKinds, theme
- * Пресеты: Новичок, Пилот, Профессор
+ * Пресеты: Новичок / Пилот / Асс
  * Хелперы: DEFAULT_MATCH3_LEVEL_ID, getMatch3LevelById
  */
 import {
@@ -11,6 +11,7 @@ import {
   type GameDurationOption,
   type GameThemeOption,
 } from './config'
+import type { QuestConfig } from './quests'
 
 export type LevelGoalType = 'score'
 
@@ -24,10 +25,11 @@ export type LevelConfig = {
   durationSec: GameDurationOption
   tileKinds: number
   theme: GameThemeOption
-  /** Множитель ледяных клеток: rookie=1, pilot=2, professor=4 */
+  /** Множитель ледяных клеток: rookie=1, pilot=2, ace=4 */
   iceMultiplier?: 1 | 2 | 4
   /** Количество целевых клеток для механики bomb-target. */
   targetCells?: number
+  quests?: QuestConfig[]
 }
 
 export const MATCH3_LEVELS: LevelConfig[] = [
@@ -44,6 +46,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     theme: 'standard',
     iceMultiplier: 1,
     targetCells: undefined,
+    quests: [],
   },
   {
     id: 'pilot',
@@ -58,9 +61,10 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     theme: 'space',
     iceMultiplier: 2,
     targetCells: 4,
+    quests: [],
   },
   {
-    id: 'professor',
+    id: 'ace',
     title: 'Асс',
     description:
       'Сложный режим с большим полем и высоким порогом выигрыша.',
@@ -72,6 +76,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     theme: 'math',
     iceMultiplier: 4,
     targetCells: 8,
+    quests: [],
   },
 ]
 

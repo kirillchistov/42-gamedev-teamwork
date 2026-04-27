@@ -29,6 +29,7 @@ import {
   getFullscreenElement,
   toggleFullscreen,
 } from '../../utils/fullscreen'
+import { resolveGameEntryPath } from '../../game/match3/gameLandingGate'
 
 export type HeaderVariant = 'default' | 'game'
 
@@ -72,6 +73,9 @@ export const Header: React.FC<HeaderProps> = ({
   const user = useSelector(selectUser)
   const [mobileOpen, setMobileOpen] =
     useState(false)
+  const [gameNavPath, setGameNavPath] = useState<
+    '/game' | '/game/start'
+  >('/game')
 
   const closeMobile = useCallback(() => {
     setMobileOpen(false)
@@ -97,6 +101,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   const isGameVariant = variant === 'game'
   const [pageFs, setPageFs] = useState(false)
+
+  useEffect(() => {
+    setGameNavPath(resolveGameEntryPath())
+  }, [])
 
   useEffect(() => {
     if (!isGameVariant || !fullscreenTargetRef)
@@ -147,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({
         <nav className="landing-nav landing-nav--desktop">
           <Link
             className="btn btn--flat"
-            to="/game">
+            to={gameNavPath}>
             Игра
           </Link>
           <Link
@@ -339,7 +347,7 @@ export const Header: React.FC<HeaderProps> = ({
         </Link>
         <Link
           className="btn btn--outline"
-          to="/game"
+          to={gameNavPath}
           onClick={closeMobile}>
           Игра
         </Link>

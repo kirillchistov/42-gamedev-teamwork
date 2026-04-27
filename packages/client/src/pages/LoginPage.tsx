@@ -30,6 +30,7 @@ import {
   selectUserIsAuthChecked,
   selectUserIsLoading,
 } from '../slices/userSlice'
+import { markGameLandingNeedsShow } from '../game/match3/gameLandingGate'
 
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
@@ -58,6 +59,7 @@ export const LoginPage: React.FC = () => {
           loginThunk({ login, password })
         )
         if (loginThunk.fulfilled.match(result)) {
+          markGameLandingNeedsShow()
           navigate('/game', { replace: true })
         }
       }

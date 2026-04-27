@@ -56,6 +56,7 @@ import {
   type MoveCandidate,
 } from './core/possibleMoves'
 import {
+  MATCH3_BOARD_LOGICAL_PX,
   pickCellAt,
   preloadIconTheme,
   type RenderOpts,
@@ -63,7 +64,10 @@ import {
 } from './renderer'
 import {
   GAME_DURATION_SEC,
+  type BoardFieldThemeOption,
+  type GameLimitMode,
   match3AnimMs,
+  type MoveLimitOption,
   type GameIconThemeOption,
   type GameThemeOption,
   type GameVfxQualityOption,
@@ -82,11 +86,21 @@ import {
 } from './gameState'
 import type { LevelConfig } from './levels'
 import {
+  applyQuestDelta,
+  consumePendingFlatReward,
+  createInitialQuestProgress,
+  sanitizeLevelQuests,
+} from './quests'
+import {
   isAdjacentCell,
   isSameCell,
   clampCursor,
   createMatch3InputController,
 } from './inputController'
+import {
+  encodeBombCell,
+  encodeLineCell,
+} from './core/cell'
 import {
   createIdleHintController,
   createRoundTimer,
@@ -98,7 +112,8 @@ import {
 import { classifySwapCelebration } from './resolvePipeline'
 import {
   countPositiveCells,
-  createGoalGrid,
+  createGoalGridFromLayout,
+  createGoalLayout,
   createIceGrid,
   type OverlayGrid,
 } from './obstacleSystem'
@@ -117,6 +132,7 @@ export type { GameHudState }
 export type GameEndReason =
   | 'goalReached'
   | 'timeOut'
+  | 'movesOut'
 
 export type GameEndPayload = {
   reason: GameEndReason
@@ -129,6 +145,12 @@ type CreateParams = {
   fxCanvas?: HTMLCanvasElement
   onHudChange?: (next: GameHudState) => void
   onGameEnd?: (payload: GameEndPayload) => void
+  /**
+   * Тема поля «Иероглиф»: повторный тап по уже выбранной фишке открывает карточку.
+   */
+  onHieroglyphCardOpen?: (payload: {
+    kind: number
+  }) => void
   /**
    * Каскадный множитель текущего прохода (1 = первый матч, 2+ = комбо).
    * UI может использовать для лёгкого screen shake при chain ≥ 3.
@@ -177,6 +199,7 @@ export function createMatch3Game(
     fxCanvas,
     onHudChange,
     onGameEnd,
+    onHieroglyphCardOpen,
     onComboShake,
     onPremiumMatchBorder,
     vfxQuality: initialVfxQuality,
@@ -192,13 +215,53 @@ export function createMatch3Game(
   let matchFx: MatchFxApi | null = null
   let fxRafId: number | null = null
   let fxLastTs = 0
+  let fxCtx: CanvasRenderingContext2D | null =
+    null
 
   if (fxCanvas) {
     const fxCtxMaybe = fxCanvas.getContext('2d')
     if (fxCtxMaybe) {
-      matchFx = createMatchFx(fxCtxMaybe)
+      fxCtx = fxCtxMaybe
+      matchFx = createMatchFx(fxCtx)
     }
   }
+
+  const syncBoardCanvasDpr = () => {
+    const dpr = Math.min(
+      2.5,
+      typeof window !== 'undefined'
+        ? window.devicePixelRatio || 1
+        : 1
+    )
+    const buf = Math.max(
+      1,
+      Math.round(MATCH3_BOARD_LOGICAL_PX * dpr)
+    )
+    canvas.width = buf
+    canvas.height = buf
+    if (typeof ctx.setTransform === 'function') {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+    ctx.imageSmoothingEnabled = true
+    if ('imageSmoothingQuality' in ctx) {
+      ctx.imageSmoothingQuality = 'high'
+    }
+    if (fxCanvas && fxCtx) {
+      fxCanvas.width = buf
+      fxCanvas.height = buf
+      if (
+        typeof fxCtx.setTransform === 'function'
+      ) {
+        fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      }
+      fxCtx.imageSmoothingEnabled = true
+      if ('imageSmoothingQuality' in fxCtx) {
+        fxCtx.imageSmoothingQuality = 'high'
+      }
+    }
+  }
+
+  syncBoardCanvasDpr()
 
   let gameVfxQuality: GameVfxQualityOption =
     initialVfxQuality ?? 'full'
@@ -250,14 +313,22 @@ export function createMatch3Game(
   let tileKinds = tileKindsForBoardSize(boardSize)
   let forcedTileKinds: number | null = null
   let gameDurationSec = GAME_DURATION_SEC
+  let gameLimitMode: GameLimitMode = 'time'
+  let gameMoveLimit: MoveLimitOption = 75
   let gameGoalScore = 0
   let gameTheme: GameThemeOption = 'standard'
   let gameIconTheme: GameIconThemeOption =
     'cosmic'
+  let gameBoardField: BoardFieldThemeOption =
+    'space'
   let soundEnabled = true
   let scoreMode: ScoreMode = 'x1'
   let gameIceMultiplier: 1 | 2 | 4 = 1
   let gameTargetCells = 0
+  let goalLayout: CellRC[] = []
+  let gameQuests = sanitizeLevelQuests(undefined)
+  let questProgress =
+    createInitialQuestProgress(gameQuests)
   let phase: Phase = 'idle'
   let isAnimating = false
   let isResolving = false
@@ -266,12 +337,60 @@ export function createMatch3Game(
   let targetCell: CellRC | null = null
   let targetPulse = false
   let hintMove: MoveCandidate | null = null
+  let hintPulsePhase = 0
   let hintIdleMs = DEFAULT_HINT_IDLE_MS
   let inputBlocked = false
-  let iconThemeRedrawId: number | null = null
+  /** Пауза таймера режима «на время» (карточка иероглифа). */
+  let roundTimerPaused = false
+  /** Таймер режима «на время» запускаем после первого действия игрока. */
+  let roundTimerStarted = false
+  let debugBoostersMode = false
+  let hintPulseRedrawId: number | null = null
   const DRAG_SWAP_THRESHOLD_PX = 12
 
-  const emitHud = () => onHudChange?.({ ...hud })
+  const applyDebugBoosterPreset = (
+    nextBoard: Board
+  ) => {
+    if (!debugBoostersMode) return
+    const rows = nextBoard.length
+    const cols =
+      rows > 0 ? nextBoard[0]?.length ?? 0 : 0
+    if (rows === 0 || cols === 0) return
+    const kindsSafe = Math.max(3, tileKinds)
+    for (let r = 0; r < rows; r += 1) {
+      for (let c = 0; c < cols; c += 1) {
+        const kind = Math.abs(
+          (r * 3 + c * 5) % kindsSafe
+        )
+        if ((r + c) % 7 === 0) {
+          nextBoard[r][c] = encodeBombCell(kind)
+        } else if (r % 3 === 0) {
+          nextBoard[r][c] = encodeLineCell(
+            kind,
+            'row'
+          )
+        } else if (c % 3 === 0) {
+          nextBoard[r][c] = encodeLineCell(
+            kind,
+            'col'
+          )
+        } else {
+          nextBoard[r][c] = kind
+        }
+      }
+    }
+  }
+
+  const emitHud = () =>
+    onHudChange?.({
+      ...hud,
+      questProgress: {
+        ...questProgress,
+        quests: questProgress.quests.map(q => ({
+          ...q,
+        })),
+      },
+    })
 
   const scoreMult = () =>
     scoreMultiplier(scoreMode)
@@ -280,12 +399,25 @@ export function createMatch3Game(
     renderBoard(ctx, board, {
       hintFrom: hintMove?.from ?? null,
       hintTo: hintMove?.to ?? null,
+      hintPulsePhase,
       iceGrid,
       goalGrid,
       ...opts,
       theme: gameTheme,
       iconTheme: gameIconTheme,
+      boardField: gameBoardField,
     })
+  }
+
+  const onBoardCanvasResize = () => {
+    syncBoardCanvasDpr()
+    drawBoard()
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener(
+      'resize',
+      onBoardCanvasResize
+    )
   }
 
   let audioCtx: AudioContext | null = null
@@ -562,7 +694,13 @@ export function createMatch3Game(
       Boolean(firstPick || targetCell),
     getCurrentHintMove: () => hintMove,
     setHintMove: m => {
+      const hadHint = hintMove != null
       hintMove = m
+      if (hintMove) {
+        startHintPulseAnimation()
+      } else if (hadHint) {
+        stopHintPulseAnimation()
+      }
     },
     getFirstMoveCandidate: () =>
       findPossibleMoves(getMatchBoard())[0],
@@ -572,14 +710,31 @@ export function createMatch3Game(
   const clearHint = () => idleHint.clearHint()
   const stopHintTimer = () => idleHint.stopTimer()
   const scheduleHint = () => idleHint.schedule()
-  const markPlayerActivity = () =>
+  const markPlayerActivity = () => {
+    ensureStartedTimeModeTimer()
     idleHint.markActivity()
+  }
 
-  const stopIconThemeRedraw = () => {
-    if (iconThemeRedrawId !== null) {
-      window.clearInterval(iconThemeRedrawId)
-      iconThemeRedrawId = null
+  const stopHintPulseAnimation = () => {
+    if (hintPulseRedrawId !== null) {
+      window.clearInterval(hintPulseRedrawId)
+      hintPulseRedrawId = null
     }
+    hintPulsePhase = 0
+  }
+
+  const startHintPulseAnimation = () => {
+    if (hintPulseRedrawId !== null) return
+    hintPulseRedrawId = window.setInterval(() => {
+      if (!hintMove || phase !== 'playing') {
+        stopHintPulseAnimation()
+        drawBoard()
+        return
+      }
+      hintPulsePhase =
+        (performance.now() % 1650) / 1650
+      drawBoard()
+    }, 42)
   }
 
   let roundTimer: ReturnType<
@@ -591,6 +746,8 @@ export function createMatch3Game(
       reason === 'goalReached' ? 'win' : 'lose'
     )
     phase = 'ended'
+    roundTimerPaused = false
+    roundTimerStarted = false
     roundTimer?.stop()
     stopHintTimer()
     clearHint()
@@ -608,6 +765,7 @@ export function createMatch3Game(
   roundTimer = createRoundTimer({
     getPhase: () => phase,
     getInputBlocked: () => inputBlocked,
+    getTimerPaused: () => roundTimerPaused,
     getTimeLeftSec: () => hud.timeLeftSec,
     setTimeLeftSec: next => {
       hud.timeLeftSec = next
@@ -618,6 +776,13 @@ export function createMatch3Game(
 
   const stopTimer = () => roundTimer?.stop()
   const startGameTimer = () => roundTimer?.start()
+  const ensureStartedTimeModeTimer = () => {
+    if (phase !== 'playing') return
+    if (gameLimitMode !== 'time') return
+    if (roundTimerStarted) return
+    startGameTimer()
+    roundTimerStarted = true
+  }
 
   const renderInteraction = () => {
     const target =
@@ -632,7 +797,6 @@ export function createMatch3Game(
       selected: firstPick ?? keyboardCursor,
       target,
       targetPulse,
-      showSwapArrow: Boolean(firstPick && target),
     })
   }
 
@@ -711,7 +875,7 @@ export function createMatch3Game(
 
       while (pass < maxPasses) {
         pass += 1
-        const { matched, nextChain } =
+        const { matched, nextChain, questDelta } =
           await runOneResolvePass({
             board,
             getMatchBoard,
@@ -747,8 +911,20 @@ export function createMatch3Game(
             clearHint,
             emitHud,
             delay,
+            activeScoreMultiplier: () =>
+              questProgress.activeScoreMultiplier,
           })
         if (!matched) break
+        applyQuestDelta(
+          questProgress,
+          questDelta,
+          hud.moves
+        )
+        const questReward =
+          consumePendingFlatReward(questProgress)
+        if (questReward > 0) {
+          hud.score += questReward
+        }
         maxChain = Math.max(maxChain, chain)
         chain = nextChain
       }
@@ -803,14 +979,30 @@ export function createMatch3Game(
     )
     tileKinds = next.tileKinds
     board = next.board
+    applyDebugBoosterPreset(board)
     iceGrid = createIceGrid(
       board,
       computeIceCount(),
       ICE_HP
     )
-    goalGrid = createGoalGrid(
+    const isLayoutCompatible =
+      goalLayout.length > 0 &&
+      goalLayout.every(
+        cell =>
+          cell.r >= 0 &&
+          cell.c >= 0 &&
+          cell.r < board.length &&
+          cell.c < (board[0]?.length ?? 0)
+      )
+    if (!isLayoutCompatible) {
+      goalLayout = createGoalLayout(
+        board,
+        gameTargetCells
+      )
+    }
+    goalGrid = createGoalGridFromLayout(
       board,
-      gameTargetCells,
+      goalLayout,
       TARGET_HP
     )
     hud.goalTargetsTotal = gameTargetCells
@@ -845,6 +1037,24 @@ export function createMatch3Game(
       targetCell = null
       targetPulse = false
       renderInteraction()
+      return
+    }
+
+    if (
+      gameBoardField === 'hieroglyph' &&
+      isSameCell(firstPick, cell)
+    ) {
+      const v = board[cell.r]?.[cell.c]
+      if (typeof v === 'number' && v >= 0) {
+        onHieroglyphCardOpen?.({
+          kind: Math.abs(v),
+        })
+      }
+      firstPick = null
+      targetCell = null
+      targetPulse = false
+      renderInteraction()
+      emitHud()
       return
     }
 
@@ -883,6 +1093,14 @@ export function createMatch3Game(
       hud.moves += 1
       drawBoard()
       await resolveBoard()
+      if (
+        phase === 'playing' &&
+        gameLimitMode === 'moves' &&
+        hud.moves >= gameMoveLimit
+      ) {
+        finishGame('movesOut')
+        return
+      }
     } else {
       drawBoard()
     }
@@ -990,6 +1208,8 @@ export function createMatch3Game(
   )
 
   const resetIdle = () => {
+    roundTimerPaused = false
+    roundTimerStarted = false
     stopTimer()
     stopHintTimer()
     clearHint()
@@ -1013,11 +1233,15 @@ export function createMatch3Game(
       goalTargetsTotal: gameTargetCells,
       goalTargetsLeft: gameTargetCells,
     })
+    questProgress =
+      createInitialQuestProgress(gameQuests)
     drawBoard()
     emitHud()
   }
 
   const startPlay = () => {
+    roundTimerPaused = false
+    roundTimerStarted = false
     stopTimer()
     stopHintTimer()
     clearHint()
@@ -1032,11 +1256,13 @@ export function createMatch3Game(
       goalTargetsTotal: gameTargetCells,
       goalTargetsLeft: gameTargetCells,
     })
+    questProgress =
+      createInitialQuestProgress(gameQuests)
+    goalLayout = []
     firstPick = null
 
     rebuildBoard()
     void resolveBoard().then(() => {
-      startGameTimer()
       emitHud()
       scheduleHint()
     })
@@ -1047,6 +1273,7 @@ export function createMatch3Game(
     if (!Number.isInteger(size) || size < 4)
       return
     boardSize = size
+    goalLayout = []
     if (phase === 'playing') {
       rebuildBoard()
       void resolveBoard().then(() => emitHud())
@@ -1071,6 +1298,25 @@ export function createMatch3Game(
     }
   }
 
+  const setLimitMode = (mode: GameLimitMode) => {
+    gameLimitMode = mode
+    if (phase === 'playing') {
+      if (mode === 'time') {
+        stopTimer()
+        roundTimerStarted = false
+      } else {
+        stopTimer()
+        roundTimerStarted = false
+      }
+    }
+  }
+
+  const setMoveLimit = (
+    moveLimit: MoveLimitOption
+  ) => {
+    gameMoveLimit = moveLimit
+  }
+
   const setTheme = (theme: GameThemeOption) => {
     gameTheme = theme
     drawBoard()
@@ -1081,11 +1327,17 @@ export function createMatch3Game(
   ) => {
     gameIconTheme = iconTheme
     drawBoard()
-    stopIconThemeRedraw()
     void preloadIconTheme(iconTheme).then(() => {
       if (phase === 'ended') return
       drawBoard()
     })
+  }
+
+  const setBoardField = (
+    field: BoardFieldThemeOption
+  ) => {
+    gameBoardField = field
+    drawBoard()
   }
 
   const setLevel = (level: LevelConfig) => {
@@ -1099,6 +1351,10 @@ export function createMatch3Game(
       0,
       level.targetCells ?? 0
     )
+    goalLayout = []
+    gameQuests = sanitizeLevelQuests(level.quests)
+    questProgress =
+      createInitialQuestProgress(gameQuests)
 
     if (phase === 'playing') {
       rebuildBoard()
@@ -1145,6 +1401,19 @@ export function createMatch3Game(
     }
   }
 
+  const setDebugBoostersMode = (
+    enabled: boolean
+  ) => {
+    debugBoostersMode = Boolean(enabled)
+    if (phase === 'playing') {
+      rebuildBoard()
+      void resolveBoard().then(() => emitHud())
+      return
+    }
+    rebuildBoard()
+    emitHud()
+  }
+
   const setInputBlocked = (blocked: boolean) => {
     inputBlocked = Boolean(blocked)
     if (inputBlocked) {
@@ -1188,9 +1457,15 @@ export function createMatch3Game(
       'keyup',
       match3Input.onKeyUp
     )
+    if (typeof window !== 'undefined') {
+      window.removeEventListener(
+        'resize',
+        onBoardCanvasResize
+      )
+    }
     stopTimer()
     stopHintTimer()
-    stopIconThemeRedraw()
+    stopHintPulseAnimation()
     cancelFxLoop()
     matchFx?.reset()
     if (audioCtx) {
@@ -1201,16 +1476,27 @@ export function createMatch3Game(
 
   resetIdle()
 
+  const setRoundTimerPaused = (
+    paused: boolean
+  ) => {
+    roundTimerPaused = Boolean(paused)
+  }
+
   return {
     resetIdle,
     startPlay,
     setBoardSize,
     setDuration,
+    setLimitMode,
+    setMoveLimit,
     setTheme,
     setIconTheme,
+    setBoardField,
     setSoundEnabled,
     setVfxQuality,
+    setDebugBoostersMode,
     setInputBlocked,
+    setRoundTimerPaused,
     setLevel,
     setScoreMode,
     setHintIdleMs,

@@ -37,6 +37,7 @@ import {
   selectUserIsLoading,
   signupThunk,
 } from '../slices/userSlice'
+import { markGameLandingNeedsShow } from '../game/match3/gameLandingGate'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AuthSessionNotice } from '../components/AuthSessionNotice'
@@ -120,6 +121,7 @@ export const SignupPage: React.FC = () => {
         })
       )
       if (signupThunk.fulfilled.match(result)) {
+        markGameLandingNeedsShow()
         navigate('/game', { replace: true })
       }
     })
