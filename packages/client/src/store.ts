@@ -16,7 +16,7 @@ import userReducer from './slices/userSlice'
 // и задаем ему тип такой же как у стейта в сторе
 declare global {
   interface Window {
-    APP_INITIAL_STATE: RootState
+    APP_INITIAL_STATE?: RootState
   }
 }
 
@@ -27,15 +27,33 @@ export const reducer = combineReducers({
   user: userReducer,
 })
 
-export const store = configureStore({
-  reducer,
-  preloadedState:
-    typeof window === 'undefined'
-      ? undefined
-      : window.APP_INITIAL_STATE,
-})
-
 export type RootState = ReturnType<typeof reducer>
+
+export const createAppStore = (
+  preloadedState?: RootState
+) =>
+  configureStore({
+    reducer,
+    preloadedState,
+  })
+
+function readAndConsumeInitialState():
+  | RootState
+  | undefined {
+  if (typeof window === 'undefined') {
+    return undefined
+  }
+
+  const state = window.APP_INITIAL_STATE
+  // После инициализации стор сам хранит state, глобальная ссылка больше не нужна.
+  delete window.APP_INITIAL_STATE
+  return state
+}
+
+export const store = createAppStore(
+  readAndConsumeInitialState()
+)
+
 export type AppDispatch = typeof store.dispatch
 
 export const useDispatch: () => AppDispatch =

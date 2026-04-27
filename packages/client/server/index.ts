@@ -127,6 +127,65 @@ function registerErrorHandler(
   )
 }
 
+async function tryHandleRouterResponse(
+  maybeResponse: unknown,
+  res: Response
+): Promise<boolean> {
+  if (!isRouterResponse(maybeResponse)) {
+    return false
+  }
+
+  const location =
+    maybeResponse.headers.get('location')
+  if (location) {
+    res.redirect(
+      maybeResponse.status || 302,
+      location
+    )
+    return true
+  }
+
+  const text = await maybeResponse
+    .text()
+    .catch(() => '')
+
+  res
+    .status(maybeResponse.status || 500)
+    .set({
+      'Content-Type':
+        maybeResponse.headers.get(
+          'content-type'
+        ) ?? 'text/plain',
+    })
+    .send(text)
+
+  return true
+}
+
+type RouterResponseLike = {
+  status: number
+  headers: {
+    get(name: string): string | null
+  }
+  text(): Promise<string>
+}
+
+function isRouterResponse(
+  value: unknown
+): value is RouterResponseLike {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const candidate =
+    value as Partial<RouterResponseLike>
+  return (
+    typeof candidate.status === 'number' &&
+    typeof candidate.text === 'function' &&
+    !!candidate.headers &&
+    typeof candidate.headers.get === 'function'
+  )
+}
+
 async function createServer() {
   const app = express()
 
@@ -189,6 +248,9 @@ async function createServer() {
         .set({ 'Content-Type': 'text/html' })
         .end(html)
     } catch (e) {
+      if (await tryHandleRouterResponse(e, res)) {
+        return
+      }
       vite?.ssrFixStacktrace(e as Error)
       next(e)
     }

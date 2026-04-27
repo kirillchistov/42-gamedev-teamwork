@@ -1,6 +1,7 @@
 /** Изменения и починка Sprint6 Chores:
  * Добавил /logout
  */
+import type { ComponentType } from 'react'
 import { AppDispatch, RootState } from './store'
 
 import {
@@ -76,7 +77,17 @@ export type PageInitArgs = {
   ctx: PageInitContext
 }
 
-export const routes = [
+export type PageInitFn = (
+  data: PageInitArgs
+) => Promise<unknown> | unknown
+
+export type AppRoute = {
+  path: string
+  Component: ComponentType
+  fetchData?: PageInitFn
+}
+
+export const routes: AppRoute[] = [
   {
     path: '/',
     Component: LandingPage,
