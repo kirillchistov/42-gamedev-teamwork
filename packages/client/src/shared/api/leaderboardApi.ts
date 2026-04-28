@@ -40,8 +40,7 @@ export async function fetchLeaderboardPage(params: {
   limit: number
 }) {
   const res = await fetch(
-    `${BASE_URL}/leaderboard/all`,
-    // `${BASE_URL}/leaderboard/${LEADERBOARD_RATING_FIELD}`,
+    `${BASE_URL}/leaderboard/${LEADERBOARD_RATING_FIELD}`,
     {
       method: 'POST',
       credentials: 'include',
@@ -53,11 +52,6 @@ export async function fetchLeaderboardPage(params: {
         cursor: params.cursor,
         limit: params.limit,
       }),
-      // body: JSON.stringify({
-      //   ratingFieldName: RATING_FIELD_NAME,
-      //   cursor: params.cursor,
-      //   limit: params.limit,
-      // }),
     }
   )
   if (!res.ok) {
