@@ -14,6 +14,8 @@ import {
 } from '../slices/friendsSlice'
 import {
   fetchLeaderboardThunk,
+  leaderboardData,
+  isLoadingLeaderboard,
   // fetchFriendsThunk,
   LeaderboardEntry,
 } from '../slices/leaderboardSlice'
@@ -117,8 +119,10 @@ export const LeaderboardPage: React.FC = () => {
     [friends]
   )
 
+  let list = useSelector(leaderboardData)
+
   const sortedEntries = useMemo(() => {
-    let list = DEMO_LEADERBOARD
+    // let list = DEMO_LEADERBOARD
 
     if (
       showFriendsOnly &&

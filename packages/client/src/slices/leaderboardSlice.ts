@@ -4,6 +4,7 @@ import {
   PayloadAction,
 } from '@reduxjs/toolkit'
 import { RootState } from '../store'
+import { fetchLeaderboardPage } from '../shared/api/leaderboardApi'
 
 export interface LeaderboardEntry {
   id: number
@@ -32,15 +33,14 @@ const initialState: LeaderboardState = {
 }
 
 export const fetchLeaderboardThunk =
-  createAsyncThunk(
+  createAsyncThunk<unknown>(
     'leaderboard/fetchLeaderboardThunk',
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async (_: void) => {
-      const url = `https://ya-praktikum.tech/api/v2/leaderboard`
-      console.log(url)
-      return fetch(url, {
-        method: 'POST',
-      }).then(res => res.json())
+      return await fetchLeaderboardPage({
+        cursor: 0,
+        limit: 10,
+      })
     }
   )
 
