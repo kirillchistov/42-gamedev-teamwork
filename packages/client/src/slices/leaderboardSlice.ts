@@ -5,16 +5,7 @@ import {
 } from '@reduxjs/toolkit'
 import { RootState } from '../store'
 import { fetchLeaderboardPage } from '../shared/api/leaderboardApi'
-
-export interface LeaderboardEntry {
-  id: number
-  nickname: string
-  avatarEmoji: string
-  rating: number // общий рейтинг (сумма очков за всё время)
-  gamesPlayed: number // сыграно игр
-  bestScore: number // рекорд одной игры
-  bestScoreDate: string // дата рекорда
-}
+import { type LeaderboardEntry } from '../shared/api/leaderboardConfig'
 
 export interface LeaderboardState {
   data: Array<LeaderboardEntry>

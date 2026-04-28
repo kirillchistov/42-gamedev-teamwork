@@ -38,7 +38,9 @@ import {
   type GameThemeOption,
   type GameVfxQualityOption,
 } from '../game/match3/engine/config'
-
+import { submitLeaderboardScore } from '../shared/api/leaderboardApi'
+import { useSelector } from '../store'
+import { selectUser } from '../slices/userSlice'
 // 2DO: разобраться с алиасами @ для jest
 // import cosmicBadgeWinUrl from '@match3-public/icons/cosmic9.png?url'
 const cosmicBadgeWinUrl =
@@ -46,9 +48,11 @@ const cosmicBadgeWinUrl =
 const LAST_RESULT_KEY = 'match3:last-result'
 const FIRST_START_COUNTDOWN_DONE_KEY =
   'match3:first-start-countdown-done'
+import { RATING_FIELD_NAME } from '../shared/api/leaderboardConfig'
 
 export const GamePage: React.FC = () => {
   usePage({ initPage: initGamePage })
+  const user = useSelector(selectUser)
   const { theme } = useLandingTheme()
   const pageShellRef =
     useRef<HTMLDivElement | null>(null)
@@ -273,6 +277,20 @@ export const GamePage: React.FC = () => {
       LAST_RESULT_KEY,
       JSON.stringify(next)
     )
+
+    void submitLeaderboardScore({
+      id: user.id,
+      nickname:
+        user.display_name |
+        (user.first_name + user.second_name),
+      avatarEmoji: user.avatar,
+      [RATING_FIELD_NAME]: payload.snapshot.score,
+      gamesPlayed: 0, // сыграно игр
+      bestScore: payload.snapshot.playerRecord, // рекорд одной игры
+      bestScoreDate:
+        new Date().toLocaleDateString('ru-RU'), // дата рекорда
+    })
+
     navigate('/game/finish')
   }
 

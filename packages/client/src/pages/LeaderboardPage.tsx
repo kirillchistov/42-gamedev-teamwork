@@ -15,10 +15,11 @@ import {
 import {
   fetchLeaderboardThunk,
   leaderboardData,
-  isLoadingLeaderboard,
-  // fetchFriendsThunk,
-  LeaderboardEntry,
 } from '../slices/leaderboardSlice'
+import {
+  type LeaderboardEntry,
+  RATING_FIELD_NAME,
+} from '../shared/api/leaderboardConfig'
 import {
   fetchUserThunk,
   // selectUserIsAuthChecked,
@@ -29,66 +30,8 @@ import { useLandingTheme } from '../contexts/LandingThemeContext'
 // import { PageInitArgs } from '../routes'
 import { Button } from '../shared/ui'
 
-// демо-данные
-const DEMO_LEADERBOARD: LeaderboardEntry[] = [
-  {
-    id: 1,
-    nickname: 'Max_Fox',
-    avatarEmoji: '🦊',
-    rating: 60000,
-    gamesPlayed: 124,
-    bestScore: 8200,
-    bestScoreDate: '2026-03-18',
-  },
-  {
-    id: 2,
-    nickname: 'Kira',
-    avatarEmoji: '🛸',
-    rating: 56000,
-    gamesPlayed: 98,
-    bestScore: 7900,
-    bestScoreDate: '2026-03-17',
-  },
-  {
-    id: 3,
-    nickname: 'Mila_sila',
-    avatarEmoji: '🌌',
-    rating: 34000,
-    gamesPlayed: 76,
-    bestScore: 6400,
-    bestScoreDate: '2026-03-16',
-  },
-  {
-    id: 4,
-    nickname: 'Cat_Banan',
-    avatarEmoji: '🐱',
-    rating: 24011,
-    gamesPlayed: 52,
-    bestScore: 5200,
-    bestScoreDate: '2026-03-15',
-  },
-  {
-    id: 5,
-    nickname: 'Sanka',
-    avatarEmoji: '🚀',
-    rating: 20970,
-    gamesPlayed: 61,
-    bestScore: 5100,
-    bestScoreDate: '2026-03-14',
-  },
-  {
-    id: 6,
-    nickname: 'Kola_pep',
-    avatarEmoji: '🪐',
-    rating: 12906,
-    gamesPlayed: 35,
-    bestScore: 3900,
-    bestScoreDate: '2026-03-12',
-  },
-]
-
 type SortKey =
-  | 'rating'
+  | RATING_FIELD_NAME
   | 'gamesPlayed'
   | 'bestScore'
   | 'nickname'
@@ -107,8 +50,9 @@ export const LeaderboardPage: React.FC = () => {
 
   const [viewMode, setViewMode] =
     useState<ViewMode>('table')
-  const [sortKey, setSortKey] =
-    useState<SortKey>('rating')
+  const [sortKey, setSortKey] = useState<SortKey>(
+    RATING_FIELD_NAME
+  )
   const [sortDir, setSortDir] =
     useState<SortDir>('desc')
   const [showFriendsOnly, setShowFriendsOnly] =
@@ -119,11 +63,14 @@ export const LeaderboardPage: React.FC = () => {
     [friends]
   )
 
-  let list = useSelector(leaderboardData)
+  const liderboardTable = useSelector(
+    leaderboardData
+  )
 
   const sortedEntries = useMemo(() => {
-    // let list = DEMO_LEADERBOARD
-
+    let list = [...liderboardTable].map(
+      item => item.data
+    )
     if (
       showFriendsOnly &&
       friendNicknames.size > 0
@@ -137,8 +84,12 @@ export const LeaderboardPage: React.FC = () => {
     copy.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1
       switch (sortKey) {
-        case 'rating':
-          return (a.rating - b.rating) * dir
+        case RATING_FIELD_NAME:
+          return (
+            (a[RATING_FIELD_NAME] -
+              b[RATING_FIELD_NAME]) *
+            dir
+          )
         case 'gamesPlayed':
           return (
             (a.gamesPlayed - b.gamesPlayed) * dir
@@ -160,6 +111,7 @@ export const LeaderboardPage: React.FC = () => {
     sortDir,
     showFriendsOnly,
     friendNicknames,
+    liderboardTable,
   ])
 
   const handleSort = (key: SortKey) => {
@@ -291,7 +243,7 @@ export const LeaderboardPage: React.FC = () => {
                     <th>Игрок</th>
                     <th>
                       {sortLabel(
-                        'rating',
+                        RATING_FIELD_NAME,
                         'Рейтинг'
                       )}
                     </th>
@@ -318,32 +270,29 @@ export const LeaderboardPage: React.FC = () => {
                         <td>
                           <span className="leaderboard-player">
                             <span className="leaderboard-avatar">
-                              {entry.avatarEmoji}
+                              {entry.avatarEmoji ? (
+                                <img
+                                  src={`https://ya-praktikum.tech/api/v2/resources${entry.avatarEmoji}`}
+                                />
+                              ) : (
+                                <div>👤</div>
+                              )}
                             </span>
                             <span>
-                              {entry.nickname}
+                              {entry.nickname ||
+                                'Gaius Anonimous'}
                             </span>
                           </span>
                         </td>
                         <td>
-                          {entry.rating.toLocaleString(
-                            'ru-RU'
-                          )}
+                          {entry.CM42_score}
                         </td>
                         <td>
                           {entry.gamesPlayed}
                         </td>
+                        <td>{entry.bestScore}</td>
                         <td>
-                          {entry.bestScore.toLocaleString(
-                            'ru-RU'
-                          )}
-                        </td>
-                        <td>
-                          {new Date(
-                            entry.bestScoreDate
-                          ).toLocaleDateString(
-                            'ru-RU'
-                          )}
+                          {entry.bestScoreDate}
                         </td>
                       </tr>
                     )
@@ -373,18 +322,17 @@ export const LeaderboardPage: React.FC = () => {
                           </div>
                           <div className="leaderboard-grid-rating">
                             Рейтинг:{' '}
-                            {entry.rating.toLocaleString(
-                              'ru-RU'
-                            )}
+                            {
+                              entry[
+                                RATING_FIELD_NAME
+                              ]
+                            }
                           </div>
                           <div className="leaderboard-grid-meta">
                             Игр:{' '}
                             {entry.gamesPlayed} •
                             Рекорд:{' '}
-                            {entry.bestScore.toLocaleString(
-                              'ru-RU'
-                            )}{' '}
-                            от{' '}
+                            {entry.bestScore} от{' '}
                             {new Date(
                               entry.bestScoreDate
                             ).toLocaleDateString(

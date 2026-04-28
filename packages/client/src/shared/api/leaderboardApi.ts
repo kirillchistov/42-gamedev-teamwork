@@ -1,9 +1,12 @@
 import { BASE_URL } from '../../constants'
-import type { LeaderboardTeamData } from './leaderboardConfig'
-import { LEADERBOARD_RATING_FIELD } from './leaderboardConfig'
+import {
+  type LeaderboardEntry,
+  LEADERBOARD_RATING_FIELD,
+  RATING_FIELD_NAME,
+} from './leaderboardConfig'
 
 export async function submitLeaderboardScore(
-  data: LeaderboardTeamData
+  data: LeaderboardEntry
 ) {
   const res = await fetch(
     `${BASE_URL}/leaderboard`,
@@ -14,8 +17,9 @@ export async function submitLeaderboardScore(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        data,
-        ratingFieldName: LEADERBOARD_RATING_FIELD,
+        data: { ...data },
+        teamName: LEADERBOARD_RATING_FIELD,
+        ratingFieldName: RATING_FIELD_NAME,
       }),
     }
   )
@@ -37,6 +41,7 @@ export async function fetchLeaderboardPage(params: {
 }) {
   const res = await fetch(
     `${BASE_URL}/leaderboard/all`,
+    // `${BASE_URL}/leaderboard/${LEADERBOARD_RATING_FIELD}`,
     {
       method: 'POST',
       credentials: 'include',
@@ -44,10 +49,15 @@ export async function fetchLeaderboardPage(params: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        ratingFieldName: LEADERBOARD_RATING_FIELD,
+        ratingFieldName: RATING_FIELD_NAME,
         cursor: params.cursor,
         limit: params.limit,
       }),
+      // body: JSON.stringify({
+      //   ratingFieldName: RATING_FIELD_NAME,
+      //   cursor: params.cursor,
+      //   limit: params.limit,
+      // }),
     }
   )
   if (!res.ok) {
