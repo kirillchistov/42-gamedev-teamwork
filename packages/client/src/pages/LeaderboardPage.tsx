@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import clsx from 'clsx'
 
+import { PageInitArgs } from '../routes'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { useSelector } from '../store'
@@ -11,21 +12,20 @@ import {
   selectFriends,
   selectIsLoadingFriends,
 } from '../slices/friendsSlice'
+import {
+  fetchLeaderboardThunk,
+  // fetchFriendsThunk,
+  LeaderboardEntry,
+} from '../slices/leaderboardSlice'
+import {
+  fetchUserThunk,
+  // selectUserIsAuthChecked,
+} from '../slices/userSlice'
 import { selectUser } from '../slices/userSlice'
 import { usePage } from '../hooks/usePage'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 // import { PageInitArgs } from '../routes'
 import { Button } from '../shared/ui'
-
-type LeaderboardEntry = {
-  id: number
-  nickname: string
-  avatarEmoji: string
-  rating: number // общий рейтинг (сумма очков за всё время)
-  gamesPlayed: number // сыграно игр
-  bestScore: number // рекорд одной игры
-  bestScoreDate: string // дата рекорда
-}
 
 // демо-данные
 const DEMO_LEADERBOARD: LeaderboardEntry[] = [
@@ -430,13 +430,15 @@ export const LeaderboardPage: React.FC = () => {
   )
 }
 
-// export const initLeaderboardPage = ({ dispatch, state }: PageInitArgs) => {
-//   const queue: Array<Promise<unknown>> = [dispatch(fetchFriendsThunk())]
-//   if (!selectUser(state)) {
-//     queue.push(dispatch(fetchUserThunk()))
-//   }
-//   return Promise.all(queue)
-// }
-
-export const initLeaderboardPage = () =>
-  Promise.resolve()
+export const initLeaderboardPage = ({
+  dispatch,
+  state,
+}: PageInitArgs) => {
+  const queue: Array<Promise<unknown>> = [
+    dispatch(fetchLeaderboardThunk()),
+  ]
+  if (!selectUser(state)) {
+    queue.push(dispatch(fetchUserThunk()))
+  }
+  return Promise.all(queue)
+}
