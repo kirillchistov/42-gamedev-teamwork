@@ -22,7 +22,7 @@ import {
 } from './entry-server.utils'
 import { LandingThemeProvider } from './contexts/LandingThemeContext'
 import { reducer } from './store'
-import { routes } from './routes'
+import { routes, AppRoute } from './routes'
 import { withAuthGuard } from './hoc/withAuthGuard'
 import './index.css'
 import { setPageHasBeenInitializedOnServer } from './slices/ssrSlice'
@@ -61,8 +61,8 @@ export const render = async (
 
   const url = createUrl(req)
 
-  const foundRoutes = matchRoutes(
-    guardedRoutes,
+  const foundRoutes = matchRoutes<AppRoute>(
+    guardedRoutes as AppRoute[],
     url
   )
   if (!foundRoutes) {
