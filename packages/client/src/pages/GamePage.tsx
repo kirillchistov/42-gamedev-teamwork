@@ -281,8 +281,8 @@ export const GamePage: React.FC = () => {
     void submitLeaderboardScore({
       id: user.id,
       nickname:
-        user.display_name |
-        (user.first_name + user.second_name),
+        user.display_name ||
+        user.first_name + user.second_name,
       avatarEmoji: user.avatar,
       [RATING_FIELD_NAME]: payload.snapshot.score,
       gamesPlayed: 0, // сыграно игр
