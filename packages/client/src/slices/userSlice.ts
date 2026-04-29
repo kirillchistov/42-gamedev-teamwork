@@ -46,6 +46,28 @@ function fetchWithTimeout(
   })
 }
 
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number
+): Promise<T> {
+  let timeoutId: number | null = null
+  const timeoutPromise = new Promise<never>(
+    (_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        reject(new Error('timeout'))
+      }, ms)
+    }
+  )
+  return Promise.race([
+    promise,
+    timeoutPromise,
+  ]).finally(() => {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId)
+    }
+  }) as Promise<T>
+}
+
 // Обработка ошибки logged юзера логина User already in system
 function isAlreadyLoggedInError(
   message: string
@@ -98,7 +120,7 @@ const fetchCurrentUser =
       throw new Error('Unauthorized')
     }
 
-    return res.json() as Promise<User>
+    return (await res.json()) as Promise<User>
   }
 
 const readErrorReason = async (
@@ -212,14 +234,10 @@ export const logoutThunk = createAsyncThunk(
   'user/logout',
   async () => {
     try {
-      await Promise.race([
+      await withTimeout(
         userApi.logout(),
-        new Promise<never>((_, reject) => {
-          window.setTimeout(() => {
-            reject(new Error('timeout'))
-          }, AUTH_REQUEST_TIMEOUT_MS)
-        }),
-      ])
+        AUTH_REQUEST_TIMEOUT_MS
+      )
     } catch {
       console.log(
         'сеть/таймаут: локально очищаем сессию'
