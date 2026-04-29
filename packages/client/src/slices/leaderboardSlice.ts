@@ -65,16 +65,11 @@ export const leaderboardSlice = createSlice({
       )
       .addCase(
         fetchLeaderboardThunk.rejected.type,
-        (
-          state,
-          {
-            payload,
-            error,
-          }: PayloadAction<LeaderboardEntry[]>
-        ) => {
+        (state, action) => {
+          state.isLoading = false
           state.error =
-            (payload as string) ??
-            error.message ??
+            (action.payload as string) ??
+            action.error.message ??
             null
         }
       )
