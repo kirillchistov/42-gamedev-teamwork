@@ -1,4 +1,10 @@
 "use strict";
+// Express для SSR: в dev — Vite в 'middlewareMode', в prod — статика 'dist/client' и серверный бандл;
+// парсинг cookie, сериализация начального состояния Redux в HTML.
+// 7.1.1 Добавил GET /health, GET /ssr-static (отдельный render-функционал)
+// 7.1.1 Вынес загрузку SSR-модуля в helper (resolveSsrRender)
+// 7.1.1 Добавил централизованный error handler
+// 7.1.1 Сохранил текущий app.get('*') для основного SSR "из коробки"
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -36,8 +42,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// Express для SSR: в dev — Vite в 'middlewareMode', в prod — статика 'dist/client' и серверный бандл;
-// парсинг cookie, сериализация начального состояния Redux в HTML.
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const express_1 = __importDefault(require("express"));
