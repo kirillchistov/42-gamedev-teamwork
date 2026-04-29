@@ -1,10 +1,15 @@
 import {
   createAsyncThunk,
   createSlice,
+  PayloadAction,
 } from '@reduxjs/toolkit'
+import { RootState } from '../store'
 import { fetchTeamLeaderboard } from '../shared/api/leaderboardApi'
 import { mapLeaderboardRowToUi } from '../shared/api/leaderboardMapper'
-import type { LeaderboardUiEntry } from '../shared/api/leaderboardConfig'
+import type {
+  LeaderboardUiEntry,
+  LeaderboardEntry,
+} from '../shared/api/leaderboardConfig'
 
 type LeaderboardState = {
   data: LeaderboardUiEntry[]

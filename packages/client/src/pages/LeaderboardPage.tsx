@@ -17,7 +17,10 @@ import {
   fetchLeaderboardThunk,
   leaderboardData,
 } from '../slices/leaderboardSlice'
-import { RATING_FIELD_NAME } from '../shared/api/leaderboardConfig'
+import {
+  LeaderboardUiEntry,
+  RATING_FIELD_NAME,
+} from '../shared/api/leaderboardConfig'
 import {
   fetchUserThunk,
   // selectUserIsAuthChecked,
@@ -71,8 +74,9 @@ export const LeaderboardPage: React.FC = () => {
       showFriendsOnly &&
       friendNicknames.size > 0
     ) {
-      list = list.filter(entry =>
-        friendNicknames.has(entry.nickname)
+      list = list.filter(
+        (entry: LeaderboardUiEntry) =>
+          friendNicknames.has(entry.nickname)
       )
     }
 

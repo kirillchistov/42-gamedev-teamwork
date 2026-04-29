@@ -19,7 +19,7 @@ export type LeaderboardApiRow = {
 }
 
 export type LeaderboardUiEntry = {
-  userId: number
+  id: number
   nickname: string
   avatar: string | null
   score: number
