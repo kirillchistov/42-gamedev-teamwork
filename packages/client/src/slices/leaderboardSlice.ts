@@ -23,18 +23,25 @@ const initialState: LeaderboardState = {
 export const fetchLeaderboardThunk =
   createAsyncThunk<
     LeaderboardEntry[],
-    { cursor?: number; limit?: number }
+    { cursor?: number; limit?: number },
+    { rejectValue: string }
   >(
     'leaderboard/fetch',
-    async ({ cursor = 0, limit = 10 }) => {
-      const rows = await fetchTeamLeaderboard({
-        cursor,
-        limit,
-      })
-      const mapped = rows.map(
-        mapLeaderboardRowToUi
-      )
-      return mapped
+    async (
+      { cursor = 0, limit = 10 },
+      thunkAPI
+    ) => {
+      try {
+        const rows = await fetchTeamLeaderboard({
+          cursor,
+          limit,
+        })
+        return rows.map(mapLeaderboardRowToUi)
+      } catch (err: any) {
+        return thunkAPI.rejectWithValue(
+          err.message || 'Unknown error'
+        )
+      }
     }
   )
 
@@ -45,32 +52,33 @@ export const leaderboardSlice = createSlice({
   extraReducers: builder => {
     builder
       .addCase(
-        fetchLeaderboardThunk.pending.type,
+        fetchLeaderboardThunk.pending,
         state => {
           state.data = []
           state.isLoading = true
+          state.error = null
         }
       )
       .addCase(
-        fetchLeaderboardThunk.fulfilled.type,
+        fetchLeaderboardThunk.fulfilled,
         (
           state,
-          {
-            payload,
-          }: PayloadAction<LeaderboardEntry[]>
+          action: PayloadAction<
+            LeaderboardEntry[]
+          >
         ) => {
-          state.data = payload
+          state.data = action.payload
           state.isLoading = false
         }
       )
       .addCase(
-        fetchLeaderboardThunk.rejected.type,
+        fetchLeaderboardThunk.rejected,
         (state, action) => {
-          state.isLoading = false
           state.error =
-            (action.payload as string) ??
+            action.payload ??
             action.error.message ??
             null
+          state.isLoading = false
         }
       )
   },
