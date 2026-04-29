@@ -278,18 +278,21 @@ export const GamePage: React.FC = () => {
       JSON.stringify(next)
     )
 
-    void submitLeaderboardScore({
-      id: user.id,
-      nickname:
-        user.display_name ||
-        user.first_name + user.second_name,
-      avatarEmoji: user.avatar,
-      [RATING_FIELD_NAME]: payload.snapshot.score,
-      gamesPlayed: 0, // сыграно игр
-      bestScore: payload.snapshot.playerRecord, // рекорд одной игры
-      bestScoreDate:
-        new Date().toLocaleDateString('ru-RU'), // дата рекорда
-    })
+    if (user && user.id) {
+      void submitLeaderboardScore({
+        id: user.id,
+        nickname:
+          user.display_name ||
+          user.first_name + user.second_name,
+        avatarEmoji: user.avatar,
+        [RATING_FIELD_NAME]:
+          payload.snapshot.score,
+        gamesPlayed: 0, // сыграно игр
+        bestScore: payload.snapshot.playerRecord, // рекорд одной игры
+        bestScoreDate:
+          new Date().toLocaleDateString('ru-RU'), // дата рекорда
+      })
+    }
 
     navigate('/game/finish')
   }

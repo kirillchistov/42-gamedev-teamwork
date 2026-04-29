@@ -68,9 +68,7 @@ export const LeaderboardPage: React.FC = () => {
   )
 
   const sortedEntries = useMemo(() => {
-    let list = [...liderboardTable].map(
-      item => item.data
-    )
+    let list = liderboardTable
     if (
       showFriendsOnly &&
       friendNicknames.size > 0
@@ -270,9 +268,9 @@ export const LeaderboardPage: React.FC = () => {
                         <td>
                           <span className="leaderboard-player">
                             <span className="leaderboard-avatar">
-                              {entry.avatarEmoji ? (
+                              {entry.avatar ? (
                                 <img
-                                  src={`https://ya-praktikum.tech/api/v2/resources${entry.avatarEmoji}`}
+                                  src={`https://ya-praktikum.tech/api/v2/resources${entry.avatar}`}
                                 />
                               ) : (
                                 <div>👤</div>
@@ -284,9 +282,7 @@ export const LeaderboardPage: React.FC = () => {
                             </span>
                           </span>
                         </td>
-                        <td>
-                          {entry.CM42_score}
-                        </td>
+                        <td>{entry.score}</td>
                         <td>
                           {entry.gamesPlayed}
                         </td>
@@ -314,7 +310,13 @@ export const LeaderboardPage: React.FC = () => {
                       </div>
                       <div className="leaderboard-grid-main">
                         <div className="leaderboard-avatar-large">
-                          {entry.avatarEmoji}
+                          {entry.avatar ? (
+                            <img
+                              src={`https://ya-praktikum.tech/api/v2/resources${entry.avatar}`}
+                            />
+                          ) : (
+                            <div>👤</div>
+                          )}
                         </div>
                         <div className="leaderboard-grid-text">
                           <div className="leaderboard-grid-nickname">
@@ -387,7 +389,12 @@ export const initLeaderboardPage = ({
   state,
 }: PageInitArgs) => {
   const queue: Array<Promise<unknown>> = [
-    dispatch(fetchLeaderboardThunk()),
+    dispatch(
+      fetchLeaderboardThunk({
+        cursor: 0,
+        limit: 10,
+      })
+    ),
   ]
   if (!selectUser(state)) {
     queue.push(dispatch(fetchUserThunk()))

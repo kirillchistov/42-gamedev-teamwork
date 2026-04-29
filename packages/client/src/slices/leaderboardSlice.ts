@@ -1,37 +1,43 @@
 import {
   createAsyncThunk,
   createSlice,
-  PayloadAction,
 } from '@reduxjs/toolkit'
-import { RootState } from '../store'
-import { fetchLeaderboardPage } from '../shared/api/leaderboardApi'
-import { type LeaderboardEntry } from '../shared/api/leaderboardConfig'
+import { fetchTeamLeaderboard } from '../shared/api/leaderboardApi'
+import { mapLeaderboardRowToUi } from '../shared/api/leaderboardMapper'
+import type { LeaderboardUiEntry } from '../shared/api/leaderboardConfig'
 
-export interface LeaderboardState {
-  data: Array<LeaderboardEntry>
+type LeaderboardState = {
+  data: LeaderboardUiEntry[]
   isLoading: boolean
   error: string | null
-  limit: number
-  cursor: number
 }
 
 const initialState: LeaderboardState = {
   data: [],
   isLoading: false,
   error: null,
-  limit: 10,
-  cursor: 0,
 }
 
 export const fetchLeaderboardThunk =
-  createAsyncThunk<unknown>(
-    'leaderboard/fetchLeaderboardThunk',
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (_: void) => {
-      return await fetchLeaderboardPage({
-        cursor: 0,
-        limit: 10,
+  createAsyncThunk<
+    LeaderboardUiEntry[],
+    { cursor?: number; limit?: number }
+  >(
+    'leaderboard/fetch',
+    async ({ cursor = 0, limit = 10 }) => {
+      const rows = await fetchTeamLeaderboard({
+        cursor,
+        limit,
       })
+      const mapped = rows.map(
+        mapLeaderboardRowToUi
+      )
+      console.log(
+        'mapLeaderboardRowToUi',
+        rows,
+        mapped
+      )
+      return mapped
     }
   )
 
@@ -62,8 +68,17 @@ export const leaderboardSlice = createSlice({
       )
       .addCase(
         fetchLeaderboardThunk.rejected.type,
-        state => {
-          state.isLoading = false
+        (
+          state,
+          {
+            payload,
+            error,
+          }: PayloadAction<LeaderboardEntry[]>
+        ) => {
+          state.error =
+            (payload as string) ??
+            error.message ??
+            null
         }
       )
   },

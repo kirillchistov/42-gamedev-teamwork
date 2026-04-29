@@ -1,12 +1,13 @@
 import { BASE_URL } from '../../constants'
 import {
-  type LeaderboardEntry,
-  LEADERBOARD_RATING_FIELD,
   RATING_FIELD_NAME,
+  TEAM_NAME,
+  type LeaderboardApiData,
+  type LeaderboardApiRow,
 } from './leaderboardConfig'
 
 export async function submitLeaderboardScore(
-  data: LeaderboardEntry
+  data: LeaderboardApiData
 ) {
   const res = await fetch(
     `${BASE_URL}/leaderboard`,
@@ -17,30 +18,21 @@ export async function submitLeaderboardScore(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        data: { ...data },
-        teamName: LEADERBOARD_RATING_FIELD,
+        data,
         ratingFieldName: RATING_FIELD_NAME,
+        teamName: TEAM_NAME,
       }),
     }
   )
-  if (!res.ok) {
-    throw new Error(
-      await res.text().catch(() => res.statusText)
-    )
-  }
+  if (!res.ok) throw new Error(await res.text())
 }
 
-export type LeaderboardRow = Record<
-  string,
-  unknown
->
-
-export async function fetchLeaderboardPage(params: {
+export async function fetchTeamLeaderboard(params: {
   cursor: number
   limit: number
-}) {
+}): Promise<LeaderboardApiRow[]> {
   const res = await fetch(
-    `${BASE_URL}/leaderboard/${LEADERBOARD_RATING_FIELD}`,
+    `${BASE_URL}/leaderboard/${TEAM_NAME}`,
     {
       method: 'POST',
       credentials: 'include',
@@ -54,13 +46,8 @@ export async function fetchLeaderboardPage(params: {
       }),
     }
   )
-  if (!res.ok) {
-    throw new Error(
-      await res.text().catch(() => res.statusText)
-    )
-  }
-  return res.json() as Promise<{
-    leaders: LeaderboardRow[]
-    cursor?: number
-  }>
+  if (!res.ok) throw new Error(await res.text())
+  return res.json() as Promise<
+    LeaderboardApiRow[]
+  >
 }

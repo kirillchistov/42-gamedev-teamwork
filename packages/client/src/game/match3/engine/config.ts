@@ -40,7 +40,7 @@ export const TILE_KINDS_BY_BOARD_SIZE: Record<
   20: COUNT_OF_TILE_TYPES + 2,
 }
 
-export const GAME_DURATION_SEC = 3 * 60
+export const GAME_DURATION_SEC = 20
 export const PRESTART_COUNTDOWN_SEC = 5
 
 export const GAME_DURATION_OPTIONS = [
