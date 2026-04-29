@@ -29,11 +29,12 @@ export type LeaderboardUiEntry = {
 }
 
 export type LeaderboardApiData = {
-  userId: number
-  nickname: string
-  avatar: string | null
-  [RATING_FIELD_NAME]: number
-  gamesPlayed: number
-  bestScore: number
-  bestScoreDate: string
+  [key: string]: number | string | null
+  // userId: number
+  // nickname: string
+  // avatar: string | null
+  // [RATING_FIELD_NAME]: number
+  // gamesPlayed: number
+  // bestScore: number
+  // bestScoreDate: string
 }

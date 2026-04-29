@@ -976,14 +976,24 @@ export const GamePage: React.FC = () => {
         setWinsTotal(nextWins)
       }
       advanceArenaBgAfterGame()
+
+      const asNumber = (
+        v: unknown,
+        fallback = 0
+      ): number =>
+        typeof v === 'number' &&
+        Number.isFinite(v)
+          ? v
+          : fallback
+
       if (user && user.id) {
         const nickname =
           user.display_name ||
           `${user.first_name} ${user.second_name}`.trim()
         void submitLeaderboardScore({
-          id: user.id,
+          userId: user.id,
           nickname,
-          avatarEmoji: user.avatar,
+          avatar: user.avatar,
           [RATING_FIELD_NAME]:
             payload.snapshot.score,
           gamesPlayed: 0, // сыграно игр

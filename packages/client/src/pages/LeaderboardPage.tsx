@@ -29,7 +29,7 @@ import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { Button } from '../shared/ui'
 
 type SortKey =
-  | RATING_FIELD_NAME
+  | typeof RATING_FIELD_NAME
   | 'gamesPlayed'
   | 'bestScore'
   | 'nickname'
