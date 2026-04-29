@@ -1,5 +1,3 @@
-export const LEADERBOARD_RATING_FIELD =
-  'cosmicMatch42_bestScore' as const
 export const RATING_FIELD_NAME: string =
   'CM42_score' as const
 // export const TEAM_NAME = 'cosmic-match-42' as const

@@ -279,11 +279,12 @@ export const GamePage: React.FC = () => {
     )
 
     if (user && user.id) {
+      const nickname =
+        user.display_name ||
+        `${user.first_name} ${user.second_name}`.trim()
       void submitLeaderboardScore({
         id: user.id,
-        nickname:
-          user.display_name ||
-          user.first_name + user.second_name,
+        nickname,
         avatarEmoji: user.avatar,
         [RATING_FIELD_NAME]:
           payload.snapshot.score,

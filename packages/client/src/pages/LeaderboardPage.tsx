@@ -1,5 +1,6 @@
 // Пока заглушка, потом будет страница "Результаты/Лидерборд"
 import React, { useMemo, useState } from 'react'
+import { API_RESOURCES_URL } from '../constants'
 import { Helmet } from 'react-helmet'
 import clsx from 'clsx'
 
@@ -267,7 +268,7 @@ export const LeaderboardPage: React.FC = () => {
                             <span className="leaderboard-avatar">
                               {entry.avatar ? (
                                 <img
-                                  src={`https://ya-praktikum.tech/api/v2/resources${entry.avatar}`}
+                                  src={`${API_RESOURCES_URL}${entry.avatar}`}
                                 />
                               ) : (
                                 <div>👤</div>
@@ -309,7 +310,7 @@ export const LeaderboardPage: React.FC = () => {
                         <div className="leaderboard-avatar-large">
                           {entry.avatar ? (
                             <img
-                              src={`https://ya-praktikum.tech/api/v2/resources${entry.avatar}`}
+                              src={`${API_RESOURCES_URL}${entry.avatar}`}
                             />
                           ) : (
                             <div>👤</div>
