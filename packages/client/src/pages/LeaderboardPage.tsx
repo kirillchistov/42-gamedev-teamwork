@@ -16,10 +16,7 @@ import {
   fetchLeaderboardThunk,
   leaderboardData,
 } from '../slices/leaderboardSlice'
-import {
-  type LeaderboardEntry,
-  RATING_FIELD_NAME,
-} from '../shared/api/leaderboardConfig'
+import { RATING_FIELD_NAME } from '../shared/api/leaderboardConfig'
 import {
   fetchUserThunk,
   // selectUserIsAuthChecked,
