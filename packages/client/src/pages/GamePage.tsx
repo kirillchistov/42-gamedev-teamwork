@@ -84,6 +84,7 @@ const LAST_RESULT_KEY = 'match3:last-result'
 const RESULT_HISTORY_KEY = 'match3:result-history'
 const HERO_CHAT_STORAGE_KEY_PREFIX =
   'match3:hero-chat:'
+const HERO_CHAT_MAX_MESSAGES = 100
 const FIRST_START_COUNTDOWN_DONE_KEY =
   'match3:first-start-countdown-done'
 const PLAYER_HINTS_MODE_KEY =
@@ -284,7 +285,9 @@ export const GamePage: React.FC = () => {
             companionId
           )
         }
-        return parsed
+        return parsed.slice(
+          -HERO_CHAT_MAX_MESSAGES
+        )
       } catch {
         return buildDefaultHeroChatMessages(
           companionId
@@ -565,9 +568,12 @@ export const GamePage: React.FC = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
+      const trimmed = heroChatMessages.slice(
+        -HERO_CHAT_MAX_MESSAGES
+      )
       window.localStorage.setItem(
         `${HERO_CHAT_STORAGE_KEY_PREFIX}${activeCompanionId}`,
-        JSON.stringify(heroChatMessages)
+        JSON.stringify(trimmed)
       )
     } catch {
       // noop
@@ -1004,15 +1010,17 @@ export const GamePage: React.FC = () => {
   )
   const handleSendHeroChatMessage = useCallback(
     (text: string) => {
-      setHeroChatMessages(prev => [
-        ...prev,
-        {
-          id: `hero-chat-${Date.now()}`,
-          author: 'Вы',
-          text,
-          createdAt: new Date().toISOString(),
-        },
-      ])
+      setHeroChatMessages(prev =>
+        [
+          ...prev,
+          {
+            id: `hero-chat-${Date.now()}`,
+            author: 'Вы',
+            text,
+            createdAt: new Date().toISOString(),
+          },
+        ].slice(-HERO_CHAT_MAX_MESSAGES)
+      )
     },
     []
   )
