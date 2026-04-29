@@ -1,12 +1,12 @@
 import { BASE_URL } from '../../constants'
 import {
   TEAM_NAME,
-  type LeaderboardApiData,
   type LeaderboardApiRow,
+  LeaderboardEntry,
 } from './leaderboardConfig'
 
 export async function submitLeaderboardScore(
-  data: LeaderboardApiData
+  data: LeaderboardEntry
 ) {
   const res = await fetch(
     `${BASE_URL}/leaderboard`,

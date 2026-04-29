@@ -6,13 +6,10 @@ import {
 import { RootState } from '../store'
 import { fetchTeamLeaderboard } from '../shared/api/leaderboardApi'
 import { mapLeaderboardRowToUi } from '../shared/api/leaderboardMapper'
-import type {
-  LeaderboardUiEntry,
-  LeaderboardEntry,
-} from '../shared/api/leaderboardConfig'
+import type { LeaderboardEntry } from '../shared/api/leaderboardConfig'
 
 type LeaderboardState = {
-  data: LeaderboardUiEntry[]
+  data: LeaderboardEntry[]
   isLoading: boolean
   error: string | null
 }
@@ -25,7 +22,7 @@ const initialState: LeaderboardState = {
 
 export const fetchLeaderboardThunk =
   createAsyncThunk<
-    LeaderboardUiEntry[],
+    LeaderboardEntry[],
     { cursor?: number; limit?: number }
   >(
     'leaderboard/fetch',

@@ -985,7 +985,7 @@ export const GamePage: React.FC = () => {
           nickname,
           avatar: user.avatar,
           CM42_score: payload.snapshot.score,
-          gamesPlayed: 0, // сыграно игр
+          // gamesPlayed: 0,
           bestScore:
             payload.snapshot.playerRecord, // рекорд одной игры
           bestScoreDate:
