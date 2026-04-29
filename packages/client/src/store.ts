@@ -9,6 +9,7 @@ import { configureStore } from '@reduxjs/toolkit'
 
 import forumReducer from './slices/forumSlice'
 import friendsReducer from './slices/friendsSlice'
+import leaderboardReducer from './slices/leaderboardSlice'
 import ssrReducer from './slices/ssrSlice'
 import userReducer from './slices/userSlice'
 
@@ -23,6 +24,7 @@ declare global {
 export const reducer = combineReducers({
   forum: forumReducer,
   friends: friendsReducer,
+  leaderboard: leaderboardReducer,
   ssr: ssrReducer,
   user: userReducer,
 })
