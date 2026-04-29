@@ -1,7 +1,6 @@
 import {
-  RATING_FIELD_NAME,
   type LeaderboardApiRow,
-  type LeaderboardUiEntry,
+  type LeaderboardEntry,
 } from './leaderboardConfig'
 
 const asNumber = (
@@ -20,21 +19,20 @@ const asString = (
 
 export function mapLeaderboardRowToUi(
   row: LeaderboardApiRow
-): LeaderboardUiEntry {
+): LeaderboardEntry {
   const d = row.data ?? {}
   return {
-    userId: asNumber(d.userId, 0),
+    id: asNumber(d.userId, 0),
     nickname: asString(
       d.nickname,
       'Gaius Anonimous'
     ),
     avatar:
-      typeof d.avatarEmoji === 'string' &&
-      d.avatarEmoji.length > 0
-        ? d.avatarEmoji
+      typeof d.avatar === 'string' &&
+      d.avatar.length > 0
+        ? d.avatar
         : null,
-    score: asNumber(d[RATING_FIELD_NAME], 0),
-    gamesPlayed: asNumber(d.gamesPlayed, 0),
+    CM42_score: asNumber(d.CM42_score, 0),
     bestScore: asNumber(d.bestScore, 0),
     bestScoreDate: asString(d.bestScoreDate, ''),
   }

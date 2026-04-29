@@ -37,11 +37,6 @@ export const fetchLeaderboardThunk =
       const mapped = rows.map(
         mapLeaderboardRowToUi
       )
-      console.log(
-        'mapLeaderboardRowToUi',
-        rows,
-        mapped
-      )
       return mapped
     }
   )

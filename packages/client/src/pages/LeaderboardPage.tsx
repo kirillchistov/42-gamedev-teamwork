@@ -17,10 +17,7 @@ import {
   fetchLeaderboardThunk,
   leaderboardData,
 } from '../slices/leaderboardSlice'
-import {
-  LeaderboardUiEntry,
-  RATING_FIELD_NAME,
-} from '../shared/api/leaderboardConfig'
+import { LeaderboardUiEntry } from '../shared/api/leaderboardConfig'
 import {
   fetchUserThunk,
   // selectUserIsAuthChecked,
@@ -32,8 +29,8 @@ import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { Button } from '../shared/ui'
 
 type SortKey =
-  | typeof RATING_FIELD_NAME
-  | 'gamesPlayed'
+  | 'CM42_score'
+  // | 'gamesPlayed'
   | 'bestScore'
   | 'nickname'
 type SortDir = 'asc' | 'desc'
@@ -51,9 +48,8 @@ export const LeaderboardPage: React.FC = () => {
 
   const [viewMode, setViewMode] =
     useState<ViewMode>('table')
-  const [sortKey, setSortKey] = useState<SortKey>(
-    RATING_FIELD_NAME
-  )
+  const [sortKey, setSortKey] =
+    useState<SortKey>('CM42_score')
   const [sortDir, setSortDir] =
     useState<SortDir>('desc')
   const [showFriendsOnly, setShowFriendsOnly] =
@@ -84,16 +80,14 @@ export const LeaderboardPage: React.FC = () => {
     copy.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1
       switch (sortKey) {
-        case RATING_FIELD_NAME:
+        case 'CM42_score':
           return (
-            (a[RATING_FIELD_NAME] -
-              b[RATING_FIELD_NAME]) *
-            dir
+            (a.CM42_score - b.CM42_score) * dir
           )
-        case 'gamesPlayed':
-          return (
-            (a.gamesPlayed - b.gamesPlayed) * dir
-          )
+        // case 'gamesPlayed':
+        //   return (
+        //     (a.gamesPlayed - b.gamesPlayed) * dir
+        //   )
         case 'bestScore':
           return (a.bestScore - b.bestScore) * dir
         case 'nickname':
@@ -243,16 +237,16 @@ export const LeaderboardPage: React.FC = () => {
                     <th>Игрок</th>
                     <th>
                       {sortLabel(
-                        RATING_FIELD_NAME,
+                        'CM42_score',
                         'Рейтинг'
                       )}
                     </th>
-                    <th>
-                      {sortLabel(
-                        'gamesPlayed',
-                        'Сыграно игр'
-                      )}
-                    </th>
+                    {/*<th>*/}
+                    {/*  {sortLabel(*/}
+                    {/*    'gamesPlayed',*/}
+                    {/*    'Сыграно игр'*/}
+                    {/*  )}*/}
+                    {/*</th>*/}
                     <th>
                       {sortLabel(
                         'bestScore',
@@ -284,10 +278,12 @@ export const LeaderboardPage: React.FC = () => {
                             </span>
                           </span>
                         </td>
-                        <td>{entry.score}</td>
                         <td>
-                          {entry.gamesPlayed}
+                          {entry.CM42_score}
                         </td>
+                        {/*<td>*/}
+                        {/*  {entry.gamesPlayed}*/}
+                        {/*</td>*/}
                         <td>{entry.bestScore}</td>
                         <td>
                           {entry.bestScoreDate}
@@ -326,15 +322,11 @@ export const LeaderboardPage: React.FC = () => {
                           </div>
                           <div className="leaderboard-grid-rating">
                             Рейтинг:{' '}
-                            {
-                              entry[
-                                RATING_FIELD_NAME
-                              ]
-                            }
+                            {entry.CM42_score}
                           </div>
                           <div className="leaderboard-grid-meta">
-                            Игр:{' '}
-                            {entry.gamesPlayed} •
+                            {/*Игр:{' '}*/}
+                            {/*{entry.gamesPlayed} •*/}
                             Рекорд:{' '}
                             {entry.bestScore} от{' '}
                             {new Date(

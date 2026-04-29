@@ -1,6 +1,5 @@
 import { BASE_URL } from '../../constants'
 import {
-  RATING_FIELD_NAME,
   TEAM_NAME,
   type LeaderboardApiData,
   type LeaderboardApiRow,
@@ -19,7 +18,7 @@ export async function submitLeaderboardScore(
       },
       body: JSON.stringify({
         data,
-        ratingFieldName: RATING_FIELD_NAME,
+        ratingFieldName: 'CM42_score',
         teamName: TEAM_NAME,
       }),
     }
@@ -40,7 +39,7 @@ export async function fetchTeamLeaderboard(params: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        ratingFieldName: RATING_FIELD_NAME,
+        ratingFieldName: 'CM42_score',
         cursor: params.cursor,
         limit: params.limit,
       }),
