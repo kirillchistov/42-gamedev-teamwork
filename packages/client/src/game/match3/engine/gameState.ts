@@ -18,6 +18,7 @@ import {
   TILE_KINDS_BY_BOARD_SIZE,
   type BoardSizeOption,
 } from './config'
+import type { QuestProgress } from './quests'
 
 export type GameHudState = {
   score: number
@@ -31,6 +32,7 @@ export type GameHudState = {
   goalTargetsTotal: number
   goalTargetsLeft: number
   timeLeftSec: number
+  questProgress?: QuestProgress
 }
 
 export type ScoreMode = 'x1' | 'x2' | 'x3'

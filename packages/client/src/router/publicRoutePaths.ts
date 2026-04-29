@@ -11,6 +11,7 @@ export const PUBLIC_ROUTE_PATHS: readonly string[] =
     '/logout',
     '/signup',
     '/register',
+    '/premium',
     '/error404',
     '/error/404',
     '/error500',

@@ -13,6 +13,8 @@ export type RoundTimerApi = {
 export function createRoundTimer(deps: {
   getPhase: () => Phase
   getInputBlocked: () => boolean
+  /** Если true — секунды времени не списываются (например, открыта карточка иероглифа). */
+  getTimerPaused?: () => boolean
   getTimeLeftSec: () => number
   setTimeLeftSec: (next: number) => void
   emitHud: () => void
@@ -31,6 +33,7 @@ export function createRoundTimer(deps: {
     timerId = window.setInterval(() => {
       if (deps.getPhase() !== 'playing') return
       if (deps.getInputBlocked()) return
+      if (deps.getTimerPaused?.()) return
       const t = deps.getTimeLeftSec()
       if (t <= 0) return
       deps.setTimeLeftSec(t - 1)
