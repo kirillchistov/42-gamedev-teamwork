@@ -977,15 +977,6 @@ export const GamePage: React.FC = () => {
       }
       advanceArenaBgAfterGame()
 
-      const asNumber = (
-        v: unknown,
-        fallback = 0
-      ): number =>
-        typeof v === 'number' &&
-        Number.isFinite(v)
-          ? v
-          : fallback
-
       if (user && user.id) {
         const nickname =
           user.display_name ||
