@@ -37,7 +37,7 @@ export const MATCH3_LEVELS: LevelConfig[] = [
     description:
       'Короткая партия для разогрева и знакомства с игрой.',
     goalType: 'score',
-    goalValue: 100,
+    goalValue: 1200,
     boardSize: 8,
     durationSec: 3 * 60,
     tileKinds: 6,
