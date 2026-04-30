@@ -37,7 +37,7 @@ export const fetchLeaderboardThunk =
           limit,
         })
         return rows.map(mapLeaderboardRowToUi)
-      } catch (err: any) {
+      } catch (err: unknown) {
         return thunkAPI.rejectWithValue(
           err.message || 'Unknown error'
         )
