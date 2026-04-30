@@ -54,7 +54,6 @@ export const leaderboardSlice = createSlice({
       .addCase(
         fetchLeaderboardThunk.pending,
         state => {
-          state.data = []
           state.isLoading = true
           state.error = null
         }
