@@ -38,8 +38,12 @@ export const fetchLeaderboardThunk =
         })
         return rows.map(mapLeaderboardRowToUi)
       } catch (err: unknown) {
+        let errorMessage = 'Unknown error'
+        if (err instanceof Error) {
+          errorMessage = err.message
+        }
         return thunkAPI.rejectWithValue(
-          err.message || 'Unknown error'
+          errorMessage
         )
       }
     }

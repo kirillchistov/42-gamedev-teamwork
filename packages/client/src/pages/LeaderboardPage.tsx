@@ -244,14 +244,7 @@ export const LeaderboardPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {isLoadingResults ? (
-                    <tr>
-                      <td colSpan="5">
-                        Идет загрузка лучших
-                        результатов...
-                      </td>
-                    </tr>
-                  ) : (
+                  {!isLoadingResults &&
                     sortedEntries.map(
                       (entry, index) => (
                         <tr key={entry.id}>
@@ -284,10 +277,15 @@ export const LeaderboardPage: React.FC = () => {
                           </td>
                         </tr>
                       )
-                    )
-                  )}
+                    )}
                 </tbody>
               </table>
+              {isLoadingResults && (
+                <div className="leaderboard-card-loader">
+                  Идет загрузка лучших
+                  результатов...
+                </div>
+              )}
             </div>
           ) : (
             <div className="extra-card leaderboard-card">
