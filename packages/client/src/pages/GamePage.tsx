@@ -73,7 +73,9 @@ import {
   type GameThemeOption,
   type GameVfxQualityOption,
 } from '../game/match3/engine/config'
-
+import { submitLeaderboardScore } from '../shared/api/leaderboardApi'
+import { useSelector } from '../store'
+import { selectUser } from '../slices/userSlice'
 // 2DO: разобраться с алиасами @ для jest
 // import cosmicBadgeWinUrl from '@match3-public/icons/cosmic9.png?url'
 const cosmicBadgeWinUrl =
@@ -82,6 +84,7 @@ const LAST_RESULT_KEY = 'match3:last-result'
 const RESULT_HISTORY_KEY = 'match3:result-history'
 const HERO_CHAT_STORAGE_KEY_PREFIX =
   'match3:hero-chat:'
+const HERO_CHAT_MAX_MESSAGES = 100
 const FIRST_START_COUNTDOWN_DONE_KEY =
   'match3:first-start-countdown-done'
 const PLAYER_HINTS_MODE_KEY =
@@ -282,7 +285,9 @@ export const GamePage: React.FC = () => {
             companionId
           )
         }
-        return parsed
+        return parsed.slice(
+          -HERO_CHAT_MAX_MESSAGES
+        )
       } catch {
         return buildDefaultHeroChatMessages(
           companionId
@@ -292,6 +297,7 @@ export const GamePage: React.FC = () => {
     [buildDefaultHeroChatMessages]
   )
   usePage({ initPage: initGamePage })
+  const user = useSelector(selectUser)
   const { theme } = useLandingTheme()
   const pageShellRef =
     useRef<HTMLDivElement | null>(null)
@@ -562,9 +568,12 @@ export const GamePage: React.FC = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
+      const trimmed = heroChatMessages.slice(
+        -HERO_CHAT_MAX_MESSAGES
+      )
       window.localStorage.setItem(
         `${HERO_CHAT_STORAGE_KEY_PREFIX}${activeCompanionId}`,
-        JSON.stringify(heroChatMessages)
+        JSON.stringify(trimmed)
       )
     } catch {
       // noop
@@ -972,25 +981,45 @@ export const GamePage: React.FC = () => {
         setWinsTotal(nextWins)
       }
       advanceArenaBgAfterGame()
+
+      if (user && user.id) {
+        const nickname =
+          user.display_name ||
+          `${user.first_name} ${user.second_name}`.trim() ||
+          'Gaius Anonimous'
+        void submitLeaderboardScore({
+          id: user.id,
+          nickname,
+          avatar: user.avatar,
+          CM42_score: payload.snapshot.score,
+          bestScore:
+            payload.snapshot.playerRecord,
+          bestScoreDate: new Date()
+            .toISOString()
+            .split('T')[0],
+        })
+      }
       navigate('/game/finish', {
         state: {
           gameSettings: buildGameSettingsState(),
         },
       })
     },
-    [buildGameSettingsState, navigate]
+    [buildGameSettingsState, user, navigate]
   )
   const handleSendHeroChatMessage = useCallback(
     (text: string) => {
-      setHeroChatMessages(prev => [
-        ...prev,
-        {
-          id: `hero-chat-${Date.now()}`,
-          author: 'Вы',
-          text,
-          createdAt: new Date().toISOString(),
-        },
-      ])
+      setHeroChatMessages(prev =>
+        [
+          ...prev,
+          {
+            id: `hero-chat-${Date.now()}`,
+            author: 'Вы',
+            text,
+            createdAt: new Date().toISOString(),
+          },
+        ].slice(-HERO_CHAT_MAX_MESSAGES)
+      )
     },
     []
   )

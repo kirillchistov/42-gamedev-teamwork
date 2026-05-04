@@ -1,93 +1,30 @@
-// Пока заглушка, потом будет страница "Результаты/Лидерборд"
 import React, { useMemo, useState } from 'react'
+import { API_RESOURCES_URL } from '../constants'
 import { Helmet } from 'react-helmet'
 import clsx from 'clsx'
 
+import { PageInitArgs } from '../routes'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { useSelector } from '../store'
 import {
-  // fetchFriendsThunk,
   selectFriends,
   selectIsLoadingFriends,
 } from '../slices/friendsSlice'
+import {
+  fetchLeaderboardThunk,
+  leaderboardData,
+  isLoadingLeaderboard,
+} from '../slices/leaderboardSlice'
+import { LeaderboardEntry } from '../shared/api/leaderboardConfig'
+import { fetchUserThunk } from '../slices/userSlice'
 import { selectUser } from '../slices/userSlice'
 import { usePage } from '../hooks/usePage'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
-// import { PageInitArgs } from '../routes'
 import { Button } from '../shared/ui'
 
-type LeaderboardEntry = {
-  id: number
-  nickname: string
-  avatarEmoji: string
-  rating: number // общий рейтинг (сумма очков за всё время)
-  gamesPlayed: number // сыграно игр
-  bestScore: number // рекорд одной игры
-  bestScoreDate: string // дата рекорда
-}
-
-// демо-данные
-const DEMO_LEADERBOARD: LeaderboardEntry[] = [
-  {
-    id: 1,
-    nickname: 'Max_Fox',
-    avatarEmoji: '🦊',
-    rating: 60000,
-    gamesPlayed: 124,
-    bestScore: 8200,
-    bestScoreDate: '2026-03-18',
-  },
-  {
-    id: 2,
-    nickname: 'Kira',
-    avatarEmoji: '🛸',
-    rating: 56000,
-    gamesPlayed: 98,
-    bestScore: 7900,
-    bestScoreDate: '2026-03-17',
-  },
-  {
-    id: 3,
-    nickname: 'Mila_sila',
-    avatarEmoji: '🌌',
-    rating: 34000,
-    gamesPlayed: 76,
-    bestScore: 6400,
-    bestScoreDate: '2026-03-16',
-  },
-  {
-    id: 4,
-    nickname: 'Cat_Banan',
-    avatarEmoji: '🐱',
-    rating: 24011,
-    gamesPlayed: 52,
-    bestScore: 5200,
-    bestScoreDate: '2026-03-15',
-  },
-  {
-    id: 5,
-    nickname: 'Sanka',
-    avatarEmoji: '🚀',
-    rating: 20970,
-    gamesPlayed: 61,
-    bestScore: 5100,
-    bestScoreDate: '2026-03-14',
-  },
-  {
-    id: 6,
-    nickname: 'Kola_pep',
-    avatarEmoji: '🪐',
-    rating: 12906,
-    gamesPlayed: 35,
-    bestScore: 3900,
-    bestScoreDate: '2026-03-12',
-  },
-]
-
 type SortKey =
-  | 'rating'
-  | 'gamesPlayed'
+  | 'CM42_score'
   | 'bestScore'
   | 'nickname'
 type SortDir = 'asc' | 'desc'
@@ -99,6 +36,9 @@ export const LeaderboardPage: React.FC = () => {
   const isLoading = useSelector(
     selectIsLoadingFriends
   )
+  const isLoadingResults = useSelector(
+    isLoadingLeaderboard
+  )
   const user = useSelector(selectUser)
 
   usePage({ initPage: initLeaderboardPage })
@@ -106,7 +46,7 @@ export const LeaderboardPage: React.FC = () => {
   const [viewMode, setViewMode] =
     useState<ViewMode>('table')
   const [sortKey, setSortKey] =
-    useState<SortKey>('rating')
+    useState<SortKey>('CM42_score')
   const [sortDir, setSortDir] =
     useState<SortDir>('desc')
   const [showFriendsOnly, setShowFriendsOnly] =
@@ -117,15 +57,19 @@ export const LeaderboardPage: React.FC = () => {
     [friends]
   )
 
-  const sortedEntries = useMemo(() => {
-    let list = DEMO_LEADERBOARD
+  const leaderboardTable = useSelector(
+    leaderboardData
+  )
 
+  const sortedEntries = useMemo(() => {
+    let list = leaderboardTable
     if (
       showFriendsOnly &&
       friendNicknames.size > 0
     ) {
-      list = list.filter(entry =>
-        friendNicknames.has(entry.nickname)
+      list = list.filter(
+        (entry: LeaderboardEntry) =>
+          friendNicknames.has(entry.nickname)
       )
     }
 
@@ -133,11 +77,9 @@ export const LeaderboardPage: React.FC = () => {
     copy.sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1
       switch (sortKey) {
-        case 'rating':
-          return (a.rating - b.rating) * dir
-        case 'gamesPlayed':
+        case 'CM42_score':
           return (
-            (a.gamesPlayed - b.gamesPlayed) * dir
+            (a.CM42_score - b.CM42_score) * dir
           )
         case 'bestScore':
           return (a.bestScore - b.bestScore) * dir
@@ -156,6 +98,7 @@ export const LeaderboardPage: React.FC = () => {
     sortDir,
     showFriendsOnly,
     friendNicknames,
+    leaderboardTable,
   ])
 
   const handleSort = (key: SortKey) => {
@@ -287,14 +230,8 @@ export const LeaderboardPage: React.FC = () => {
                     <th>Игрок</th>
                     <th>
                       {sortLabel(
-                        'rating',
+                        'CM42_score',
                         'Рейтинг'
-                      )}
-                    </th>
-                    <th>
-                      {sortLabel(
-                        'gamesPlayed',
-                        'Сыграно игр'
                       )}
                     </th>
                     <th>
@@ -307,45 +244,48 @@ export const LeaderboardPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedEntries.map(
-                    (entry, index) => (
-                      <tr key={entry.id}>
-                        <td>{index + 1}</td>
-                        <td>
-                          <span className="leaderboard-player">
-                            <span className="leaderboard-avatar">
-                              {entry.avatarEmoji}
+                  {!isLoadingResults &&
+                    sortedEntries.map(
+                      (entry, index) => (
+                        <tr key={entry.id}>
+                          <td>{index + 1}</td>
+                          <td>
+                            <span className="leaderboard-player">
+                              <span className="leaderboard-avatar">
+                                {entry.avatar ? (
+                                  <img
+                                    src={`${API_RESOURCES_URL}${entry.avatar}`}
+                                  />
+                                ) : (
+                                  <div>👤</div>
+                                )}
+                              </span>
+                              <span>
+                                {entry.nickname ||
+                                  'Gaius Anonimous'}
+                              </span>
                             </span>
-                            <span>
-                              {entry.nickname}
-                            </span>
-                          </span>
-                        </td>
-                        <td>
-                          {entry.rating.toLocaleString(
-                            'ru-RU'
-                          )}
-                        </td>
-                        <td>
-                          {entry.gamesPlayed}
-                        </td>
-                        <td>
-                          {entry.bestScore.toLocaleString(
-                            'ru-RU'
-                          )}
-                        </td>
-                        <td>
-                          {new Date(
-                            entry.bestScoreDate
-                          ).toLocaleDateString(
-                            'ru-RU'
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  )}
+                          </td>
+                          <td>
+                            {entry.CM42_score}
+                          </td>
+                          <td>
+                            {entry.bestScore}
+                          </td>
+                          <td>
+                            {entry.bestScoreDate}
+                          </td>
+                        </tr>
+                      )
+                    )}
                 </tbody>
               </table>
+              {isLoadingResults && (
+                <div className="leaderboard-card-loader">
+                  Идет загрузка лучших
+                  результатов...
+                </div>
+              )}
             </div>
           ) : (
             <div className="extra-card leaderboard-card">
@@ -361,7 +301,13 @@ export const LeaderboardPage: React.FC = () => {
                       </div>
                       <div className="leaderboard-grid-main">
                         <div className="leaderboard-avatar-large">
-                          {entry.avatarEmoji}
+                          {entry.avatar ? (
+                            <img
+                              src={`${API_RESOURCES_URL}${entry.avatar}`}
+                            />
+                          ) : (
+                            <div>👤</div>
+                          )}
                         </div>
                         <div className="leaderboard-grid-text">
                           <div className="leaderboard-grid-nickname">
@@ -369,23 +315,12 @@ export const LeaderboardPage: React.FC = () => {
                           </div>
                           <div className="leaderboard-grid-rating">
                             Рейтинг:{' '}
-                            {entry.rating.toLocaleString(
-                              'ru-RU'
-                            )}
+                            {entry.CM42_score}
                           </div>
                           <div className="leaderboard-grid-meta">
-                            Игр:{' '}
-                            {entry.gamesPlayed} •
                             Рекорд:{' '}
-                            {entry.bestScore.toLocaleString(
-                              'ru-RU'
-                            )}{' '}
-                            от{' '}
-                            {new Date(
-                              entry.bestScoreDate
-                            ).toLocaleDateString(
-                              'ru-RU'
-                            )}
+                            {entry.bestScore} от{' '}
+                            {entry.bestScoreDate}
                           </div>
                         </div>
                       </div>
@@ -430,13 +365,20 @@ export const LeaderboardPage: React.FC = () => {
   )
 }
 
-// export const initLeaderboardPage = ({ dispatch, state }: PageInitArgs) => {
-//   const queue: Array<Promise<unknown>> = [dispatch(fetchFriendsThunk())]
-//   if (!selectUser(state)) {
-//     queue.push(dispatch(fetchUserThunk()))
-//   }
-//   return Promise.all(queue)
-// }
-
-export const initLeaderboardPage = () =>
-  Promise.resolve()
+export const initLeaderboardPage = ({
+  dispatch,
+  state,
+}: PageInitArgs) => {
+  const queue: Array<Promise<unknown>> = [
+    dispatch(
+      fetchLeaderboardThunk({
+        cursor: 0,
+        limit: 10,
+      })
+    ),
+  ]
+  if (!selectUser(state)) {
+    queue.push(dispatch(fetchUserThunk()))
+  }
+  return Promise.all(queue)
+}
