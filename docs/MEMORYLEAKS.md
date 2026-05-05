@@ -1,30 +1,89 @@
 # Утечки памяти и подписки в проекте
 
-Файл для фиксации **реальных** случаев утечек (или рисков): что наблюдалось, почему это утечка, как исправлено. Шаблон можно дополнять по мере работы команды.
+Документ про текущие риски утечек памяти в проекте (на момент 28.04.2026), статус по ним и план устранения.
 
-## 1. Что считать утечкой в SPA
+Формат: проблема -> место в коде -> гипотеза -> действие -> как проверяем.
 
-- Подписки на **`window`** / **`document`** без снятия в cleanup `useEffect`.
-- **`setInterval` / `setTimeout`** без `clearInterval` / `clearTimeout`.
-- **`PerformanceObserver`**, **`MutationObserver`**, **`ResizeObserver`** без `disconnect()`.
-- Удержание больших объектов в замыканиях обработчиков после ухода со страницы.
-- Забытые подписки на стор (редко при RTK) или на кастомные event bus без отписки.
+## 1. Что считаем утечкой в приложении
 
-## 2. Хорошие паттерны уже в репозитории (референс)
+- Подписки на **'window'** / **'document'** без cleanup.
+- **'setInterval' / 'setTimeout'** без явной очистки.
+- Observer API (**'PerformanceObserver'**, **'MutationObserver'**, **'ResizeObserver'**) без 'disconnect()'.
+- Незавершаемые async-цепочки, которые продолжают держать ссылки после unmount/destroy.
+- Неконтролируемый рост коллекций в памяти/'localStorage', которые затем постоянно читаются в UI.
 
-Эти места **корректно** снимают слушатели — используйте как образец при новых эффектах.
+---
 
-### 2.1. `GamePage` — клавиша полноэкранного режима
+## 2. Реальные риски в текущей ветке
 
-```261:263:packages/client/src/pages/GamePage.tsx
+Ниже - найденные проблемные места в проекте.
+
+### 2.1. 'logoutThunk': таймер из 'Promise.race' не очищается (P1)
+
+```215:222:packages/client/src/slices/userSlice.ts
+      await Promise.race([
+        userApi.logout(),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => {
+            reject(new Error('timeout'))
+          }, AUTH_REQUEST_TIMEOUT_MS)
+        }),
+      ])
+```
+
+Почему риск:
+- На каждый logout создается новый 'setTimeout', но id не сохраняется и не очищается.
+- Даже если 'userApi.logout()' завершился быстро, timeout доживает до конца и удерживает замыкание.
+- При частых logout/login это "тихая" утечка таймеров и лишняя нагрузка на event loop.
+
+Что сделать:
+- Вынести в утилиту 'withTimeout' с 'clearTimeout' в 'finally' (как уже сделано в 'fetchWithTimeout').
+
+Статус:
+[x] Исправлено в [feature/7.4-liderboard-api](https://github.com/kirillchistov/42-gamedev-teamwork/issues/61)
+
+### 2.2. Безлимитный рост hero-chat в 'GamePage' + постоянная сериализация (P1)
+
+Почему риск:
+- Массив 'heroChatMessages' растет без лимита.
+- Любое обновление сериализует весь массив в 'localStorage', что увеличивает пиковое потребление памяти и GC-pressure.
+- На долгих игровых сессиях и активном чате это превращается в деградацию UI и рост heap.
+
+Что сделать:
+- Ограничить размер истории (например, последние 100 сообщений).
+- Делать "санитизацию" при чтении из 'localStorage' (обрезка старого хвоста).
+
+Статус:
+[x] Исправлено в рамках [feature/7.4-liderboard-api](https://github.com/kirillchistov/42-gamedev-teamwork/issues/61)
+
+### 2.3. Async-хвосты движка после 'destroy()' без guard-флага (P2)
+
+Почему риск:
+- После 'destroy()' часть Promise-цепочек может завершиться позже и выполнить callback.
+- Сейчас нет единого 'isDestroyed'-флага для раннего выхода из таких callback.
+- Это не всегда "критическая" утечка, но создает риск висящих ссылок и фоновой работы на уже демонтированном экране.
+
+Что сделать:
+- Добавить 'let isDestroyed = false', выставлять 'true' в 'destroy()'.
+- В '.then(...)' и async-ветках делать ранний 'if (isDestroyed) return'.
+
+---
+
+## 3. Что уже скорректировано в репозитории
+
+Компоненты и страницы корректно снимают слушатели/таймеры - почти эталон для новых задач.
+
+### 3.1. 'GamePage' — клавиша полноэкранного режима
+
+```packages/client/src/pages/GamePage.tsx (261:263)
     window.addEventListener('keydown', onKey)
     return () =>
       window.removeEventListener('keydown', onKey)
 ```
 
-### 2.2. `GamePage` — кастомное событие смены фона арены
+### 3.2. 'GamePage' — кастомное событие смены фона арены
 
-```332:342:packages/client/src/pages/GamePage.tsx
+```packages/client/src/pages/GamePage.tsx (332:342)
   useEffect(() => {
     const on = () => bumpFinishArenaBg()
     window.addEventListener(
@@ -39,9 +98,9 @@
   }, [])
 ```
 
-### 2.3. `withAuthGuard` — `storage` и арена
+### 3.3. 'withAuthGuard' — 'storage' и арена
 
-```41:70:packages/client/src/hoc/withAuthGuard.tsx
+```packages/client/src/hoc/withAuthGuard.tsx (41:70)
     useEffect(() => {
       const bump = () =>
         setArenaBgTick(n => n + 1)
@@ -75,9 +134,9 @@
     }, [])
 ```
 
-### 2.4. Fullscreen — обёртка с симметричным снятием
+### 3.4. Fullscreen — обёртка с симметричным снятием
 
-```89:106:packages/client/src/utils/fullscreen.ts
+```packages/client/src/utils/fullscreen.ts (89:106)
 export function addFullscreenChangeListener(
   listener: () => void
 ): () => void {
@@ -104,19 +163,39 @@ export function addFullscreenChangeListener(
 
 ---
 
-## 3. Журнал находок (заполняет команда)
+## 4. Краткий roadmap улучшений
 
-| Дата | Модуль / файл | Симптом | Причина | Исправление |
-|------|----------------|---------|---------|--------------|
-| _пример_ | `GamePage.tsx` | Рост памяти при повторных заходах на `/game` | `addEventListener` без `return` cleanup | Добавлен `removeEventListener` в `useEffect` |
-| | | | | |
+### Этап 1 (быстрые фиксы, 1 спринт)
+- [x] Закрыть P1: очистка timeout в 'logoutThunk'. 
+- [x] Ограничить историю hero-chat (state + 'localStorage') и добавить обрезку на чтении.
+- Добавить строки в журнал находок (раздел 6) после мержа.
+
+### Этап 2 (стабилизация движка)
+- Ввести 'isDestroyed' guard в 'match3/engine/bootstrap.ts'.
+- Проверить все '.then(...)'/async-хвосты после 'destroy()' и 'resetIdle()'.
+- Зафиксировать минимальный набор smoke-тестов: 30+ переходов '/game/start -> /game/play -> /game/finish'.
+
+### Этап 3 (контроль через Performance API)
+- Подключить lightweight-метрики (см. раздел 5).
+- Включить long-task мониторинг в dev-сборке.
+- Раз в релиз сверять baseline: heap-trend, число listeners, количество long tasks.
 
 ---
 
-## 4. Чеклист при code review
+## 5. Журнал находок (будет заполняться в следующих спринтах)
 
-- [ ] Любой `addEventListener` в компоненте имеет пару в cleanup.
-- [ ] Любой таймер очищается.
-- [ ] Observers и подписки на canvas/WebGL снимаются при `destroy` / unmount (см. движок match-3 при изменениях).
+Дата -> Файл (Модуль) -> Симптом -> Причина -> Исправление -> Статус
+|------|----------------|---------|---------|--------------|
+- 29.04.2026 ->'userSlice.ts' ('logoutThunk') -> Лишние таймеры после logout -> 'Promise.race' с 'setTimeout' без 'clearTimeout' -> Вынести 'withTimeout' + очистка таймера в 'finally' -> in review
+- 29.04.2026 -> 'GamePage.tsx' (hero chat) -> Рост heap и размер 'localStorage' при длительной игре -> Неограниченный массив сообщений + полная сериализация на каждый апдейт -> Лимит истории (например 100) + обрезка на чтении -> in review
+- 29.04.2026 -> 'bootstrap.ts' (async callbacks) -> Возможные поздние callback после 'destroy' -> Нет guard-флага для асинхронных цепочек -> 'isDestroyed' + early return во всех '.then/await' хвостах -> open
 
-Если новая фича использует **PerformanceObserver** (см. `add-web-api.md`), в той же задаче добавьте строку в таблицу раздела 3 с ссылкой на PR.
+---
+
+## 6. "Хозяйке на заметку" или "checklist для code review"
+
+- [ ] Любой 'addEventListener' имеет 'removeEventListener' в том же жизненном цикле.
+- [ ] Любой 'setTimeout/setInterval' хранит id и очищается в cleanup/'finally'.
+- [ ] Для async-цепочек после unmount есть guard ('aborted' / 'isDestroyed' / 'AbortController').
+- [ ] Observer API всегда отключается ('disconnect') в cleanup.
+- [ ] Для "длинных" игровых сценариев есть замер через 'Performance API' и запись результата в журнал (раздел 6).
