@@ -2,7 +2,11 @@
  * Сбрасываем серверную сессию при заходе на /login и перед signin,
  * чтобы починить 400 «User already in system» (см. loginThunk).
  */
-import React, { FormEvent, useState } from 'react'
+import React, {
+  FormEvent,
+  useEffect,
+  useState,
+} from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
@@ -26,11 +30,17 @@ import {
 import {
   fetchUserThunk,
   loginThunk,
+  logoutThunk,
   selectUserError,
   selectUserIsAuthChecked,
   selectUserIsLoading,
 } from '../slices/userSlice'
 import { markGameLandingNeedsShow } from '../game/match3/gameLandingGate'
+import {
+  buildYandexAuthorizeUrl,
+  buildYandexRedirectUri,
+  getYandexServiceId,
+} from '../shared/api/oauthApi'
 
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
@@ -49,6 +59,50 @@ export const LoginPage: React.FC = () => {
 
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
+  const [isOAuthLoading, setIsOAuthLoading] =
+    useState(false)
+  const [oauthError, setOauthError] = useState<
+    string | null
+  >(null)
+  const [isPreLogoutDone, setIsPreLogoutDone] =
+    useState(false)
+
+  useEffect(() => {
+    if (!isAuthChecked || isPreLogoutDone) return
+    setIsPreLogoutDone(true)
+    void dispatch(logoutThunk())
+  }, [dispatch, isAuthChecked, isPreLogoutDone])
+
+  const handleYandexOAuth = async () => {
+    setIsOAuthLoading(true)
+    setOauthError(null)
+    try {
+      const redirectUri = buildYandexRedirectUri()
+      const state = Math.random()
+        .toString(36)
+        .slice(2)
+      window.sessionStorage.setItem(
+        'oauth:yandex:state',
+        state
+      )
+      const serviceId = await getYandexServiceId(
+        redirectUri
+      )
+      const url = buildYandexAuthorizeUrl(
+        serviceId,
+        redirectUri,
+        state
+      )
+      window.location.assign(url)
+    } catch (e) {
+      setOauthError(
+        e instanceof Error
+          ? e.message
+          : 'Не удалось запустить OAuth вход'
+      )
+      setIsOAuthLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -163,6 +217,17 @@ export const LoginPage: React.FC = () => {
                   {error}
                 </p>
               )}
+              {oauthError && (
+                <p
+                  style={{
+                    color:
+                      'var(--color-error, #e53935)',
+                    margin: 0,
+                    gridColumn: '1 / -1',
+                  }}>
+                  {oauthError}
+                </p>
+              )}
 
               <div className="auth-form__actions">
                 <Button
@@ -172,6 +237,27 @@ export const LoginPage: React.FC = () => {
                   {isLoading
                     ? 'Входим...'
                     : 'Войти'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="auth-oauth-btn"
+                  disabled={
+                    isOAuthLoading || isLoading
+                  }
+                  onClick={handleYandexOAuth}>
+                  {isOAuthLoading ? (
+                    'Переход к OAuth...'
+                  ) : (
+                    <>
+                      <span>Войти через</span>
+                      <span
+                        className="auth-oauth-btn__logo"
+                        aria-hidden="true">
+                        Я
+                      </span>
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

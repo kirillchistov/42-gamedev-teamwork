@@ -8,7 +8,7 @@
 | Роль | Пакет | Порт по умолчанию | Назначение |
 |------|--------|-------------------|------------|
 | API на Express | 'packages/server' | '3001' ('SERVER_PORT') | JSON-эндпоинты ('/friends', '/user' и т.д.), БД |
-| Клиент + SSR на Express | 'packages/client' | '80' ('PORT') или из окружения | Vite + React; в **dev** и **preview** поднимается **свой** Express из 'packages/client/server/index.ts' |
+| Клиент + SSR на Express | 'packages/client' | `PORT` -> `CLIENT_PORT` -> `3000` -> `5000` -> `9000` -> `8080` | Vite + React; в **dev** и **preview** поднимается **свой** Express из 'packages/client/server/index.ts' |
 
 SSR в этом проекте живет **не в 'packages/server'**, а **в клиентском пакете**: серверный бандл лежит в 'packages/client/dist/server/', статика клиента — в 'packages/client/dist/client/'. Один процесс отдаёт HTML и ассеты SPA.
 
@@ -67,7 +67,7 @@ Express подставляет результат в шаблон **'packages/cl
 yarn dev
 ```
 
-Открыть в браузере 'http://localhost:3000' (или порт из 'CLIENT_PORT' в 'vite.config.ts'). В dev при ошибке SSR полезен стек, который Vite правит через 'vite?.ssrFixStacktrace'.
+Открыть в браузере 'http://localhost:3000' (или следующий свободный порт из fallback-цепочки). В dev при ошибке SSR полезен стек, который Vite правит через 'vite?.ssrFixStacktrace'.
 
 Для production-сборки SSR:
 
@@ -126,6 +126,6 @@ yarn dev
 
 Проверки:
 
-- 'http://localhost:80/health' (или порт из 'PORT') возвращает JSON с 'ok: true';
-- 'http://localhost:80/ssr-static' возвращает HTML, созданный через 'renderToString' без Redux;
-- 'http://localhost:80/' и клиентские маршруты продолжают работать через основной SSR.
+- 'http://localhost:3000/health' (или фактический порт из лога `Client is listening on port: <port>`) возвращает JSON с 'ok: true';
+- 'http://localhost:3000/ssr-static' (или фактический порт) возвращает HTML, созданный через 'renderToString' без Redux;
+- 'http://localhost:3000/' (или фактический порт) и клиентские маршруты продолжают работать через основной SSR.

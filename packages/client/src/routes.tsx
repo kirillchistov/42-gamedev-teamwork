@@ -32,6 +32,10 @@ import {
   initLoginPage,
 } from './pages/LoginPage'
 import {
+  YandexOAuthCallbackPage,
+  initYandexOAuthCallbackPage,
+} from './pages/YandexOAuthCallbackPage'
+import {
   LogoutPage,
   initLogoutPage,
 } from './pages/LogoutPage'
@@ -82,7 +86,9 @@ export type PageInitArgs = {
 export type AppRoute = RouteObject & {
   path: string
   Component: ComponentType
-  fetchData: (args: PageInitArgs) => Promise<unknown> | void
+  fetchData: (
+    args: PageInitArgs
+  ) => Promise<unknown> | void
 }
 
 export const routes: AppRoute[] = [
@@ -140,6 +146,11 @@ export const routes: AppRoute[] = [
     path: '/logout',
     Component: LogoutPage,
     fetchData: initLogoutPage,
+  },
+  {
+    path: '/oauth/yandex/callback',
+    Component: YandexOAuthCallbackPage,
+    fetchData: initYandexOAuthCallbackPage,
   },
   {
     path: '/signup',
