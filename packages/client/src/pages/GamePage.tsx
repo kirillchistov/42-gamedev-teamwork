@@ -76,6 +76,14 @@ import {
 import { submitLeaderboardScore } from '../shared/api/leaderboardApi'
 import { useSelector } from '../store'
 import { selectUser } from '../slices/userSlice'
+
+import {
+  markGameStart,
+  markGameEndAndMeasure,
+  observeLongTasks,
+  startPerformanceMonitoring,
+} from '../utils/performanceMetrics'
+
 // 2DO: разобраться с алиасами @ для jest
 // import cosmicBadgeWinUrl from '@match3-public/icons/cosmic9.png?url'
 const cosmicBadgeWinUrl =
@@ -474,6 +482,15 @@ export const GamePage: React.FC = () => {
       })
     }, [])
 
+  // ===== PERFORMANCE MONITORING =====
+  const perfMonitorRef = useRef<{
+    stop: () => void
+  } | null>(null)
+  const longTasksCleanupRef = useRef<
+    (() => void) | null
+  >(null)
+  // ===== END PERFORMANCE MONITORING =====
+
   useEffect(() => {
     const raw = window.localStorage.getItem(
       LAST_RESULT_KEY
@@ -746,6 +763,38 @@ export const GamePage: React.FC = () => {
     )
   }, [isStartRoute, startCountdown])
 
+  // ===== PERFORMANCE MONITORING - MOUNT/UNMOUNT =====
+  useEffect(() => {
+    console.log('[Performance] GamePage mounted')
+
+    // Запускаем полный мониторинг
+    perfMonitorRef.current =
+      startPerformanceMonitoring()
+
+    // Подписываемся на Long Tasks
+    longTasksCleanupRef.current =
+      observeLongTasks(duration => {
+        console.warn(
+          `[Performance] ⚠️ Long task detected in GamePage: ${duration.toFixed(
+            2
+          )}ms`
+        )
+      })
+
+    return () => {
+      console.log(
+        '[Performance] GamePage unmounted'
+      )
+      if (perfMonitorRef.current) {
+        perfMonitorRef.current.stop()
+      }
+      if (longTasksCleanupRef.current) {
+        longTasksCleanupRef.current()
+      }
+    }
+  }, [])
+  // ===== END PERFORMANCE MONITORING =====
+
   const selectedLevel = useMemo(
     () => getMatch3LevelById(selectedLevelId),
     [selectedLevelId]
@@ -948,6 +997,15 @@ export const GamePage: React.FC = () => {
 
   const handleGameFinished = useCallback(
     (payload: GameEndPayload) => {
+      const duration = markGameEndAndMeasure()
+      if (duration !== null) {
+        console.log(
+          `[Perfomance] Game session duration: ${duration.toFixed(
+            2
+          )}ms`
+        )
+      }
+
       const next = {
         snapshot: payload.snapshot,
         reason: payload.reason,
@@ -1487,14 +1545,15 @@ export const GamePage: React.FC = () => {
                   <button
                     type="button"
                     className="btn btn--primary match3__play-btn"
-                    onClick={() =>
+                    onClick={() => {
+                      markGameStart()
                       navigate('/game/play', {
                         state: {
                           gameSettings:
                             buildGameSettingsState(),
                         },
                       })
-                    }>
+                    }}>
                     Играть
                   </button>
                 </div>

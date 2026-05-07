@@ -102,7 +102,8 @@ function isRouterResponse(value) {
         typeof maybeResponse.text === 'function' &&
         typeof maybeResponse.headers === 'object' &&
         maybeResponse.headers !== null &&
-        typeof maybeResponse.headers.get === 'function' &&
+        typeof maybeResponse.headers.get ===
+            'function' &&
         typeof maybeResponse.headers.forEach ===
             'function');
 }
