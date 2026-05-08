@@ -36,7 +36,8 @@ import {
   DEFAULT_MATCH3_LEVEL_ID,
   getMatch3LevelById,
 } from './engine/levels'
-import { observeLongTasks } from 'src/utils/performanceMetrics'
+// 7.105: Используем относительный импорт вместо "src/*", чтобы SSR/Vite стабильно резолвили модуль на Windows.
+import { observeLongTasks } from '../../utils/performanceMetrics'
 
 type UiPhase =
   | 'countdown'

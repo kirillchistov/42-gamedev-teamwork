@@ -11,6 +11,13 @@ let maxLongTaskDuration = 0
  * Отметить начало игровой сессии
  */
 export function markGameStart(): void {
+  // 7.105: Защита для SSR/старых браузеров — не вызываем Performance API, если его нет.
+  if (
+    typeof performance === 'undefined' ||
+    typeof performance.mark !== 'function'
+  ) {
+    return
+  }
   performance.mark(marks.gameStart)
   console.log(
     '[Performance] Game session started'
@@ -24,6 +31,14 @@ export function markGameStart(): void {
 export function markGameEndAndMeasure():
   | number
   | null {
+  // 7.105: Защита для SSR/старых браузеров — measure возможен только при доступном Performance API.
+  if (
+    typeof performance === 'undefined' ||
+    typeof performance.mark !== 'function' ||
+    typeof performance.measure !== 'function'
+  ) {
+    return null
+  }
   performance.mark(marks.gameEnd)
   performance.measure(
     'match3-session',
@@ -85,10 +100,17 @@ export function observeLongTasks(
     }
   })
 
-  obs.observe({
-    type: 'longtask',
-    buffered: true,
-  })
+  // 7.105: В некоторых браузерах "longtask" может бросать исключение — защищаемся try/catch.
+  try {
+    obs.observe({
+      type: 'longtask',
+      buffered: true,
+    })
+  } catch {
+    return () => {
+      // noop
+    }
+  }
   console.log(
     '[Performance] Long tasks observer started'
   )
