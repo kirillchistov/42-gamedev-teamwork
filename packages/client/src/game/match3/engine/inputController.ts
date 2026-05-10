@@ -3,9 +3,10 @@ import type { CellRC } from './core/match'
 import { pickCellAt } from './renderer'
 
 export function isAdjacentCell(
-  a: CellRC,
-  b: CellRC
+  a: CellRC | null,
+  b: CellRC | null
 ): boolean {
+  if (!a || !b) return false
   const dr = Math.abs(a.r - b.r)
   const dc = Math.abs(a.c - b.c)
   return (

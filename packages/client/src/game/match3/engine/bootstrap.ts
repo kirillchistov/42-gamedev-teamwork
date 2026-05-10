@@ -567,9 +567,10 @@ export function createMatch3Game(
     )
 
   const trySwapConsideringIce = (
-    a: CellRC,
-    b: CellRC
+    a: CellRC | null,
+    b: CellRC | null
   ): boolean => {
+    if (!a || !b) return false
     if (!isAdjacentCell(a, b)) return false
     if (
       !inBounds(a.r, a.c) ||
@@ -1063,6 +1064,13 @@ export function createMatch3Game(
     renderInteraction()
     await delay(120)
     targetPulse = false
+
+    if (!firstPick) {
+      targetCell = null
+      renderInteraction()
+      emitHud()
+      return
+    }
 
     const source = firstPick
     const ok = trySwapConsideringIce(source, cell)

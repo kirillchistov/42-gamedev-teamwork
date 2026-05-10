@@ -80,7 +80,6 @@ import { selectUser } from '../slices/userSlice'
 import {
   markGameStart,
   markGameEndAndMeasure,
-  observeLongTasks,
   startPerformanceMonitoring,
 } from '../utils/performanceMetrics'
 
@@ -432,19 +431,34 @@ export const GamePage: React.FC = () => {
     )
   const location = useLocation()
   const navigate = useNavigate()
-  const buildGameSettingsState = () => ({
-    limitMode,
-    moveLimit,
-    durationSec,
-    goalScore,
-    selectedLevelId,
-    boardSize,
-    tileKinds,
-    boardFieldTheme,
-    debugBoostersMode,
-    activeCompanionId,
-    quests,
-  })
+  const buildGameSettingsState = useCallback(
+    () => ({
+      limitMode,
+      moveLimit,
+      durationSec,
+      goalScore,
+      selectedLevelId,
+      boardSize,
+      tileKinds,
+      boardFieldTheme,
+      debugBoostersMode,
+      activeCompanionId,
+      quests,
+    }),
+    [
+      limitMode,
+      moveLimit,
+      durationSec,
+      goalScore,
+      selectedLevelId,
+      boardSize,
+      tileKinds,
+      boardFieldTheme,
+      debugBoostersMode,
+      activeCompanionId,
+      quests,
+    ]
+  )
   const routeState = location.state as {
     notice?: string
     openSettings?: boolean
@@ -486,9 +500,6 @@ export const GamePage: React.FC = () => {
   const perfMonitorRef = useRef<{
     stop: () => void
   } | null>(null)
-  const longTasksCleanupRef = useRef<
-    (() => void) | null
-  >(null)
   // ===== END PERFORMANCE MONITORING =====
 
   useEffect(() => {
@@ -767,19 +778,8 @@ export const GamePage: React.FC = () => {
   useEffect(() => {
     console.log('[Performance] GamePage mounted')
 
-    // Запускаем полный мониторинг
     perfMonitorRef.current =
       startPerformanceMonitoring()
-
-    // Подписываемся на Long Tasks
-    longTasksCleanupRef.current =
-      observeLongTasks(duration => {
-        console.warn(
-          `[Performance] ⚠️ Long task detected in GamePage: ${duration.toFixed(
-            2
-          )}ms`
-        )
-      })
 
     return () => {
       console.log(
@@ -787,9 +787,6 @@ export const GamePage: React.FC = () => {
       )
       if (perfMonitorRef.current) {
         perfMonitorRef.current.stop()
-      }
-      if (longTasksCleanupRef.current) {
-        longTasksCleanupRef.current()
       }
     }
   }, [])
