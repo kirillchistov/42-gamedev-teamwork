@@ -22,7 +22,7 @@ export function mapLeaderboardRowToUi(
 ): LeaderboardEntry {
   const d = row.data ?? {}
   return {
-    id: asNumber(d.userId, 0),
+    id: asNumber(d.id, 0),
     nickname: asString(
       d.nickname,
       'Gaius Anonimous'

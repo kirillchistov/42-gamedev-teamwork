@@ -985,19 +985,18 @@ export const GamePage: React.FC = () => {
       if (user && user.id) {
         const nickname =
           user.display_name ||
-          `${user.first_name} ${user.second_name}`.trim()
+          `${user.first_name} ${user.second_name}`.trim() ||
+          'Gaius Anonimous'
         void submitLeaderboardScore({
           id: user.id,
           nickname,
           avatar: user.avatar,
           CM42_score: payload.snapshot.score,
-          // gamesPlayed: 0,
           bestScore:
-            payload.snapshot.playerRecord, // рекорд одной игры
-          bestScoreDate:
-            new Date().toLocaleDateString(
-              'ru-RU'
-            ), // дата рекорда
+            payload.snapshot.playerRecord,
+          bestScoreDate: new Date()
+            .toISOString()
+            .split('T')[0],
         })
       }
       navigate('/game/finish', {
@@ -1006,7 +1005,7 @@ export const GamePage: React.FC = () => {
         },
       })
     },
-    [buildGameSettingsState, navigate]
+    [buildGameSettingsState, user, navigate]
   )
   const handleSendHeroChatMessage = useCallback(
     (text: string) => {

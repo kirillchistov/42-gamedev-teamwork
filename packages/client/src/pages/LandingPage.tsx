@@ -1,4 +1,9 @@
+import { useEffect } from 'react'
 import { Helmet } from 'react-helmet'
+import {
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
 import { Header } from '../components/Header'
@@ -26,6 +31,31 @@ export const LandingPage = () => {
   const { theme } = useLandingTheme()
   const user = useSelector(selectUser)
   const isAuthorized = Boolean(user)
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (location.pathname !== '/') return
+
+    const params = new URLSearchParams(
+      location.search
+    )
+    if (
+      !params.has('code') &&
+      !params.has('error')
+    ) {
+      return
+    }
+
+    navigate(
+      `/oauth/yandex/callback${location.search}`,
+      { replace: true }
+    )
+  }, [
+    location.pathname,
+    location.search,
+    navigate,
+  ])
 
   return (
     <div
