@@ -2,6 +2,7 @@
  * Добавил /logout
  */
 import type { ComponentType } from 'react'
+import { RouteObject } from 'react-router-dom'
 import { AppDispatch, RootState } from './store'
 
 import {
@@ -77,14 +78,13 @@ export type PageInitArgs = {
   ctx: PageInitContext
 }
 
-export type PageInitFn = (
-  data: PageInitArgs
-) => Promise<unknown> | unknown
-
-export type AppRoute = {
+// Расширяем RouteObject из react-router-dom: path и Component обязательны, fetchData — серверная инициализация
+export type AppRoute = RouteObject & {
   path: string
   Component: ComponentType
-  fetchData?: PageInitFn
+  fetchData: (
+    args: PageInitArgs
+  ) => Promise<unknown> | void
 }
 
 export const routes: AppRoute[] = [

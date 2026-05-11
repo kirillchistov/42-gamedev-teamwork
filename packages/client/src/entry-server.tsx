@@ -22,7 +22,7 @@ import {
 } from './entry-server.utils'
 import { LandingThemeProvider } from './contexts/LandingThemeContext'
 import { reducer } from './store'
-import { PageInitFn, routes } from './routes'
+import { routes, AppRoute } from './routes'
 import { withAuthGuard } from './hoc/withAuthGuard'
 import './index.css'
 import { setPageHasBeenInitializedOnServer } from './slices/ssrSlice'
@@ -43,17 +43,6 @@ const guardedRoutes = routes.map(route => {
   }
 })
 
-type GuardedRoute = {
-  path?: string
-  fetchData?: PageInitFn
-}
-
-function hasFetchData(
-  fetchData: PageInitFn | undefined
-): fetchData is PageInitFn {
-  return typeof fetchData === 'function'
-}
-
 export const render = async (
   req: ExpressRequest
 ) => {
@@ -72,31 +61,31 @@ export const render = async (
 
   const url = createUrl(req)
 
-  const foundRoutes = matchRoutes<GuardedRoute>(
-    guardedRoutes,
-    url.pathname
+  const foundRoutes = matchRoutes<AppRoute>(
+    guardedRoutes as AppRoute[],
+    url
   )
   if (!foundRoutes) {
     throw new Error('Страница не найдена!')
   }
 
-  for (const { route } of foundRoutes) {
-    if (!hasFetchData(route.fetchData)) {
-      continue
-    }
-    try {
-      await route.fetchData({
-        dispatch: store.dispatch,
-        state: store.getState(),
-        ctx: createContext(req),
-      })
-    } catch (e) {
-      console.log(
-        'Ошибка при инициализации страницы',
-        route.path,
-        e
-      )
-    }
+  const [
+    {
+      route: { fetchData },
+    },
+  ] = foundRoutes
+
+  try {
+    await fetchData({
+      dispatch: store.dispatch,
+      state: store.getState(),
+      ctx: createContext(req),
+    })
+  } catch (e) {
+    console.log(
+      'Ошибка при инициализации страницы',
+      e
+    )
   }
 
   store.dispatch(

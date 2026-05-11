@@ -1,4 +1,10 @@
 "use strict";
+// Express для SSR: в dev — Vite в 'middlewareMode', в prod — статика 'dist/client' и серверный бандл;
+// парсинг cookie, сериализация начального состояния Redux в HTML.
+// 7.1.1 Добавил GET /health, GET /ssr-static (отдельный render-функционал)
+// 7.1.1 Вынес загрузку SSR-модуля в helper (resolveSsrRender)
+// 7.1.1 Добавил централизованный error handler
+// 7.1.1 Сохранил текущий app.get('*') для основного SSR "из коробки"
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -36,8 +42,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// Express для SSR: в dev — Vite в 'middlewareMode', в prod — статика 'dist/client' и серверный бандл;
-// парсинг cookie, сериализация начального состояния Redux в HTML.
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const express_1 = __importDefault(require("express"));
@@ -49,64 +53,58 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const static_page_1 = require("./static-page");
 const clientPath = path_1.default.join(__dirname, '..');
 const isDev = process.env.NODE_ENV === 'development';
-const DEFAULT_PORT_FALLBACK_CHAIN = [
-    3000,
-    5000,
-    9000,
-    8080,
-];
-function parsePort(value) {
+const FALLBACK_PORTS = [3000, 5000, 9000, 8080];
+let prodTemplateCache = null;
+function toValidPort(value) {
     if (!value)
         return null;
     const parsed = Number(value);
     if (!Number.isInteger(parsed) ||
-        parsed <= 0 ||
+        parsed < 1 ||
         parsed > 65535) {
         return null;
     }
     return parsed;
 }
 function resolvePortCandidates() {
-    const preferred = [
-        parsePort(process.env.PORT),
-        parsePort(process.env.CLIENT_PORT),
-    ].filter((p) => p !== null);
-    const all = [
-        ...preferred,
-        ...DEFAULT_PORT_FALLBACK_CHAIN,
-    ];
-    return Array.from(new Set(all));
+    const candidates = [
+        toValidPort(process.env.PORT),
+        toValidPort(process.env.CLIENT_PORT),
+        ...FALLBACK_PORTS,
+    ].filter((port) => port !== null);
+    return [...new Set(candidates)];
 }
-function listenOnPort(app, port) {
-    return new Promise((resolve, reject) => {
-        const server = app.listen(port, () => {
-            server.off('error', onError);
-            resolve();
-        });
-        const onError = (error) => {
-            server.off('error', onError);
-            reject(error);
-        };
-        server.on('error', onError);
+async function sendRouterResponse(response, res) {
+    response.headers.forEach((value, key) => {
+        if (key.toLowerCase() === 'set-cookie') {
+            return;
+        }
+        res.setHeader(key, value);
     });
-}
-async function startServerWithPortFallback(app) {
-    const candidates = resolvePortCandidates();
-    let lastError = null;
-    for (const candidate of candidates) {
-        try {
-            await listenOnPort(app, candidate);
-            return candidate;
-        }
-        catch (error) {
-            const e = error;
-            if ((e === null || e === void 0 ? void 0 : e.code) !== 'EADDRINUSE') {
-                throw error;
-            }
-            lastError = error;
-        }
+    const setCookieHeader = response.headers.get('set-cookie');
+    if (setCookieHeader) {
+        res.append('set-cookie', setCookieHeader);
     }
-    throw (lastError !== null && lastError !== void 0 ? lastError : new Error(`No available port in chain: ${candidates.join(', ')}`));
+    const body = await response.text();
+    if (body) {
+        res.status(response.status).send(body);
+        return;
+    }
+    res.sendStatus(response.status);
+}
+function isRouterResponse(value) {
+    if (typeof value !== 'object' ||
+        value === null) {
+        return false;
+    }
+    const maybeResponse = value;
+    return (typeof maybeResponse.status === 'number' &&
+        typeof maybeResponse.text === 'function' &&
+        typeof maybeResponse.headers === 'object' &&
+        maybeResponse.headers !== null &&
+        typeof maybeResponse.headers.get === 'function' &&
+        typeof maybeResponse.headers.forEach ===
+            'function');
 }
 async function resolveSsrRender(vite, url) {
     if (vite) {
@@ -118,12 +116,14 @@ async function resolveSsrRender(vite, url) {
             template,
         };
     }
-    const template = await promises_1.default.readFile(path_1.default.join(clientPath, 'dist/client/index.html'), 'utf-8');
+    if (!prodTemplateCache) {
+        prodTemplateCache = await promises_1.default.readFile(path_1.default.join(clientPath, 'dist/client/index.html'), 'utf-8');
+    }
     const pathToServer = path_1.default.join(clientPath, 'dist/server/entry-server.js');
     const ssrModule = await Promise.resolve(`${pathToServer}`).then(s => __importStar(require(s)));
     return {
         render: ssrModule.render,
-        template,
+        template: prodTemplateCache,
     };
 }
 function registerCommonRoutes(app) {
@@ -133,7 +133,7 @@ function registerCommonRoutes(app) {
             mode: isDev ? 'development' : 'production',
         });
     });
-    // Формальный SSR-маршрут без Redux: демонстрирует renderToString + res.send.
+    // SSR-маршрут без Redux: только renderToString + res.send.
     app.get('/ssr-static', (_req, res) => {
         res
             .status(200)
@@ -142,7 +142,9 @@ function registerCommonRoutes(app) {
     });
 }
 function registerErrorHandler(app) {
-    app.use((err, _req, res, _next) => {
+    app.use((err, _req, res, next) => {
+        // Error handler must keep 4 args signature for Express.
+        void next;
         console.error(err);
         res
             .status(500)
@@ -150,39 +152,9 @@ function registerErrorHandler(app) {
             .send('SSR error');
     });
 }
-async function tryHandleRouterResponse(maybeResponse, res) {
-    var _a;
-    if (!isRouterResponse(maybeResponse)) {
-        return false;
-    }
-    const location = maybeResponse.headers.get('location');
-    if (location) {
-        res.redirect(maybeResponse.status || 302, location);
-        return true;
-    }
-    const text = await maybeResponse
-        .text()
-        .catch(() => '');
-    res
-        .status(maybeResponse.status || 500)
-        .set({
-        'Content-Type': (_a = maybeResponse.headers.get('content-type')) !== null && _a !== void 0 ? _a : 'text/plain',
-    })
-        .send(text);
-    return true;
-}
-function isRouterResponse(value) {
-    if (!value || typeof value !== 'object') {
-        return false;
-    }
-    const candidate = value;
-    return (typeof candidate.status === 'number' &&
-        typeof candidate.text === 'function' &&
-        !!candidate.headers &&
-        typeof candidate.headers.get === 'function');
-}
 async function createServer() {
     const app = (0, express_1.default)();
+    const portCandidates = resolvePortCandidates();
     app.use((0, cookie_parser_1.default)());
     let vite;
     if (isDev) {
@@ -218,7 +190,8 @@ async function createServer() {
                 .end(html);
         }
         catch (e) {
-            if (await tryHandleRouterResponse(e, res)) {
+            if (isRouterResponse(e)) {
+                await sendRouterResponse(e, res);
                 return;
             }
             vite === null || vite === void 0 ? void 0 : vite.ssrFixStacktrace(e);
@@ -226,7 +199,27 @@ async function createServer() {
         }
     });
     registerErrorHandler(app);
-    const actualPort = await startServerWithPortFallback(app);
-    console.log(`Client is listening on port: ${actualPort}`);
+    const tryListen = (index) => {
+        const port = portCandidates[index];
+        if (port === undefined) {
+            throw new Error('No available port from PORT/CLIENT_PORT/fallback list');
+        }
+        const server = app
+            .listen(port, () => {
+            console.log(`Client is listening on port: ${port}`);
+        })
+            .on('error', err => {
+            if (err.code ===
+                'EADDRINUSE' &&
+                index < portCandidates.length - 1) {
+                console.warn(`Port ${port} is busy, trying next port...`);
+                tryListen(index + 1);
+                return;
+            }
+            throw err;
+        });
+        return server;
+    };
+    tryListen(0);
 }
 createServer();
