@@ -36,7 +36,6 @@ import {
   DEFAULT_MATCH3_LEVEL_ID,
   getMatch3LevelById,
 } from './engine/levels'
-import { observeLongTasks } from 'src/utils/performanceMetrics'
 
 type UiPhase =
   | 'countdown'
@@ -944,19 +943,6 @@ export const Match3Screen: React.FC<
     }, 1800)
     return () => window.clearTimeout(timeout)
   }, [hud.questProgress])
-
-  // ===== PERFORMANCE MONITORING - LONG TASKS =====
-  useEffect(() => {
-    const cleanup = observeLongTasks(duration => {
-      console.warn(
-        `[Performance] ⚠️ Long task in Match3Screen: ${duration.toFixed(
-          2
-        )}ms`
-      )
-    })
-    return cleanup
-  }, [])
-  // ===== END PERFORMANCE MONITORING =====
 
   const hudColsCount =
     4 +
