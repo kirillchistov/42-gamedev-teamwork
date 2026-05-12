@@ -943,6 +943,7 @@ export const Match3Screen: React.FC<
     }, 1800)
     return () => window.clearTimeout(timeout)
   }, [hud.questProgress])
+
   const hudColsCount =
     4 +
     (hud.goalTargetsTotal > 0 ? 1 : 0) +

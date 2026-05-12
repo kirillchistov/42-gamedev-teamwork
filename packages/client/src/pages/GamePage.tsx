@@ -76,6 +76,13 @@ import {
 import { submitLeaderboardScore } from '../shared/api/leaderboardApi'
 import { useSelector } from '../store'
 import { selectUser } from '../slices/userSlice'
+
+import {
+  markGameStart,
+  markGameEndAndMeasure,
+  startPerformanceMonitoring,
+} from '../utils/performanceMetrics'
+
 // 2DO: разобраться с алиасами @ для jest
 // import cosmicBadgeWinUrl from '@match3-public/icons/cosmic9.png?url'
 const cosmicBadgeWinUrl =
@@ -424,19 +431,34 @@ export const GamePage: React.FC = () => {
     )
   const location = useLocation()
   const navigate = useNavigate()
-  const buildGameSettingsState = () => ({
-    limitMode,
-    moveLimit,
-    durationSec,
-    goalScore,
-    selectedLevelId,
-    boardSize,
-    tileKinds,
-    boardFieldTheme,
-    debugBoostersMode,
-    activeCompanionId,
-    quests,
-  })
+  const buildGameSettingsState = useCallback(
+    () => ({
+      limitMode,
+      moveLimit,
+      durationSec,
+      goalScore,
+      selectedLevelId,
+      boardSize,
+      tileKinds,
+      boardFieldTheme,
+      debugBoostersMode,
+      activeCompanionId,
+      quests,
+    }),
+    [
+      limitMode,
+      moveLimit,
+      durationSec,
+      goalScore,
+      selectedLevelId,
+      boardSize,
+      tileKinds,
+      boardFieldTheme,
+      debugBoostersMode,
+      activeCompanionId,
+      quests,
+    ]
+  )
   const routeState = location.state as {
     notice?: string
     openSettings?: boolean
@@ -473,6 +495,12 @@ export const GamePage: React.FC = () => {
         beatRaw: readLastShownBeatIndex(),
       })
     }, [])
+
+  // ===== PERFORMANCE MONITORING =====
+  const perfMonitorRef = useRef<{
+    stop: () => void
+  } | null>(null)
+  // ===== END PERFORMANCE MONITORING =====
 
   useEffect(() => {
     const raw = window.localStorage.getItem(
@@ -746,6 +774,24 @@ export const GamePage: React.FC = () => {
     )
   }, [isStartRoute, startCountdown])
 
+  // ===== PERFORMANCE MONITORING - MOUNT/UNMOUNT =====
+  useEffect(() => {
+    console.log('[Performance] GamePage mounted')
+
+    perfMonitorRef.current =
+      startPerformanceMonitoring()
+
+    return () => {
+      console.log(
+        '[Performance] GamePage unmounted'
+      )
+      if (perfMonitorRef.current) {
+        perfMonitorRef.current.stop()
+      }
+    }
+  }, [])
+  // ===== END PERFORMANCE MONITORING =====
+
   const selectedLevel = useMemo(
     () => getMatch3LevelById(selectedLevelId),
     [selectedLevelId]
@@ -948,6 +994,15 @@ export const GamePage: React.FC = () => {
 
   const handleGameFinished = useCallback(
     (payload: GameEndPayload) => {
+      const duration = markGameEndAndMeasure()
+      if (duration !== null) {
+        console.log(
+          `[Perfomance] Game session duration: ${duration.toFixed(
+            2
+          )}ms`
+        )
+      }
+
       const next = {
         snapshot: payload.snapshot,
         reason: payload.reason,
@@ -1486,14 +1541,15 @@ export const GamePage: React.FC = () => {
                   <button
                     type="button"
                     className="btn btn--primary match3__play-btn"
-                    onClick={() =>
+                    onClick={() => {
+                      markGameStart()
                       navigate('/game/play', {
                         state: {
                           gameSettings:
                             buildGameSettingsState(),
                         },
                       })
-                    }>
+                    }}>
                     Играть
                   </button>
                 </div>
