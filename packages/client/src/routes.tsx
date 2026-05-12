@@ -32,6 +32,10 @@ import {
   initLoginPage,
 } from './pages/LoginPage'
 import {
+  YandexOAuthCallbackPage,
+  initYandexOAuthCallbackPage,
+} from './pages/YandexOAuthCallbackPage'
+import {
   LogoutPage,
   initLogoutPage,
 } from './pages/LogoutPage'
@@ -78,11 +82,15 @@ export type PageInitArgs = {
   ctx: PageInitContext
 }
 
+export type PageInitFn = (
+  args: PageInitArgs
+) => Promise<unknown> | void
+
 // Расширяем RouteObject из react-router-dom: path и Component обязательны, fetchData — серверная инициализация
 export type AppRoute = RouteObject & {
   path: string
   Component: ComponentType
-  fetchData: (args: PageInitArgs) => Promise<unknown> | void
+  fetchData: PageInitFn
 }
 
 export const routes: AppRoute[] = [
@@ -140,6 +148,11 @@ export const routes: AppRoute[] = [
     path: '/logout',
     Component: LogoutPage,
     fetchData: initLogoutPage,
+  },
+  {
+    path: '/oauth/yandex/callback',
+    Component: YandexOAuthCallbackPage,
+    fetchData: initYandexOAuthCallbackPage,
   },
   {
     path: '/signup',
