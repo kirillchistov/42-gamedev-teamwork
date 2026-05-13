@@ -79,6 +79,7 @@ export type PageInitContext = {
 export type PageInitArgs = {
   dispatch: AppDispatch
   state: RootState
+  getState: () => RootState
   ctx: PageInitContext
 }
 

@@ -1,4 +1,4 @@
-// S8 chores: лендинг — редирект OAuth с / только при совпадении state в session.
+// 7.3 chores: лендинг — редирект OAuth с / только при совпадении state в session.
 
 import { useEffect } from 'react'
 import { Helmet } from 'react-helmet'

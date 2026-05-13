@@ -79,6 +79,7 @@ export const render = async (
     await fetchData({
       dispatch: store.dispatch,
       state: store.getState(),
+      getState: () => store.getState(),
       ctx: createContext(req),
     })
   } catch (e) {

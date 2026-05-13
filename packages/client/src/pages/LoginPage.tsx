@@ -1,6 +1,7 @@
 /** Изменения и починка Sprint6 Chores:
  * Сбрасываем серверную сессию при заходе на /login и перед signin,
  * чтобы починить 400 «User already in system» (см. loginThunk).
+ * При уже залогиненном пользователе на /login и /signup — logout + повторная проверка /auth/user.
  */
 import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
@@ -26,6 +27,8 @@ import {
 import {
   fetchUserThunk,
   loginThunk,
+  logoutThunk,
+  selectUser,
   selectUserError,
   selectUserIsAuthChecked,
   selectUserIsLoading,
@@ -150,11 +153,6 @@ export const LoginPage: React.FC = () => {
                   onChange={e =>
                     setLogin(e.target.value)
                   }
-                  onFocus={() =>
-                    loginValidate.handleFieldFocus(
-                      'login'
-                    )
-                  }
                   onBlur={e =>
                     loginValidate.handleFieldBlur(
                       'login',
@@ -179,11 +177,6 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={e =>
                     setPassword(e.target.value)
-                  }
-                  onFocus={() =>
-                    loginValidate.handleFieldFocus(
-                      'password'
-                    )
                   }
                   onBlur={e =>
                     loginValidate.handleFieldBlur(
@@ -262,13 +255,23 @@ export const LoginPage: React.FC = () => {
 
 export const initLoginPage = ({
   dispatch,
-  state,
+  getState,
 }: PageInitArgs) => {
-  if (selectUserIsAuthChecked(state)) {
-    return Promise.resolve()
+  const ensureGuest = async () => {
+    if (!selectUserIsAuthChecked(getState())) {
+      await dispatch(fetchUserThunk())
+        .unwrap()
+        .catch(() => undefined)
+    }
+    if (selectUser(getState())) {
+      await dispatch(logoutThunk())
+        .unwrap()
+        .catch(() => undefined)
+      await dispatch(fetchUserThunk())
+        .unwrap()
+        .catch(() => undefined)
+    }
   }
 
-  return dispatch(fetchUserThunk()).catch(
-    () => undefined
-  )
+  return ensureGuest()
 }

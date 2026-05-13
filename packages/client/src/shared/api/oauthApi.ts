@@ -1,6 +1,19 @@
-// S8 chores: OAuth — без дефолтного service_id; только env или ответ API.
+// 7.3 chores: OAuth — без дефолтного service_id; только env или ответ API.
 
 import { BASE_URL } from '../../constants'
+import {
+  humanizePraktikumAuthReason,
+  parseJsonReasonFromText,
+} from '../utils/praktikumAuthErrors'
+
+function throwHttpError(
+  text: string,
+  fallback: string
+): never {
+  const raw = parseJsonReasonFromText(text)
+  const msg = humanizePraktikumAuthReason(raw)
+  throw new Error(msg || fallback)
+}
 
 type YandexServiceIdResponse = {
   service_id: string
@@ -75,8 +88,9 @@ export async function getYandexServiceId(
 
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(
-      text || 'Не удалось получить service_id'
+    throwHttpError(
+      text,
+      'Не удалось получить service_id'
     )
   }
 
@@ -112,8 +126,9 @@ export async function signInByYandexCode(
 
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(
-      text || 'Не удалось завершить OAuth вход'
+    throwHttpError(
+      text,
+      'Не удалось завершить OAuth вход'
     )
   }
 }

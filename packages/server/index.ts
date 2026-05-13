@@ -4,6 +4,7 @@ dotenv.config()
 
 import express from 'express'
 import { createClientAndConnect } from './db'
+import { requirePraktikumAuth } from './middleware/requirePraktikumAuth'
 
 const app = express()
 app.use(cors())
@@ -12,20 +13,28 @@ const port =
 
 createClientAndConnect()
 
-app.get('/friends', (_, res) => {
-  res.json([
-    { name: 'Саша', secondName: 'Панов' },
-    { name: 'Лёша', secondName: 'Садовников' },
-    { name: 'Серёжа', secondName: 'Иванов' },
-  ])
-})
+app.get(
+  '/friends',
+  requirePraktikumAuth,
+  (_, res) => {
+    res.json([
+      { name: 'Саша', secondName: 'Панов' },
+      { name: 'Лёша', secondName: 'Садовников' },
+      { name: 'Серёжа', secondName: 'Иванов' },
+    ])
+  }
+)
 
-app.get('/user', (_, res) => {
-  res.json({
-    name: '</script>Степа',
-    secondName: 'Степанов',
-  })
-})
+app.get(
+  '/user',
+  requirePraktikumAuth,
+  (_, res) => {
+    res.json({
+      name: '</script>Степа',
+      secondName: 'Степанов',
+    })
+  }
+)
 
 app.get('/', (_, res) => {
   res.json('👋 Howdy from the server :)')
