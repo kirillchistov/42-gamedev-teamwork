@@ -1,3 +1,5 @@
+// 7.3 chores: OAuth callback — один обмен code (Strict Mode / повторный effect).
+
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
@@ -17,6 +19,10 @@ import {
 import { Button } from '../shared/ui'
 import { fetchUserThunk } from '../slices/userSlice'
 import { useDispatch } from '../store'
+
+/** Уже идёт обмен этим code (React Strict Mode дублирует effect). */
+const yandexOAuthCodeExchangeInFlight =
+  new Set<string>()
 
 export const YandexOAuthCallbackPage: React.FC =
   () => {
@@ -58,9 +64,12 @@ export const YandexOAuthCallbackPage: React.FC =
         return
       }
 
-      window.sessionStorage.removeItem(
-        YANDEX_OAUTH_STATE_KEY
-      )
+      if (
+        yandexOAuthCodeExchangeInFlight.has(code)
+      ) {
+        return
+      }
+      yandexOAuthCodeExchangeInFlight.add(code)
 
       const redirectUri = buildYandexRedirectUri()
 
@@ -69,6 +78,9 @@ export const YandexOAuthCallbackPage: React.FC =
         redirect_uri: redirectUri,
       })
         .then(async () => {
+          window.sessionStorage.removeItem(
+            YANDEX_OAUTH_STATE_KEY
+          )
           const result = await dispatch(
             fetchUserThunk()
           )
@@ -91,6 +103,11 @@ export const YandexOAuthCallbackPage: React.FC =
               : 'Не удалось завершить вход через Яндекс.'
           )
         })
+        .finally(() => {
+          yandexOAuthCodeExchangeInFlight.delete(
+            code
+          )
+        })
     }, [dispatch, navigate, searchParams])
 
     return (
@@ -108,10 +125,7 @@ export const YandexOAuthCallbackPage: React.FC =
               <>
                 <p
                   role="alert"
-                  style={{
-                    color:
-                      'var(--color-error, #e53935)',
-                  }}>
+                  className="auth-form__error">
                   {error}
                 </p>
                 <Button
