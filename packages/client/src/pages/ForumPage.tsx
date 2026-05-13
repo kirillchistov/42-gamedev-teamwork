@@ -99,9 +99,7 @@ export const ForumPage: React.FC = () => {
           </div>
 
           {showCreateForm && (
-            <div
-              className="extra-card"
-              style={{ marginBottom: 16 }}>
+            <div className="extra-card extra-card--mb16">
               <div className="forum-form">
                 <h3>Создать тему</h3>
                 <div className="forum-form__field">

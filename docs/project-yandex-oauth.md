@@ -1,12 +1,12 @@
 # Авторизация через Yandex OAuth (план интеграции)
 
-В репозитории сейчас реализованы **логин/регистрация по логину и паролю** через API ЯП ('/auth/signin', '/auth/signup', '/auth/user', '/auth/logout') — см. 'packages/client/src/slices/userSlice.ts' и 'packages/client/src/shared/api/userApi.ts`. OAuth Яндекса **ещё не подключён**; ниже — как добавить его, не ломая структуру.
+В репозитории реализованы **логин/регистрация по логину и паролю** через API ЯП (`/auth/signin`, `/auth/signup`, `/auth/user`, `/auth/logout`) — см. `packages/client/src/slices/userSlice.ts` и `packages/client/src/shared/api/userApi.ts`. **Вход через Яндекс OAuth** на клиенте: `packages/client/src/shared/api/oauthApi.ts`, страницы `LoginPage`, `YandexOAuthCallbackPage`, редирект с корня в `LandingPage` при `?code=` + совпадении `state` с `sessionStorage`.
 
 Официальное описание OAuth API ЯП: [OpenAPI — OAuth](https://ya-praktikum.tech/api/v2/openapi/oauth).
 
 ---
 
-## 0. Постановка задачи (как в проекте)
+## 0. Постановка задачи
 
 Добавить в проект авторизацию через Yandex OAuth.
 
@@ -19,7 +19,7 @@
 Критически важное условие:
 
 - Чтобы редирект заработал, ваш `redirect_uri` должен быть добавлен в OAuth-настройки на стороне Практикума.
-- Если URI еще не добавлен, отправьте руководителю ссылку с просьбой добавить ее.
+- Если URI еще не добавлен, отправьте ментору ссылку с просьбой добавить ее.
 
 Поддерживаемые локальные `redirect_uri` для теста:
 
@@ -29,7 +29,7 @@
 
 Если нужен другой локальный порт:
 
-- согласовать конкретный `redirect_uri` с руководителем и попросить добавить его в OAuth.
+- согласовать конкретный `redirect_uri` с ментором и попросить добавить его в OAuth.
 
 ---
 
@@ -66,7 +66,7 @@
 | Общий базовый URL API | 'packages/client/src/constants.tsx' — 'BASE_URL = 'https://ya-praktikum.tech/api/v2'' |
 | Запросы с cookie | как в 'userSlice': 'credentials: 'include'' к домену API, если сессия выставляется cookie с того же API-домена |
 
-## 4. Врезка: маршрут колбэка (скелет)
+## 4. Маршрут колбэка 
 
 Добавьте в конфигурацию роутов (рядом с остальными объектами в 'routes'):
 

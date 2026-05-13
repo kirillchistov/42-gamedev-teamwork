@@ -14,12 +14,7 @@ export const FieldError: React.FC<
 
   return (
     <span
-      className={clsx(className)}
-      style={{
-        color: '#ef4444',
-        fontSize: 12,
-        marginTop: 2,
-      }}>
+      className={clsx('field-error', className)}>
       {message}
     </span>
   )

@@ -335,13 +335,7 @@ export const SignupPage: React.FC = () => {
               </label>
 
               {error && (
-                <p
-                  style={{
-                    color:
-                      'var(--color-error, #e53935)',
-                    margin: 0,
-                    gridColumn: '1 / -1',
-                  }}>
+                <p className="auth-form__error">
                   {error}
                 </p>
               )}
