@@ -13,7 +13,10 @@ import {
   CommentReaction,
   Topic,
 } from '../models'
-import { canForumAuthorOrModerator } from './forumAccess'
+import {
+  canForumAuthorOrModerator,
+  isForumModeratorUser,
+} from './forumAccess'
 import { isAllowedForumReactionEmoji } from './forumEmojiGuard'
 
 const router = Router()
@@ -63,8 +66,12 @@ function parseOffsetParam(raw: unknown): number {
 
 function topicPayload(
   row: Topic,
-  commentsCount: number
+  commentsCount: number,
+  req: Request
 ) {
+  const user = req.praktikumUser
+  const viewerIsModerator =
+    user != null && isForumModeratorUser(user.id)
   return {
     id: row.id,
     title: row.title,
@@ -73,6 +80,7 @@ function topicPayload(
     createdAt: row.createdAt.toISOString(),
     content: row.content,
     commentsCount,
+    viewerIsModerator,
   }
 }
 
@@ -150,7 +158,11 @@ router.get('/topics', async (req, res) => {
 
     res.json(
       rows.map(t =>
-        topicPayload(t, countMap.get(t.id) ?? 0)
+        topicPayload(
+          t,
+          countMap.get(t.id) ?? 0,
+          req
+        )
       )
     )
   } catch {
@@ -185,7 +197,9 @@ router.get(
         where: { topicId },
       })
 
-      res.json(topicPayload(topic, commentsCount))
+      res.json(
+        topicPayload(topic, commentsCount, req)
+      )
     } catch {
       res
         .status(500)
@@ -228,7 +242,9 @@ router.post('/topics', async (req, res) => {
       authorDisplay: user.displayLabel,
     })
 
-    res.status(201).json(topicPayload(topic, 0))
+    res
+      .status(201)
+      .json(topicPayload(topic, 0, req))
   } catch (e) {
     if (e instanceof ValidationError) {
       res.status(400).json({
@@ -695,7 +711,9 @@ router.patch(
       const commentsCount = await Comment.count({
         where: { topicId },
       })
-      res.json(topicPayload(topic, commentsCount))
+      res.json(
+        topicPayload(topic, commentsCount, req)
+      )
     } catch (e) {
       if (e instanceof ValidationError) {
         res.status(400).json({

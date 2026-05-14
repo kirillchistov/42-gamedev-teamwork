@@ -7,6 +7,8 @@ export interface ForumTopic {
   createdAt: string
   content: string
   commentsCount: number
+  /** Текущая сессия в списке модераторов форума (env FORUM_MODERATOR_PRAKTIKUM_IDS). */
+  viewerIsModerator: boolean
 }
 
 export interface ForumComment {

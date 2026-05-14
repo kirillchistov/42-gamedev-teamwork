@@ -3,9 +3,17 @@
 Текущее состояние:
 ['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts) ходит на **`VITE_APP_API_URL`** + `/api/forum` (см. ['forumApi.ts'](../packages/client/src/shared/api/forumApi.ts)); демо-данные удалены. Типы ['forum.ts'](../packages/client/src/types/forum.ts), страницы ['ForumPage'](../packages/client/src/pages/ForumPage.tsx), ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx). Роуты '/forum', '/forum/:topicId' уже **за 'withAuthGuard'** — при отказе авторизации редирект на '/login' (['withAuthGuard.tsx'](../packages/client/src/hoc/withAuthGuard.tsx)). **403** от API форума: редирект на `/login` + подсказка (см. **§15**).
 
-Бэкенд монорепы: ['packages/server'](../packages/server/index.ts) — Express, PostgreSQL через ['db.ts'](../packages/server/db.ts), проверка сессии Практикума в ['requirePraktikumAuth'](../packages/server/middleware/requirePraktikumAuth.ts) — **403** при отсутствии или недействительной сессии (как в ТЗ; см. §10); при успехе доступен **`req.praktikumUser`** для форума. Роут **'/api/forum'** — см. §13.
+Бэкенд монорепы: ['packages/server'](../packages/server/index.ts) — Express, PostgreSQL через ['db.ts'](../packages/server/db.ts), проверка сессии Практикума в ['requirePraktikumAuth'](../packages/server/middleware/requirePraktikumAuth.ts) — **403** при отсутствии или недействительной сессии (как в спеке); при успехе доступен **`req.praktikumUser`** для форума. Роут **'/api/forum'** — по спеке.
 
 **База URL приложения API** (друзья, форум): одна переменная на клиенте — 'VITE_APP_API_URL' (см. ['constants.tsx'](../packages/client/src/constants.tsx)), по умолчанию 'http://localhost:3000'; порт **'SERVER_PORT'** пакета 'packages/server' по умолчанию **3000**.
+
+**Клиент, Vite и Jest:** в коде клиента база API читается как **`process.env.VITE_APP_API_URL`**, а не через 'import.meta.env': в ['vite.config.ts'](../packages/client/vite.config.ts) задаются 'loadEnv' и 'define', чтобы подставить значение в бандл Vite и в SSR; Jest подхватывает '.env' через ['jest.config.js'](../packages/client/jest.config.js). Так тесты в Node (CJS) не падают на 'import.meta'.
+
+**Модераторы:** на сервере список id в 'FORUM_MODERATOR_PRAKTIKUM_IDS' (см. ['forumAccess.ts'](../packages/server/routes/forumAccess.ts)). В каждом JSON топика поле **`viewerIsModerator`** — может ли текущая сессия править/удалять чужие сущности по правилам модератора; ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx) использует его для кнопок правок.
+
+**Пагинация комментариев на клиенте (MVP):** ['forumGetAllComments'](../packages/client/src/shared/api/forumApi.ts) последовательно запрашивает страницы по 'limit'/'offset' и объединяет до 'total'. «Показать ещё» или cursor на клиенте пока не делаем — API постраничный.
+
+**Тесты и TypeScript:** 'ts-jest' может предупреждать о связке с **TypeScript 6**; при появлении проблем имеет смысл зафиксировать поддерживаемые версии или планово перейти на Vitest. Локально и в CI: 'yarn workspace client test', 'yarn workspace client typecheck', 'yarn workspace server build' — см. ['checks.yml'](../.github/workflows/checks.yml).
 
 ---
 
@@ -15,13 +23,13 @@
 |---|------------|---------|
 | 1 | Стек: PostgreSQL 12+, Sequelize, Docker Compose | Уже есть Postgres в ['docker-compose.yml'](../docker-compose.yml); сервер подключается через 'POSTGRES_*' + 'POSTGRES_HOST'. |
 | 2 | Все «ручки» форума за авторизацией | Общий middleware: нет валидной сессии Практикума → **403** + JSON '{ "reason": "..." }'. |
-| 3 | Несколько топиков | CRUD минимум: список, создание, чтение одного; правки/удаление — см. §2.1. |
-| 4 | Сущности: топик, комментарий, дерево ответов, реакции | См. §3–4. |
+| 3 | Несколько топиков | CRUD минимум: список, создание, чтение одного; правки/удаление — по спеке |
+| 4 | Сущности: топик, комментарий, дерево ответов, реакции |  по спеке |
 | 5 | XSS / SQL-injection | Текст как **plain text**, лимиты длины, без HTML; Sequelize — параметризованные запросы; при отдаче в JSON экранирование на клиенте (React по умолчанию). |
 | 6 | Неавторизован → **403** на Node | Единый 'requirePraktikumAuth' (и далее при необходимости 'attachPraktikumUser'): без cookie / 'GET /auth/user' не 200 → **403 Forbidden**. |
 | 7 | Клиент: заглушка / скрытие | Уже: гард + 'Navigate' на '/login'. Дополнительно: при **403** от API — toast + редирект или блок формы (итерация «подключение API»). |
-| 8 | Пагинация комментариев | См. §2.2 ('limit' / 'offset' или 'cursor'). |
-| 9 | Редактирование / удаление | **Автор** или **модератор/админ** (роль из профиля Практикума или флаг в нашей БД — уточнить при реализации). |
+| 8 | Пагинация комментариев |  по спеке ('limit' / 'offset' или 'cursor'). |
+| 9 | Редактирование / удаление | **Автор** или **модератор** по списку 'FORUM_MODERATOR_PRAKTIKUM_IDS' на сервере; в ответах топика поле 'viewerIsModerator' для UI. |
 
 ---
 
@@ -40,7 +48,7 @@
 | 'PATCH' | '/api/forum/topics/:topicId' | Редактирование: **автор темы** или **модератор/админ**. |
 | 'DELETE' | '/api/forum/topics/:topicId' | Удаление: **автор** или **модератор/админ**. |
 
-Ответы списка/одного топика — совместимы с типом ['ForumTopic'](../packages/client/src/types/forum.ts): 'id', 'title', 'author' (строка для UI), **`authorPraktikumId`** (числовой id Практикума для проверки прав на клиенте), 'createdAt' (ISO), 'content', 'commentsCount'.
+Ответы списка/одного топика — совместимы с типом ['ForumTopic'](../packages/client/src/types/forum.ts): 'id', 'title', 'author' (строка для UI), **`authorPraktikumId`**, **`viewerIsModerator`** (boolean: текущий пользователь в списке модераторов env), 'createdAt' (ISO), 'content', 'commentsCount'.
 
 ### 2.2 Комментарии (дерево + пагинация)
 
@@ -53,7 +61,7 @@
 
 **Рекурсия:** одна таблица 'comments' с 'parent_id → comments.id'; глубина не ограничена на уровне БД; при необходимости — лимит глубины в валидации.
 
-**Пагинация:** для длинных тем обязательна; клиент при прокрутке или «Показать ещё» запрашивает следующую страницу. Дерево на клиенте можно собирать из плоского 'items', если сортировка на сервере стабильна ('created_at', 'id').
+**Пагинация:** для длинных тем обязательна на API; клиент в MVP может собрать все страницы в одном thunk (см. блок «Пагинация комментариев на клиенте» выше) либо по мере прокрутки / «Показать ещё» запрашивать следующую страницу. Дерево на клиенте можно собирать из плоского 'items', если сортировка на сервере стабильна ('created_at', 'id').
 
 ### 2.3 Реакции (эмоции)
 

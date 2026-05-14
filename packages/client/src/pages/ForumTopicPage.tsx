@@ -115,6 +115,12 @@ export const ForumTopicPage: React.FC = () => {
     Boolean(topic) &&
     user!.id === topic!.authorPraktikumId
 
+  const viewerIsModerator = Boolean(
+    topic?.viewerIsModerator
+  )
+  const canEditTopic =
+    isTopicAuthor || viewerIsModerator
+
   const handleAddComment = async () => {
     if (!newComment.trim() || !topicId) return
     setPageError(null)
@@ -297,6 +303,8 @@ export const ForumTopicPage: React.FC = () => {
       const isCommentAuthor =
         Boolean(user) &&
         user!.id === comment.authorPraktikumId
+      const canEditComment =
+        isCommentAuthor || viewerIsModerator
 
       return (
         <React.Fragment key={comment.id}>
@@ -405,7 +413,7 @@ export const ForumTopicPage: React.FC = () => {
                 }>
                 Ответить
               </button>
-              {isCommentAuthor &&
+              {canEditComment &&
                 editingCommentId !==
                   comment.id && (
                   <>
@@ -505,7 +513,7 @@ export const ForumTopicPage: React.FC = () => {
                     topic.createdAt
                   ).toLocaleDateString('ru-RU')}
                 </p>
-                {isTopicAuthor ? (
+                {canEditTopic ? (
                   <div className="forum-form__actions forum-topic__actions">
                     {!topicEditOpen ? (
                       <>
