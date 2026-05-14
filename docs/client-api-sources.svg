@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" role="img" aria-labelledby="title desc">
+  <title id="title">;85=B: :0:85 <>4C;8 : :0:><C E>ABC</title>
+  <desc id="desc">BASE_URL 254QB =0 API @0:B8:C<0; SERVER_HOST =0 ;>:0;L=K9 Node API ?0:5B0 server.</desc>
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0b1220"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <style>
+      .col{fill:#0f172a;stroke:#475569;stroke-width:1;rx:12}
+      .row{fill:#334155;stroke:#64748b;stroke-width:1.2;rx:8}
+      .h{fill:#38bdf8;font:700 13px system-ui,sans-serif}
+      .t{fill:#f8fafc;font:600 12px system-ui,sans-serif}
+      .m{fill:#cbd5e1;font:10.5px ui-monospace,monospace}
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg2)"/>
+  <text x="400" y="32" text-anchor="middle" fill="#f8fafc" font="700 16px system-ui,sans-serif">;85=B: 420 107>2KE URL</text>
+  <text x="400" y="52" text-anchor="middle" class="m">packages/client/src/constants.tsx</text>
+
+  <rect x="24" y="72" width="360" height="300" class="col"/>
+  <text x="204" y="98" text-anchor="middle" class="h">BASE_URL ’ @0:B8:C<</text>
+  <text x="204" y="116" text-anchor="middle" class="m">ya-praktikum.tech/api/v2</text>
+
+  <rect x="40" y="128" width="328" height="44" class="row"/>
+  <text x="56" y="150" class="t">apiClient.ts ’ userApi</text>
+  <text x="56" y="164" class="m">?@>D8;L, logout, multipart avatar</text>
+
+  <rect x="40" y="182" width="328" height="44" class="row"/>
+  <text x="56" y="204" class="t">userSlice.ts</text>
+  <text x="56" y="218" class="m">signin / signup (?@O<>9 fetch =0 BASE_URL)</text>
+
+  <rect x="40" y="236" width="328" height="44" class="row"/>
+  <text x="56" y="258" class="t">oauthApi.ts</text>
+  <text x="56" y="272" class="m">Yandex OAuth</text>
+
+  <rect x="40" y="290" width="328" height="44" class="row"/>
+  <text x="56" y="312" class="t">leaderboardApi.ts</text>
+  <text x="56" y="326" class="m">/leaderboard&</text>
+
+  <rect x="416" y="72" width="360" height="220" class="col"/>
+  <text x="596" y="98" text-anchor="middle" class="h">SERVER_HOST ’ =0H Node</text>
+  <text x="596" y="116" text-anchor="middle" class="m">process.env.VITE_APP_API_URL (vite define)</text>
+
+  <rect x="432" y="128" width="328" height="44" class="row"/>
+  <text x="448" y="150" class="t">forumApi.ts</text>
+  <text x="448" y="164" class="m">/api/forum/& + credentials</text>
+
+  <rect x="432" y="182" width="328" height="44" class="row"/>
+  <text x="448" y="204" class="t">friendsSlice.ts</text>
+  <text x="448" y="218" class="m">GET /friends</text>
+
+  <rect x="416" y="308" width="360" height="64" class="col"/>
+  <text x="596" y="334" text-anchor="middle" class="h"> 5AC@AK 020B0@>2</text>
+  <text x="596" y="354" text-anchor="middle" class="m">API_RESOURCES_URL = BASE_URL + /resources</text>
+
+  <text x="400" y="392" text-anchor="middle" class="m">SSR Express =5 ?@>:A8@C5B MB8 70?@>AK  1@0C75@ 1LQB =0?@O<CN 2 >10 E>AB0 (@07=K5 origin ?@8 dev).</text>
+</svg>

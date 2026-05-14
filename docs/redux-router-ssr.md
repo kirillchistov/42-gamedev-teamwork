@@ -1,11 +1,13 @@
 # Redux + Router SSR (план реализации для спринта)
 
+Этот документ — **план и чеклист** по цепочке Redux + React Router на SSR. Он **не** описывает сетевую архитектуру (Практикум vs `packages/server`, порты, `VITE_APP_API_URL`): это единообразно разобрано в **[`project-structure.md`](./project-structure.md)** (раздел про HTTP и диаграммы). Текущая реализация data router + стора — в **[`project-redux-router-ssr.md`](./project-redux-router-ssr.md)**.
+
 Цель задачи: при SSR на сервере создать Redux state для конкретного URL, передать его в HTML и корректно восстановить на клиенте как `preloadedState`.
 
-Ограничения текущего этапа:
+Ограничения и контекст:
 
-- Авторизация по cookie будет дорабатываться позже (в 9 спринте).
-- Структуру монорепозитория не меняем: SSR-сервер остаётся в `packages/client/server/index.ts`.
+- **SSR-сервер** живёт только в пакете **`packages/client`** — каталог [`packages/client/server`](../packages/client/server) (исходник [`index.ts`](../packages/client/server/index.ts), в рантайме после `yarn build:ssr-server` используется собранный **`index.js`**). Это **не** тот же процесс, что JSON API в [`packages/server`](../packages/server).
+- **Cookie и сеть:** в браузере cookie Практикума уходят и на **Практикум** (`BASE_URL`), и на **наш Node** (`SERVER_HOST` / `VITE_APP_API_URL`) при `credentials: 'include'`. При написании **`fetchData`** для SSR по-прежнему нельзя использовать `window` / `document`; если когда-нибудь понадобятся **серверные** запросы к нашему API из `fetchData`, нужно явно учитывать URL (`INTERNAL_SERVER_URL` / env), а не предполагать «тот же хост, что SSR».
 
 ---
 
@@ -29,7 +31,7 @@
   - серверный store создаётся через `configureStore({ reducer })`;
   - выполняется `fetchData` для совпавшего route;
   - возвращается `initialState: store.getState()`.
-- В `packages/client/server/index.ts`:
+- В [`packages/client/server`](../packages/client/server) (SSR Express, см. [`index.ts`](../packages/client/server/index.ts)):
   - `initialState` сериализуется через `serialize-javascript`;
   - вставляется в HTML как `window.APP_INITIAL_STATE`.
 - В `packages/client/src/store.ts`:
@@ -84,7 +86,7 @@
 
 Что сделать:
 
-1. В `server/index.ts` оставить текущую вставку:
+1. В SSR-ветке `packages/client/server` оставить текущую вставку:
    - `<script>window.APP_INITIAL_STATE = ...</script>`.
 2. Не заменять на «сырое `JSON.stringify` в шаблон» без экранирования.
 
@@ -140,9 +142,9 @@
 - [ ] Добавить безопасный fallback при отсутствии `window.APP_INITIAL_STATE`.
 - [ ] Опционально очищать глобальную переменную после старта store.
 
-### `packages/client/server/index.ts`
+### `packages/client/server` (SSR Express)
 
-- [ ] Проверить, что вставка `window.APP_INITIAL_STATE` всегда происходит в SSR-ветке `app.get('*')`.
+- [ ] Проверить, что вставка `window.APP_INITIAL_STATE` всегда происходит в SSR-ветке `app.get('*')` в [`index.ts`](../packages/client/server/index.ts) (или в собранном `index.js` после `tsc`).
 - [ ] Не трогать `serialize(..., { isJSON: true })`.
 
 ### `packages/client/src/routes.tsx` (+ init-функции страниц)
@@ -195,8 +197,11 @@ yarn workspace client dev
 
 ---
 
-## 8) Что переносим в 9 спринт
+## 8) Дальнейшие улучшения (SSR + auth)
 
-- Полноценная авторизация по cookie в SSR-контексте.
-- Проброс и валидация auth-контекста в `fetchData` защищённых роутов.
-- E2E-тесты SSR + auth сценариев.
+Уже сейчас: в браузере сессия Практикума используется для запросов к API Практикума и к **`packages/server`**; защита наших ручек — **`requirePraktikumAuth`** (см. [`project-structure.md`](./project-structure.md)).
+
+Опционально на будущее:
+
+- Явный **проброс cookie / токена** в `fetchData`, если понадобится дергать **наш** API **с Node SSR** (другой origin / `INTERNAL_SERVER_URL` — не путать с URL страницы в браузере).
+- Ужесточение типов и e2e: SSR + защищённые маршруты + редиректы при 403.

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">HTTP: 1@0C75@, SSR, =0H API 8 @0:B8:C<</title>
+  <desc id="desc">@0C75@ E>48B 2 SSR-A5@25@ ?0:5B0 client, =0?@O<CN 2 API @0:B8:C<0 8 2 >B45;L=K9 Express packages/server; A5@25@ D>@C<0 ?@>25@O5B A5AA8N G5@57 @0:B8:C< 8 ?8H5B 2 Postgres.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0b1220"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <polygon points="0 0,9 3,0 6" fill="#94a3b8"/>
+    </marker>
+    <style>
+      .box{fill:#334155;stroke:#64748b;stroke-width:1.5;rx:10}
+      .boxHi{fill:#1e3a5f;stroke:#38bdf8;stroke-width:1.8;rx:10}
+      .grp{fill:#0f172a;stroke:#475569;stroke-width:1;rx:12}
+      .t{fill:#f8fafc;font:600 14px system-ui,sans-serif}
+      .s{fill:#cbd5e1;font:11px ui-monospace,monospace}
+      .edge{stroke:#94a3b8;stroke-width:2;fill:none;marker-end:url(#arrow)}
+      .edgeHi{stroke:#38bdf8;stroke-width:2;fill:none;marker-end:url(#arrow)}
+      .cap{fill:#fbbf24;font:600 11px system-ui,sans-serif}
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <text x="480" y="36" text-anchor="middle" class="t" font-size="18">HTTP-A;>8: :C40 E>48B 1@0C75@ 8 :0: A2O70=K A5@28AK</text>
+  <text x="480" y="58" text-anchor="middle" class="s">Cookie A5AA88 @0:B8:C<0 CE>48B 8 =0 ya-praktikum.tech, 8 =0 =0H Node API (B>B 65 1@0C75@)</text>
+
+  <!-- Browser -->
+  <rect x="360" y="88" width="240" height="56" class="boxHi"/>
+  <text x="480" y="118" text-anchor="middle" class="t">@0C75@</text>
+  <text x="480" y="134" text-anchor="middle" class="s">React SPA ?>A;5 ?5@2>9 703@C7:8</text>
+
+  <!-- SSR -->
+  <rect x="40" y="200" width="280" height="120" class="grp"/>
+  <text x="56" y="222" class="s">packages/client/server</text>
+  <rect x="56" y="232" width="248" height="76" class="box"/>
+  <text x="180" y="258" text-anchor="middle" class="t">SSR Express + Vite</text>
+  <text x="180" y="278" text-anchor="middle" class="s">HTML, APP_INITIAL_STATE</text>
+  <text x="180" y="296" text-anchor="middle" class="s">CLIENT_PORT / PORT</text>
+
+  <!-- Node API -->
+  <rect x="340" y="200" width="280" height="120" class="grp"/>
+  <text x="356" y="222" class="s">packages/server (createApp)</text>
+  <rect x="356" y="232" width="248" height="76" class="box"/>
+  <text x="480" y="258" text-anchor="middle" class="t">Node API</text>
+  <text x="480" y="278" text-anchor="middle" class="s">/api/forum /friends /user</text>
+  <text x="480" y="296" text-anchor="middle" class="s">SERVER_PORT ’ 3000</text>
+
+  <!-- Praktikum -->
+  <rect x="640" y="200" width="280" height="120" class="grp"/>
+  <text x="656" y="222" class="s">@0:B8:C< (2=5H=89)</text>
+  <rect x="656" y="232" width="248" height="76" class="box"/>
+  <text x="780" y="258" text-anchor="middle" class="t">ya-praktikum.tech/api/v2</text>
+  <text x="780" y="278" text-anchor="middle" class="s">auth, profile, oauth, leaderboard</text>
+  <text x="780" y="296" text-anchor="middle" class="s">GET /auth/user ?> Cookie</text>
+
+  <!-- Postgres -->
+  <rect x="380" y="400" width="200" height="64" class="box"/>
+  <text x="480" y="430" text-anchor="middle" class="t">PostgreSQL</text>
+  <text x="480" y="448" text-anchor="middle" class="s">D>@C<: topics, comments, reactions</text>
+
+  <!-- Arrows browser down -->
+  <path class="edgeHi" d="M 420 144 L 180 200"/>
+  <text x="260" y="168" class="cap">?5@20O AB@0=8F0</text>
+  <path class="edgeHi" d="M 480 144 L 480 200"/>
+  <text x="492" y="178" class="cap">fetch</text>
+  <path class="edgeHi" d="M 540 144 L 780 200"/>
+  <text x="700" y="168" class="cap">fetch</text>
+
+  <!-- Server to Praktikum -->
+  <path class="edge" d="M 604 276 L 656 276"/>
+  <text x="630" y="268" class="s" text-anchor="middle">middleware</text>
+
+  <!-- Server to PG -->
+  <path class="edge" d="M 480 320 L 480 400"/>
+
+  <text x="480" y="528" text-anchor="middle" class="s">>4@>1=>AB8 middleware: packages/server/middleware/requirePraktikumAuth.ts</text>
+</svg>
