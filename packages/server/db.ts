@@ -1,7 +1,8 @@
 import { sequelize } from './sequelize'
+import './models'
 
 /**
- * Проверка соединения с PostgreSQL через Sequelize (ORM для форума и др.).
+ * Проверка соединения с PostgreSQL через Sequelize.
  */
 export async function createClientAndConnect(): Promise<null> {
   try {
