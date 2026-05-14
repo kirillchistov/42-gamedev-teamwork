@@ -25,35 +25,37 @@
 
 ### Сводная диаграмма (картинка)
 
-![HTTP: браузер, SSR, наш API и Практикум](./http-apis-overview.svg)
+Файлы SVG лежат **в том же каталоге**, что и этот документ (`docs/`). В превью Markdown некоторые IDE берут базовый URL **корня репозитория**, из‑за этого картинки по относительному пути могут не отображаться — тогда откройте файл по ссылке ниже или из дерева проекта.
+
+![HTTP — браузер, SSR, наш API и Практикум](http-apis-overview.svg)
+
+- Прямая ссылка на файл: [`docs/http-apis-overview.svg`](http-apis-overview.svg)
 
 ### Клиент: какой код к какому хосту
 
-![Клиент: BASE_URL vs SERVER_HOST](./client-api-sources.svg)
+![Клиент — BASE_URL и SERVER_HOST](client-api-sources.svg)
+
+- Прямая ссылка на файл: [`docs/client-api-sources.svg`](client-api-sources.svg)
 
 ### Цепочка middleware на `packages/server` (сессия)
 
+Упрощённая **блок-схема** (без вложенных `alt` в sequenceDiagram — там в рендере Mermaid линии и подписи часто наезжают друг на друга).
+
 ```mermaid
-sequenceDiagram
-  autonumber
-  participant B as Браузер
-  participant S as packages/server
-  participant P as Практикум GET /auth/user
-  Note over B,S: Cookie той же сессии, что и у Практикума
-  B->>S: Запрос на /api/forum/... или /friends или /user
-  alt LOCAL_PRAKTIKUM_AUTH_BYPASS и NODE_ENV не production
-    S->>S: localPraktikumAuthBypass → req.praktikumUser
-  else Обычный путь
-    S->>P: fetch(.../auth/user, Cookie)
-    alt 200 и валидный JSON
-      P-->>S: профиль
-      S->>S: parsePraktikumUser → req.praktikumUser
-    else иначе
-      S-->>B: 403 JSON reason
-    end
-  end
-  S->>S: Обработчик роутера (напр. forumRouter)
+flowchart TB
+  B["Браузер: запрос с Cookie сессии Практикума"]
+  B --> S["packages/server: requirePraktikumAuth"]
+  S --> Q{"Включён LOCAL_PRAKTIKUM_AUTH_BYPASS и NODE_ENV не production?"}
+  Q -->|да| L["Подставить req.praktikumUser локально (e2e)"]
+  Q -->|нет| F["Сервер → GET Практикум /auth/user с тем же Cookie"]
+  F --> H{"200 и валидный JSON профиля?"}
+  H -->|нет| E["Ответ клиенту 403 + JSON reason"]
+  H -->|да| P["parsePraktikumUser → req.praktikumUser"]
+  L --> R["Дальше: обработчик роутера forum / friends / user"]
+  P --> R
 ```
+
+**Что такое `alt` в Mermaid (если увидите в других диаграммах):** в **sequenceDiagram** блок **`alt` … `else` … `end`** — это аналог **if / else** в UML: «выполняется ровно одна ветка». Название **alt** = *alternatives* (альтернативы). Рядом бывают **`opt`** (необязательный фрагмент, как *if без else*) и **`par`** (параллельно). Для сложной логики с несколькими уровнями вложенности sequence-диаграмма часто становится нечитаемой; здесь поэтому использован **`flowchart`**.
 
 ### Локальная разработка (порты)
 
