@@ -1,18 +1,10 @@
 import './client.d'
 
+/** Без import.meta: Jest/ts-jest собирают в CJS и не могут выполнить import.meta в Node. */
 function readAppApiUrl(): string {
-  const fromEnv =
-    typeof import.meta !== 'undefined' &&
-    import.meta.env?.VITE_APP_API_URL != null &&
-    String(
-      import.meta.env.VITE_APP_API_URL
-    ).trim() !== ''
-      ? String(
-          import.meta.env.VITE_APP_API_URL
-        ).trim()
-      : ''
-  if (fromEnv) {
-    return fromEnv.replace(/\/+$/, '')
+  const raw = process.env.VITE_APP_API_URL
+  if (raw != null && String(raw).trim() !== '') {
+    return String(raw).trim().replace(/\/+$/, '')
   }
   return 'http://localhost:3000'
 }
