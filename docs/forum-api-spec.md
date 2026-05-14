@@ -40,7 +40,7 @@
 | 'PATCH' | '/api/forum/topics/:topicId' | Редактирование: **автор темы** или **модератор/админ**. |
 | 'DELETE' | '/api/forum/topics/:topicId' | Удаление: **автор** или **модератор/админ**. |
 
-Ответы списка/одного топика — совместимы с типом ['ForumTopic'](../packages/client/src/types/forum.ts): 'id', 'title', 'author' (строка для UI), 'createdAt' (ISO), 'content', 'commentsCount'.
+Ответы списка/одного топика — совместимы с типом ['ForumTopic'](../packages/client/src/types/forum.ts): 'id', 'title', 'author' (строка для UI), **`authorPraktikumId`** (числовой id Практикума для проверки прав на клиенте), 'createdAt' (ISO), 'content', 'commentsCount'.
 
 ### 2.2 Комментарии (дерево + пагинация)
 
@@ -49,7 +49,7 @@
 | 'GET' | '/api/forum/topics/:topicId/comments' | Комментарии темы **постранично**. Query: 'limit' (default 50, max 100), 'offset' (default 0) **или** 'cursor' + 'limit' (cursor-based для больших тем). Ответ: '{ "items": ForumComment[], "total": number, "limit": number, "offset": number }' (или эквивалент с 'nextCursor'). |
 | 'POST' | '/api/forum/topics/:topicId/comments' | Создание. Body: '{ "content": string, "parentCommentId": number \| null }'. |
 
-Тип элемента — как ['ForumComment'](../packages/client/src/types/forum.ts): 'id', 'topicId', 'author', 'content', 'createdAt', 'parentCommentId'.
+Тип элемента — как ['ForumComment'](../packages/client/src/types/forum.ts): 'id', 'topicId', 'author', **`authorPraktikumId`**, 'content', 'createdAt', 'parentCommentId'.
 
 **Рекурсия:** одна таблица 'comments' с 'parent_id → comments.id'; глубина не ограничена на уровне БД; при необходимости — лимит глубины в валидации.
 
@@ -63,7 +63,7 @@
 | 'PUT' или 'POST' | '/api/forum/comments/:commentId/reactions' | Поставить реакцию. Body: '{ "emoji": string }' (whitelist). |
 | 'DELETE' | '/api/forum/comments/:commentId/reactions/:emoji' | Снять свою реакцию данного типа. |
 
-Whitelist эмодзи — тот же набор, что на UI в ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx) ('EMOJIS').
+Whitelist эмодзи — тот же набор, что на клиенте в ['constants/forumEmojis.ts'](../packages/client/src/constants/forumEmojis.ts) (используется ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx)).
 
 ### 2.4 Комментарии: правки и удаление
 
@@ -167,7 +167,9 @@ erDiagram
 - ['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts): thunks через ['forumApi.ts'](../packages/client/src/shared/api/forumApi.ts), **`credentials: 'include'`**; комментарии подгружаются постранично с сервера (страницы по 100 до исчерпания `total`).
 - Поле **`author`** в формах не отправляется; в типах **CreateTopicPayload** / **CreateCommentPayload** только контент (и `topicId` / `parentCommentId` для комментария).
 - **403**: флаг **`shouldRedirectToLogin`** в slice, на страницах форума **`clearForumAuthRedirect`** + **`navigate('/login', { state: { fromForum: true } })`**; на ['LoginPage'](../packages/client/src/pages/LoginPage.tsx) показывается краткое уведомление (класс **`auth-page__toast`**). Ошибки создания темы/комментария (не 403) — текст в том же стиле на странице.
-- Реакции в UI и расширенные типы под агрегаты реакций — при необходимости отдельная итерация поверх уже готового API (§14).
+- В JSON топиков и комментариев приходит **`authorPraktikumId`**; на ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx) по сравнению с **`user.id`** из Redux показываются действия **редактировать/удалить** тему и свой комментарий (сервер по-прежнему проверяет автора/модератора).
+- Реакции: **`reactionsByCommentId`** в slice, параллельная подгрузка агрегатов при открытии темы, **`toggleCommentReactionThunk`** (POST/DELETE к API из §14); whitelist эмодзи — ['constants/forumEmojis.ts'](../packages/client/src/constants/forumEmojis.ts).
+- Стили строки реакций и панелей правок — ['forum.pcss'](../packages/client/src/shared/styles/forum.pcss) (классы `forum-emoji-bar--compact`, `forum-emoji-bar__btn--active`, `forum-comment__toolbar` и т.д.).
 
 ---
 
@@ -229,7 +231,7 @@ erDiagram
 
 - **`express.json()`** и монтирование роутера в ['index.ts'](../packages/server/index.ts): `app.use('/api/forum', requirePraktikumAuth, forumRouter)`.
 - **Сессия Практикума**: ['requirePraktikumAuth.ts'](../packages/server/middleware/requirePraktikumAuth.ts) по-прежнему отдаёт **403** / **502** по контракту; при **200** парсит профиль и выставляет **`req.praktikumUser`** (см. ['praktikumUser.ts'](../packages/server/middleware/praktikumUser.ts)). Расширение типа `Request`: ['types/express-augment.d.ts'](../packages/server/types/express-augment.d.ts) (имя файла не `express.d.ts`, чтобы не пересекаться с `paths` `types/*` в tsconfig).
-- **Роутер**: ['routes/forumRouter.ts'](../packages/server/routes/forumRouter.ts) — см. **§14** (шаг 5: реакции, PATCH/DELETE, модераторы); базовые эндпоинты шага 4: **GET/POST** `/topics`, **GET** `/topics/:topicId`, **GET/POST** `/topics/:topicId/comments` (пагинация комментариев: `limit` по умолчанию 50, макс. 100; `offset`; список тем: `limit` по умолчанию 20, макс. 100, плюс `page` или `offset`). Ответы в camelCase, поле автора в JSON — **`author`** (снимок `author_display`). Тела ошибок: `{ "reason": "..." }`.
+- **Роутер**: ['routes/forumRouter.ts'](../packages/server/routes/forumRouter.ts) — см. **§14** (реакции, PATCH/DELETE, модераторы); базовые эндпоинты: **GET/POST** `/topics`, **GET** `/topics/:topicId`, **GET/POST** `/topics/:topicId/comments` (пагинация комментариев: `limit` по умолчанию 50, макс. 100; `offset`; список тем: `limit` по умолчанию 20, макс. 100, плюс `page` или `offset`). Ответы в camelCase, поле автора в JSON — **`author`** (снимок `author_display`) и **`authorPraktikumId`** (id Практикума для UI и согласованности с правами). Тела ошибок: `{ "reason": "..." }`.
 - **Фабрика приложения (e2e)**: ['createApp.ts'](../packages/server/createApp.ts) — то же HTTP-дерево без `listen`; в тестах используется **supertest** (см. ['__tests__/localPraktikumAuthE2E.test.ts'](../packages/server/__tests__/localPraktikumAuthE2E.test.ts)).
 - **Локальный обход сервера Практикума** (без внешнего `GET /auth/user`): переменная **`LOCAL_PRAKTIKUM_AUTH_BYPASS=1`** (`true` / `yes`) при **`NODE_ENV` не равном `production`**. Подставляется **`req.praktikumUser`** из **`LOCAL_PRAKTIKUM_USER_ID`** (по умолчанию `999001`) и **`LOCAL_PRAKTIKUM_USER_DISPLAY`** (по умолчанию `e2e-local`). Логика: ['middleware/localPraktikumAuthBypass.ts'](../packages/server/middleware/localPraktikumAuthBypass.ts). В **production** версии обход **никогда** не включается. См. [`.env.sample`](../.env.sample).
 
@@ -255,5 +257,7 @@ erDiagram
 - **Redux**: ['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts) — **`rejectWithValue`**, **`selectForumShouldRedirectToLogin`**, **`clearForumAuthRedirect`**, matcher на отклонённые thunks с **`status === 403`**.
 - **Страницы**: ['ForumPage.tsx'](../packages/client/src/pages/ForumPage.tsx), ['ForumTopicPage.tsx'](../packages/client/src/pages/ForumTopicPage.tsx); лендинг ['Contact.tsx'](../packages/client/src/components/Landing/Contact.tsx) — создание темы без поля автора.
 - **Вход**: ['LoginPage.tsx'](../packages/client/src/pages/LoginPage.tsx) — `location.state.fromForum`.
+- **Расширения API в клиенте** (всё в ['forumApi.ts'](../packages/client/src/shared/api/forumApi.ts)): создание комментария **`forumCreateComment`**, реакции (**`forumGetCommentReactions`**, **`forumFetchReactionsMap`**, POST/DELETE), **`forumPatchTopic`** / **`forumDeleteTopic`**, **`forumPatchComment`** / **`forumDeleteComment`**.
+- **Ошибки на странице темы**: при отклонённых thunks (кроме 403 → логин) показывается **`pageError`** в блоке **`auth-page__toast-wrap`** / **`auth-page__toast`** (как на входе).
 
 ---

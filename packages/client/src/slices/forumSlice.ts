@@ -4,19 +4,28 @@ import {
   isRejectedWithValue,
   type PayloadAction,
 } from '@reduxjs/toolkit'
-import type { UnknownAction } from '@reduxjs/toolkit'
+import type { AnyAction } from 'redux'
 import { RootState } from '../store'
 import {
   forumCreateComment,
   forumCreateTopic,
+  forumDeleteComment,
+  forumDeleteCommentReaction,
+  forumDeleteTopic,
+  forumFetchReactionsMap,
   forumGetAllComments,
+  forumGetCommentReactions,
   forumGetTopic,
   forumGetTopics,
+  forumPatchComment,
+  forumPatchTopic,
+  forumPostCommentReaction,
   ForumApiError,
 } from '../shared/api/forumApi'
 import type {
   ForumTopic,
   ForumComment,
+  ForumReactionAgg,
   CreateTopicPayload,
   CreateCommentPayload,
 } from '../types/forum'
@@ -48,8 +57,11 @@ export interface ForumState {
   topics: ForumTopic[]
   currentTopic: ForumTopic | null
   comments: ForumComment[]
+  reactionsByCommentId: Record<
+    number,
+    ForumReactionAgg[]
+  >
   isLoading: boolean
-  /** 403 от API форума — клиент делает редирект на /login */
   shouldRedirectToLogin: boolean
 }
 
@@ -57,6 +69,7 @@ const initialState: ForumState = {
   topics: [],
   currentTopic: null,
   comments: [],
+  reactionsByCommentId: {},
   isLoading: false,
   shouldRedirectToLogin: false,
 }
@@ -81,6 +94,10 @@ export const fetchTopicByIdThunk =
     {
       topic: ForumTopic
       comments: ForumComment[]
+      reactionsByCommentId: Record<
+        number,
+        ForumReactionAgg[]
+      >
     },
     number,
     { rejectValue: ForumRejectPayload }
@@ -91,7 +108,16 @@ export const fetchTopicByIdThunk =
         const topic = await forumGetTopic(topicId)
         const comments =
           await forumGetAllComments(topicId)
-        return { topic, comments }
+        const reactionsByCommentId =
+          await forumFetchReactionsMap(
+            topicId,
+            comments
+          )
+        return {
+          topic,
+          comments,
+          reactionsByCommentId,
+        }
       } catch (e) {
         return rejectWithValue(
           rejectFromUnknown(e)
@@ -143,9 +169,174 @@ export const createCommentThunk =
     }
   )
 
+export const toggleCommentReactionThunk =
+  createAsyncThunk<
+    {
+      commentId: number
+      items: ForumReactionAgg[]
+    },
+    {
+      topicId: number
+      commentId: number
+      emoji: string
+    },
+    {
+      rejectValue: ForumRejectPayload
+      state: RootState
+    }
+  >(
+    'forum/toggleCommentReaction',
+    async (
+      { topicId, commentId, emoji },
+      { rejectWithValue, getState }
+    ) => {
+      try {
+        const rows: ForumReactionAgg[] =
+          getState().forum.reactionsByCommentId[
+            commentId
+          ] ?? []
+        const mine = rows.find(
+          r => r.emoji === emoji
+        )?.mine
+        if (mine) {
+          await forumDeleteCommentReaction(
+            commentId,
+            emoji
+          )
+        } else {
+          await forumPostCommentReaction(
+            commentId,
+            emoji
+          )
+        }
+        const fresh =
+          await forumGetCommentReactions(
+            topicId,
+            commentId
+          )
+        return {
+          commentId,
+          items: fresh.items,
+        }
+      } catch (e) {
+        return rejectWithValue(
+          rejectFromUnknown(e)
+        )
+      }
+    }
+  )
+
+export const updateTopicThunk = createAsyncThunk<
+  ForumTopic,
+  {
+    topicId: number
+    title?: string
+    content?: string
+  },
+  { rejectValue: ForumRejectPayload }
+>(
+  'forum/updateTopic',
+  async (
+    { topicId, title, content },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await forumPatchTopic(topicId, {
+        title,
+        content,
+      })
+    } catch (e) {
+      return rejectWithValue(rejectFromUnknown(e))
+    }
+  }
+)
+
+export const deleteTopicThunk = createAsyncThunk<
+  number,
+  number,
+  { rejectValue: ForumRejectPayload }
+>(
+  'forum/deleteTopic',
+  async (topicId, { rejectWithValue }) => {
+    try {
+      await forumDeleteTopic(topicId)
+      return topicId
+    } catch (e) {
+      return rejectWithValue(rejectFromUnknown(e))
+    }
+  }
+)
+
+export const updateCommentThunk =
+  createAsyncThunk<
+    ForumComment,
+    { commentId: number; content: string },
+    { rejectValue: ForumRejectPayload }
+  >(
+    'forum/updateComment',
+    async (
+      { commentId, content },
+      { rejectWithValue }
+    ) => {
+      try {
+        return await forumPatchComment(
+          commentId,
+          {
+            content,
+          }
+        )
+      } catch (e) {
+        return rejectWithValue(
+          rejectFromUnknown(e)
+        )
+      }
+    }
+  )
+
+export const deleteCommentThunk =
+  createAsyncThunk<
+    {
+      topic: ForumTopic
+      comments: ForumComment[]
+      reactionsByCommentId: Record<
+        number,
+        ForumReactionAgg[]
+      >
+    },
+    { topicId: number; commentId: number },
+    { rejectValue: ForumRejectPayload }
+  >(
+    'forum/deleteComment',
+    async (
+      { topicId, commentId },
+      { rejectWithValue }
+    ) => {
+      try {
+        await forumDeleteComment(commentId)
+        const topic = await forumGetTopic(topicId)
+        const comments =
+          await forumGetAllComments(topicId)
+        const reactionsByCommentId =
+          await forumFetchReactionsMap(
+            topicId,
+            comments
+          )
+        return {
+          topic,
+          comments,
+          reactionsByCommentId,
+        }
+      } catch (e) {
+        return rejectWithValue(
+          rejectFromUnknown(e)
+        )
+      }
+    }
+  )
+
 function isForumRejectedWithValue(
-  action: UnknownAction
-): action is UnknownAction & {
+  action: AnyAction
+): action is AnyAction & {
   type: string
   payload: ForumRejectPayload
 } {
@@ -190,6 +381,7 @@ export const forumSlice = createSlice({
           state.isLoading = true
           state.currentTopic = null
           state.comments = []
+          state.reactionsByCommentId = {}
         }
       )
       .addCase(
@@ -201,10 +393,16 @@ export const forumSlice = createSlice({
           }: PayloadAction<{
             topic: ForumTopic
             comments: ForumComment[]
+            reactionsByCommentId: Record<
+              number,
+              ForumReactionAgg[]
+            >
           }>
         ) => {
           state.currentTopic = payload.topic
           state.comments = payload.comments
+          state.reactionsByCommentId =
+            payload.reactionsByCommentId
           state.isLoading = false
           state.shouldRedirectToLogin = false
         }
@@ -233,6 +431,8 @@ export const forumSlice = createSlice({
             ...state.comments,
             payload,
           ]
+          state.reactionsByCommentId[payload.id] =
+            []
           if (
             state.currentTopic &&
             state.currentTopic.id ===
@@ -240,6 +440,92 @@ export const forumSlice = createSlice({
           ) {
             state.currentTopic.commentsCount += 1
           }
+        }
+      )
+
+      .addCase(
+        toggleCommentReactionThunk.fulfilled.type,
+        (
+          state,
+          {
+            payload,
+          }: PayloadAction<{
+            commentId: number
+            items: ForumReactionAgg[]
+          }>
+        ) => {
+          state.reactionsByCommentId[
+            payload.commentId
+          ] = payload.items
+        }
+      )
+
+      .addCase(
+        updateTopicThunk.fulfilled.type,
+        (
+          state,
+          { payload }: PayloadAction<ForumTopic>
+        ) => {
+          state.currentTopic = payload
+          const idx = state.topics.findIndex(
+            t => t.id === payload.id
+          )
+          if (idx >= 0) {
+            state.topics[idx] = payload
+          }
+        }
+      )
+
+      .addCase(
+        deleteTopicThunk.fulfilled.type,
+        (
+          state,
+          { payload }: PayloadAction<number>
+        ) => {
+          state.topics = state.topics.filter(
+            t => t.id !== payload
+          )
+          if (
+            state.currentTopic?.id === payload
+          ) {
+            state.currentTopic = null
+            state.comments = []
+            state.reactionsByCommentId = {}
+          }
+        }
+      )
+
+      .addCase(
+        updateCommentThunk.fulfilled.type,
+        (
+          state,
+          { payload }: PayloadAction<ForumComment>
+        ) => {
+          state.comments = state.comments.map(c =>
+            c.id === payload.id ? payload : c
+          )
+        }
+      )
+
+      .addCase(
+        deleteCommentThunk.fulfilled.type,
+        (
+          state,
+          {
+            payload,
+          }: PayloadAction<{
+            topic: ForumTopic
+            comments: ForumComment[]
+            reactionsByCommentId: Record<
+              number,
+              ForumReactionAgg[]
+            >
+          }>
+        ) => {
+          state.currentTopic = payload.topic
+          state.comments = payload.comments
+          state.reactionsByCommentId =
+            payload.reactionsByCommentId
         }
       )
 
@@ -266,6 +552,9 @@ export const selectCurrentTopic = (
 export const selectComments = (
   state: RootState
 ) => state.forum.comments
+export const selectForumReactionsByCommentId = (
+  state: RootState
+) => state.forum.reactionsByCommentId
 export const selectIsLoadingForum = (
   state: RootState
 ) => state.forum.isLoading

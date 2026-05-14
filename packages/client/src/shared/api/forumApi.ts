@@ -1,6 +1,7 @@
 import { SERVER_HOST } from '../../constants'
 import type {
   ForumComment,
+  ForumReactionAgg,
   ForumTopic,
 } from '../../types/forum'
 
@@ -136,18 +137,117 @@ export async function forumCreateComment(
   topicId: number,
   body: {
     content: string
-    parentCommentId?: number | null
+    parentCommentId: number | null
   }
 ): Promise<ForumComment> {
   return forumRequest<ForumComment>(
     `/api/forum/topics/${topicId}/comments`,
     {
       method: 'POST',
-      body: JSON.stringify({
-        content: body.content,
-        parentCommentId:
-          body.parentCommentId ?? null,
-      }),
+      body: JSON.stringify(body),
     }
+  )
+}
+
+export type ForumReactionsResponse = {
+  items: ForumReactionAgg[]
+}
+
+export async function forumGetCommentReactions(
+  topicId: number,
+  commentId: number
+): Promise<ForumReactionsResponse> {
+  return forumRequest<ForumReactionsResponse>(
+    `/api/forum/topics/${topicId}/comments/${commentId}/reactions`
+  )
+}
+
+export async function forumFetchReactionsMap(
+  topicId: number,
+  comments: ForumComment[]
+): Promise<Record<number, ForumReactionAgg[]>> {
+  const map: Record<number, ForumReactionAgg[]> =
+    {}
+  await Promise.all(
+    comments.map(async c => {
+      try {
+        const r = await forumGetCommentReactions(
+          topicId,
+          c.id
+        )
+        map[c.id] = r.items
+      } catch {
+        map[c.id] = []
+      }
+    })
+  )
+  return map
+}
+
+export async function forumPostCommentReaction(
+  commentId: number,
+  emoji: string
+): Promise<unknown> {
+  return forumRequest(
+    `/api/forum/comments/${commentId}/reactions`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ emoji }),
+    }
+  )
+}
+
+export async function forumDeleteCommentReaction(
+  commentId: number,
+  emoji: string
+): Promise<void> {
+  const enc = encodeURIComponent(emoji)
+  return forumRequest<void>(
+    `/api/forum/comments/${commentId}/reactions/${enc}`,
+    { method: 'DELETE' }
+  )
+}
+
+export async function forumPatchTopic(
+  topicId: number,
+  body: { title?: string; content?: string }
+): Promise<ForumTopic> {
+  return forumRequest<ForumTopic>(
+    `/api/forum/topics/${topicId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }
+  )
+}
+
+export async function forumDeleteTopic(
+  topicId: number
+): Promise<void> {
+  return forumRequest<void>(
+    `/api/forum/topics/${topicId}`,
+    { method: 'DELETE' }
+  )
+}
+
+export async function forumPatchComment(
+  commentId: number,
+  body: { content: string }
+): Promise<ForumComment> {
+  return forumRequest<ForumComment>(
+    `/api/forum/comments/${commentId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }
+  )
+}
+
+export async function forumDeleteComment(
+  commentId: number
+): Promise<void> {
+  return forumRequest<void>(
+    `/api/forum/comments/${commentId}`,
+    { method: 'DELETE' }
   )
 }
