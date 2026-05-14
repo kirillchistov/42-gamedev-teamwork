@@ -7,6 +7,7 @@ import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
+  useLocation,
   useNavigate,
 } from 'react-router-dom'
 import { Header } from '../components/Header'
@@ -44,6 +45,7 @@ import {
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
   const { theme } = useLandingTheme()
+  const location = useLocation()
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -117,6 +119,14 @@ export const LoginPage: React.FC = () => {
     )
   }
 
+  const fromForum = Boolean(
+    (
+      location.state as {
+        fromForum?: boolean
+      } | null
+    )?.fromForum
+  )
+
   return (
     <div className={`landing landing--${theme}`}>
       <Helmet>
@@ -138,6 +148,14 @@ export const LoginPage: React.FC = () => {
         ) : (
           <section className="auth-card auth-card--wide">
             <h1>Вход</h1>
+            {fromForum ? (
+              <div className="auth-page__toast-wrap">
+                <div className="auth-page__toast">
+                  Сессия для доступа к форуму
+                  недоступна. Войдите снова.
+                </div>
+              </div>
+            ) : null}
             <form
               className="auth-form auth-form--grid"
               id="login-form"

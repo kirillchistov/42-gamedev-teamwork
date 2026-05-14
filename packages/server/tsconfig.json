@@ -27,6 +27,6 @@
     },
     "outDir": "dist"
   },
-  "include": ["./**/*.ts"],
+  "include": ["./**/*.ts", "./types/**/*.d.ts"],
   "exclude": ["./dist", "**/*.test.ts"]
 }

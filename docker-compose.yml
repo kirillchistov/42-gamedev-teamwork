@@ -32,13 +32,13 @@ services:
       context: .
       dockerfile: Dockerfile.server
       args:
-        SERVER_PORT: ${SERVER_PORT:-3001}
+        SERVER_PORT: ${SERVER_PORT:-3000}
     restart: unless-stopped
     ports:
-      - "${SERVER_PORT:-3001}:${SERVER_PORT:-3001}"
+      - "${SERVER_PORT:-3000}:${SERVER_PORT:-3000}"
     environment:
       NODE_ENV: production
-      SERVER_PORT: ${SERVER_PORT:-3001}
+      SERVER_PORT: ${SERVER_PORT:-3000}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -56,7 +56,8 @@ services:
       dockerfile: Dockerfile.client
     restart: unless-stopped
     ports:
-      - "${CLIENT_PORT:-3000}:80"
+      # На хосте не занимать тот же порт, что у API (по умолчанию 3000 у server).
+      - "${CLIENT_PORT:-5173}:80"
     environment:
       NODE_ENV: production
       PORT: "80"

@@ -7,7 +7,7 @@
 
 | Роль | Пакет | Порт по умолчанию | Назначение |
 |------|--------|-------------------|------------|
-| API на Express | 'packages/server' | '3001' ('SERVER_PORT') | JSON-эндпоинты ('/friends', '/user' и т.д.), БД |
+| API на Express | 'packages/server' | '3000' ('SERVER_PORT') | JSON-эндпоинты ('/friends', '/user' и т.д.), БД |
 | Клиент + SSR на Express | 'packages/client' | '80' ('PORT') или из окружения | Vite + React; в **dev** и **preview** поднимается **свой** Express из 'packages/client/server/index.ts' |
 
 SSR в этом проекте живет **не в 'packages/server'**, а **в клиентском пакете**: серверный бандл лежит в 'packages/client/dist/server/', статика клиента — в 'packages/client/dist/client/'. Один процесс отдаёт HTML и ассеты SPA.
@@ -75,7 +75,7 @@ yarn dev
 yarn build && yarn preview
 ```
 
-Параллельно API можно поднять из корня: 'yarn dev:server' — Express из 'packages/server' на '3001'. Переменные 'EXTERNAL_SERVER_URL' / 'INTERNAL_SERVER_URL' в скрипте клиента указывают клиенту, куда ходить за API.
+Параллельно API можно поднять из корня: 'yarn dev:server' — Express из 'packages/server' на '3000'. Переменные 'EXTERNAL_SERVER_URL' / 'INTERNAL_SERVER_URL' в скрипте клиента указывают клиенту, куда ходить за API.
 
 ---
 
@@ -99,7 +99,7 @@ yarn build && yarn preview
 
 'packages/server/index.ts' — это **другой** процесс Express (API). Проксирование API в SSR-процесс в репозитории **не обязательно**: клиент ходит на URL из '__EXTERNAL_SERVER_URL__' / '__INTERNAL_SERVER_URL__' (см. 'packages/client/vite.config.ts' и скрипты 'dev' в 'packages/client/package.json').
 
-Если в задании требуется «один сервер отдаёт и HTML, и API», тогда отдельно добавляют, например, 'app.use('/api', createProxyMiddleware({ target: 'http://localhost:3001' }))' в **SSR-сервер** — это уже изменение архитектуры; текущая структура это **не использует** намеренно.
+Если в задании требуется «один сервер отдаёт и HTML, и API», тогда отдельно добавляют, например, 'app.use('/api', createProxyMiddleware({ target: 'http://localhost:3000' }))' в **SSR-сервер** — это уже изменение архитектуры; текущая структура это **не использует** намеренно.
 
 ---
 

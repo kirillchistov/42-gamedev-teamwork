@@ -1,42 +1,34 @@
-import { Client } from 'pg'
+import { sequelize } from './sequelize'
+import './models'
 
-const {
-  POSTGRES_USER,
-  POSTGRES_PASSWORD,
-  POSTGRES_DB,
-  POSTGRES_PORT,
-  POSTGRES_HOST,
-} = process.env
-
-const pgHost = POSTGRES_HOST ?? 'localhost'
-const pgPort = Number(POSTGRES_PORT ?? 5432)
-
-export const createClientAndConnect =
-  async (): Promise<Client | null> => {
-    try {
-      const client = new Client({
-        user: POSTGRES_USER,
-        host: pgHost,
-        database: POSTGRES_DB,
-        password: POSTGRES_PASSWORD,
-        port: pgPort,
-      })
-
-      await client.connect()
-
-      const res = await client.query(
-        'SELECT NOW()'
-      )
-      console.log(
-        '  ➜ 🎸 Connected to the database at:',
-        res?.rows?.[0].now
-      )
-      client.end()
-
-      return client
-    } catch (e) {
-      console.error(e)
-    }
-
+/**
+ * Проверка соединения с PostgreSQL через Sequelize.
+ */
+export async function createClientAndConnect(): Promise<null> {
+  try {
+    await sequelize.authenticate()
+    const [rows] = await sequelize.query(
+      'SELECT NOW() AS now'
+    )
+    const row = Array.isArray(rows)
+      ? rows[0]
+      : null
+    const nowVal =
+      row &&
+      typeof row === 'object' &&
+      row !== null &&
+      'now' in row
+        ? (row as { now: unknown }).now
+        : undefined
+    console.log(
+      '  ➜ 🎸 Connected to the database at:',
+      nowVal
+    )
+    return null
+  } catch (e) {
+    console.error(e)
     return null
   }
+}
+
+export { sequelize } from './sequelize'

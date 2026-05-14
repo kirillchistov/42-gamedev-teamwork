@@ -1,5 +1,5 @@
 ARG NODE_VERSION=20
-ARG SERVER_PORT=3001
+ARG SERVER_PORT=3000
 
 FROM node:${NODE_VERSION}-bookworm AS base
 
@@ -17,7 +17,7 @@ RUN rm -rf /app/packages/server/dist/ && yarn build --scope=server
 
 FROM node:${NODE_VERSION}-bookworm-slim AS production
 
-ARG SERVER_PORT=3001
+ARG SERVER_PORT=3000
 ENV SERVER_PORT=$SERVER_PORT
 
 WORKDIR /app

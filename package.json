@@ -11,7 +11,11 @@
     "test": "lerna run test",
     "lint": "lerna run lint",
     "format": "lerna run format",
-    "preview": "lerna run preview"
+    "preview": "lerna run preview",
+    "db:migrate": "yarn workspace server db:migrate",
+    "db:migrate:undo": "yarn workspace server db:migrate:undo",
+    "db:seed": "yarn workspace server db:seed",
+    "db:seed:undo": "yarn workspace server db:seed:undo"
   },
   "license": "MIT",
   "workspaces": [
