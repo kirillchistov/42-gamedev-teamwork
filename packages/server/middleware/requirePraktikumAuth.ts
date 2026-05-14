@@ -18,6 +18,7 @@ function praktikumApiBase(): string {
 /**
  * Проверка сессии на API Практикума по cookie запроса.
  * Для защищённых ручек локального сервера — авторизация на бэкенде, не по флагу клиента.
+ * 403 при отсутствии/невалидной сессии (единый контракт с ТЗ форума; см. docs/forum-api-spec.md §10).
  */
 export async function requirePraktikumAuth(
   req: Request,
@@ -26,9 +27,7 @@ export async function requirePraktikumAuth(
 ): Promise<void> {
   const cookie = req.headers.cookie
   if (!cookie) {
-    res
-      .status(401)
-      .json({ reason: 'Unauthorized' })
+    res.status(403).json({ reason: 'Forbidden' })
     return
   }
 
@@ -43,8 +42,8 @@ export async function requirePraktikumAuth(
 
     if (!r.ok) {
       res
-        .status(401)
-        .json({ reason: 'Unauthorized' })
+        .status(403)
+        .json({ reason: 'Forbidden' })
       return
     }
 

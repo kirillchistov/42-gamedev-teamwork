@@ -9,7 +9,7 @@ import { requirePraktikumAuth } from './middleware/requirePraktikumAuth'
 const app = express()
 app.use(cors())
 const port =
-  Number(process.env.SERVER_PORT) || 3001
+  Number(process.env.SERVER_PORT) || 3000
 
 createClientAndConnect()
 
