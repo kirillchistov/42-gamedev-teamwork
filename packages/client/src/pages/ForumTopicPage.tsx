@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
-import { Link, useParams } from 'react-router-dom'
+import {
+  Link,
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
 import clsx from 'clsx'
 
 import { Header } from '../components/Header'
@@ -17,8 +21,10 @@ import {
   selectCurrentTopic,
   selectComments,
   selectIsLoadingForum,
+  selectForumShouldRedirectToLogin,
+  clearForumAuthRedirect,
 } from '../slices/forumSlice'
-import { selectUser } from '../slices/userSlice'
+import type { ForumRejectPayload } from '../slices/forumSlice'
 import type { ForumComment } from '../types/forum'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 
@@ -41,41 +47,73 @@ export const ForumTopicPage: React.FC = () => {
     topicId: string
   }>()
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const topic = useSelector(selectCurrentTopic)
   const comments = useSelector(selectComments)
   const isLoading = useSelector(
     selectIsLoadingForum
   )
-  const user = useSelector(selectUser)
+  const shouldRedirectToLogin = useSelector(
+    selectForumShouldRedirectToLogin
+  )
 
   const [newComment, setNewComment] = useState('')
   const [replyTo, setReplyTo] = useState<
     number | null
   >(null)
+  const [commentError, setCommentError] =
+    useState<string | null>(null)
 
   usePage({ initPage: initForumTopicPage })
 
   useEffect(() => {
-    if (topicId) {
-      dispatch(
-        fetchTopicByIdThunk(Number(topicId))
-      )
+    if (!shouldRedirectToLogin) {
+      return
     }
+    dispatch(clearForumAuthRedirect())
+    navigate('/login', {
+      replace: true,
+      state: { fromForum: true },
+    })
+  }, [shouldRedirectToLogin, dispatch, navigate])
+
+  useEffect(() => {
+    if (!topicId) {
+      return
+    }
+    void (async () => {
+      try {
+        await dispatch(
+          fetchTopicByIdThunk(Number(topicId))
+        ).unwrap()
+      } catch {
+        /* 403 — редирект; 404 — пустой топик в state */
+      }
+    })()
   }, [topicId, dispatch])
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!newComment.trim() || !topicId) return
-
-    dispatch(
-      createCommentThunk({
-        topicId: Number(topicId),
-        content: newComment.trim(),
-        author: user?.first_name || 'Аноним',
-        parentCommentId: replyTo ?? undefined,
-      })
-    )
-    setNewComment('')
-    setReplyTo(null)
+    setCommentError(null)
+    try {
+      await dispatch(
+        createCommentThunk({
+          topicId: Number(topicId),
+          content: newComment.trim(),
+          parentCommentId: replyTo ?? undefined,
+        })
+      ).unwrap()
+      setNewComment('')
+      setReplyTo(null)
+    } catch (e) {
+      const p = e as ForumRejectPayload
+      if (p?.status !== 403) {
+        setCommentError(
+          p?.message ||
+            'Не удалось отправить комментарий'
+        )
+      }
+    }
   }
 
   const handleEmojiClick = (emoji: string) => {
@@ -168,6 +206,14 @@ export const ForumTopicPage: React.FC = () => {
             className="forum-back">
             ← К форуму
           </Link>
+
+          {commentError ? (
+            <div className="auth-page__toast-wrap">
+              <div className="auth-page__toast">
+                {commentError}
+              </div>
+            </div>
+          ) : null}
 
           {isLoading && !topic ? (
             <p>Загрузка...</p>

@@ -16,15 +16,14 @@ export interface ForumComment {
   parentCommentId: number | null
 }
 
+/** Тело POST /api/forum/topics — автора задаёт только сервер. */
 export interface CreateTopicPayload {
   title: string
   content: string
-  author: string
 }
 
 export interface CreateCommentPayload {
   topicId: number
   content: string
-  author: string
-  parentCommentId?: number
+  parentCommentId?: number | null
 }

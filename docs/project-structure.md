@@ -5,7 +5,7 @@
 Проект организован как **monorepo** на базе **Lerna** / Yarn workspaces:
 
 - 'packages/client' — фронтенд (React + TypeScript + Vite + Canvas, SSR на Express).
-- 'packages/server' — отдельный Express API (порт по умолчанию **3001**, см. 'SERVER_PORT' в ['packages/server/index.ts'](../packages/server/index.ts)).
+- 'packages/server' — отдельный Express API (порт по умолчанию **3000**, см. 'SERVER_PORT' в ['packages/server/index.ts'](../packages/server/index.ts)).
 - 'docs' — проектная и игровая документация.
 - 'docker-compose.yml', 'Dockerfile.*' — локальный и production-запуск в контейнерах.
 

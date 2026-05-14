@@ -1,9 +1,19 @@
 import {
   createAsyncThunk,
   createSlice,
-  PayloadAction,
+  isRejectedWithValue,
+  type PayloadAction,
 } from '@reduxjs/toolkit'
+import type { UnknownAction } from '@reduxjs/toolkit'
 import { RootState } from '../store'
+import {
+  forumCreateComment,
+  forumCreateTopic,
+  forumGetAllComments,
+  forumGetTopic,
+  forumGetTopics,
+  ForumApiError,
+} from '../shared/api/forumApi'
 import type {
   ForumTopic,
   ForumComment,
@@ -11,121 +21,36 @@ import type {
   CreateCommentPayload,
 } from '../types/forum'
 
-const DEMO_TOPICS: ForumTopic[] = [
-  {
-    id: 1,
-    title: 'Баланс уровней match-3',
-    author: 'dev-1',
-    createdAt: '2026-03-20T10:00:00Z',
-    content:
-      'Предлагаю обсудить текущий баланс уровней. На 15-м уровне слишком мало ходов для прохождения, а 20-й проходится за пару минут. Нужно выровнять сложность.',
-    commentsCount: 3,
-  },
-  {
-    id: 2,
-    title: 'Идеи новых бомб',
-    author: 'dev-3',
-    createdAt: '2026-03-21T14:30:00Z',
-    content:
-      'Какие новые типы бомб можно добавить в игру? Сейчас есть линейная и радиальная. Может, добавить диагональную или бомбу-молнию?',
-    commentsCount: 5,
-  },
-  {
-    id: 3,
-    title: 'Баги на мобильных устройствах',
-    author: 'tester-1',
-    createdAt: '2026-03-22T09:15:00Z',
-    content:
-      'Собираю список багов на мобильных: тач-события иногда не срабатывают, анимация подтормаживает на старых устройствах.',
-    commentsCount: 2,
-  },
-  {
-    id: 4,
-    title: 'Космические темы для интерфейса',
-    author: 'designer-1',
-    createdAt: '2026-03-23T16:45:00Z',
-    content:
-      'Хочу предложить новые варианты оформления в космическом стиле: тема «Туманность», тема «Чёрная дыра» и тема «Сверхновая».',
-    commentsCount: 1,
-  },
-]
+export type ForumRejectPayload = {
+  status: number
+  message: string
+}
 
-const DEMO_COMMENTS: ForumComment[] = [
-  {
-    id: 1,
-    topicId: 1,
-    author: 'dev-2',
-    content:
-      'Согласен, 15-й уровень слишком сложный. Добавить бы пару ходов.',
-    createdAt: '2026-03-20T11:00:00Z',
-    parentCommentId: null,
-  },
-  {
-    id: 2,
-    topicId: 1,
-    author: 'dev-1',
-    content:
-      'Или можно добавить бонусный ход за комбо из 5 элементов.',
-    createdAt: '2026-03-20T11:30:00Z',
-    parentCommentId: 1,
-  },
-  {
-    id: 3,
-    topicId: 1,
-    author: 'tester-1',
-    content:
-      'Протестировал — с 3 дополнительными ходами баланс ок 👍',
-    createdAt: '2026-03-20T14:00:00Z',
-    parentCommentId: null,
-  },
-  {
-    id: 4,
-    topicId: 2,
-    author: 'dev-1',
-    content:
-      'Молния — отличная идея! Может очищать случайный ряд или столбец.',
-    createdAt: '2026-03-21T15:00:00Z',
-    parentCommentId: null,
-  },
-  {
-    id: 5,
-    topicId: 2,
-    author: 'designer-1',
-    content:
-      'Нарисую концепт для молнии и диагональной бомбы 🎨',
-    createdAt: '2026-03-21T15:30:00Z',
-    parentCommentId: 4,
-  },
-  {
-    id: 6,
-    topicId: 3,
-    author: 'dev-2',
-    content:
-      'Тач-события — известная проблема. Попробуй pointer events вместо touch.',
-    createdAt: '2026-03-22T10:00:00Z',
-    parentCommentId: null,
-  },
-  {
-    id: 7,
-    topicId: 4,
-    author: 'dev-3',
-    content:
-      'Тема «Чёрная дыра» звучит круто! Тёмный фон с затягивающей анимацией 🌀',
-    createdAt: '2026-03-23T17:00:00Z',
-    parentCommentId: null,
-  },
-]
-
-let demoTopics = [...DEMO_TOPICS]
-let demoComments = [...DEMO_COMMENTS]
-let nextTopicId = 100
-let nextCommentId = 100
+function rejectFromUnknown(
+  e: unknown
+): ForumRejectPayload {
+  if (e instanceof ForumApiError) {
+    return {
+      status: e.status,
+      message: e.message,
+    }
+  }
+  if (e instanceof Error) {
+    return { status: 500, message: e.message }
+  }
+  return {
+    status: 500,
+    message: 'Неизвестная ошибка',
+  }
+}
 
 export interface ForumState {
   topics: ForumTopic[]
   currentTopic: ForumTopic | null
   comments: ForumComment[]
   isLoading: boolean
+  /** 403 от API форума — клиент делает редирект на /login */
+  shouldRedirectToLogin: boolean
 }
 
 const initialState: ForumState = {
@@ -133,77 +58,113 @@ const initialState: ForumState = {
   currentTopic: null,
   comments: [],
   isLoading: false,
+  shouldRedirectToLogin: false,
 }
 
-export const fetchTopicsThunk = createAsyncThunk(
+export const fetchTopicsThunk = createAsyncThunk<
+  ForumTopic[],
+  void,
+  { rejectValue: ForumRejectPayload }
+>(
   'forum/fetchTopics',
-  async () => {
-    // Sprint 8: return fetch(`${SERVER_HOST}/api/forum/topics`).then(r => r.json())
-    return Promise.resolve([...demoTopics])
+  async (_, { rejectWithValue }) => {
+    try {
+      return await forumGetTopics()
+    } catch (e) {
+      return rejectWithValue(rejectFromUnknown(e))
+    }
   }
 )
 
 export const fetchTopicByIdThunk =
-  createAsyncThunk(
+  createAsyncThunk<
+    {
+      topic: ForumTopic
+      comments: ForumComment[]
+    },
+    number,
+    { rejectValue: ForumRejectPayload }
+  >(
     'forum/fetchTopicById',
-    async (topicId: number) => {
-      // Sprint 8: return fetch(`${SERVER_HOST}/api/forum/topics/${topicId}`).then(r => r.json())
-      const topic =
-        demoTopics.find(t => t.id === topicId) ||
-        null
-      const comments = demoComments.filter(
-        c => c.topicId === topicId
-      )
-      return Promise.resolve({ topic, comments })
+    async (topicId, { rejectWithValue }) => {
+      try {
+        const topic = await forumGetTopic(topicId)
+        const comments =
+          await forumGetAllComments(topicId)
+        return { topic, comments }
+      } catch (e) {
+        return rejectWithValue(
+          rejectFromUnknown(e)
+        )
+      }
     }
   )
 
-export const createTopicThunk = createAsyncThunk(
+export const createTopicThunk = createAsyncThunk<
+  ForumTopic,
+  CreateTopicPayload,
+  { rejectValue: ForumRejectPayload }
+>(
   'forum/createTopic',
-  async (payload: CreateTopicPayload) => {
-    // Sprint 8: return fetch(`${SERVER_HOST}/api/forum/topics`, { method: 'POST', body: JSON.stringify(payload) }).then(r => r.json())
-    const newTopic: ForumTopic = {
-      id: nextTopicId++,
-      title: payload.title,
-      content: payload.content,
-      author: payload.author,
-      createdAt: new Date().toISOString(),
-      commentsCount: 0,
+  async (payload, { rejectWithValue }) => {
+    try {
+      return await forumCreateTopic({
+        title: payload.title,
+        content: payload.content,
+      })
+    } catch (e) {
+      return rejectWithValue(rejectFromUnknown(e))
     }
-    demoTopics = [newTopic, ...demoTopics]
-    return Promise.resolve(newTopic)
   }
 )
 
 export const createCommentThunk =
-  createAsyncThunk(
+  createAsyncThunk<
+    ForumComment,
+    CreateCommentPayload,
+    { rejectValue: ForumRejectPayload }
+  >(
     'forum/createComment',
-    async (payload: CreateCommentPayload) => {
-      // Sprint 8: return fetch(`${SERVER_HOST}/api/forum/comments`, { method: 'POST', body: JSON.stringify(payload) }).then(r => r.json())
-      const newComment: ForumComment = {
-        id: nextCommentId++,
-        topicId: payload.topicId,
-        author: payload.author,
-        content: payload.content,
-        createdAt: new Date().toISOString(),
-        parentCommentId:
-          payload.parentCommentId ?? null,
+    async (payload, { rejectWithValue }) => {
+      try {
+        return await forumCreateComment(
+          payload.topicId,
+          {
+            content: payload.content,
+            parentCommentId:
+              payload.parentCommentId ?? null,
+          }
+        )
+      } catch (e) {
+        return rejectWithValue(
+          rejectFromUnknown(e)
+        )
       }
-      demoComments = [...demoComments, newComment]
-      const topic = demoTopics.find(
-        t => t.id === payload.topicId
-      )
-      if (topic) {
-        topic.commentsCount += 1
-      }
-      return Promise.resolve(newComment)
     }
   )
+
+function isForumRejectedWithValue(
+  action: UnknownAction
+): action is UnknownAction & {
+  type: string
+  payload: ForumRejectPayload
+} {
+  return (
+    typeof action.type === 'string' &&
+    action.type.startsWith('forum/') &&
+    action.type.endsWith('/rejected') &&
+    isRejectedWithValue(action)
+  )
+}
 
 export const forumSlice = createSlice({
   name: 'forum',
   initialState,
-  reducers: {},
+  reducers: {
+    clearForumAuthRedirect(state) {
+      state.shouldRedirectToLogin = false
+    },
+  },
   extraReducers: builder => {
     builder
       .addCase(
@@ -220,15 +181,9 @@ export const forumSlice = createSlice({
         ) => {
           state.topics = payload
           state.isLoading = false
+          state.shouldRedirectToLogin = false
         }
       )
-      .addCase(
-        fetchTopicsThunk.rejected.type,
-        state => {
-          state.isLoading = false
-        }
-      )
-
       .addCase(
         fetchTopicByIdThunk.pending.type,
         state => {
@@ -244,19 +199,14 @@ export const forumSlice = createSlice({
           {
             payload,
           }: PayloadAction<{
-            topic: ForumTopic | null
+            topic: ForumTopic
             comments: ForumComment[]
           }>
         ) => {
           state.currentTopic = payload.topic
           state.comments = payload.comments
           state.isLoading = false
-        }
-      )
-      .addCase(
-        fetchTopicByIdThunk.rejected.type,
-        state => {
-          state.isLoading = false
+          state.shouldRedirectToLogin = false
         }
       )
 
@@ -292,8 +242,21 @@ export const forumSlice = createSlice({
           }
         }
       )
+
+      .addMatcher(
+        isForumRejectedWithValue,
+        (state, action) => {
+          state.isLoading = false
+          if (action.payload.status === 403) {
+            state.shouldRedirectToLogin = true
+          }
+        }
+      )
   },
 })
+
+export const { clearForumAuthRedirect } =
+  forumSlice.actions
 
 export const selectTopics = (state: RootState) =>
   state.forum.topics
@@ -306,5 +269,8 @@ export const selectComments = (
 export const selectIsLoadingForum = (
   state: RootState
 ) => state.forum.isLoading
+export const selectForumShouldRedirectToLogin = (
+  state: RootState
+) => state.forum.shouldRedirectToLogin
 
 export default forumSlice.reducer

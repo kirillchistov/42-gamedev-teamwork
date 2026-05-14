@@ -1,27 +1,31 @@
-# Форум: Требования API и план реализации
- 
-Текущее состояние: 
-['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts) (демо-данные), типы ['forum.ts'](../packages/client/src/types/forum.ts), страницы ['ForumPage'](../packages/client/src/pages/ForumPage.tsx), ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx). Роуты '/forum', '/forum/:topicId' уже **за 'withAuthGuard'** — при отказе авторизации редирект на '/login' (['withAuthGuard.tsx'](../packages/client/src/hoc/withAuthGuard.tsx)).
+# Форум: требования API и план реализации
 
-Бэкенд монорепы: ['packages/server'](../packages/server/index.ts) — Express, PostgreSQL через ['db.ts'](../packages/server/db.ts), проверка сессии Практикума в ['requirePraktikumAuth'](../packages/server/middleware/requirePraktikumAuth.ts) (сейчас ответы **401**; для форума по заданию — **403**, см. ниже).
+Текущее состояние:
+['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts) ходит на **`VITE_APP_API_URL`** + `/api/forum` (см. ['forumApi.ts'](../packages/client/src/shared/api/forumApi.ts)); демо-данные удалены. Типы ['forum.ts'](../packages/client/src/types/forum.ts), страницы ['ForumPage'](../packages/client/src/pages/ForumPage.tsx), ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx). Роуты '/forum', '/forum/:topicId' уже **за 'withAuthGuard'** — при отказе авторизации редирект на '/login' (['withAuthGuard.tsx'](../packages/client/src/hoc/withAuthGuard.tsx)). **403** от API форума: редирект на `/login` + подсказка (см. **§15**).
+
+Бэкенд монорепы: ['packages/server'](../packages/server/index.ts) — Express, PostgreSQL через ['db.ts'](../packages/server/db.ts), проверка сессии Практикума в ['requirePraktikumAuth'](../packages/server/middleware/requirePraktikumAuth.ts) — **403** при отсутствии или недействительной сессии (как в ТЗ; см. §10); при успехе доступен **`req.praktikumUser`** для форума. Роут **'/api/forum'** — см. §13.
+
+**База URL приложения API** (друзья, форум): одна переменная на клиенте — 'VITE_APP_API_URL' (см. ['constants.tsx'](../packages/client/src/constants.tsx)), по умолчанию 'http://localhost:3000'; порт **'SERVER_PORT'** пакета 'packages/server' по умолчанию **3000**.
 
 ---
 
-## 1. Требования к API (сводка)
+## 1. Требования к API (свод)
 
 | # | Требование | Решение |
 |---|------------|---------|
 | 1 | Стек: PostgreSQL 12+, Sequelize, Docker Compose | Уже есть Postgres в ['docker-compose.yml'](../docker-compose.yml); сервер подключается через 'POSTGRES_*' + 'POSTGRES_HOST'. |
 | 2 | Все «ручки» форума за авторизацией | Общий middleware: нет валидной сессии Практикума → **403** + JSON '{ "reason": "..." }'. |
-| 3 | Несколько топиков | CRUD минимум: список, создание, чтение одного. |
+| 3 | Несколько топиков | CRUD минимум: список, создание, чтение одного; правки/удаление — см. §2.1. |
 | 4 | Сущности: топик, комментарий, дерево ответов, реакции | См. §3–4. |
 | 5 | XSS / SQL-injection | Текст как **plain text**, лимиты длины, без HTML; Sequelize — параметризованные запросы; при отдаче в JSON экранирование на клиенте (React по умолчанию). |
-| 6 | Неавторизован → **403** на Node | Единый 'requireForumAuth' (или расширение текущего middleware): без cookie / 'GET /auth/user' не 200 → **403 Forbidden** (не путать с 401 «WWW-Authenticate»; по ТЗ — именно 403). |
-| 7 | Клиент: заглушка / скрытие | Уже: гард + 'Navigate' на '/login'. Дополнительно: при **403** от API — toast + редирект или блок формы создания темы (итерация «подключение API»). |
+| 6 | Неавторизован → **403** на Node | Единый 'requirePraktikumAuth' (и далее при необходимости 'attachPraktikumUser'): без cookie / 'GET /auth/user' не 200 → **403 Forbidden**. |
+| 7 | Клиент: заглушка / скрытие | Уже: гард + 'Navigate' на '/login'. Дополнительно: при **403** от API — toast + редирект или блок формы (итерация «подключение API»). |
+| 8 | Пагинация комментариев | См. §2.2 ('limit' / 'offset' или 'cursor'). |
+| 9 | Редактирование / удаление | **Автор** или **модератор/админ** (роль из профиля Практикума или флаг в нашей БД — уточнить при реализации). |
 
 ---
 
-## 2. REST API (черновик контракта)
+## 2. REST API (драфт контракт)
 
 Базовый префикс: **'/api/forum'** (совпадает с комментариями в 'forumSlice').  
 Клиент шлёт **'Cookie'** (как к Практикуму); сервер пробрасывает cookie в 'GET {PRAKTIKUM_API_URL}/auth/user' и кладёт в 'req' объект пользователя (минимум 'id', 'login' или 'display_name' для отображения).
@@ -33,40 +37,52 @@
 | 'GET' | '/api/forum/topics' | Список топиков. Query: 'limit' (default 20), 'offset' или 'page'. |
 | 'GET' | '/api/forum/topics/:topicId' | Одна тема + метаданные ('commentsCount' можно считать агрегатом). |
 | 'POST' | '/api/forum/topics' | Создание. Body JSON: '{ "title": string, "content": string }'. Поле 'author' **не доверять** с клиента — брать из сессии. |
-| 'DELETE' | '/api/forum/topics/:topicId' | Опционально в v2 (модерация / автор-владелец). |
+| 'PATCH' | '/api/forum/topics/:topicId' | Редактирование: **автор темы** или **модератор/админ**. |
+| 'DELETE' | '/api/forum/topics/:topicId' | Удаление: **автор** или **модератор/админ**. |
 
 Ответы списка/одного топика — совместимы с типом ['ForumTopic'](../packages/client/src/types/forum.ts): 'id', 'title', 'author' (строка для UI), 'createdAt' (ISO), 'content', 'commentsCount'.
 
-### 2.2 Комментарии (дерево)
+### 2.2 Комментарии (дерево + пагинация)
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| 'GET' | '/api/forum/topics/:topicId/comments' | Все комментарии темы (плоский массив с 'parentCommentId' — как сейчас на клиенте; дерево строится на клиенте). |
-| 'POST' | '/api/forum/topics/:topicId/comments' | Создание. Body: '{ "content": string, "parentCommentId": number | null }'. |
+| 'GET' | '/api/forum/topics/:topicId/comments' | Комментарии темы **постранично**. Query: 'limit' (default 50, max 100), 'offset' (default 0) **или** 'cursor' + 'limit' (cursor-based для больших тем). Ответ: '{ "items": ForumComment[], "total": number, "limit": number, "offset": number }' (или эквивалент с 'nextCursor'). |
+| 'POST' | '/api/forum/topics/:topicId/comments' | Создание. Body: '{ "content": string, "parentCommentId": number \| null }'. |
 
-Тип ответа — как ['ForumComment'](../packages/client/src/types/forum.ts): 'id', 'topicId', 'author', 'content', 'createdAt', 'parentCommentId'.
+Тип элемента — как ['ForumComment'](../packages/client/src/types/forum.ts): 'id', 'topicId', 'author', 'content', 'createdAt', 'parentCommentId'.
 
-**Рекурсия:** одна таблица 'comments' с 'parent_id → comments.id'; глубина не ограничена на уровне БД, на API — опциональный 'maxDepth' или лимит длины цепочки в валидации.
+**Рекурсия:** одна таблица 'comments' с 'parent_id → comments.id'; глубина не ограничена на уровне БД; при необходимости — лимит глубины в валидации.
+
+**Пагинация:** для длинных тем обязательна; клиент при прокрутке или «Показать ещё» запрашивает следующую страницу. Дерево на клиенте можно собирать из плоского 'items', если сортировка на сервере стабильна ('created_at', 'id').
 
 ### 2.3 Реакции (эмоции)
 
 | Метод | Путь | Описание |
 |-------|------|----------|
 | 'GET' | '/api/forum/topics/:topicId/comments/:commentId/reactions' | Список реакций (группировка по emoji + count + «моя реакция»). |
-| 'PUT' или 'POST' | '/api/forum/comments/:commentId/reactions' | Поставить реакцию. Body: '{ "emoji": string }' (например один Unicode символ из whitelist). |
+| 'PUT' или 'POST' | '/api/forum/comments/:commentId/reactions' | Поставить реакцию. Body: '{ "emoji": string }' (whitelist). |
 | 'DELETE' | '/api/forum/comments/:commentId/reactions/:emoji' | Снять свою реакцию данного типа. |
 
-Whitelist эмодзи — тот же набор, что на UI в ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx) ('EMOJIS'), чтобы не принимать произвольные строки.
+Whitelist эмодзи — тот же набор, что на UI в ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx) ('EMOJIS').
 
-### 2.4 Коды ошибок
+### 2.4 Комментарии: правки и удаление
+
+| Метод | Путь | Описание |
+|-------|------|----------|
+| 'PATCH' | '/api/forum/comments/:commentId' | Редактирование: **автор** или **модератор/админ**. |
+| 'DELETE' | '/api/forum/comments/:commentId' | Удаление: **автор** или **модератор/админ** (каскад на дочерние ответы и реакции — зафиксировать в миграции). |
+
+### 2.5 Коды ошибок
 
 | Код | Когда |
 |-----|--------|
-| **403** | Нет cookie или сессия Практикума недействительна — для всех защищённых ручек форума. |
+| **403** | Нет cookie или сессия Практикума недействительна — для всех защищённых ручек ('/friends', '/user', '/api/forum/**'). |
 | **400** | Валидация (пустой title, слишком длинный 'content', неверный 'parentCommentId', emoji вне whitelist). |
 | **404** | 'topicId' / 'commentId' не существует. |
+| **403** (бизнес) | Попытка правки/удаления не автором и не модератором (можно отличать 'reason' в JSON). |
 | **409** | Опционально: дубликат реакции (если не делаем идемпотентный upsert). |
 | **500** | Внутренняя ошибка БД / непойманное исключение. |
+| **502** | Недоступна проверка сессии у Практикума (сеть) — оставить как отдельный код для 'requirePraktikumAuth'. |
 
 Тело ошибки: '{ "reason": "краткий код или сообщение" }' — как на Практикуме, для единообразия с ['praktikumAuthErrors'](../packages/client/src/shared/utils/praktikumAuthErrors.ts).
 
@@ -109,13 +125,13 @@ erDiagram
   }
 ```
 
-**Идентификация автора:** 'author_praktikum_id' — числовой 'id' из ответа 'GET /auth/user' Практикума; 'author_display' — снимок строки ('display_name' / 'login') на момент создания, чтобы не дергать Практикум на каждый список.
+**Идентификация автора:** 'author_praktikum_id' — числовой 'id' из ответа 'GET /auth/user' Практикума; 'author_display' — снимок строки ('display_name' / 'login') на момент создания.
 
-**Индексы (минимум):** 'comments(topic_id)', 'comments(parent_id)', 'comment_reactions(comment_id)', уникальность **'UNIQUE(comment_id, author_praktikum_id, emoji)'** — один пользователь — одна реакция данного типа на комментарий.
+**Индексы (минимум):** 'comments(topic_id)', 'comments(parent_id)', 'comment_reactions(comment_id)', уникальность **'UNIQUE(comment_id, author_praktikum_id, emoji)'**.
 
 ---
 
-## 4. Модели Sequelize (намётка)
+## 4. Модели Sequelize (драфт)
 
 | Модель | Таблица | Связи |
 |--------|---------|--------|
@@ -130,15 +146,10 @@ erDiagram
 
 ## 5. Аутентификация и авторизация на сервере
 
-1. **Middleware** (например 'attachPraktikumUser' + 'requireForumUser'):
-   - читает 'Cookie' из входящего запроса;
-   - 'fetch(PRAKTIKUM_API + '/auth/user', { headers: { cookie } })';
-   - при успехе: 'req.forumUser = await r.json()' (или подмножество полей);
-   - при неуспехе: **'res.status(403).json({ reason: 'Forbidden' })'** — **без вызова 'next()'**.
-
-2. Все маршруты '/api/forum/**' вешаются **после** этого middleware (или 'router.use(requireForumUser)').
-
-3. В контроллерах **'author_praktikum_id' = req.forumUser.id'**, строка для UI — из профиля; игнорировать клиентский 'author' из body (как сейчас передаётся в ['CreateTopicPayload'](../packages/client/src/types/forum.ts) — убрать при интеграции API).
+1. **Middleware** 'requirePraktikumAuth': cookie → 'GET /auth/user'; при успехе — 'next()' (опционально позже: 'req.praktikumUser = …').
+2. При отсутствии cookie или '!r.ok' → **403** + '{ reason: 'Forbidden' }' (или 'Unauthorized' как текст — единообразно с клиентом).
+3. Все защищённые маршруты, включая **'/api/forum/**'**, используют тот же контракт.
+4. В контроллерах **'author_praktikum_id' = id из профиля**; клиентский 'author' в body не использовать.
 
 ---
 
@@ -146,18 +157,17 @@ erDiagram
 
 | Угроза | Мера |
 |--------|------|
-| **SQL-injection** | Только Sequelize / 'query' с bind-параметрами; без конкатенации SQL строк. |
-| **XSS** | Хранить как текст; 'Content-Type: application/json'; не отдавать 'text/html' из пользовательского ввода; лимиты: например 'title' ≤ 255, 'content' ≤ 32_000 символов; отклонять нулевые байты и управляющие символы по политике. |
-| **Перегрузка** | Rate limiting опционально позже. |
+| **SQL-injection** | Только Sequelize / 'query' с bind-параметрами. |
+| **XSS** | Хранить как текст; 'Content-Type: application/json'; лимиты длины; политика по управляющим символам. |
 
 ---
 
-## 7. Клиент: следующая итерация после бэкенда
+## 7. Клиент: подключение к API
 
-- Заменить демо в ['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts) на 'fetch'/'apiClient' к **'SERVER_HOST' или отдельному 'VITE_FORUM_API_URL'** (согласовать с Docker: прокси с клиента SSR на 'server:3001' или прямой порт с хоста).
-- Убрать передачу 'author' из формы; подставлять с сервера в ответе.
-- Расширить типы под **реакции** (массив или map 'emoji → count' + флаг «моя»).
-- При **403**: редирект на '/login' или сообщение «Войдите, чтобы участвовать в форуме» (соответствие ТЗ «заглушка»).
+- ['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts): thunks через ['forumApi.ts'](../packages/client/src/shared/api/forumApi.ts), **`credentials: 'include'`**; комментарии подгружаются постранично с сервера (страницы по 100 до исчерпания `total`).
+- Поле **`author`** в формах не отправляется; в типах **CreateTopicPayload** / **CreateCommentPayload** только контент (и `topicId` / `parentCommentId` для комментария).
+- **403**: флаг **`shouldRedirectToLogin`** в slice, на страницах форума **`clearForumAuthRedirect`** + **`navigate('/login', { state: { fromForum: true } })`**; на ['LoginPage'](../packages/client/src/pages/LoginPage.tsx) показывается краткое уведомление (класс **`auth-page__toast`**). Ошибки создания темы/комментария (не 403) — текст в том же стиле на странице.
+- Реакции в UI и расширенные типы под агрегаты реакций — при необходимости отдельная итерация поверх уже готового API (§14).
 
 ---
 
@@ -165,20 +175,85 @@ erDiagram
 
 | Итерация | Содержание |
 |----------|------------|
-| **2** | Sequelize: 'sequelize-cli', конфиг из env, папка 'models/', 'migrations/' первая миграция 'topics' + 'comments' + 'comment_reactions'. |
-| **3** | Регистрация моделей, ассоциации, сиды опционально для dev. |
-| **4** | Express: 'express.json()', роутер '/api/forum', middleware 403, контроллер топиков + комментариев. |
-| **5** | Контроллер реакций + тесты интеграции (supertest) или e2e smoke. |
-| **6** | Подключение клиента, удаление демо-массивов, обработка ошибок. |
+| **2** | Sequelize: 'sequelize-cli', конфиг из env, 'models/', первая миграция 'topics' + 'comments' + 'comment_reactions'. |
+| **3** | Ассоциации, сиды опционально для dev. |
+| **4** | Express: 'express.json()', роутер '/api/forum', middleware 403, топики + комментарии с пагинацией. — **см. §13** |
+| **5** | Реакции, PATCH/DELETE с проверкой автора/модератора + тесты. — **см. §14** |
+| **6** | Подключение клиента, удаление демо, обработка ошибок. — **см. §15** |
 
 ---
 
-## 9. Открытые вопросы (обсудить на ревью)
+## 9. Вопросы и решение
 
-1. **Удаление / редактирование** топиков и комментариев — только автор или роль модератора?  
-2. **Пагинация** комментариев для очень длинных тем.  
-3. **Единый порт**: сейчас 'SERVER_HOST' в ['constants.tsx'](../packages/client/src/constants.tsx) указывает на '3000' (клиент SSR); реальные демо-ручки '/friends' на пакете 'server' — '3001'. Нужна одна переменная окружения для **бэкенда форума** на всех средах.  
-4. Синхронизация **403** с существующим 'requirePraktikumAuth' (401) для '/friends' — оставить различие (форум = 403 по ТЗ, старые ручки = 401) или унифицировать.
+| Вопрос | Решение |
+|--------|---------|
+| Q1 Удаление и редактировать посты может | **и автор, и модератор/админ** |
+| Q2 Для длинных комментариев сделана пагинация | **Да** — offset/limit |
+| Q3 Порт для API | **'VITE_APP_API_URL'** на клиенте (fallback 'http://localhost:3000'); **'SERVER_PORT'** по умолчанию **3000** у 'packages/server'. В Docker при одновременной публикации клиента и API на хосте задаем разные **опубликованные** порты (API '3000', SSR-клиент '5173' — см. '.env.sample'). |
+| Q4 Ошибка 403 | **Унифицировал на 403** как в ТЗ для всех защищённых ручек сервера. |
 
 ---
 
+## 10. Путаница с кодами ошибок 401/403
+
+**401 Unauthorized** = «нет или невалидные учётные данные», используем, когда пользователь "не представился".
+
+**403 Forbidden** как требуется в ТЗ = «пользователь не авторизован» - когда «представился, но нельзя»).
+
+**502** если Практикум не доступен по сети = сбой проверки.
+
+---
+
+## 11. Миграции Sequelize
+
+- **Зависимости** ('packages/server/package.json'): 'sequelize' (^6.37), 'sequelize-cli' (dev).
+- **CLI**: ['.sequelizerc'](../packages/server/.sequelizerc), конфиг ['config/database.cjs'](../packages/server/config/database.cjs) (окружения 'development' / 'test' / 'production', чтение 'POSTGRES_*' и '.env' из 'packages/server' и корня монорепы).
+- **Миграция**: ['migrations/20260514120000-create-forum-tables.js'](../packages/server/migrations/20260514120000-create-forum-tables.js) — таблицы 'topics', 'comments' (FK на 'topics', self-FK 'parent_id' → 'comments' CASCADE), 'comment_reactions' (FK на 'comments' CASCADE, уникальный индекс '(comment_id, author_praktikum_id, emoji)'), индексы по 'topic_id' / 'parent_id' / 'comment_id'.
+- **ORM в рантайме**: ['sequelize.ts'](../packages/server/sequelize.ts), подключение в ['db.ts'](../packages/server/db.ts) через 'sequelize.authenticate()' вместо одноразового 'pg.Client'.
+- **Скрипты**: 'yarn workspace server db:migrate', 'db:migrate:undo', 'db:migrate:undo:all'.
+- **Папки**: 'models/', 'seeders/' — см. §12 (шаг 3).
+
+Запуск миграций: из каталога с поднятым PostgreSQL и корректными `POSTGRES_*` выполняем `yarn workspace server db:migrate` (или из `packages/server`: `yarn db:migrate`). Если ошибка **«role postgres does not exist»** — см. [`.env.sample`](../.env.sample) и [`config/resolvePostgresUser.cjs`](../packages/server/config/resolvePostgresUser.cjs) (можно, например, подставлять `POSTGRES_USE_OS_USER=1` или прямо прописать админа с доступом в PG).
+
+---
+
+## 12. Модели Sequelize, ассоциации, сид
+
+- **Модели**: ['models/Topic.ts'](../packages/server/models/Topic.ts), ['models/Comment.ts'](../packages/server/models/Comment.ts), ['models/CommentReaction.ts'](../packages/server/models/CommentReaction.ts); связи и экспорт в ['models/index.ts'](../packages/server/models/index.ts). Подключение при старте БД: ['db.ts'](../packages/server/db.ts) импортирует `'./models'`.
+- **Whitelist эмодзи** (как на клиенте): ['constants/forumEmojis.ts'](../packages/server/constants/forumEmojis.ts).
+- **Сид (dev, идемпотентный)**: ['seeders/20260515120000-dev-forum-demo.js'](../packages/server/seeders/20260515120000-dev-forum-demo.js). Команды: `yarn workspace server db:seed` / `db:seed:undo` (из корня: `yarn db:seed` / `yarn db:seed:undo`).
+
+---
+
+## 13. Express `/api/forum`
+
+- **`express.json()`** и монтирование роутера в ['index.ts'](../packages/server/index.ts): `app.use('/api/forum', requirePraktikumAuth, forumRouter)`.
+- **Сессия Практикума**: ['requirePraktikumAuth.ts'](../packages/server/middleware/requirePraktikumAuth.ts) по-прежнему отдаёт **403** / **502** по контракту; при **200** парсит профиль и выставляет **`req.praktikumUser`** (см. ['praktikumUser.ts'](../packages/server/middleware/praktikumUser.ts)). Расширение типа `Request`: ['types/express-augment.d.ts'](../packages/server/types/express-augment.d.ts) (имя файла не `express.d.ts`, чтобы не пересекаться с `paths` `types/*` в tsconfig).
+- **Роутер**: ['routes/forumRouter.ts'](../packages/server/routes/forumRouter.ts) — см. **§14** (шаг 5: реакции, PATCH/DELETE, модераторы); базовые эндпоинты шага 4: **GET/POST** `/topics`, **GET** `/topics/:topicId`, **GET/POST** `/topics/:topicId/comments` (пагинация комментариев: `limit` по умолчанию 50, макс. 100; `offset`; список тем: `limit` по умолчанию 20, макс. 100, плюс `page` или `offset`). Ответы в camelCase, поле автора в JSON — **`author`** (снимок `author_display`). Тела ошибок: `{ "reason": "..." }`.
+- **Фабрика приложения (e2e)**: ['createApp.ts'](../packages/server/createApp.ts) — то же HTTP-дерево без `listen`; в тестах используется **supertest** (см. ['__tests__/localPraktikumAuthE2E.test.ts'](../packages/server/__tests__/localPraktikumAuthE2E.test.ts)).
+- **Локальный обход сервера Практикума** (без внешнего `GET /auth/user`): переменная **`LOCAL_PRAKTIKUM_AUTH_BYPASS=1`** (`true` / `yes`) при **`NODE_ENV` не равном `production`**. Подставляется **`req.praktikumUser`** из **`LOCAL_PRAKTIKUM_USER_ID`** (по умолчанию `999001`) и **`LOCAL_PRAKTIKUM_USER_DISPLAY`** (по умолчанию `e2e-local`). Логика: ['middleware/localPraktikumAuthBypass.ts'](../packages/server/middleware/localPraktikumAuthBypass.ts). В **production** версии обход **никогда** не включается. См. [`.env.sample`](../.env.sample).
+
+---
+
+## 14. Реакции, PATCH/DELETE, модераторы
+
+- **Роутер** (дополнения к ['forumRouter.ts'](../packages/server/routes/forumRouter.ts)):
+  - **GET** `/topics/:topicId/comments/:commentId/reactions` — `{ items: [{ emoji, count, mine }] }`, `mine` если текущий пользователь ставил эту эмодзи.
+  - **POST** `/comments/:commentId/reactions` — тело `{ "emoji" }` из whitelist; дубликат по уникальному индексу → **200** и существующая строка (идемпотентно).
+  - **DELETE** `/comments/:commentId/reactions/:emoji` — снять **свою** реакцию (**204**); иначе **404**.
+  - **PATCH** `/topics/:topicId` — частичное `{ title?, content? }`; **DELETE** `/topics/:topicId`.
+  - **PATCH** `/comments/:commentId` — `{ content }`; **DELETE** `/comments/:commentId`.
+- **Права**: автор ресурса **или** id из **`FORUM_MODERATOR_PRAKTIKUM_IDS`** (список чисел Практикума, разделители запятая/пробел) — логика в ['forumAccess.ts'](../packages/server/routes/forumAccess.ts). Бизнес-**403**: `{ "reason": "Not author or moderator" }`.
+- **Whitelist эмодзи** для POST/DELETE пути: ['forumEmojiGuard.ts'](../packages/server/routes/forumEmojiGuard.ts).
+- **Тесты**: ['__tests__/forumAccess.test.ts'](../packages/server/__tests__/forumAccess.test.ts) (парсинг модераторов + whitelist).
+
+---
+
+## 15. Клиент и 403
+
+- **HTTP-клиент форума**: ['forumApi.ts'](../packages/client/src/shared/api/forumApi.ts) — база **`SERVER_HOST`** из ['constants.tsx'](../packages/client/src/constants.tsx) (`VITE_APP_API_URL` / `http://localhost:3000`), класс **`ForumApiError`** с `status` и текстом из **`reason`**.
+- **Redux**: ['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts) — **`rejectWithValue`**, **`selectForumShouldRedirectToLogin`**, **`clearForumAuthRedirect`**, matcher на отклонённые thunks с **`status === 403`**.
+- **Страницы**: ['ForumPage.tsx'](../packages/client/src/pages/ForumPage.tsx), ['ForumTopicPage.tsx'](../packages/client/src/pages/ForumTopicPage.tsx); лендинг ['Contact.tsx'](../packages/client/src/components/Landing/Contact.tsx) — создание темы без поля автора.
+- **Вход**: ['LoginPage.tsx'](../packages/client/src/pages/LoginPage.tsx) — `location.state.fromForum`.
+
+---
