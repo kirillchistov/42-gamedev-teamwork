@@ -2,8 +2,20 @@
  * Разбор тела ответа GET /auth/user Практикума (см. client shared/api/userApi).
  */
 export type PraktikumUser = {
+  /** Числовой id из ответа GET /auth/user Практикума (`o.id`). */
   id: number
   displayLabel: string
+}
+
+/**
+ * Стабильный строковый ключ пользователя для колонок БД вида `praktikum_user_id TEXT`
+ * (темизация, настройки и т.д.): всегда `String(id)` от API, без префиксов.
+ * См. docs/project-themization.md §3 (Q2).
+ */
+export function praktikumUserIdForDb(
+  user: PraktikumUser
+): string {
+  return String(user.id)
 }
 
 export function parsePraktikumUser(

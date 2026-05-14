@@ -1,13 +1,45 @@
+import type { Request, Response } from 'express'
 import { Router } from 'express'
+import type { PraktikumUser } from '../middleware/praktikumUser'
 import {
   col,
   fn,
   Op,
+  UniqueConstraintError,
   ValidationError,
 } from 'sequelize'
-import { Comment, Topic } from '../models'
+import {
+  Comment,
+  CommentReaction,
+  Topic,
+} from '../models'
+import { canForumAuthorOrModerator } from './forumAccess'
+import { isAllowedForumReactionEmoji } from './forumEmojiGuard'
 
 const router = Router()
+
+function requireSessionUser(
+  req: Request,
+  res: Response
+): PraktikumUser | null {
+  const user = req.praktikumUser
+  if (!user) {
+    res.status(403).json({ reason: 'Forbidden' })
+    return null
+  }
+  return user
+}
+
+function reactionRowPayload(
+  row: CommentReaction
+) {
+  return {
+    id: row.id,
+    commentId: row.commentId,
+    emoji: row.emoji,
+    createdAt: row.createdAt.toISOString(),
+  }
+}
 
 function parseLimitParam(
   raw: unknown,
@@ -356,6 +388,498 @@ router.post(
         })
         return
       }
+      res
+        .status(500)
+        .json({ reason: 'Internal error' })
+    }
+  }
+)
+
+/** GET /topics/:topicId/comments/:commentId/reactions */
+router.get(
+  '/topics/:topicId/comments/:commentId/reactions',
+  async (req, res) => {
+    try {
+      const topicId = Number(req.params.topicId)
+      const commentId = Number(
+        req.params.commentId
+      )
+      if (
+        !Number.isFinite(topicId) ||
+        !Number.isFinite(commentId)
+      ) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      const topic = await Topic.findByPk(topicId)
+      if (!topic) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      const comment = await Comment.findOne({
+        where: { id: commentId, topicId },
+      })
+      if (!comment) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      const myId = req.praktikumUser?.id
+      const rows = await CommentReaction.findAll({
+        where: { commentId },
+        attributes: [
+          'emoji',
+          'authorPraktikumId',
+        ],
+        order: [['emoji', 'ASC']],
+      })
+
+      const map = new Map<
+        string,
+        { count: number; mine: boolean }
+      >()
+      for (const r of rows) {
+        const cur = map.get(r.emoji) ?? {
+          count: 0,
+          mine: false,
+        }
+        cur.count += 1
+        if (
+          myId !== undefined &&
+          r.authorPraktikumId === myId
+        ) {
+          cur.mine = true
+        }
+        map.set(r.emoji, cur)
+      }
+
+      const items = [...map.entries()].map(
+        ([emoji, v]) => ({
+          emoji,
+          count: v.count,
+          mine: v.mine,
+        })
+      )
+
+      res.json({ items })
+    } catch {
+      res
+        .status(500)
+        .json({ reason: 'Internal error' })
+    }
+  }
+)
+
+/** POST /comments/:commentId/reactions */
+router.post(
+  '/comments/:commentId/reactions',
+  async (req, res) => {
+    const user = requireSessionUser(req, res)
+    if (!user) {
+      return
+    }
+
+    try {
+      const commentId = Number(
+        req.params.commentId
+      )
+      if (!Number.isFinite(commentId)) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      const comment = await Comment.findByPk(
+        commentId
+      )
+      if (!comment) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      const body = req.body as unknown
+      if (
+        body === null ||
+        typeof body !== 'object'
+      ) {
+        res
+          .status(400)
+          .json({ reason: 'Invalid body' })
+        return
+      }
+      const o = body as Record<string, unknown>
+      const emoji =
+        typeof o.emoji === 'string' ? o.emoji : ''
+      if (!isAllowedForumReactionEmoji(emoji)) {
+        res.status(400).json({
+          reason: 'Invalid emoji',
+        })
+        return
+      }
+
+      try {
+        const row = await CommentReaction.create({
+          commentId,
+          authorPraktikumId: user.id,
+          emoji,
+        })
+        res
+          .status(201)
+          .json(reactionRowPayload(row))
+      } catch (e) {
+        if (e instanceof UniqueConstraintError) {
+          const existing =
+            await CommentReaction.findOne({
+              where: {
+                commentId,
+                authorPraktikumId: user.id,
+                emoji,
+              },
+            })
+          if (existing) {
+            res
+              .status(200)
+              .json(reactionRowPayload(existing))
+            return
+          }
+        }
+        if (e instanceof ValidationError) {
+          res.status(400).json({
+            reason: 'Validation failed',
+          })
+          return
+        }
+        throw e
+      }
+    } catch {
+      res
+        .status(500)
+        .json({ reason: 'Internal error' })
+    }
+  }
+)
+
+/** DELETE /comments/:commentId/reactions/:emoji */
+router.delete(
+  '/comments/:commentId/reactions/:emoji',
+  async (req, res) => {
+    const user = requireSessionUser(req, res)
+    if (!user) {
+      return
+    }
+
+    try {
+      const commentId = Number(
+        req.params.commentId
+      )
+      const emoji = decodeURIComponent(
+        String(req.params.emoji ?? '')
+      )
+      if (!Number.isFinite(commentId)) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+      if (!isAllowedForumReactionEmoji(emoji)) {
+        res.status(400).json({
+          reason: 'Invalid emoji',
+        })
+        return
+      }
+
+      const deleted =
+        await CommentReaction.destroy({
+          where: {
+            commentId,
+            authorPraktikumId: user.id,
+            emoji,
+          },
+        })
+      if (deleted === 0) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+      res.status(204).send()
+    } catch {
+      res
+        .status(500)
+        .json({ reason: 'Internal error' })
+    }
+  }
+)
+
+/** PATCH /topics/:topicId */
+router.patch(
+  '/topics/:topicId',
+  async (req, res) => {
+    const user = requireSessionUser(req, res)
+    if (!user) {
+      return
+    }
+
+    try {
+      const topicId = Number(req.params.topicId)
+      if (!Number.isFinite(topicId)) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      const topic = await Topic.findByPk(topicId)
+      if (!topic) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      if (
+        !canForumAuthorOrModerator(
+          user.id,
+          topic.authorPraktikumId
+        )
+      ) {
+        res.status(403).json({
+          reason: 'Not author or moderator',
+        })
+        return
+      }
+
+      const body = req.body as unknown
+      if (
+        body === null ||
+        typeof body !== 'object'
+      ) {
+        res
+          .status(400)
+          .json({ reason: 'Invalid body' })
+        return
+      }
+      const o = body as Record<string, unknown>
+      const patch: {
+        title?: string
+        content?: string
+      } = {}
+      if (typeof o.title === 'string') {
+        patch.title = o.title
+      }
+      if (typeof o.content === 'string') {
+        patch.content = o.content
+      }
+      if (Object.keys(patch).length === 0) {
+        res.status(400).json({
+          reason: 'Empty patch',
+        })
+        return
+      }
+
+      await topic.update(patch)
+      await topic.reload()
+      const commentsCount = await Comment.count({
+        where: { topicId },
+      })
+      res.json(topicPayload(topic, commentsCount))
+    } catch (e) {
+      if (e instanceof ValidationError) {
+        res.status(400).json({
+          reason: 'Validation failed',
+        })
+        return
+      }
+      res
+        .status(500)
+        .json({ reason: 'Internal error' })
+    }
+  }
+)
+
+/** DELETE /topics/:topicId */
+router.delete(
+  '/topics/:topicId',
+  async (req, res) => {
+    const user = requireSessionUser(req, res)
+    if (!user) {
+      return
+    }
+
+    try {
+      const topicId = Number(req.params.topicId)
+      if (!Number.isFinite(topicId)) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      const topic = await Topic.findByPk(topicId)
+      if (!topic) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      if (
+        !canForumAuthorOrModerator(
+          user.id,
+          topic.authorPraktikumId
+        )
+      ) {
+        res.status(403).json({
+          reason: 'Not author or moderator',
+        })
+        return
+      }
+
+      await topic.destroy()
+      res.status(204).send()
+    } catch {
+      res
+        .status(500)
+        .json({ reason: 'Internal error' })
+    }
+  }
+)
+
+/** PATCH /comments/:commentId */
+router.patch(
+  '/comments/:commentId',
+  async (req, res) => {
+    const user = requireSessionUser(req, res)
+    if (!user) {
+      return
+    }
+
+    try {
+      const commentId = Number(
+        req.params.commentId
+      )
+      if (!Number.isFinite(commentId)) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      const comment = await Comment.findByPk(
+        commentId
+      )
+      if (!comment) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      if (
+        !canForumAuthorOrModerator(
+          user.id,
+          comment.authorPraktikumId
+        )
+      ) {
+        res.status(403).json({
+          reason: 'Not author or moderator',
+        })
+        return
+      }
+
+      const body = req.body as unknown
+      if (
+        body === null ||
+        typeof body !== 'object'
+      ) {
+        res
+          .status(400)
+          .json({ reason: 'Invalid body' })
+        return
+      }
+      const o = body as Record<string, unknown>
+      if (typeof o.content !== 'string') {
+        res.status(400).json({
+          reason: 'Invalid body',
+        })
+        return
+      }
+
+      await comment.update({
+        content: o.content,
+      })
+      await comment.reload()
+      res.json(commentPayload(comment))
+    } catch (e) {
+      if (e instanceof ValidationError) {
+        res.status(400).json({
+          reason: 'Validation failed',
+        })
+        return
+      }
+      res
+        .status(500)
+        .json({ reason: 'Internal error' })
+    }
+  }
+)
+
+/** DELETE /comments/:commentId */
+router.delete(
+  '/comments/:commentId',
+  async (req, res) => {
+    const user = requireSessionUser(req, res)
+    if (!user) {
+      return
+    }
+
+    try {
+      const commentId = Number(
+        req.params.commentId
+      )
+      if (!Number.isFinite(commentId)) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      const comment = await Comment.findByPk(
+        commentId
+      )
+      if (!comment) {
+        res
+          .status(404)
+          .json({ reason: 'Not found' })
+        return
+      }
+
+      if (
+        !canForumAuthorOrModerator(
+          user.id,
+          comment.authorPraktikumId
+        )
+      ) {
+        res.status(403).json({
+          reason: 'Not author or moderator',
+        })
+        return
+      }
+
+      await comment.destroy()
+      res.status(204).send()
+    } catch {
       res
         .status(500)
         .json({ reason: 'Internal error' })
