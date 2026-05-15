@@ -30,14 +30,15 @@ export const reducer = combineReducers({
 })
 
 export const store = configureStore({
-  reducer,
-  preloadedState:
-    typeof window === 'undefined'
-      ? undefined
-      : window.APP_INITIAL_STATE,
+  reducer: {
+    user: userReducer,
+    forum: forumReducer,
+  },
 })
 
-export type RootState = ReturnType<typeof reducer>
+export type RootState = ReturnType<
+  typeof store.getState
+>
 export type AppDispatch = typeof store.dispatch
 
 export const useDispatch: () => AppDispatch =

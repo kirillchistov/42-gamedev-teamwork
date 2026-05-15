@@ -21,6 +21,8 @@ import {
   createTopicThunk,
   selectTopics,
   selectIsLoadingForum,
+  selectForumError,
+  clearForumError,
 } from '../slices/forumSlice'
 import { selectUser } from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
@@ -32,6 +34,7 @@ export const ForumPage: React.FC = () => {
   const isLoading = useSelector(
     selectIsLoadingForum
   )
+  const error = useSelector(selectForumError)
   const user = useSelector(selectUser)
 
   const [showCreateForm, setShowCreateForm] =
@@ -54,6 +57,10 @@ export const ForumPage: React.FC = () => {
     setTitle('')
     setContent('')
     setShowCreateForm(false)
+  }
+
+  const handleClearError = () => {
+    dispatch(clearForumError())
   }
 
   return (
@@ -97,6 +104,17 @@ export const ForumPage: React.FC = () => {
                 : '+ Новая тема'}
             </Button>
           </div>
+
+          {error && (
+            <div className="forum-error">
+              {error}
+              <button
+                className="forum-error__close"
+                onClick={handleClearError}>
+                ✕
+              </button>
+            </div>
+          )}
 
           {showCreateForm && (
             <div

@@ -17,6 +17,8 @@ import {
   selectCurrentTopic,
   selectComments,
   selectIsLoadingForum,
+  selectForumError,
+  clearForumError,
 } from '../slices/forumSlice'
 import { selectUser } from '../slices/userSlice'
 import type { ForumComment } from '../types/forum'
@@ -46,6 +48,7 @@ export const ForumTopicPage: React.FC = () => {
   const isLoading = useSelector(
     selectIsLoadingForum
   )
+  const error = useSelector(selectForumError)
   const user = useSelector(selectUser)
 
   const [newComment, setNewComment] = useState('')
@@ -80,6 +83,10 @@ export const ForumTopicPage: React.FC = () => {
 
   const handleEmojiClick = (emoji: string) => {
     setNewComment(prev => prev + emoji)
+  }
+
+  const handleClearError = () => {
+    dispatch(clearForumError())
   }
 
   const renderComments = (
@@ -168,6 +175,17 @@ export const ForumTopicPage: React.FC = () => {
             className="forum-back">
             ← К форуму
           </Link>
+
+          {error && (
+            <div className="forum-error">
+              {error}
+              <button
+                className="forum-error__close"
+                onClick={handleClearError}>
+                ✕
+              </button>
+            </div>
+          )}
 
           {isLoading && !topic ? (
             <p>Загрузка...</p>
