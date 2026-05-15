@@ -28,18 +28,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: viteBase,
-    resolve: {
-      alias: {
-        '@match3-public': path.join(
-          __dirname,
-          'public'
-        ),
-        '@match3-icons': path.join(
-          __dirname,
-          'public/iconset'
-        ),
-      },
-    },
     server: {
       port:
         Number(process.env.CLIENT_PORT) || 3000,
