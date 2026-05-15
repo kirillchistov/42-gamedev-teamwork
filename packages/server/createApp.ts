@@ -1,15 +1,30 @@
 import express from 'express'
 import cors from 'cors'
+import cookieParser from 'cookie-parser'
+import { attachPraktikumUser } from './middleware/attachPraktikumUser'
 import { requirePraktikumAuth } from './middleware/requirePraktikumAuth'
 import { forumRouter } from './routes/forumRouter'
+import { uiThemeRouter } from './routes/uiThemeRouter'
 
 /**
- * HTTP-приложение без listen — для supertest и e2e.
+ * HTTP-app без listen — для локальных тестов (supertest, e2e).
  */
 export function createApp(): express.Express {
   const app = express()
-  app.use(cors())
+  app.use(
+    cors({
+      origin: true,
+      credentials: true,
+    })
+  )
+  app.use(cookieParser())
   app.use(express.json())
+
+  app.use(
+    '/api/ui/theme',
+    attachPraktikumUser,
+    uiThemeRouter
+  )
 
   app.use(
     '/api/forum',
