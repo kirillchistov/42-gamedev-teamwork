@@ -18,6 +18,7 @@ import type {
   SignupData,
   User,
 } from '../types/user'
+import { humanizePraktikumAuthReason } from '../shared/utils/praktikumAuthErrors'
 import {
   userApi,
   ProfileData,
@@ -186,7 +187,9 @@ export const loginThunk = createAsyncThunk(
           'Неверный логин или пароль'
         )
       }
-      return rejectWithValue(reason)
+      return rejectWithValue(
+        humanizePraktikumAuthReason(reason)
+      )
     }
 
     try {
@@ -218,11 +221,12 @@ export const signupThunk = createAsyncThunk(
     )
 
     if (!signupRes.ok) {
+      const reason = await readErrorReason(
+        signupRes,
+        'Ошибка регистрации'
+      )
       return rejectWithValue(
-        await readErrorReason(
-          signupRes,
-          'Ошибка регистрации'
-        )
+        humanizePraktikumAuthReason(reason)
       )
     }
 

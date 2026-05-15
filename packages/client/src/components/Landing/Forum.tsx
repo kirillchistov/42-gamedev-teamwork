@@ -11,9 +11,7 @@ export const Forum: React.FC = () => {
         странице друзей.
       </p>
 
-      <div
-        className="extra-card"
-        style={{ marginBottom: 16 }}>
+      <div className="extra-card extra-card--mb16">
         <h3>Темы</h3>
         <table>
           <thead>
@@ -38,9 +36,7 @@ export const Forum: React.FC = () => {
         </table>
       </div>
 
-      <div
-        className="extra-card"
-        style={{ marginBottom: 16 }}>
+      <div className="extra-card extra-card--mb16">
         <h3>
           Демо‑список друзей (как на FriendsPage)
         </h3>

@@ -59,6 +59,7 @@ export const usePage = ({
       initPage({
         dispatch,
         state: store.getState(),
+        getState: () => store.getState(),
         ctx: createContext(),
       })
     ).catch(e => {

@@ -1,3 +1,5 @@
+// 7.3 chores: лендинг — редирект OAuth с / только при совпадении state в session.
+
 import { useEffect } from 'react'
 import { Helmet } from 'react-helmet'
 import {
@@ -23,6 +25,7 @@ import {
 } from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { useSelector } from '../store'
+import { YANDEX_OAUTH_STATE_KEY } from '../shared/api/oauthApi'
 // import { About } from '../components/Landing/About'
 // import { useSelector } from '../store';
 
@@ -40,17 +43,31 @@ export const LandingPage = () => {
     const params = new URLSearchParams(
       location.search
     )
-    if (
-      !params.has('code') &&
-      !params.has('error')
-    ) {
+    if (params.has('error')) {
+      navigate(
+        `/oauth/yandex/callback${location.search}`,
+        { replace: true }
+      )
       return
     }
 
-    navigate(
-      `/oauth/yandex/callback${location.search}`,
-      { replace: true }
-    )
+    if (params.has('code')) {
+      const stored =
+        window.sessionStorage.getItem(
+          YANDEX_OAUTH_STATE_KEY
+        )
+      const state = params.get('state')
+      if (
+        state != null &&
+        state !== '' &&
+        state === stored
+      ) {
+        navigate(
+          `/oauth/yandex/callback${location.search}`,
+          { replace: true }
+        )
+      }
+    }
   }, [
     location.pathname,
     location.search,

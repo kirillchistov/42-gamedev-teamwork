@@ -1,4 +1,19 @@
+// 7.3 chores: OAuth — без дефолтного service_id; только env или ответ API.
+
 import { BASE_URL } from '../../constants'
+import {
+  humanizePraktikumAuthReason,
+  parseJsonReasonFromText,
+} from '../utils/praktikumAuthErrors'
+
+function throwHttpError(
+  text: string,
+  fallback: string
+): never {
+  const raw = parseJsonReasonFromText(text)
+  const msg = humanizePraktikumAuthReason(raw)
+  throw new Error(msg || fallback)
+}
 
 type YandexServiceIdResponse = {
   service_id: string
@@ -11,8 +26,6 @@ type YandexOAuthPayload = {
 
 const YA_OAUTH_AUTHORIZE_URL =
   'https://oauth.yandex.ru/authorize'
-const DEFAULT_YANDEX_SERVICE_ID =
-  '243f5d3b0fa04e5aa9b8ff6508db3a64'
 
 export const YANDEX_OAUTH_STATE_KEY =
   'oauth:yandex:state'
@@ -75,17 +88,25 @@ export async function getYandexServiceId(
 
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(
-      text || 'Не удалось получить service_id'
+    throwHttpError(
+      text,
+      'Не удалось получить service_id'
     )
   }
 
   const data =
     (await response.json()) as YandexServiceIdResponse
 
-  return (
-    data.service_id || DEFAULT_YANDEX_SERVICE_ID
-  )
+  const serviceId =
+    typeof data.service_id === 'string'
+      ? data.service_id.trim()
+      : ''
+  if (!serviceId) {
+    throw new Error(
+      'Сервер не вернул service_id для Yandex OAuth'
+    )
+  }
+  return serviceId
 }
 
 export async function signInByYandexCode(
@@ -105,8 +126,9 @@ export async function signInByYandexCode(
 
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(
-      text || 'Не удалось завершить OAuth вход'
+    throwHttpError(
+      text,
+      'Не удалось завершить OAuth вход'
     )
   }
 }

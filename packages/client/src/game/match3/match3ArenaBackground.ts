@@ -132,8 +132,11 @@ export function notifyArenaBgChanged(): void {
     window.dispatchEvent(
       new Event(ARENA_BG_CHANGED_EVENT)
     )
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn(
+      '[ArenaBg] dispatchEvent failed',
+      e
+    )
   }
 }
 
@@ -161,7 +164,11 @@ export function setArenaCustomPhotoUrl(
     )
     notifyArenaBgChanged()
     return true
-  } catch {
+  } catch (e) {
+    console.warn(
+      '[ArenaBg] setArenaCustomPhotoUrl failed',
+      e
+    )
     return false
   }
 }
@@ -182,8 +189,11 @@ export function cycleArenaBgNext(): void {
       String(next)
     )
     notifyArenaBgChanged()
-  } catch {
-    /* ignore */
+  } catch (e) {
+    console.warn(
+      '[ArenaBg] cycleArenaBgNext failed',
+      e
+    )
   }
 }
 

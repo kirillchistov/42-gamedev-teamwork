@@ -1,5 +1,7 @@
 # Project Web API (Current State + Next Steps)
 
+> **Не путать с сетевой архитектурой:** здесь речь про **браузерные** Web API (Fullscreen, Storage, Performance и т.д.). Как устроены запросы к **Практикуму** vs **`packages/server`**, SSR, cookie и `VITE_APP_API_URL` — см. **[`project-structure.md`](./project-structure.md)**.
+
 Здесь расскажем:
 1. как сейчас в проекте подключены и используются Web API ('Fullscreen API', 'localStorage/sessionStorage');
 2. как полезно добавить один из API из задания ('Geolocation', 'Performance', 'Notification');

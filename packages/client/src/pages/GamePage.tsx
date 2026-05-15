@@ -1,4 +1,5 @@
-// Страница /game: Cosmic Match (match-3), тосты, настройки-заглушки, оболочка под тему лендинга
+// 7.5 chores: консоль — "Performance" в логе длительности сессии.
+// Страница /game: игра, тосты, настройки-заглушки, темизация
 import React, {
   useCallback,
   useEffect,
@@ -997,7 +998,7 @@ export const GamePage: React.FC = () => {
       const duration = markGameEndAndMeasure()
       if (duration !== null) {
         console.log(
-          `[Perfomance] Game session duration: ${duration.toFixed(
+          `[Performance] Game session duration: ${duration.toFixed(
             2
           )}ms`
         )

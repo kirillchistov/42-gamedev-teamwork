@@ -31,7 +31,10 @@ import {
   resourceFileUrl,
 } from '../shared/api/userApi'
 import { useValidate } from '../hooks/useValidate'
-import { validateAvatarFile } from '../shared/validation/authValidation'
+import {
+  validateAvatarFile,
+  type SignupFormValues,
+} from '../shared/validation/authValidation'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { AppDispatch } from '../store'
 import {
@@ -100,6 +103,8 @@ export const ProfilePage: React.FC = () => {
   passwordsRef.current = passwords
 
   const profileValidate = useValidate()
+  const { syncValidationFromValues } =
+    profileValidate
 
   const notifyProfileSuccess = (
     message: string
@@ -139,9 +144,19 @@ export const ProfilePage: React.FC = () => {
         : null
       setAvatar(avatarUrl)
       setSavedProfile({ ...nextProfile })
-      profileValidate.doValidate(nextProfile)
     }
   }, [dispatch, userFromStore])
+
+  useEffect(() => {
+    if (savedProfile === null) return
+    syncValidationFromValues(
+      profile as SignupFormValues
+    )
+  }, [
+    profile,
+    savedProfile,
+    syncValidationFromValues,
+  ])
 
   const applyServerProfile = (
     data: ProfileResponse,
@@ -163,7 +178,6 @@ export const ProfilePage: React.FC = () => {
         ? `${base.split('?')[0]}?v=${Date.now()}`
         : base
     )
-    profileValidate.doValidate(next)
 
     dispatch(patchUserProfile(data))
   }
@@ -213,8 +227,9 @@ export const ProfilePage: React.FC = () => {
     })
     if (pwdFieldBlurred.oldPassword) {
       queueMicrotask(() => {
-        passwordsValidate.doValidate(
-          passwordsRef.current
+        passwordsValidate.validateField(
+          'oldPassword',
+          passwordsRef.current.oldPassword
         )
       })
     }
@@ -231,8 +246,9 @@ export const ProfilePage: React.FC = () => {
     })
     if (pwdFieldBlurred.newPassword) {
       queueMicrotask(() => {
-        passwordsValidate.doValidate(
-          passwordsRef.current
+        passwordsValidate.validateField(
+          'newPassword',
+          passwordsRef.current.newPassword
         )
       })
     }
@@ -440,11 +456,6 @@ export const ProfilePage: React.FC = () => {
                 placeholder="Имя"
                 value={profile.first_name}
                 onChange={handleChange}
-                onFocus={() =>
-                  profileValidate.handleFieldFocus(
-                    'first_name'
-                  )
-                }
                 onBlur={e =>
                   profileValidate.handleFieldBlur(
                     'first_name',
@@ -467,11 +478,6 @@ export const ProfilePage: React.FC = () => {
                 placeholder="Фамилия"
                 value={profile.second_name}
                 onChange={handleChange}
-                onFocus={() =>
-                  profileValidate.handleFieldFocus(
-                    'second_name'
-                  )
-                }
                 onBlur={e =>
                   profileValidate.handleFieldBlur(
                     'second_name',
@@ -494,11 +500,6 @@ export const ProfilePage: React.FC = () => {
                 placeholder="user@example.com"
                 value={profile.email}
                 onChange={handleChange}
-                onFocus={() =>
-                  profileValidate.handleFieldFocus(
-                    'email'
-                  )
-                }
                 onBlur={e =>
                   profileValidate.handleFieldBlur(
                     'email',
@@ -521,11 +522,6 @@ export const ProfilePage: React.FC = () => {
                 placeholder="+7..."
                 value={profile.phone}
                 onChange={handleChange}
-                onFocus={() =>
-                  profileValidate.handleFieldFocus(
-                    'phone'
-                  )
-                }
                 onBlur={e =>
                   profileValidate.handleFieldBlur(
                     'phone',
@@ -548,11 +544,6 @@ export const ProfilePage: React.FC = () => {
                 placeholder="login"
                 value={profile.login}
                 onChange={handleChange}
-                onFocus={() =>
-                  profileValidate.handleFieldFocus(
-                    'login'
-                  )
-                }
                 onBlur={e =>
                   profileValidate.handleFieldBlur(
                     'login',
@@ -575,11 +566,6 @@ export const ProfilePage: React.FC = () => {
                 placeholder="Никнейм"
                 value={profile.display_name}
                 onChange={handleChange}
-                onFocus={() =>
-                  profileValidate.handleFieldFocus(
-                    'display_name'
-                  )
-                }
                 onBlur={e =>
                   profileValidate.handleFieldBlur(
                     'display_name',
@@ -638,11 +624,6 @@ export const ProfilePage: React.FC = () => {
                     onChange={
                       handleOldPasswordChange
                     }
-                    onFocus={() =>
-                      passwordsValidate.handleFieldFocus(
-                        'oldPassword'
-                      )
-                    }
                     onBlur={() =>
                       handlePasswordFieldBlur(
                         'oldPassword'
@@ -665,11 +646,6 @@ export const ProfilePage: React.FC = () => {
                     value={passwords.newPassword}
                     onChange={
                       handleNewPasswordChange
-                    }
-                    onFocus={() =>
-                      passwordsValidate.handleFieldFocus(
-                        'newPassword'
-                      )
                     }
                     onBlur={() =>
                       handlePasswordFieldBlur(

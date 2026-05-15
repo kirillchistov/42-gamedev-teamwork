@@ -1,3 +1,6 @@
+// 7.5 chores: Performance API — безопасные mark/measure; try/catch observe;
+// сброс счётчиков longtask на новый observer; heap только при наличии performance.
+
 const marks = {
   gameStart: 'match3:session:start',
   gameEnd: 'match3:session:end',
@@ -33,36 +36,56 @@ export function markGameEndAndMeasure():
   if (
     typeof performance === 'undefined' ||
     typeof performance.mark !== 'function' ||
-    typeof performance.measure !== 'function'
+    typeof performance.measure !== 'function' ||
+    typeof performance.getEntriesByName !==
+      'function'
   ) {
     return null
   }
-  performance.mark(marks.gameEnd)
-  performance.measure(
-    'match3-session',
-    marks.gameStart,
-    marks.gameEnd
-  )
-  const list = performance.getEntriesByName(
-    'match3-session'
-  )
-  const last = list[list.length - 1]
-
-  // Очищаем метки, чтобы не накапливались
-  performance.clearMarks(marks.gameStart)
-  performance.clearMarks(marks.gameEnd)
-  performance.clearMeasures('match3-session')
-
-  const duration = last?.duration ?? null
-  if (duration !== null) {
-    console.log(
-      `[Performance] Game session duration: ${duration.toFixed(
-        2
-      )}ms`
+  try {
+    performance.mark(marks.gameEnd)
+    performance.measure(
+      'match3-session',
+      marks.gameStart,
+      marks.gameEnd
     )
-  }
+    const list = performance.getEntriesByName(
+      'match3-session'
+    )
+    const last = list[list.length - 1]
 
-  return duration
+    // Очищаем метки, чтобы не накапливались
+    performance.clearMarks(marks.gameStart)
+    performance.clearMarks(marks.gameEnd)
+    performance.clearMeasures('match3-session')
+
+    const duration = last?.duration ?? null
+    if (duration !== null) {
+      console.log(
+        `[Performance] Game session duration: ${duration.toFixed(
+          2
+        )}ms`
+      )
+    }
+
+    return duration
+  } catch (e) {
+    console.warn(
+      '[Performance] markGameEndAndMeasure failed (missing marks or measure error)',
+      e
+    )
+    try {
+      performance.clearMarks(marks.gameStart)
+      performance.clearMarks(marks.gameEnd)
+      performance.clearMeasures('match3-session')
+    } catch (clearErr) {
+      console.warn(
+        '[Performance] clearMarks/clearMeasures after failed measure',
+        clearErr
+      )
+    }
+    return null
+  }
 }
 
 /**
@@ -85,6 +108,9 @@ export function observeLongTasks(
     }
   }
 
+  longTasksCount = 0
+  maxLongTaskDuration = 0
+
   const obs = new PerformanceObserver(list => {
     for (const entry of list.getEntries()) {
       if (entry.duration > 50) {
@@ -103,7 +129,11 @@ export function observeLongTasks(
       type: 'longtask',
       buffered: true,
     })
-  } catch {
+  } catch (e) {
+    console.warn(
+      '[Performance] longtask observe failed or unsupported',
+      e
+    )
     return () => {
       // noop
     }
@@ -127,6 +157,9 @@ export function observeLongTasks(
  * @returns used JS heap size в байтах или null
  */
 export function getHeapSize(): number | null {
+  if (typeof performance === 'undefined') {
+    return null
+  }
   // Исправлено: убраны any, добавлено правильное приведение типа
   const memory = (
     performance as unknown as {

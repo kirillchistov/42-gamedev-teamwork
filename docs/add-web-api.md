@@ -1,19 +1,35 @@
 # Дополнительный Web API (кроме Fullscreen)
 
+> **Термины:** здесь **Web API** = **браузерные** интерфейсы (Fullscreen, Performance, Geolocation…). Это **не** описание HTTP-ручек `packages/server` и **не** замена проверки сессии на Node. Как устроены **cookie**, **`requirePraktikumAuth`** и защищённые маршруты — см. **[`auth-middleware-backend.md`](./auth-middleware-backend.md)** и **[`project-structure.md`](./project-structure.md)**. Расширенный обзор браузерных API — **[`project-web-api.md`](./project-web-api.md)**.
+
+```mermaid
+flowchart TB
+  A["① Браузер: Web API\n(Fullscreen + задание)"]
+  B["② Отправка на сервер\nfetch + Cookie"]
+  C["③ requirePraktikumAuth"]
+  D["④ JSON-ручки"]
+  A -.->|только если шлёте метрики| B
+  B --> C --> D
+```
+
+**Смысл:** шаг **①** — локально во вкладке, без Node. Цепочка **②→③→④** нужна лишь если метрики или иные данные уходят на **`packages/server`**; тогда см. чеклист в [`auth-middleware-backend.md`](./auth-middleware-backend.md).
+
+---
+
 В проекте **Fullscreen API** уже обёрнут и используется:
 
-- `packages/client/src/utils/fullscreen.ts` — `enterFullscreen`, `exitFullscreen`, `toggleFullscreen`, `addFullscreenChangeListener` (с учётом Safari `webkit*`).
-- `packages/client/src/components/Header/index.tsx` — кнопка полноэкранного режима на игре, подписка на `fullscreenchange` с очисткой в `useEffect`.
+- [`packages/client/src/utils/fullscreen.ts`](../packages/client/src/utils/fullscreen.ts) — `enterFullscreen`, `exitFullscreen`, `toggleFullscreen`, `addFullscreenChangeListener` (с учётом Safari `webkit*`).
+- [`packages/client/src/components/Header/index.tsx`](../packages/client/src/components/Header/index.tsx) — кнопка полноэкранного режима на игре, подписка на `fullscreenchange` с очисткой в `useEffect`.
 
 Задание: добавить **ещё один** API из списка. Ниже — рекомендация **Performance API** (измерение длительности кадров / навигации), с конкретными врезками под match-3.
 
 Альтернативы из списка задания:
 
-| API | Идея применения в Cosmic Match |
-|-----|----------------------------------|
-| **Geolocation** | Мало связано с геймплеем; можно показать «регион» в профиле или пасхалку (нужен явный запрос разрешения). |
-| **Notifications** | Уведомление о конце таймера игры при свёрнутой вкладке (нужен `Notification.requestPermission()`). |
-| **Performance** | Замеры FPS, длительности партии, `longtask` — полезно для отчёта и отладки производительности. |
+| API | Идея в Cosmic Match |
+|-----|---------------------|
+| **Geolocation** | Мало для core-loop; регион в профиле / пасхалка (нужен явный запрос). |
+| **Notifications** | Конец таймера при свёрнутой вкладке (`Notification.requestPermission()`). |
+| **Performance** | FPS, длительность партии, `longtask` — отчёт и отладка. |
 
 Документация MDN: [Performance API](https://developer.mozilla.org/en-US/docs/Web/API/Performance).
 
@@ -75,12 +91,12 @@ export function measureMatch3SessionEnd(): number | null {
 
 ## 2. Врезка: вызов из игры
 
-В **`packages/client/src/pages/GamePage.tsx`** (или в `Match3Screen.tsx`, где стартует «живая» партия):
+В **`packages/client/src/pages/GamePage.tsx`** (или в `Match3Screen.tsx`, где стартует партия):
 
-1. При входе на игровой экран / старте сессии вызвать **`markMatch3SessionStart()`**.
-2. В обработчике завершения партии (рядом с записью `LAST_RESULT_KEY` и навигацией) вызвать **`measureMatch3SessionEnd()`** и, например, добавить длительность в объект результата в `sessionStorage` или отправить в лидерборд как дополнительное поле в `data`.
+1. При входе на игровой экран / старте сессии — **`markMatch3SessionStart()`**.
+2. В обработчике завершения партии (рядом с `LAST_RESULT_KEY` и навигацией) — **`measureMatch3SessionEnd()`**; при желании записать длительность в `sessionStorage` или в поле `data` лидерборда.
 
-Пример в конце обработчика (псевдокод места):
+Пример (псевдокод места):
 
 ```ts
 import {
@@ -88,10 +104,8 @@ import {
   measureMatch3SessionEnd,
 } from '../utils/performanceMetrics'
 
-// при старте партии:
 markMatch3SessionStart()
 
-// при onGameEnd / сохранении результата:
 const sessionMs = measureMatch3SessionEnd()
 if (sessionMs != null) {
   console.debug(
@@ -101,13 +115,13 @@ if (sessionMs != null) {
 }
 ```
 
-Точное место вставки найдите по **`onGameEnd`** в `GamePage.tsx` / `Match3Screen.tsx`.
+Точное место — по **`onGameEnd`** в `GamePage.tsx` / `Match3Screen.tsx`.
+
+Если позже **отправляете** метрики на **`packages/server`**, заведите отдельную ручку и **обязательно** повесьте на неё **`requirePraktikumAuth`** (см. [`auth-middleware-backend.md`](./auth-middleware-backend.md)).
 
 ---
 
 ## 3. Опционально: PerformanceObserver (long tasks)
-
-Для отчёта о «долгих задачах» в главном потоке (подвисания):
 
 ```ts
 export function observeLongTasks(
@@ -136,7 +150,7 @@ export function observeLongTasks(
 }
 ```
 
-Подключайте в `GamePage` в `useEffect` с возвратом функции очистки **`disconnect`**, чтобы не оставлять подписку после ухода со страницы (см. также `MEMORYLEAKS.md`).
+В `GamePage` — `useEffect` с отпиской **`disconnect`** при размонтировании (см. `MEMORYLEAKS.md`).
 
 ---
 
@@ -145,3 +159,4 @@ export function observeLongTasks(
 - Пользовательски заметная фича на базе выбранного API (не только `console.log`).
 - Нет утечек: слушатели / observer отключаются при размонтировании.
 - Краткий комментарий в коде или в PR: зачем API и где смотреть результат.
+- Понимание границы: **Web API в браузере** ≠ **авторизация на бэкенде**; при появлении своих HTTP-ручек — см. [`auth-middleware-backend.md`](./auth-middleware-backend.md).

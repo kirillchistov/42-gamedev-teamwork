@@ -1,11 +1,13 @@
 /** Изменения и починка Sprint6 Chores:
  * Сбрасываем серверную сессию при заходе на /login и перед signin,
  * чтобы починить 400 «User already in system» (см. loginThunk).
+ * При уже залогиненном пользователе на /login и /signup — logout + повторная проверка /auth/user.
  */
 import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
+  useLocation,
   useNavigate,
 } from 'react-router-dom'
 import { Header } from '../components/Header'
@@ -26,6 +28,8 @@ import {
 import {
   fetchUserThunk,
   loginThunk,
+  logoutThunk,
+  selectUser,
   selectUserError,
   selectUserIsAuthChecked,
   selectUserIsLoading,
@@ -41,6 +45,7 @@ import {
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
   const { theme } = useLandingTheme()
+  const location = useLocation()
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -114,6 +119,14 @@ export const LoginPage: React.FC = () => {
     )
   }
 
+  const fromForum = Boolean(
+    (
+      location.state as {
+        fromForum?: boolean
+      } | null
+    )?.fromForum
+  )
+
   return (
     <div className={`landing landing--${theme}`}>
       <Helmet>
@@ -135,6 +148,14 @@ export const LoginPage: React.FC = () => {
         ) : (
           <section className="auth-card auth-card--wide">
             <h1>Вход</h1>
+            {fromForum ? (
+              <div className="auth-page__toast-wrap">
+                <div className="auth-page__toast">
+                  Сессия для доступа к форуму
+                  недоступна. Войдите снова.
+                </div>
+              </div>
+            ) : null}
             <form
               className="auth-form auth-form--grid"
               id="login-form"
@@ -149,11 +170,6 @@ export const LoginPage: React.FC = () => {
                   value={login}
                   onChange={e =>
                     setLogin(e.target.value)
-                  }
-                  onFocus={() =>
-                    loginValidate.handleFieldFocus(
-                      'login'
-                    )
                   }
                   onBlur={e =>
                     loginValidate.handleFieldBlur(
@@ -180,11 +196,6 @@ export const LoginPage: React.FC = () => {
                   onChange={e =>
                     setPassword(e.target.value)
                   }
-                  onFocus={() =>
-                    loginValidate.handleFieldFocus(
-                      'password'
-                    )
-                  }
                   onBlur={e =>
                     loginValidate.handleFieldBlur(
                       'password',
@@ -201,24 +212,12 @@ export const LoginPage: React.FC = () => {
               </label>
 
               {error && (
-                <p
-                  style={{
-                    color:
-                      'var(--color-error, #e53935)',
-                    margin: 0,
-                    gridColumn: '1 / -1',
-                  }}>
+                <p className="auth-form__error">
                   {error}
                 </p>
               )}
               {oauthError && (
-                <p
-                  style={{
-                    color:
-                      'var(--color-error, #e53935)',
-                    margin: 0,
-                    gridColumn: '1 / -1',
-                  }}>
+                <p className="auth-form__error">
                   {oauthError}
                 </p>
               )}
@@ -274,13 +273,23 @@ export const LoginPage: React.FC = () => {
 
 export const initLoginPage = ({
   dispatch,
-  state,
+  getState,
 }: PageInitArgs) => {
-  if (selectUserIsAuthChecked(state)) {
-    return Promise.resolve()
+  const ensureGuest = async () => {
+    if (!selectUserIsAuthChecked(getState())) {
+      await dispatch(fetchUserThunk())
+        .unwrap()
+        .catch(() => undefined)
+    }
+    if (selectUser(getState())) {
+      await dispatch(logoutThunk())
+        .unwrap()
+        .catch(() => undefined)
+      await dispatch(fetchUserThunk())
+        .unwrap()
+        .catch(() => undefined)
+    }
   }
 
-  return dispatch(fetchUserThunk()).catch(
-    () => undefined
-  )
+  return ensureGuest()
 }
