@@ -18,7 +18,9 @@
 ## Структура документов
 - ['game-play.md'](./game-play.md) - сценарий и игровые механики.
 - ['game-engine.md'](./game-engine.md) - устройство игрового движка и runtime API.
-- ['project-structure.md'](./project-structure.md) - структура монорепозитория и зоны ответственности.
+- ['project-structure.md'](./project-structure.md) - структура монорепозитория, **два HTTP-API + Практикум**, middleware, диаграммы [`http-apis-overview.svg`](http-apis-overview.svg) и [`client-api-sources.svg`](client-api-sources.svg).
+- ['project-redux-router-ssr.md'](./project-redux-router-ssr.md) - текущая реализация SSR + Redux + data router; план/чеклист спринта — ['redux-router-ssr.md'](./redux-router-ssr.md).
+- ['project-web-api.md'](./project-web-api.md) - **браузерные** Web API (Fullscreen, Storage и т.д.); не про сетевой бэкенд — см. `project-structure.md`.
 - ['game-visuals.md'](./game-visuals.md) - визуальный слой, Canvas API, иконки, VFX и оптимизация.
 - ['project-roadmap.md'](./project-roadmap.md) - дорожная карта работ с учетом S7.
 

@@ -130,6 +130,25 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* Сообщения об ошибках в формах (без inline style) */
+.auth-form__error {
+  margin: 0;
+  color: var(--color-error, #e53935);
+}
+
+.auth-form--grid .auth-form__error {
+  grid-column: 1 / -1;
+}
+
+/* Ошибки полей форм (FieldError и др.) */
+.field-error {
+  display: block;
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 /* === AUTH PAGES (Login / Signup) === */
 
 .AuthPage {
@@ -257,8 +276,30 @@
 
 .auth-form__actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   grid-column: 1 / -1;
   margin-top: 4px;
+}
+
+.auth-oauth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-oauth-btn__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .auth-form__actions--split {

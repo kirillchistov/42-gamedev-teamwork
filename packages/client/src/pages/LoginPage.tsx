@@ -1,11 +1,13 @@
 /** Изменения и починка Sprint6 Chores:
  * Сбрасываем серверную сессию при заходе на /login и перед signin,
  * чтобы починить 400 «User already in system» (см. loginThunk).
+ * При уже залогиненном пользователе на /login и /signup — logout + повторная проверка /auth/user.
  */
 import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
+  useLocation,
   useNavigate,
 } from 'react-router-dom'
 import { Header } from '../components/Header'
@@ -26,15 +28,24 @@ import {
 import {
   fetchUserThunk,
   loginThunk,
+  logoutThunk,
+  selectUser,
   selectUserError,
   selectUserIsAuthChecked,
   selectUserIsLoading,
 } from '../slices/userSlice'
 import { markGameLandingNeedsShow } from '../game/match3/gameLandingGate'
+import {
+  buildYandexAuthorizeUrl,
+  buildYandexRedirectUri,
+  getYandexServiceId,
+  YANDEX_OAUTH_STATE_KEY,
+} from '../shared/api/oauthApi'
 
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
   const { theme } = useLandingTheme()
+  const location = useLocation()
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -49,6 +60,48 @@ export const LoginPage: React.FC = () => {
 
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
+  const [isOAuthLoading, setIsOAuthLoading] =
+    useState(false)
+  const [oauthError, setOauthError] = useState<
+    string | null
+  >(null)
+
+  const handleYandexOAuth = async () => {
+    setIsOAuthLoading(true)
+    setOauthError(null)
+
+    try {
+      const redirectUri = buildYandexRedirectUri()
+      const state =
+        typeof crypto !== 'undefined' &&
+        'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2)
+
+      window.sessionStorage.setItem(
+        YANDEX_OAUTH_STATE_KEY,
+        state
+      )
+
+      const serviceId = await getYandexServiceId(
+        redirectUri
+      )
+      const url = buildYandexAuthorizeUrl(
+        serviceId,
+        redirectUri,
+        state
+      )
+
+      window.location.assign(url)
+    } catch (e) {
+      setOauthError(
+        e instanceof Error
+          ? e.message
+          : 'Не удалось запустить OAuth вход'
+      )
+      setIsOAuthLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -65,6 +118,14 @@ export const LoginPage: React.FC = () => {
       }
     )
   }
+
+  const fromForum = Boolean(
+    (
+      location.state as {
+        fromForum?: boolean
+      } | null
+    )?.fromForum
+  )
 
   return (
     <div className={`landing landing--${theme}`}>
@@ -87,6 +148,14 @@ export const LoginPage: React.FC = () => {
         ) : (
           <section className="auth-card auth-card--wide">
             <h1>Вход</h1>
+            {fromForum ? (
+              <div className="auth-page__toast-wrap">
+                <div className="auth-page__toast">
+                  Сессия для доступа к форуму
+                  недоступна. Войдите снова.
+                </div>
+              </div>
+            ) : null}
             <form
               className="auth-form auth-form--grid"
               id="login-form"
@@ -101,11 +170,6 @@ export const LoginPage: React.FC = () => {
                   value={login}
                   onChange={e =>
                     setLogin(e.target.value)
-                  }
-                  onFocus={() =>
-                    loginValidate.handleFieldFocus(
-                      'login'
-                    )
                   }
                   onBlur={e =>
                     loginValidate.handleFieldBlur(
@@ -132,11 +196,6 @@ export const LoginPage: React.FC = () => {
                   onChange={e =>
                     setPassword(e.target.value)
                   }
-                  onFocus={() =>
-                    loginValidate.handleFieldFocus(
-                      'password'
-                    )
-                  }
                   onBlur={e =>
                     loginValidate.handleFieldBlur(
                       'password',
@@ -153,14 +212,13 @@ export const LoginPage: React.FC = () => {
               </label>
 
               {error && (
-                <p
-                  style={{
-                    color:
-                      'var(--color-error, #e53935)',
-                    margin: 0,
-                    gridColumn: '1 / -1',
-                  }}>
+                <p className="auth-form__error">
                   {error}
+                </p>
+              )}
+              {oauthError && (
+                <p className="auth-form__error">
+                  {oauthError}
                 </p>
               )}
 
@@ -172,6 +230,27 @@ export const LoginPage: React.FC = () => {
                   {isLoading
                     ? 'Входим...'
                     : 'Войти'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="auth-oauth-btn"
+                  disabled={
+                    isOAuthLoading || isLoading
+                  }
+                  onClick={handleYandexOAuth}>
+                  {isOAuthLoading ? (
+                    'Переход к OAuth...'
+                  ) : (
+                    <>
+                      <span>Войти через</span>
+                      <span
+                        className="auth-oauth-btn__logo"
+                        aria-hidden="true">
+                        Я
+                      </span>
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
@@ -194,13 +273,23 @@ export const LoginPage: React.FC = () => {
 
 export const initLoginPage = ({
   dispatch,
-  state,
+  getState,
 }: PageInitArgs) => {
-  if (selectUserIsAuthChecked(state)) {
-    return Promise.resolve()
+  const ensureGuest = async () => {
+    if (!selectUserIsAuthChecked(getState())) {
+      await dispatch(fetchUserThunk())
+        .unwrap()
+        .catch(() => undefined)
+    }
+    if (selectUser(getState())) {
+      await dispatch(logoutThunk())
+        .unwrap()
+        .catch(() => undefined)
+      await dispatch(fetchUserThunk())
+        .unwrap()
+        .catch(() => undefined)
+    }
   }
 
-  return dispatch(fetchUserThunk()).catch(
-    () => undefined
-  )
+  return ensureGuest()
 }

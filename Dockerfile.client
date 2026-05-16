@@ -1,11 +1,10 @@
-ARG NODE_VERSION=18
-ARG CLIENT_PORT=3001
+ARG NODE_VERSION=20
 
-FROM node:$NODE_VERSION-buster as base
+FROM node:${NODE_VERSION}-bookworm AS base
 
 WORKDIR /app
 
-FROM base as builder
+FROM base AS builder
 
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
@@ -15,13 +14,21 @@ COPY . .
 RUN yarn lerna bootstrap
 RUN rm -rf /app/packages/client/dist/ && yarn build --scope=client
 
-FROM node:$NODE_VERSION-buster-slim as production
+FROM node:${NODE_VERSION}-bookworm-slim AS production
+
 WORKDIR /app
 
-COPY --from=builder /app/packages/client/dist/ /app/dist/
-COPY --from=builder /app/packages/client/server/ /app/server/
-COPY --from=builder /app/packages/client/package.json /app/package.json
-RUN yarn install --production=true
+ENV NODE_ENV=production
+ENV PORT=80
 
-EXPOSE $CLIENT_PORT
-CMD [ "node", "/app/server/index.js" ]
+# Production-зависимости из корня воркспейса (yarn.lock + resolutions, без отдельного resolve без lockfile).
+COPY package.json yarn.lock ./
+COPY packages/client/package.json ./packages/client/
+COPY packages/server/package.json ./packages/server/
+RUN yarn install --frozen-lockfile --production=true --ignore-scripts
+
+COPY --from=builder /app/packages/client/dist ./packages/client/dist
+COPY --from=builder /app/packages/client/server ./packages/client/server
+
+EXPOSE 80
+CMD ["node", "packages/client/server/index.js"]

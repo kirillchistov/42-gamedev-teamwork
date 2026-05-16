@@ -27,5 +27,9 @@ jobs:
         run: yarn lint
       - name: TypeScript (client)
         run: yarn workspace client typecheck
-      - name: Test
-        run: yarn test
+      - name: Build (server)
+        run: yarn workspace server build
+      - name: Test (client)
+        run: yarn workspace client test
+      - name: Test (server)
+        run: yarn workspace server test

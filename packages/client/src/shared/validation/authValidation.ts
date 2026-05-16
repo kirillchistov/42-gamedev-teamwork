@@ -139,12 +139,6 @@ export const validationRules: Record<
     ],
   },
   oldPassword: {
-    patterns: [/^.{8,40}$/, /[A-ZА-ЯЁ]/, /\d/],
     notEmpty: true,
-    messages: [
-      'Пароль: от 8 до 40 символов',
-      'Пароль должен содержать заглавную букву',
-      'Пароль должен содержать цифру',
-    ],
   },
 }

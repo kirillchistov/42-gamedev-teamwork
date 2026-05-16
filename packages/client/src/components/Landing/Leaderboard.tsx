@@ -14,9 +14,7 @@ export const Leaderboard: React.FC = () => {
         FriendsPage.
       </p>
 
-      <div
-        className="extra-card"
-        style={{ marginBottom: 16 }}>
+      <div className="extra-card extra-card--mb16">
         <h3>Таблица рекордов</h3>
         <table>
           <thead>

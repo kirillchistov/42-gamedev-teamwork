@@ -1,4 +1,3 @@
-// Пока заглушка, потом будет страница "Результаты/Лидерборд"
 import React, { useMemo, useState } from 'react'
 import { API_RESOURCES_URL } from '../constants'
 import { Helmet } from 'react-helmet'
@@ -9,28 +8,23 @@ import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { useSelector } from '../store'
 import {
-  // fetchFriendsThunk,
   selectFriends,
   selectIsLoadingFriends,
 } from '../slices/friendsSlice'
 import {
   fetchLeaderboardThunk,
   leaderboardData,
+  isLoadingLeaderboard,
 } from '../slices/leaderboardSlice'
 import { LeaderboardEntry } from '../shared/api/leaderboardConfig'
-import {
-  fetchUserThunk,
-  // selectUserIsAuthChecked,
-} from '../slices/userSlice'
+import { fetchUserThunk } from '../slices/userSlice'
 import { selectUser } from '../slices/userSlice'
 import { usePage } from '../hooks/usePage'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
-// import { PageInitArgs } from '../routes'
 import { Button } from '../shared/ui'
 
 type SortKey =
   | 'CM42_score'
-  // | 'gamesPlayed'
   | 'bestScore'
   | 'nickname'
 type SortDir = 'asc' | 'desc'
@@ -41,6 +35,9 @@ export const LeaderboardPage: React.FC = () => {
   const friends = useSelector(selectFriends)
   const isLoading = useSelector(
     selectIsLoadingFriends
+  )
+  const isLoadingResults = useSelector(
+    isLoadingLeaderboard
   )
   const user = useSelector(selectUser)
 
@@ -60,12 +57,12 @@ export const LeaderboardPage: React.FC = () => {
     [friends]
   )
 
-  const liderboardTable = useSelector(
+  const leaderboardTable = useSelector(
     leaderboardData
   )
 
   const sortedEntries = useMemo(() => {
-    let list = liderboardTable
+    let list = leaderboardTable
     if (
       showFriendsOnly &&
       friendNicknames.size > 0
@@ -84,10 +81,6 @@ export const LeaderboardPage: React.FC = () => {
           return (
             (a.CM42_score - b.CM42_score) * dir
           )
-        // case 'gamesPlayed':
-        //   return (
-        //     (a.gamesPlayed - b.gamesPlayed) * dir
-        //   )
         case 'bestScore':
           return (a.bestScore - b.bestScore) * dir
         case 'nickname':
@@ -105,7 +98,7 @@ export const LeaderboardPage: React.FC = () => {
     sortDir,
     showFriendsOnly,
     friendNicknames,
-    liderboardTable,
+    leaderboardTable,
   ])
 
   const handleSort = (key: SortKey) => {
@@ -241,12 +234,6 @@ export const LeaderboardPage: React.FC = () => {
                         'Рейтинг'
                       )}
                     </th>
-                    {/*<th>*/}
-                    {/*  {sortLabel(*/}
-                    {/*    'gamesPlayed',*/}
-                    {/*    'Сыграно игр'*/}
-                    {/*  )}*/}
-                    {/*</th>*/}
                     <th>
                       {sortLabel(
                         'bestScore',
@@ -257,42 +244,48 @@ export const LeaderboardPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedEntries.map(
-                    (entry, index) => (
-                      <tr key={entry.id}>
-                        <td>{index + 1}</td>
-                        <td>
-                          <span className="leaderboard-player">
-                            <span className="leaderboard-avatar">
-                              {entry.avatar ? (
-                                <img
-                                  src={`${API_RESOURCES_URL}${entry.avatar}`}
-                                />
-                              ) : (
-                                <div>👤</div>
-                              )}
+                  {!isLoadingResults &&
+                    sortedEntries.map(
+                      (entry, index) => (
+                        <tr key={entry.id}>
+                          <td>{index + 1}</td>
+                          <td>
+                            <span className="leaderboard-player">
+                              <span className="leaderboard-avatar">
+                                {entry.avatar ? (
+                                  <img
+                                    src={`${API_RESOURCES_URL}${entry.avatar}`}
+                                  />
+                                ) : (
+                                  <div>👤</div>
+                                )}
+                              </span>
+                              <span>
+                                {entry.nickname ||
+                                  'Gaius Anonimous'}
+                              </span>
                             </span>
-                            <span>
-                              {entry.nickname ||
-                                'Gaius Anonimous'}
-                            </span>
-                          </span>
-                        </td>
-                        <td>
-                          {entry.CM42_score}
-                        </td>
-                        {/*<td>*/}
-                        {/*  {entry.gamesPlayed}*/}
-                        {/*</td>*/}
-                        <td>{entry.bestScore}</td>
-                        <td>
-                          {entry.bestScoreDate}
-                        </td>
-                      </tr>
-                    )
-                  )}
+                          </td>
+                          <td>
+                            {entry.CM42_score}
+                          </td>
+                          <td>
+                            {entry.bestScore}
+                          </td>
+                          <td>
+                            {entry.bestScoreDate}
+                          </td>
+                        </tr>
+                      )
+                    )}
                 </tbody>
               </table>
+              {isLoadingResults && (
+                <div className="leaderboard-card-loader">
+                  Идет загрузка лучших
+                  результатов...
+                </div>
+              )}
             </div>
           ) : (
             <div className="extra-card leaderboard-card">
@@ -325,15 +318,9 @@ export const LeaderboardPage: React.FC = () => {
                             {entry.CM42_score}
                           </div>
                           <div className="leaderboard-grid-meta">
-                            {/*Игр:{' '}*/}
-                            {/*{entry.gamesPlayed} •*/}
                             Рекорд:{' '}
                             {entry.bestScore} от{' '}
-                            {new Date(
-                              entry.bestScoreDate
-                            ).toLocaleDateString(
-                              'ru-RU'
-                            )}
+                            {entry.bestScoreDate}
                           </div>
                         </div>
                       </div>

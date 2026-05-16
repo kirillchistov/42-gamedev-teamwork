@@ -1,4 +1,5 @@
-// Страница /game: Cosmic Match (match-3), тосты, настройки-заглушки, оболочка под тему лендинга
+// 7.5 chores: консоль — "Performance" в логе длительности сессии.
+// Страница /game: игра, тосты, настройки-заглушки, темизация
 import React, {
   useCallback,
   useEffect,
@@ -997,7 +998,7 @@ export const GamePage: React.FC = () => {
       const duration = markGameEndAndMeasure()
       if (duration !== null) {
         console.log(
-          `[Perfomance] Game session duration: ${duration.toFixed(
+          `[Performance] Game session duration: ${duration.toFixed(
             2
           )}ms`
         )
@@ -1040,19 +1041,18 @@ export const GamePage: React.FC = () => {
       if (user && user.id) {
         const nickname =
           user.display_name ||
-          `${user.first_name} ${user.second_name}`.trim()
+          `${user.first_name} ${user.second_name}`.trim() ||
+          'Gaius Anonimous'
         void submitLeaderboardScore({
           id: user.id,
           nickname,
           avatar: user.avatar,
           CM42_score: payload.snapshot.score,
-          // gamesPlayed: 0,
           bestScore:
-            payload.snapshot.playerRecord, // рекорд одной игры
-          bestScoreDate:
-            new Date().toLocaleDateString(
-              'ru-RU'
-            ), // дата рекорда
+            payload.snapshot.playerRecord,
+          bestScoreDate: new Date()
+            .toISOString()
+            .split('T')[0],
         })
       }
       navigate('/game/finish', {
@@ -1061,7 +1061,7 @@ export const GamePage: React.FC = () => {
         },
       })
     },
-    [buildGameSettingsState, navigate]
+    [buildGameSettingsState, user, navigate]
   )
   const handleSendHeroChatMessage = useCallback(
     (text: string) => {

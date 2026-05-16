@@ -26,7 +26,6 @@ export const Contact: React.FC = () => {
       createTopicThunk({
         title: title.trim(),
         content: content.trim(),
-        author: user?.first_name || 'Аноним',
       })
     )
     setTitle('')

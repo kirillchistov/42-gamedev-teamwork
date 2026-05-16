@@ -11,5 +11,5 @@ export interface LeaderboardEntry {
 }
 
 export type LeaderboardApiRow = {
-  data: Record<string, unknown>
+  data: LeaderboardEntry
 }

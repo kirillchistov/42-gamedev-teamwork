@@ -1,13 +1,7 @@
-/** Изменения и починка Sprint6 Chores
- * Состояние формы — один объект SignupFormValues со всеми полями, как в профиле
- * Выравнил под validationRules.
- * Подключил useValidate(): те же правила и тексты, что в authValidation.ts.
- * onBlur → doValidate(form) — показ ошибок по полям, как в профиле.
- * handleSubmit — запрос уходит только если валидация прошла.
- * Под каждым полем FieldError с signupValidate.errors.*.
- * У инпутов name совпадает с ключами формы; проверка через noValidate и общие правила.
- * Кнопка «Зарегистрироваться» блокируется только isLoading.
- **/
+/** Регистрация: useValidate — сообщения об ошибках после blur поля и при submit;
+ * сводка ошибок для блокировки кнопки — через syncValidationFromValues (как в профиле).
+ * OAuth Яндекс — тот же поток, что на LoginPage.
+ */
 import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
 import {
@@ -31,6 +25,7 @@ import {
 } from '../store'
 import {
   fetchUserThunk,
+  logoutThunk,
   selectUser,
   selectUserError,
   selectUserIsAuthChecked,
@@ -41,18 +36,34 @@ import { markGameLandingNeedsShow } from '../game/match3/gameLandingGate'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AuthSessionNotice } from '../components/AuthSessionNotice'
+import {
+  buildYandexAuthorizeUrl,
+  buildYandexRedirectUri,
+  getYandexServiceId,
+  YANDEX_OAUTH_STATE_KEY,
+} from '../shared/api/oauthApi'
 
 export const initSignupPage = ({
   dispatch,
-  state,
+  getState,
 }: PageInitArgs) => {
-  if (selectUserIsAuthChecked(state)) {
-    return Promise.resolve()
+  const ensureGuest = async () => {
+    if (!selectUserIsAuthChecked(getState())) {
+      await dispatch(fetchUserThunk())
+        .unwrap()
+        .catch(() => undefined)
+    }
+    if (selectUser(getState())) {
+      await dispatch(logoutThunk())
+        .unwrap()
+        .catch(() => undefined)
+      await dispatch(fetchUserThunk())
+        .unwrap()
+        .catch(() => undefined)
+    }
   }
 
-  return dispatch(fetchUserThunk()).catch(
-    () => undefined
-  )
+  return ensureGuest()
 }
 
 export const SignupPage: React.FC = () => {
@@ -69,6 +80,12 @@ export const SignupPage: React.FC = () => {
     selectUserIsLoading
   )
   const error = useSelector(selectUserError)
+
+  const [isOAuthLoading, setIsOAuthLoading] =
+    useState(false)
+  const [oauthError, setOauthError] = useState<
+    string | null
+  >(null)
 
   const signupValidate = useValidate()
   const [form, setForm] =
@@ -90,6 +107,43 @@ export const SignupPage: React.FC = () => {
       ...prev,
       [name]: value,
     }))
+  }
+
+  const handleYandexOAuth = async () => {
+    setIsOAuthLoading(true)
+    setOauthError(null)
+
+    try {
+      const redirectUri = buildYandexRedirectUri()
+      const state =
+        typeof crypto !== 'undefined' &&
+        'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2)
+
+      window.sessionStorage.setItem(
+        YANDEX_OAUTH_STATE_KEY,
+        state
+      )
+
+      const serviceId = await getYandexServiceId(
+        redirectUri
+      )
+      const url = buildYandexAuthorizeUrl(
+        serviceId,
+        redirectUri,
+        state
+      )
+
+      window.location.assign(url)
+    } catch (e) {
+      setOauthError(
+        e instanceof Error
+          ? e.message
+          : 'Не удалось запустить OAuth регистрацию'
+      )
+      setIsOAuthLoading(false)
+    }
   }
 
   if (user) {
@@ -157,11 +211,6 @@ export const SignupPage: React.FC = () => {
                   placeholder="Имя"
                   value={form.first_name ?? ''}
                   onChange={handleChange}
-                  onFocus={() =>
-                    signupValidate.handleFieldFocus(
-                      'first_name'
-                    )
-                  }
                   onBlur={e =>
                     signupValidate.handleFieldBlur(
                       'first_name',
@@ -183,11 +232,6 @@ export const SignupPage: React.FC = () => {
                   placeholder="Фамилия"
                   value={form.second_name ?? ''}
                   onChange={handleChange}
-                  onFocus={() =>
-                    signupValidate.handleFieldFocus(
-                      'second_name'
-                    )
-                  }
                   onBlur={e =>
                     signupValidate.handleFieldBlur(
                       'second_name',
@@ -209,11 +253,6 @@ export const SignupPage: React.FC = () => {
                   placeholder="Никнейм"
                   value={form.display_name ?? ''}
                   onChange={handleChange}
-                  onFocus={() =>
-                    signupValidate.handleFieldFocus(
-                      'display_name'
-                    )
-                  }
                   onBlur={e =>
                     signupValidate.handleFieldBlur(
                       'display_name',
@@ -235,11 +274,6 @@ export const SignupPage: React.FC = () => {
                   placeholder="user@example.com"
                   value={form.email ?? ''}
                   onChange={handleChange}
-                  onFocus={() =>
-                    signupValidate.handleFieldFocus(
-                      'email'
-                    )
-                  }
                   onBlur={e =>
                     signupValidate.handleFieldBlur(
                       'email',
@@ -261,11 +295,6 @@ export const SignupPage: React.FC = () => {
                   placeholder="+7..."
                   value={form.phone ?? ''}
                   onChange={handleChange}
-                  onFocus={() =>
-                    signupValidate.handleFieldFocus(
-                      'phone'
-                    )
-                  }
                   onBlur={e =>
                     signupValidate.handleFieldBlur(
                       'phone',
@@ -287,11 +316,6 @@ export const SignupPage: React.FC = () => {
                   placeholder="login"
                   value={form.login ?? ''}
                   onChange={handleChange}
-                  onFocus={() =>
-                    signupValidate.handleFieldFocus(
-                      'login'
-                    )
-                  }
                   onBlur={e =>
                     signupValidate.handleFieldBlur(
                       'login',
@@ -314,11 +338,6 @@ export const SignupPage: React.FC = () => {
                   placeholder="Пароль"
                   value={form.password ?? ''}
                   onChange={handleChange}
-                  onFocus={() =>
-                    signupValidate.handleFieldFocus(
-                      'password'
-                    )
-                  }
                   onBlur={e =>
                     signupValidate.handleFieldBlur(
                       'password',
@@ -335,14 +354,13 @@ export const SignupPage: React.FC = () => {
               </label>
 
               {error && (
-                <p
-                  style={{
-                    color:
-                      'var(--color-error, #e53935)',
-                    margin: 0,
-                    gridColumn: '1 / -1',
-                  }}>
+                <p className="auth-form__error">
                   {error}
+                </p>
+              )}
+              {oauthError && (
+                <p className="auth-form__error">
+                  {oauthError}
                 </p>
               )}
 
@@ -354,6 +372,29 @@ export const SignupPage: React.FC = () => {
                   {isLoading
                     ? 'Регистрируем...'
                     : 'Зарегистрироваться'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="auth-oauth-btn"
+                  disabled={
+                    isOAuthLoading || isLoading
+                  }
+                  onClick={handleYandexOAuth}>
+                  {isOAuthLoading ? (
+                    'Переход к OAuth...'
+                  ) : (
+                    <>
+                      <span>
+                        Зарегистрироваться через
+                      </span>
+                      <span
+                        className="auth-oauth-btn__logo"
+                        aria-hidden="true">
+                        Я
+                      </span>
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
