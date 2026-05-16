@@ -3,22 +3,7 @@ import type {
   Request,
   Response,
 } from 'express'
-import {
-  getLocalBypassPraktikumUser,
-  isLocalPraktikumAuthBypassEnabled,
-} from './localPraktikumAuthBypass'
-import { parsePraktikumUser } from './praktikumUser'
-
-const DEFAULT_PRAKTIKUM_API =
-  'https://ya-praktikum.tech/api/v2'
-
-function praktikumApiBase(): string {
-  const raw =
-    process.env.PRAKTIKUM_API_URL?.trim()
-  return raw && raw.length > 0
-    ? raw.replace(/\/+$/, '')
-    : DEFAULT_PRAKTIKUM_API
-}
+import { resolvePraktikumUser } from './resolvePraktikumUser'
 
 /**
  * Проверка сессии на API Практикума по cookie запроса.
@@ -34,58 +19,20 @@ export async function requirePraktikumAuth(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  if (isLocalPraktikumAuthBypassEnabled()) {
-    req.praktikumUser =
-      getLocalBypassPraktikumUser()
+  const result = await resolvePraktikumUser(req)
+
+  if (result.ok) {
+    req.praktikumUser = result.user
     next()
     return
   }
 
-  const cookie = req.headers.cookie
-  if (!cookie) {
-    res.status(403).json({ reason: 'Forbidden' })
-    return
-  }
-
-  try {
-    const r = await fetch(
-      `${praktikumApiBase()}/auth/user`,
-      {
-        method: 'GET',
-        headers: { cookie },
-      }
-    )
-
-    if (!r.ok) {
-      res
-        .status(403)
-        .json({ reason: 'Forbidden' })
-      return
-    }
-
-    let body: unknown
-    try {
-      body = await r.json()
-    } catch {
-      res
-        .status(403)
-        .json({ reason: 'Forbidden' })
-      return
-    }
-
-    const user = parsePraktikumUser(body)
-    if (!user) {
-      res
-        .status(403)
-        .json({ reason: 'Forbidden' })
-      return
-    }
-
-    req.praktikumUser = user
-    next()
-  } catch {
+  if (result.reason === 'unreachable') {
     res
       .status(502)
       .json({ reason: 'Auth check unreachable' })
+    return
   }
+
+  res.status(403).json({ reason: 'Forbidden' })
 }
