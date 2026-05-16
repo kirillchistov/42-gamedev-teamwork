@@ -28,6 +28,7 @@ import {
   clearForumAuthRedirect,
 } from '../slices/forumSlice'
 import type { ForumRejectPayload } from '../slices/forumSlice'
+import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 
 export const ForumPage: React.FC = () => {
@@ -54,6 +55,7 @@ export const ForumPage: React.FC = () => {
     if (!shouldRedirectToLogin) {
       return
     }
+    markForumAuthRedirect()
     dispatch(clearForumAuthRedirect())
     navigate('/login', {
       replace: true,

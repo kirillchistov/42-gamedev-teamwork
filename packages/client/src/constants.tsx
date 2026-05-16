@@ -9,10 +9,23 @@ function readAppApiUrl(): string {
   return 'http://localhost:3000'
 }
 
-/** Базовый URL нашего Node API (friends, форум и т.д.). Переопределение: VITE_APP_API_URL. */
-export const SERVER_HOST = readAppApiUrl()
+const isBrowser = typeof window !== 'undefined'
+
+/**
+ * Базовый URL нашего Node API (friends, форум).
+ * В браузере — same-origin (пустая строка), запросы идут через SSR apiProxy.
+ * На SSR — VITE_APP_API_URL или localhost:3000.
+ */
+export const SERVER_HOST = isBrowser
+  ? ''
+  : readAppApiUrl()
+
 export const DEFAULT_AVATAR_PATH =
   '/avatar-transp.png'
-export const BASE_URL =
-  'https://ya-praktikum.tech/api/v2'
+
+/** Практикум: в браузере — /api/v2 через прокси клиента; на SSR — прямой origin. */
+export const BASE_URL = isBrowser
+  ? '/api/v2'
+  : 'https://ya-praktikum.tech/api/v2'
+
 export const API_RESOURCES_URL = `${BASE_URL}/resources`

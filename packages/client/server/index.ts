@@ -24,6 +24,7 @@ import {
 import serialize from 'serialize-javascript'
 import cookieParser from 'cookie-parser'
 import { renderStaticPageHtml } from './static-page'
+import { registerApiProxy } from './apiProxy'
 
 const clientPath = path.join(__dirname, '..')
 const isDev =
@@ -225,6 +226,7 @@ async function createServer() {
   const portCandidates = resolvePortCandidates()
 
   app.use(cookieParser())
+  registerApiProxy(app)
   let vite: ViteDevServer | undefined
   if (isDev) {
     vite = await createViteServer({

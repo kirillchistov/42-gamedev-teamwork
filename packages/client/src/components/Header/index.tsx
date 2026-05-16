@@ -369,12 +369,6 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={closeMobile}>
           Форум
         </Link>
-        <Link
-          className="btn btn--outline"
-          to="/forum-topic"
-          onClick={closeMobile}>
-          Топик
-        </Link>
         {user ? (
           <Link
             className="btn btn--outline"

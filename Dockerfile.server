@@ -30,6 +30,7 @@ COPY packages/server/package.json ./packages/server/
 RUN yarn install --frozen-lockfile --production=true --ignore-scripts
 
 COPY --from=builder /app/packages/server/dist ./packages/server/dist
+COPY packages/server/config ./packages/server/config
 
 EXPOSE $SERVER_PORT
 CMD ["node", "packages/server/dist/index.js"]
