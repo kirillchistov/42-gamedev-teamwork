@@ -1,6 +1,6 @@
 /**
- * Единая логика имени пользователя БД для sequelize-cli и Sequelize в рантайме.
- * См. .env.sample — POSTGRES_USE_OS_USER для Homebrew на macOS.
+ * Для sequelize-cli (db:migrate). В рантайме сервера — utils/resolvePostgresUser.ts (в dist).
+ * Логика должна совпадать с packages/server/utils/resolvePostgresUser.ts
  */
 function resolvePostgresUser() {
   const fromEnv = process.env.POSTGRES_USER

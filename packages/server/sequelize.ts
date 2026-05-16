@@ -2,6 +2,7 @@ import path from 'path'
 import fs from 'fs'
 import dotenv from 'dotenv'
 import { Sequelize } from 'sequelize'
+import { resolvePostgresUser } from './utils/resolvePostgresUser'
 
 /** Каталог packages/server (из `sequelize.ts` или из `dist/sequelize.js`). */
 function resolveServerDir(): string {
@@ -52,14 +53,6 @@ dotenv.config({
   path: path.join(repoRoot, '.env'),
   override: true,
 })
-
-const configDir = path.join(serverDir, 'config')
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { resolvePostgresUser } = require(path.join(
-  configDir,
-  'resolvePostgresUser.cjs'
-)) as { resolvePostgresUser: () => string }
 
 const host =
   process.env.POSTGRES_HOST ?? 'localhost'
