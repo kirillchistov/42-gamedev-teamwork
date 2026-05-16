@@ -113,9 +113,9 @@ export const ForumTopicPage: React.FC = () => {
   }, [topicId, dispatch])
 
   const isTopicAuthor =
-    Boolean(user) &&
-    Boolean(topic) &&
-    user!.id === topic!.authorPraktikumId
+    user != null &&
+    topic != null &&
+    user.id === topic.authorPraktikumId
 
   const viewerIsModerator = Boolean(
     topic?.viewerIsModerator
@@ -303,8 +303,8 @@ export const ForumTopicPage: React.FC = () => {
       const rows =
         reactionsByCommentId[comment.id] ?? []
       const isCommentAuthor =
-        Boolean(user) &&
-        user!.id === comment.authorPraktikumId
+        user != null &&
+        user.id === comment.authorPraktikumId
       const canEditComment =
         isCommentAuthor || viewerIsModerator
 
