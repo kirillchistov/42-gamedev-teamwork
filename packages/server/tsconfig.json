@@ -1,4 +1,7 @@
 {
+  "ts-node": {
+    "files": true
+  },
   "compilerOptions": {
     "ignoreDeprecations": "6.0",
     "composite": true,

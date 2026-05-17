@@ -51,6 +51,7 @@ const vite_1 = require("vite");
 const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const static_page_1 = require("./static-page");
+const apiProxy_1 = require("./apiProxy");
 const clientPath = path_1.default.join(__dirname, '..');
 const isDev = process.env.NODE_ENV === 'development';
 const FALLBACK_PORTS = [3000, 5000, 9000, 8080];
@@ -157,6 +158,7 @@ async function createServer() {
     const app = (0, express_1.default)();
     const portCandidates = resolvePortCandidates();
     app.use((0, cookie_parser_1.default)());
+    (0, apiProxy_1.registerApiProxy)(app);
     let vite;
     if (isDev) {
         vite = await (0, vite_1.createServer)({

@@ -41,6 +41,7 @@ import {
   getYandexServiceId,
   YANDEX_OAUTH_STATE_KEY,
 } from '../shared/api/oauthApi'
+import { consumeForumAuthRedirect } from '../shared/forumAuthRedirect'
 
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
@@ -281,7 +282,10 @@ export const initLoginPage = ({
         .unwrap()
         .catch(() => undefined)
     }
-    if (selectUser(getState())) {
+    if (
+      selectUser(getState()) &&
+      !consumeForumAuthRedirect()
+    ) {
       await dispatch(logoutThunk())
         .unwrap()
         .catch(() => undefined)

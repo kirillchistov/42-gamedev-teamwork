@@ -31,32 +31,29 @@ export function createApp(): express.Express {
     requirePraktikumAuth,
     forumRouter
   )
+  app.use(express.json())
 
-  app.get(
-    '/friends',
-    requirePraktikumAuth,
-    (_, res) => {
-      res.json([
-        { name: 'Саша', secondName: 'Панов' },
-        {
-          name: 'Лёша',
-          secondName: 'Садовников',
-        },
-        { name: 'Серёжа', secondName: 'Иванов' },
-      ])
-    }
-  )
+  const protectedRouter = express.Router()
+  protectedRouter.use(requirePraktikumAuth)
+  protectedRouter.use('/api/forum', forumRouter)
+  protectedRouter.get('/friends', (_, res) => {
+    res.json([
+      { name: 'Саша', secondName: 'Панов' },
+      {
+        name: 'Лёша',
+        secondName: 'Садовников',
+      },
+      { name: 'Серёжа', secondName: 'Иванов' },
+    ])
+  })
+  protectedRouter.get('/user', (_, res) => {
+    res.json({
+      name: '</script>Степа',
+      secondName: 'Степанов',
+    })
+  })
 
-  app.get(
-    '/user',
-    requirePraktikumAuth,
-    (_, res) => {
-      res.json({
-        name: '</script>Степа',
-        secondName: 'Степанов',
-      })
-    }
-  )
+  app.use(protectedRouter)
 
   app.get('/', (_, res) => {
     res.json('👋 Howdy from the server :)')
