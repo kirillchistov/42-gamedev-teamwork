@@ -2,6 +2,8 @@
 
 Документ для задачи **«Подключить клиент к API форума»** (ветка `feature/8.202-forum-chores`, после merge `feature/8.2-forum-api` и `feature/8.4-auth-backend`).
 
+**Автопроверка (smoke):** `packages/server/__tests__/forumReactions.e2e.test.ts` (реакции на комментарии), `packages/client/src/slices/forumSlice.reactions.test.ts` (`toggleCommentReactionThunk`). Ручной чеклист ниже — для приёмки на стенде с Postgres и сессией Практикума.
+
 Связанные материалы:
 
 - [forum-api-spec.md](./forum-api-spec.md) — REST-контракт `/api/forum`, модели, middleware на сервере.

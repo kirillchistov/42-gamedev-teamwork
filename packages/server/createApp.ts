@@ -1,13 +1,16 @@
 import express from 'express'
 import cors from 'cors'
+import cookieParser from 'cookie-parser'
+import { attachPraktikumUser } from './middleware/attachPraktikumUser'
 import { requirePraktikumAuth } from './middleware/requirePraktikumAuth'
 import { forumRouter } from './routes/forumRouter'
+import { uiThemeRouter } from './routes/uiThemeRouter'
 
 /**
  * HTTP-приложение без listen — для supertest и e2e.
  *
- * Публично: только GET `/` (liveness).
- * Все бизнес-ручки — на `protectedRouter` с единым `requirePraktikumAuth`.
+ * Публично: GET `/`, `/api/ui/theme` (гость или авторизованный).
+ * Защищённые ручки — на `protectedRouter` с `requirePraktikumAuth`.
  */
 export function createApp(): express.Express {
   const app = express()
@@ -17,7 +20,14 @@ export function createApp(): express.Express {
       credentials: true,
     })
   )
+  app.use(cookieParser())
   app.use(express.json())
+
+  app.use(
+    '/api/ui/theme',
+    attachPraktikumUser,
+    uiThemeRouter
+  )
 
   const protectedRouter = express.Router()
   protectedRouter.use(requirePraktikumAuth)

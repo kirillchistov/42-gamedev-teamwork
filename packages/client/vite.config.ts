@@ -1,5 +1,5 @@
 /** Изменения и починка Sprint6 Chores
- * GitHub Pages: https://kirillchistov.github.io/42-gamedev-teamwork/
+ * GH Pages: https://kirillchistov.github.io/42-gamedev-teamwork/
  **/
 
 import { defineConfig, loadEnv } from 'vite'
@@ -28,18 +28,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: viteBase,
-    resolve: {
-      alias: {
-        '@match3-public': path.join(
-          __dirname,
-          'public'
-        ),
-        '@match3-icons': path.join(
-          __dirname,
-          'public/iconset'
-        ),
-      },
-    },
     server: {
       port:
         Number(process.env.CLIENT_PORT) || 3000,

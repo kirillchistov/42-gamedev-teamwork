@@ -25,8 +25,8 @@ export type ResolvePraktikumUserResult =
   | { ok: false; reason: 'unreachable' }
 
 /**
- * Проверка cookie-сессии Практикума (GET /auth/user).
- * Используется в requirePraktikumAuth; не отправляет ответ клиенту.
+ * Проверка cookie-сессии Практикума (GET /auth/user), без ответа клиенту.
+ * Используется в requirePraktikumAuth и attachPraktikumUser.
  */
 export async function resolvePraktikumUser(
   req: Request
