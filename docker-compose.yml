@@ -61,6 +61,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: "80"
+      # Прокси на SSR-сервере клиента (server/apiProxy.ts)
+      INTERNAL_SERVER_URL: http://server:${SERVER_PORT:-3000}
+      PRAKTIKUM_API_URL: https://ya-praktikum.tech
     depends_on:
       - server
 

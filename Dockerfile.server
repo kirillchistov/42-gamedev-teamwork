@@ -30,6 +30,8 @@ COPY packages/server/package.json ./packages/server/
 RUN yarn install --frozen-lockfile --production=true --ignore-scripts
 
 COPY --from=builder /app/packages/server/dist ./packages/server/dist
+# sequelize.ts подгружает resolvePostgresUser.cjs в рантайме (не в dist).
+COPY --from=builder /app/packages/server/config ./packages/server/config
 
 EXPOSE $SERVER_PORT
 CMD ["node", "packages/server/dist/index.js"]

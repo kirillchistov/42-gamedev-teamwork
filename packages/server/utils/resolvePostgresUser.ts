@@ -1,8 +1,8 @@
 /**
- * Для sequelize-cli (db:migrate). В рантайме сервера — utils/resolvePostgresUser.ts (в dist).
- * Логика должна совпадать с packages/server/utils/resolvePostgresUser.ts
+ * Имя пользователя БД для Sequelize в рантайме (попадает в dist для Docker).
+ * Для sequelize-cli по-прежнему используется config/resolvePostgresUser.cjs.
  */
-function resolvePostgresUser() {
+export function resolvePostgresUser(): string {
   const fromEnv = process.env.POSTGRES_USER
   if (
     fromEnv != null &&
@@ -24,5 +24,3 @@ function resolvePostgresUser() {
   }
   return 'postgres'
 }
-
-module.exports = { resolvePostgresUser }
