@@ -40,6 +40,7 @@ import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
 import { selectUser } from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { FORUM_REACTION_EMOJIS } from '../constants/forumEmojis'
+import { ForumCommentReactions } from '../components/forum/ForumCommentReactions'
 
 export const ForumTopicPage: React.FC = () => {
   const { theme } = useLandingTheme()
@@ -366,47 +367,14 @@ export const ForumTopicPage: React.FC = () => {
               </div>
             )}
 
-            <div className="forum-comment__toolbar">
-              <div className="forum-emoji-bar forum-emoji-bar--compact">
-                {FORUM_REACTION_EMOJIS.map(
-                  emoji => {
-                    const row = rows.find(
-                      r => r.emoji === emoji
-                    )
-                    const count = row?.count ?? 0
-                    const mine =
-                      row?.mine ?? false
-                    return (
-                      <button
-                        key={emoji}
-                        type="button"
-                        className={clsx(
-                          'forum-emoji-bar__btn',
-                          mine &&
-                            'forum-emoji-bar__btn--active'
-                        )}
-                        title={
-                          mine
-                            ? 'Снять реакцию'
-                            : 'Поставить реакцию'
-                        }
-                        onClick={() =>
-                          void handleToggleReaction(
-                            comment.id,
-                            emoji
-                          )
-                        }>
-                        <span>{emoji}</span>
-                        {count > 0 ? (
-                          <span className="forum-reaction-count">
-                            {count}
-                          </span>
-                        ) : null}
-                      </button>
-                    )
-                  }
-                )}
-              </div>
+            <ForumCommentReactions
+              rows={rows}
+              onToggle={emoji =>
+                void handleToggleReaction(
+                  comment.id,
+                  emoji
+                )
+              }>
               <button
                 type="button"
                 className="forum-comment__reply-btn"
@@ -444,7 +412,7 @@ export const ForumTopicPage: React.FC = () => {
                     </button>
                   </>
                 )}
-            </div>
+            </ForumCommentReactions>
           </div>
           {renderComments(
             allComments,

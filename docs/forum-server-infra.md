@@ -371,7 +371,7 @@ docker compose exec server node -e "console.log(process.env.POSTGRES_HOST, proce
 
 | Симптом | Причина | Решение |
 |---------|---------|---------|
-| `yarn db:migrate` → `role "postgres" does not exist` | На `:5432` не Docker Postgres | `docker compose up -d postgres`, проверить `lsof -i :5432`, `.env` |
+| `yarn db:migrate` → `role "postgres" does not exist` | На `localhost:5432` отвечает **Homebrew Postgres**, а не Docker (роль `postgres` есть только в контейнере) | `lsof -i :5432`; в `.env` поставить **`POSTGRES_PORT=5433`**, `docker compose up -d postgres`, снова `yarn db:migrate`; или `yarn db:migrate:docker` |
 | `topics` → **500** | Нет таблиц | `yarn db:migrate` |
 | `topics` → **403**, cookie есть | Прямой вызов `:3000` без cookie Практикума | same-origin прокси (§5.3) или dev с обходом `LOCAL_PRAKTIKUM_AUTH_BYPASS=1` только не в production |
 | `bind: address already in use :5173` | Занят `yarn dev` | Остановить dev или `CLIENT_PORT=5174` в `.env` |

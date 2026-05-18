@@ -63,6 +63,21 @@ const sharedProxyOptions: Pick<
   },
 }
 
+function nodeProxy(
+  nodeApiTarget: string,
+  mountPath: string
+) {
+  const base = trimTrailingSlash(nodeApiTarget)
+  const prefix = mountPath.startsWith('/')
+    ? mountPath
+    : `/${mountPath}`
+  return createProxyMiddleware({
+    // http-proxy-middleware v3: target должен включать тот же base path, что и app.use(path).
+    target: `${base}${prefix}`,
+    changeOrigin: true,
+  })
+}
+
 export function registerApiProxy(
   app: Express
 ): void {
@@ -72,19 +87,26 @@ export function registerApiProxy(
   app.use(
     '/api/v2',
     createProxyMiddleware({
-      target: praktikumOrigin,
+      target: `${praktikumOrigin}/api/v2`,
       ...sharedProxyOptions,
       secure: true,
     })
   )
 
-  const nodeApiProxy = createProxyMiddleware({
-    target: nodeApiTarget,
-    changeOrigin: true,
-  })
-
-  app.use('/api/forum', nodeApiProxy)
-  app.use('/api/ui', nodeApiProxy)
-  app.use('/friends', nodeApiProxy)
-  app.use('/user', nodeApiProxy)
+  app.use(
+    '/api/forum',
+    nodeProxy(nodeApiTarget, '/api/forum')
+  )
+  app.use(
+    '/api/ui',
+    nodeProxy(nodeApiTarget, '/api/ui')
+  )
+  app.use(
+    '/friends',
+    nodeProxy(nodeApiTarget, '/friends')
+  )
+  app.use(
+    '/user',
+    nodeProxy(nodeApiTarget, '/user')
+  )
 }

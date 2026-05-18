@@ -43,20 +43,27 @@ const sharedProxyOptions = {
         '/api/v2': '/api/v2',
     },
 };
+function nodeProxy(nodeApiTarget, mountPath) {
+    const base = trimTrailingSlash(nodeApiTarget);
+    const prefix = mountPath.startsWith('/')
+        ? mountPath
+        : `/${mountPath}`;
+    return (0, http_proxy_middleware_1.createProxyMiddleware)({
+        // http-proxy-middleware v3: target должен включать тот же base path, что и app.use(path).
+        target: `${base}${prefix}`,
+        changeOrigin: true,
+    });
+}
 function registerApiProxy(app) {
     const praktikumOrigin = readPraktikumOrigin();
     const nodeApiTarget = readNodeApiTarget();
     app.use('/api/v2', (0, http_proxy_middleware_1.createProxyMiddleware)({
-        target: praktikumOrigin,
+        target: `${praktikumOrigin}/api/v2`,
         ...sharedProxyOptions,
         secure: true,
     }));
-    const nodeApiProxy = (0, http_proxy_middleware_1.createProxyMiddleware)({
-        target: nodeApiTarget,
-        changeOrigin: true,
-    });
-    app.use('/api/forum', nodeApiProxy);
-    app.use('/api/ui', nodeApiProxy);
-    app.use('/friends', nodeApiProxy);
-    app.use('/user', nodeApiProxy);
+    app.use('/api/forum', nodeProxy(nodeApiTarget, '/api/forum'));
+    app.use('/api/ui', nodeProxy(nodeApiTarget, '/api/ui'));
+    app.use('/friends', nodeProxy(nodeApiTarget, '/friends'));
+    app.use('/user', nodeProxy(nodeApiTarget, '/user'));
 }

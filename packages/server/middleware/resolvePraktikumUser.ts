@@ -14,9 +14,14 @@ const DEFAULT_PRAKTIKUM_API =
 function praktikumApiBase(): string {
   const raw =
     process.env.PRAKTIKUM_API_URL?.trim()
-  return raw && raw.length > 0
-    ? raw.replace(/\/+$/, '')
-    : DEFAULT_PRAKTIKUM_API
+  if (!raw) {
+    return DEFAULT_PRAKTIKUM_API
+  }
+  const normalized = raw.replace(/\/+$/, '')
+  if (normalized.endsWith('/api/v2')) {
+    return normalized
+  }
+  return `${normalized}/api/v2`
 }
 
 export type ResolvePraktikumUserResult =
