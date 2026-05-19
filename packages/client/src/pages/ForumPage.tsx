@@ -30,7 +30,6 @@ import {
 import type { ForumRejectPayload } from '../slices/forumSlice'
 import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
-import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
 
 export const ForumPage: React.FC = () => {
   const { theme } = useLandingTheme()
