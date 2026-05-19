@@ -1,6 +1,8 @@
 import { Topic } from './Topic'
 import { Comment } from './Comment'
 import { CommentReaction } from './CommentReaction'
+import { AnonymousSession } from './AnonymousSession'
+import { UserUiTheme } from './UserUiTheme'
 
 Topic.hasMany(Comment, {
   foreignKey: 'topicId',
@@ -34,4 +36,21 @@ CommentReaction.belongsTo(Comment, {
   as: 'comment',
 })
 
-export { Comment, CommentReaction, Topic }
+AnonymousSession.hasOne(UserUiTheme, {
+  foreignKey: 'anonymousSessionId',
+  as: 'uiTheme',
+  onDelete: 'CASCADE',
+})
+
+UserUiTheme.belongsTo(AnonymousSession, {
+  foreignKey: 'anonymousSessionId',
+  as: 'anonymousSession',
+})
+
+export {
+  AnonymousSession,
+  Comment,
+  CommentReaction,
+  Topic,
+  UserUiTheme,
+}
