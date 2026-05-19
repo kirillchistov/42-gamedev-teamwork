@@ -8,7 +8,7 @@ WORKDIR /app
 FROM base AS builder
 
 COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --network-timeout 600000
 
 COPY . .
 
@@ -27,11 +27,13 @@ ENV NODE_ENV=production
 COPY package.json yarn.lock ./
 COPY packages/client/package.json ./packages/client/
 COPY packages/server/package.json ./packages/server/
-RUN yarn install --frozen-lockfile --production=true --ignore-scripts
+RUN yarn install --frozen-lockfile --production=true --ignore-scripts --network-timeout 600000
 
 COPY --from=builder /app/packages/server/dist ./packages/server/dist
-# sequelize.ts подгружает resolvePostgresUser.cjs в рантайме (не в dist).
 COPY --from=builder /app/packages/server/config ./packages/server/config
+COPY --from=builder /app/packages/server/migrations ./packages/server/migrations
+COPY --from=builder /app/packages/server/seeders ./packages/server/seeders
+COPY --from=builder /app/packages/server/.sequelizerc ./packages/server/.sequelizerc
 
 EXPOSE $SERVER_PORT
 CMD ["node", "packages/server/dist/index.js"]
