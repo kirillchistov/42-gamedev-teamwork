@@ -43,9 +43,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
+// Монорепо: .env в корне репозитория (yarn dev из packages/client иначе его не видит).
+const repoRootEnv = path_1.default.resolve(__dirname, '../../../.env');
+dotenv_1.default.config({ path: repoRootEnv });
 dotenv_1.default.config();
 const express_1 = __importDefault(require("express"));
-const path_1 = __importDefault(require("path"));
 const promises_1 = __importDefault(require("fs/promises"));
 const vite_1 = require("vite");
 const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
@@ -54,7 +57,8 @@ const static_page_1 = require("./static-page");
 const apiProxy_1 = require("./apiProxy");
 const clientPath = path_1.default.join(__dirname, '..');
 const isDev = process.env.NODE_ENV === 'development';
-const FALLBACK_PORTS = [3000, 5000, 9000, 8080];
+// Не 3000 (API) и не 5000 (часто AirPlay на macOS). 9000 — в whitelist OAuth Практикума.
+const FALLBACK_PORTS = [9000, 8080];
 let prodTemplateCache = null;
 function toValidPort(value) {
     if (!value)
@@ -209,7 +213,7 @@ async function createServer() {
         }
         const server = app
             .listen(port, () => {
-            console.log(`Client is listening on port: ${port}`);
+            console.log(`Client is listening on port: ${port} — open http://localhost:${port} (OAuth: use 9000 if in Praktikum whitelist)`);
         })
             .on('error', err => {
             if (err.code ===

@@ -75,6 +75,7 @@ import {
   type GameVfxQualityOption,
 } from '../game/match3/engine/config'
 import { submitLeaderboardScore } from '../shared/api/leaderboardApi'
+import { leaderboardRecordDateToday } from '../shared/utils/leaderboardDate'
 import { useSelector } from '../store'
 import { selectUser } from '../slices/userSlice'
 
@@ -1051,9 +1052,8 @@ export const GamePage: React.FC = () => {
           CM42_score: payload.snapshot.score,
           bestScore:
             payload.snapshot.playerRecord,
-          bestScoreDate: new Date()
-            .toISOString()
-            .split('T')[0],
+          bestScoreDate:
+            leaderboardRecordDateToday(),
         })
       }
       navigate('/game/finish', {

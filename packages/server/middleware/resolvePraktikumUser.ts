@@ -54,6 +54,7 @@ export async function resolvePraktikumUser(
       {
         method: 'GET',
         headers: { cookie },
+        signal: AbortSignal.timeout(15_000),
       }
     )
 

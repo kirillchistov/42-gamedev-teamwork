@@ -22,6 +22,7 @@ import { selectUser } from '../slices/userSlice'
 import { usePage } from '../hooks/usePage'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { Button } from '../shared/ui'
+import { formatLeaderboardRecordDateForDisplay } from '../shared/utils/leaderboardDate'
 
 type SortKey =
   | 'CM42_score'
@@ -273,7 +274,9 @@ export const LeaderboardPage: React.FC = () => {
                             {entry.bestScore}
                           </td>
                           <td>
-                            {entry.bestScoreDate}
+                            {formatLeaderboardRecordDateForDisplay(
+                              entry.bestScoreDate
+                            )}
                           </td>
                         </tr>
                       )
@@ -320,7 +323,9 @@ export const LeaderboardPage: React.FC = () => {
                           <div className="leaderboard-grid-meta">
                             Рекорд:{' '}
                             {entry.bestScore} от{' '}
-                            {entry.bestScoreDate}
+                            {formatLeaderboardRecordDateForDisplay(
+                              entry.bestScoreDate
+                            )}
                           </div>
                         </div>
                       </div>

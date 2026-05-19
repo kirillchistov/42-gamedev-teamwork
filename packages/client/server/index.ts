@@ -6,6 +6,14 @@
 // 7.1.1 Сохранил текущий app.get('*') для основного SSR "из коробки"
 
 import dotenv from 'dotenv'
+import path from 'path'
+
+// Монорепо: .env в корне репозитория (yarn dev из packages/client иначе его не видит).
+const repoRootEnv = path.resolve(
+  __dirname,
+  '../../../.env'
+)
+dotenv.config({ path: repoRootEnv })
 dotenv.config()
 
 import { HelmetData } from 'react-helmet'
@@ -14,8 +22,6 @@ import express, {
   Request as ExpressRequest,
   Response,
 } from 'express'
-import path from 'path'
-
 import fs from 'fs/promises'
 import {
   createServer as createViteServer,
@@ -29,7 +35,8 @@ import { registerApiProxy } from './apiProxy'
 const clientPath = path.join(__dirname, '..')
 const isDev =
   process.env.NODE_ENV === 'development'
-const FALLBACK_PORTS = [3000, 5000, 9000, 8080]
+// Не 3000 (API) и не 5000 (часто AirPlay на macOS). 9000 — в whitelist OAuth Практикума.
+const FALLBACK_PORTS = [9000, 8080]
 let prodTemplateCache: string | null = null
 
 type SsrRenderResult = {
@@ -306,7 +313,7 @@ async function createServer() {
     const server = app
       .listen(port, () => {
         console.log(
-          `Client is listening on port: ${port}`
+          `Client is listening on port: ${port} — open http://localhost:${port} (OAuth: use 9000 if in Praktikum whitelist)`
         )
       })
       .on('error', err => {

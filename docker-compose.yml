@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
     ports:
       # На хосте не занимать тот же порт, что у API (по умолчанию 3000 у server).
-      - "${CLIENT_PORT:-5173}:80"
+      - "${CLIENT_PORT:-9000}:80"
     environment:
       NODE_ENV: production
       PORT: "80"

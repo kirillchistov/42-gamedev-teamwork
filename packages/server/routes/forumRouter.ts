@@ -309,6 +309,12 @@ router.post('/topics', async (req, res) => {
       })
       return
     }
+    if (process.env.NODE_ENV === 'development') {
+      console.error(
+        '[forum] POST /topics failed:',
+        e
+      )
+    }
     res
       .status(500)
       .json({ reason: 'Internal error' })

@@ -7,6 +7,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import dotenv from 'dotenv'
 import path from 'path'
+
+dotenv.config({
+  path: path.resolve(__dirname, '../../.env'),
+})
 dotenv.config()
 
 function viteBaseFromEnv(): string {
@@ -30,7 +34,7 @@ export default defineConfig(({ mode }) => {
     base: viteBase,
     server: {
       port:
-        Number(process.env.CLIENT_PORT) || 3000,
+        Number(process.env.CLIENT_PORT) || 9000,
     },
     define: {
       __EXTERNAL_SERVER_URL__: JSON.stringify(

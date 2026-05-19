@@ -49,9 +49,13 @@ export function createApp(): express.Express {
     })
   })
 
+  app.get('/health', (_req, res) => {
+    res.status(200).json({ ok: true })
+  })
+
   app.use(protectedRouter)
 
-  app.get('/', (_, res) => {
+  app.get('/', (_req, res) => {
     res.json('👋 Howdy from the server :)')
   })
 

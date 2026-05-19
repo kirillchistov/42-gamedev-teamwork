@@ -33,9 +33,10 @@ const repoRoot = resolveRepoRoot(__dirname)
 require('dotenv').config({
   path: path.join(serverDir, '.env'),
 })
+// override: false — явные env (в т.ч. docker run -e) важнее файла .env в корне.
 require('dotenv').config({
   path: path.join(repoRoot, '.env'),
-  override: true,
+  override: false,
 })
 
 const {

@@ -7,7 +7,8 @@ export interface LeaderboardEntry {
   avatar?: string | null
   CM42_score: number // текущий счет
   bestScore: number // рекорд одной игры
-  bestScoreDate: string // дата рекорда
+  /** Дата рекорда в API: ISO 8601 YYYY-MM-DD */
+  bestScoreDate: string
 }
 
 export type LeaderboardApiRow = {
