@@ -1,328 +1,561 @@
 import {
   createAsyncThunk,
   createSlice,
-  PayloadAction,
+  isRejectedWithValue,
+  type PayloadAction,
 } from '@reduxjs/toolkit'
+import type { AnyAction } from 'redux'
 import { RootState } from '../store'
+import {
+  forumCreateComment,
+  forumCreateTopic,
+  forumDeleteComment,
+  forumDeleteCommentReaction,
+  forumDeleteTopic,
+  forumFetchReactionsMap,
+  forumGetAllComments,
+  forumGetCommentReactions,
+  forumGetTopic,
+  forumGetTopics,
+  forumPatchComment,
+  forumPatchTopic,
+  forumPostCommentReaction,
+  ForumApiError,
+} from '../shared/api/forumApi'
 import type {
   ForumTopic,
   ForumComment,
+  ForumReactionAgg,
   CreateTopicPayload,
   CreateCommentPayload,
 } from '../types/forum'
 
-import { forumApi } from '../shared/api/forumApi'
+export type ForumRejectPayload = {
+  status: number
+  message: string
+}
 
-// const DEMO_TOPICS: ForumTopic[] = [
-//   {
-//     id: 1,
-//     title: 'Баланс уровней match-3',
-//     author: 'dev-1',
-//     createdAt: '2026-03-20T10:00:00Z',
-//     content:
-//       'Предлагаю обсудить текущий баланс уровней. На 15-м уровне слишком мало ходов для прохождения, а 20-й проходится за пару минут. Нужно выровнять сложность.',
-//     commentsCount: 3,
-//   },
-//   {
-//     id: 2,
-//     title: 'Идеи новых бомб',
-//     author: 'dev-3',
-//     createdAt: '2026-03-21T14:30:00Z',
-//     content:
-//       'Какие новые типы бомб можно добавить в игру? Сейчас есть линейная и радиальная. Может, добавить диагональную или бомбу-молнию?',
-//     commentsCount: 5,
-//   },
-//   {
-//     id: 3,
-//     title: 'Баги на мобильных устройствах',
-//     author: 'tester-1',
-//     createdAt: '2026-03-22T09:15:00Z',
-//     content:
-//       'Собираю список багов на мобильных: тач-события иногда не срабатывают, анимация подтормаживает на старых устройствах.',
-//     commentsCount: 2,
-//   },
-//   {
-//     id: 4,
-//     title: 'Космические темы для интерфейса',
-//     author: 'designer-1',
-//     createdAt: '2026-03-23T16:45:00Z',
-//     content:
-//       'Хочу предложить новые варианты оформления в космическом стиле: тема «Туманность», тема «Чёрная дыра» и тема «Сверхновая».',
-//     commentsCount: 1,
-//   },
-// ]
-
-// const DEMO_COMMENTS: ForumComment[] = [
-//   {
-//     id: 1,
-//     topicId: 1,
-//     author: 'dev-2',
-//     content:
-//       'Согласен, 15-й уровень слишком сложный. Добавить бы пару ходов.',
-//     createdAt: '2026-03-20T11:00:00Z',
-//     parentCommentId: null,
-//   },
-//   {
-//     id: 2,
-//     topicId: 1,
-//     author: 'dev-1',
-//     content:
-//       'Или можно добавить бонусный ход за комбо из 5 элементов.',
-//     createdAt: '2026-03-20T11:30:00Z',
-//     parentCommentId: 1,
-//   },
-//   {
-//     id: 3,
-//     topicId: 1,
-//     author: 'tester-1',
-//     content:
-//       'Протестировал — с 3 дополнительными ходами баланс ок 👍',
-//     createdAt: '2026-03-20T14:00:00Z',
-//     parentCommentId: null,
-//   },
-//   {
-//     id: 4,
-//     topicId: 2,
-//     author: 'dev-1',
-//     content:
-//       'Молния — отличная идея! Может очищать случайный ряд или столбец.',
-//     createdAt: '2026-03-21T15:00:00Z',
-//     parentCommentId: null,
-//   },
-//   {
-//     id: 5,
-//     topicId: 2,
-//     author: 'designer-1',
-//     content:
-//       'Нарисую концепт для молнии и диагональной бомбы 🎨',
-//     createdAt: '2026-03-21T15:30:00Z',
-//     parentCommentId: 4,
-//   },
-//   {
-//     id: 6,
-//     topicId: 3,
-//     author: 'dev-2',
-//     content:
-//       'Тач-события — известная проблема. Попробуй pointer events вместо touch.',
-//     createdAt: '2026-03-22T10:00:00Z',
-//     parentCommentId: null,
-//   },
-//   {
-//     id: 7,
-//     topicId: 4,
-//     author: 'dev-3',
-//     content:
-//       'Тема «Чёрная дыра» звучит круто! Тёмный фон с затягивающей анимацией 🌀',
-//     createdAt: '2026-03-23T17:00:00Z',
-//     parentCommentId: null,
-//   },
-// ]
-
-// let demoTopics = [...DEMO_TOPICS]
-// let demoComments = [...DEMO_COMMENTS]
-// let nextTopicId = 100
-// let nextCommentId = 100
+function rejectFromUnknown(
+  e: unknown
+): ForumRejectPayload {
+  if (e instanceof ForumApiError) {
+    return {
+      status: e.status,
+      message: e.message,
+    }
+  }
+  if (e instanceof Error) {
+    return { status: 500, message: e.message }
+  }
+  return {
+    status: 500,
+    message: 'Неизвестная ошибка',
+  }
+}
 
 export interface ForumState {
   topics: ForumTopic[]
   currentTopic: ForumTopic | null
   comments: ForumComment[]
+  reactionsByCommentId: Record<
+    number,
+    ForumReactionAgg[]
+  >
   isLoading: boolean
-  error: string | null
+  shouldRedirectToLogin: boolean
 }
 
 const initialState: ForumState = {
   topics: [],
   currentTopic: null,
   comments: [],
+  reactionsByCommentId: {},
   isLoading: false,
-  error: null,
+  shouldRedirectToLogin: false,
 }
 
-export const fetchTopicsThunk = createAsyncThunk(
+export const fetchTopicsThunk = createAsyncThunk<
+  ForumTopic[],
+  void,
+  { rejectValue: ForumRejectPayload }
+>(
   'forum/fetchTopics',
   async (_, { rejectWithValue }) => {
     try {
-      return await forumApi.getTopics()
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : 'Ошибка загрузки топиков'
-      )
+      return await forumGetTopics()
+    } catch (e) {
+      return rejectWithValue(rejectFromUnknown(e))
     }
   }
 )
 
 export const fetchTopicByIdThunk =
-  createAsyncThunk(
+  createAsyncThunk<
+    {
+      topic: ForumTopic
+      comments: ForumComment[]
+      reactionsByCommentId: Record<
+        number,
+        ForumReactionAgg[]
+      >
+    },
+    number,
+    { rejectValue: ForumRejectPayload }
+  >(
     'forum/fetchTopicById',
-    async (
-      topicId: number,
-      { rejectWithValue }
-    ) => {
+    async (topicId, { rejectWithValue }) => {
       try {
-        return await forumApi.getTopic(topicId)
-      } catch (error) {
+        const topic = await forumGetTopic(topicId)
+        const comments =
+          await forumGetAllComments(topicId)
+        const reactionsByCommentId =
+          await forumFetchReactionsMap(
+            topicId,
+            comments
+          )
+        return {
+          topic,
+          comments,
+          reactionsByCommentId,
+        }
+      } catch (e) {
         return rejectWithValue(
-          error instanceof Error
-            ? error.message
-            : 'Ошибка загрузки топика'
+          rejectFromUnknown(e)
         )
       }
     }
   )
 
-export const createTopicThunk = createAsyncThunk(
+export const createTopicThunk = createAsyncThunk<
+  ForumTopic,
+  CreateTopicPayload,
+  { rejectValue: ForumRejectPayload }
+>(
   'forum/createTopic',
-  async (
-    payload: CreateTopicPayload,
-    { rejectWithValue }
-  ) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      return await forumApi.createTopic(payload)
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : 'Ошибка создания топика'
-      )
+      return await forumCreateTopic({
+        title: payload.title,
+        content: payload.content,
+      })
+    } catch (e) {
+      return rejectWithValue(rejectFromUnknown(e))
     }
   }
 )
 
 export const createCommentThunk =
-  createAsyncThunk(
+  createAsyncThunk<
+    ForumComment,
+    CreateCommentPayload,
+    { rejectValue: ForumRejectPayload }
+  >(
     'forum/createComment',
-    async (
-      payload: CreateCommentPayload,
-      { rejectWithValue }
-    ) => {
+    async (payload, { rejectWithValue }) => {
       try {
-        return await forumApi.createComment(
-          payload
+        return await forumCreateComment(
+          payload.topicId,
+          {
+            content: payload.content,
+            parentCommentId:
+              payload.parentCommentId ?? null,
+          }
         )
-      } catch (error) {
+      } catch (e) {
         return rejectWithValue(
-          error instanceof Error
-            ? error.message
-            : 'Ошибка добавления комментария'
+          rejectFromUnknown(e)
         )
       }
     }
   )
 
+export const toggleCommentReactionThunk =
+  createAsyncThunk<
+    {
+      commentId: number
+      items: ForumReactionAgg[]
+    },
+    {
+      topicId: number
+      commentId: number
+      emoji: string
+    },
+    {
+      rejectValue: ForumRejectPayload
+      state: RootState
+    }
+  >(
+    'forum/toggleCommentReaction',
+    async (
+      { topicId, commentId, emoji },
+      { rejectWithValue, getState }
+    ) => {
+      try {
+        const rows: ForumReactionAgg[] =
+          getState().forum.reactionsByCommentId[
+            commentId
+          ] ?? []
+        const mine = rows.find(
+          r => r.emoji === emoji
+        )?.mine
+        if (mine) {
+          await forumDeleteCommentReaction(
+            commentId,
+            emoji
+          )
+        } else {
+          await forumPostCommentReaction(
+            commentId,
+            emoji
+          )
+        }
+        const fresh =
+          await forumGetCommentReactions(
+            topicId,
+            commentId
+          )
+        return {
+          commentId,
+          items: fresh.items,
+        }
+      } catch (e) {
+        return rejectWithValue(
+          rejectFromUnknown(e)
+        )
+      }
+    }
+  )
+
+export const updateTopicThunk = createAsyncThunk<
+  ForumTopic,
+  {
+    topicId: number
+    title?: string
+    content?: string
+  },
+  { rejectValue: ForumRejectPayload }
+>(
+  'forum/updateTopic',
+  async (
+    { topicId, title, content },
+    { rejectWithValue }
+  ) => {
+    try {
+      return await forumPatchTopic(topicId, {
+        title,
+        content,
+      })
+    } catch (e) {
+      return rejectWithValue(rejectFromUnknown(e))
+    }
+  }
+)
+
+export const deleteTopicThunk = createAsyncThunk<
+  number,
+  number,
+  { rejectValue: ForumRejectPayload }
+>(
+  'forum/deleteTopic',
+  async (topicId, { rejectWithValue }) => {
+    try {
+      await forumDeleteTopic(topicId)
+      return topicId
+    } catch (e) {
+      return rejectWithValue(rejectFromUnknown(e))
+    }
+  }
+)
+
+export const updateCommentThunk =
+  createAsyncThunk<
+    ForumComment,
+    { commentId: number; content: string },
+    { rejectValue: ForumRejectPayload }
+  >(
+    'forum/updateComment',
+    async (
+      { commentId, content },
+      { rejectWithValue }
+    ) => {
+      try {
+        return await forumPatchComment(
+          commentId,
+          {
+            content,
+          }
+        )
+      } catch (e) {
+        return rejectWithValue(
+          rejectFromUnknown(e)
+        )
+      }
+    }
+  )
+
+export const deleteCommentThunk =
+  createAsyncThunk<
+    {
+      topic: ForumTopic
+      comments: ForumComment[]
+      reactionsByCommentId: Record<
+        number,
+        ForumReactionAgg[]
+      >
+    },
+    { topicId: number; commentId: number },
+    { rejectValue: ForumRejectPayload }
+  >(
+    'forum/deleteComment',
+    async (
+      { topicId, commentId },
+      { rejectWithValue }
+    ) => {
+      try {
+        await forumDeleteComment(commentId)
+        const topic = await forumGetTopic(topicId)
+        const comments =
+          await forumGetAllComments(topicId)
+        const reactionsByCommentId =
+          await forumFetchReactionsMap(
+            topicId,
+            comments
+          )
+        return {
+          topic,
+          comments,
+          reactionsByCommentId,
+        }
+      } catch (e) {
+        return rejectWithValue(
+          rejectFromUnknown(e)
+        )
+      }
+    }
+  )
+
+function isForumRejectedWithValue(
+  action: AnyAction
+): action is AnyAction & {
+  type: string
+  payload: ForumRejectPayload
+} {
+  return (
+    typeof action.type === 'string' &&
+    action.type.startsWith('forum/') &&
+    action.type.endsWith('/rejected') &&
+    isRejectedWithValue(action)
+  )
+}
+
 export const forumSlice = createSlice({
   name: 'forum',
   initialState,
   reducers: {
-    clearForumError: state => {
-      state.error = null
+    clearForumAuthRedirect(state) {
+      state.shouldRedirectToLogin = false
     },
   },
   extraReducers: builder => {
     builder
-      // fetchTopicsThunk
       .addCase(
-        fetchTopicsThunk.pending,
+        fetchTopicsThunk.pending.type,
         state => {
           state.isLoading = true
-          state.error = null
         }
       )
       .addCase(
-        fetchTopicsThunk.fulfilled,
+        fetchTopicsThunk.fulfilled.type,
         (
           state,
-          action: PayloadAction<ForumTopic[]>
+          { payload }: PayloadAction<ForumTopic[]>
         ) => {
-          state.topics = action.payload
+          state.topics = payload
           state.isLoading = false
+          state.shouldRedirectToLogin = false
         }
       )
       .addCase(
-        fetchTopicsThunk.rejected,
-        (state, action) => {
-          state.isLoading = false
-          state.error =
-            (action.payload as string) ||
-            'Ошибка загрузки топиков'
-        }
-      )
-
-      // fetchTopicByIdThunk
-      .addCase(
-        fetchTopicByIdThunk.pending,
+        fetchTopicByIdThunk.pending.type,
         state => {
           state.isLoading = true
           state.currentTopic = null
           state.comments = []
-          state.error = null
+          state.reactionsByCommentId = {}
         }
       )
       .addCase(
-        fetchTopicByIdThunk.fulfilled,
+        fetchTopicByIdThunk.fulfilled.type,
         (
           state,
-          action: PayloadAction<{
+          {
+            payload,
+          }: PayloadAction<{
             topic: ForumTopic
             comments: ForumComment[]
+            reactionsByCommentId: Record<
+              number,
+              ForumReactionAgg[]
+            >
           }>
         ) => {
-          state.currentTopic =
-            action.payload.topic
-          state.comments = action.payload.comments
+          state.currentTopic = payload.topic
+          state.comments = payload.comments
+          state.reactionsByCommentId =
+            payload.reactionsByCommentId
           state.isLoading = false
-        }
-      )
-      .addCase(
-        fetchTopicByIdThunk.rejected,
-        (state, action) => {
-          state.isLoading = false
-          state.error =
-            (action.payload as string) ||
-            'Ошибка загрузки топика'
+          state.shouldRedirectToLogin = false
         }
       )
 
-      // createTopicThunk
       .addCase(
-        createTopicThunk.fulfilled,
+        createTopicThunk.fulfilled.type,
         (
           state,
-          action: PayloadAction<ForumTopic>
+          { payload }: PayloadAction<ForumTopic>
         ) => {
           state.topics = [
-            action.payload,
+            payload,
             ...state.topics,
           ]
         }
       )
 
-      // createCommentThunk
       .addCase(
-        createCommentThunk.fulfilled,
+        createCommentThunk.fulfilled.type,
         (
           state,
-          action: PayloadAction<ForumComment>
+          { payload }: PayloadAction<ForumComment>
         ) => {
           state.comments = [
             ...state.comments,
-            action.payload,
+            payload,
           ]
+          state.reactionsByCommentId[payload.id] =
+            []
           if (
             state.currentTopic &&
             state.currentTopic.id ===
-              action.payload.topicId
+              payload.topicId
           ) {
-            state.currentTopic.commentsCount += 1
+            if (payload.parentCommentId != null) {
+              state.currentTopic.repliesCount += 1
+            } else {
+              state.currentTopic.commentsCount += 1
+            }
+          }
+          const topicInList = state.topics.find(
+            t => t.id === payload.topicId
+          )
+          if (topicInList) {
+            if (payload.parentCommentId != null) {
+              topicInList.repliesCount += 1
+            } else {
+              topicInList.commentsCount += 1
+            }
+          }
+        }
+      )
+
+      .addCase(
+        toggleCommentReactionThunk.fulfilled.type,
+        (
+          state,
+          {
+            payload,
+          }: PayloadAction<{
+            commentId: number
+            items: ForumReactionAgg[]
+          }>
+        ) => {
+          state.reactionsByCommentId[
+            payload.commentId
+          ] = payload.items
+        }
+      )
+
+      .addCase(
+        updateTopicThunk.fulfilled.type,
+        (
+          state,
+          { payload }: PayloadAction<ForumTopic>
+        ) => {
+          state.currentTopic = payload
+          const idx = state.topics.findIndex(
+            t => t.id === payload.id
+          )
+          if (idx >= 0) {
+            state.topics[idx] = payload
+          }
+        }
+      )
+
+      .addCase(
+        deleteTopicThunk.fulfilled.type,
+        (
+          state,
+          { payload }: PayloadAction<number>
+        ) => {
+          state.topics = state.topics.filter(
+            t => t.id !== payload
+          )
+          if (
+            state.currentTopic?.id === payload
+          ) {
+            state.currentTopic = null
+            state.comments = []
+            state.reactionsByCommentId = {}
+          }
+        }
+      )
+
+      .addCase(
+        updateCommentThunk.fulfilled.type,
+        (
+          state,
+          { payload }: PayloadAction<ForumComment>
+        ) => {
+          state.comments = state.comments.map(c =>
+            c.id === payload.id ? payload : c
+          )
+        }
+      )
+
+      .addCase(
+        deleteCommentThunk.fulfilled.type,
+        (
+          state,
+          {
+            payload,
+          }: PayloadAction<{
+            topic: ForumTopic
+            comments: ForumComment[]
+            reactionsByCommentId: Record<
+              number,
+              ForumReactionAgg[]
+            >
+          }>
+        ) => {
+          state.currentTopic = payload.topic
+          state.comments = payload.comments
+          state.reactionsByCommentId =
+            payload.reactionsByCommentId
+        }
+      )
+
+      .addMatcher(
+        isForumRejectedWithValue,
+        (state, action) => {
+          state.isLoading = false
+          if (action.payload.status === 403) {
+            state.shouldRedirectToLogin = true
           }
         }
       )
   },
 })
 
-export const { clearForumError } =
+export const { clearForumAuthRedirect } =
   forumSlice.actions
 
 export const selectTopics = (state: RootState) =>
@@ -333,11 +566,14 @@ export const selectCurrentTopic = (
 export const selectComments = (
   state: RootState
 ) => state.forum.comments
+export const selectForumReactionsByCommentId = (
+  state: RootState
+) => state.forum.reactionsByCommentId
 export const selectIsLoadingForum = (
   state: RootState
 ) => state.forum.isLoading
-export const selectForumError = (
+export const selectForumShouldRedirectToLogin = (
   state: RootState
-) => state.forum.error
+) => state.forum.shouldRedirectToLogin
 
 export default forumSlice.reducer
