@@ -31,8 +31,11 @@ export const reducer = combineReducers({
 
 export const store = configureStore({
   reducer: {
-    user: userReducer,
     forum: forumReducer,
+    friends: friendsReducer,
+    leaderboard: leaderboardReducer,
+    ssr: ssrReducer,
+    user: userReducer,
   },
 })
 
