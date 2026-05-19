@@ -37,7 +37,6 @@ import {
 import type { ForumRejectPayload } from '../slices/forumSlice'
 import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
 import type { ForumComment } from '../types/forum'
-import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
 import { selectUser } from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { FORUM_REACTION_EMOJIS } from '../constants/forumEmojis'
@@ -93,7 +92,6 @@ export const ForumTopicPage: React.FC = () => {
     }
     markForumAuthRedirect()
     dispatch(clearForumAuthRedirect())
-    markForumAuthRedirect()
     navigate('/login', {
       replace: true,
       state: { fromForum: true },
