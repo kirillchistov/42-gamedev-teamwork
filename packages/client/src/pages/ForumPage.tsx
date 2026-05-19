@@ -1,6 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
-import { Link } from 'react-router-dom'
+import {
+  Link,
+  useNavigate,
+} from 'react-router-dom'
 import clsx from 'clsx'
 
 import { Header } from '../components/Header'
@@ -21,46 +24,68 @@ import {
   createTopicThunk,
   selectTopics,
   selectIsLoadingForum,
-  selectForumError,
-  clearForumError,
+  selectForumShouldRedirectToLogin,
+  clearForumAuthRedirect,
 } from '../slices/forumSlice'
-import { selectUser } from '../slices/userSlice'
+import type { ForumRejectPayload } from '../slices/forumSlice'
+import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 
 export const ForumPage: React.FC = () => {
   const { theme } = useLandingTheme()
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const topics = useSelector(selectTopics)
   const isLoading = useSelector(
     selectIsLoadingForum
   )
-  const error = useSelector(selectForumError)
-  const user = useSelector(selectUser)
+  const shouldRedirectToLogin = useSelector(
+    selectForumShouldRedirectToLogin
+  )
 
   const [showCreateForm, setShowCreateForm] =
     useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [actionError, setActionError] = useState<
+    string | null
+  >(null)
+
+  useEffect(() => {
+    if (!shouldRedirectToLogin) {
+      return
+    }
+    markForumAuthRedirect()
+    dispatch(clearForumAuthRedirect())
+    navigate('/login', {
+      replace: true,
+      state: { fromForum: true },
+    })
+  }, [shouldRedirectToLogin, dispatch, navigate])
 
   usePage({ initPage: initForumPage })
 
-  const handleCreateTopic = () => {
+  const handleCreateTopic = async () => {
     if (!title.trim() || !content.trim()) return
-
-    dispatch(
-      createTopicThunk({
-        title: title.trim(),
-        content: content.trim(),
-        author: user?.first_name || 'Аноним',
-      })
-    )
-    setTitle('')
-    setContent('')
-    setShowCreateForm(false)
-  }
-
-  const handleClearError = () => {
-    dispatch(clearForumError())
+    setActionError(null)
+    try {
+      await dispatch(
+        createTopicThunk({
+          title: title.trim(),
+          content: content.trim(),
+        })
+      ).unwrap()
+      setTitle('')
+      setContent('')
+      setShowCreateForm(false)
+    } catch (e) {
+      const p = e as ForumRejectPayload
+      if (p?.status !== 403) {
+        setActionError(
+          p?.message || 'Не удалось создать тему'
+        )
+      }
+    }
   }
 
   return (
@@ -89,6 +114,14 @@ export const ForumPage: React.FC = () => {
 
           <h1>Форум</h1>
 
+          {actionError ? (
+            <div className="auth-page__toast-wrap">
+              <div className="auth-page__toast">
+                {actionError}
+              </div>
+            </div>
+          ) : null}
+
           <div className="forum-create-btn">
             <Button
               variant={
@@ -105,21 +138,8 @@ export const ForumPage: React.FC = () => {
             </Button>
           </div>
 
-          {error && (
-            <div className="forum-error">
-              {error}
-              <button
-                className="forum-error__close"
-                onClick={handleClearError}>
-                ✕
-              </button>
-            </div>
-          )}
-
           {showCreateForm && (
-            <div
-              className="extra-card"
-              style={{ marginBottom: 16 }}>
+            <div className="extra-card extra-card--mb16">
               <div className="forum-form">
                 <h3>Создать тему</h3>
                 <div className="forum-form__field">
@@ -164,7 +184,7 @@ export const ForumPage: React.FC = () => {
             <>
               <div className="forum-list__header">
                 <span>Форумы</span>
-                <span>Темы</span>
+                <span>Комментарии</span>
                 <span>Ответы</span>
               </div>
               <div className="forum-list">
@@ -187,10 +207,10 @@ export const ForumPage: React.FC = () => {
                       </div>
                     </div>
                     <span className="forum-list__count forum-list__count--accent">
-                      1
+                      {topic.commentsCount}
                     </span>
                     <span className="forum-list__count">
-                      {topic.commentsCount}
+                      {topic.repliesCount}
                     </span>
                   </Link>
                 ))}
@@ -205,8 +225,12 @@ export const ForumPage: React.FC = () => {
   )
 }
 
-export const initForumPage = ({
+export const initForumPage = async ({
   dispatch,
 }: PageInitArgs) => {
-  return dispatch(fetchTopicsThunk())
+  try {
+    await dispatch(fetchTopicsThunk()).unwrap()
+  } catch {
+    /* 403: редирект через slice + useEffect на странице */
+  }
 }

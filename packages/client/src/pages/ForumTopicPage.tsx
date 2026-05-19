@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
-import { Link, useParams } from 'react-router-dom'
+import {
+  Link,
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
 import clsx from 'clsx'
 
 import { Header } from '../components/Header'
@@ -10,32 +14,33 @@ import {
   useDispatch,
 } from '../store'
 import { usePage } from '../hooks/usePage'
-import { Button, TextArea } from '../shared/ui'
+import {
+  Button,
+  Input,
+  TextArea,
+} from '../shared/ui'
 import {
   fetchTopicByIdThunk,
   createCommentThunk,
+  toggleCommentReactionThunk,
+  updateTopicThunk,
+  deleteTopicThunk,
+  updateCommentThunk,
+  deleteCommentThunk,
   selectCurrentTopic,
   selectComments,
   selectIsLoadingForum,
-  selectForumError,
-  clearForumError,
+  selectForumShouldRedirectToLogin,
+  selectForumReactionsByCommentId,
+  clearForumAuthRedirect,
 } from '../slices/forumSlice'
-import { selectUser } from '../slices/userSlice'
+import type { ForumRejectPayload } from '../slices/forumSlice'
+import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
 import type { ForumComment } from '../types/forum'
+import { selectUser } from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
-
-const EMOJIS = [
-  '😀',
-  '👍',
-  '❤️',
-  '🔥',
-  '🎮',
-  '⭐',
-  '🚀',
-  '💡',
-  '🤔',
-  '😎',
-]
+import { FORUM_REACTION_EMOJIS } from '../constants/forumEmojis'
+import { ForumCommentReactions } from '../components/forum/ForumCommentReactions'
 
 export const ForumTopicPage: React.FC = () => {
   const { theme } = useLandingTheme()
@@ -43,50 +48,246 @@ export const ForumTopicPage: React.FC = () => {
     topicId: string
   }>()
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const topic = useSelector(selectCurrentTopic)
   const comments = useSelector(selectComments)
+  const reactionsByCommentId = useSelector(
+    selectForumReactionsByCommentId
+  )
+  const user = useSelector(selectUser)
   const isLoading = useSelector(
     selectIsLoadingForum
   )
-  const error = useSelector(selectForumError)
-  const user = useSelector(selectUser)
+  const shouldRedirectToLogin = useSelector(
+    selectForumShouldRedirectToLogin
+  )
 
   const [newComment, setNewComment] = useState('')
   const [replyTo, setReplyTo] = useState<
     number | null
   >(null)
+  const [pageError, setPageError] = useState<
+    string | null
+  >(null)
+
+  const [topicEditOpen, setTopicEditOpen] =
+    useState(false)
+  const [topicDraftTitle, setTopicDraftTitle] =
+    useState('')
+  const [
+    topicDraftContent,
+    setTopicDraftContent,
+  ] = useState('')
+
+  const [editingCommentId, setEditingCommentId] =
+    useState<number | null>(null)
+  const [commentDraft, setCommentDraft] =
+    useState('')
 
   usePage({ initPage: initForumTopicPage })
 
   useEffect(() => {
-    if (topicId) {
-      dispatch(
-        fetchTopicByIdThunk(Number(topicId))
-      )
+    if (!shouldRedirectToLogin) {
+      return
     }
+    markForumAuthRedirect()
+    dispatch(clearForumAuthRedirect())
+    navigate('/login', {
+      replace: true,
+      state: { fromForum: true },
+    })
+  }, [shouldRedirectToLogin, dispatch, navigate])
+
+  useEffect(() => {
+    if (!topicId) {
+      return
+    }
+    void (async () => {
+      try {
+        await dispatch(
+          fetchTopicByIdThunk(Number(topicId))
+        ).unwrap()
+      } catch {
+        /* 403 — редирект; 404 — пустой топик в state */
+      }
+    })()
   }, [topicId, dispatch])
 
-  const handleAddComment = () => {
-    if (!newComment.trim() || !topicId) return
+  const isTopicAuthor =
+    user != null &&
+    topic != null &&
+    user.id === topic.authorPraktikumId
 
-    dispatch(
-      createCommentThunk({
-        topicId: Number(topicId),
-        content: newComment.trim(),
-        author: user?.first_name || 'Аноним',
-        parentCommentId: replyTo ?? undefined,
-      })
-    )
-    setNewComment('')
-    setReplyTo(null)
+  const viewerIsModerator = Boolean(
+    topic?.viewerIsModerator
+  )
+  const canEditTopic =
+    isTopicAuthor || viewerIsModerator
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !topicId) return
+    setPageError(null)
+    try {
+      await dispatch(
+        createCommentThunk({
+          topicId: Number(topicId),
+          content: newComment.trim(),
+          parentCommentId: replyTo ?? undefined,
+        })
+      ).unwrap()
+      setNewComment('')
+      setReplyTo(null)
+    } catch (e) {
+      const p = e as ForumRejectPayload
+      if (p?.status !== 403) {
+        setPageError(
+          p?.message ||
+            'Не удалось отправить комментарий'
+        )
+      }
+    }
   }
 
   const handleEmojiClick = (emoji: string) => {
     setNewComment(prev => prev + emoji)
   }
 
-  const handleClearError = () => {
-    dispatch(clearForumError())
+  const handleToggleReaction = async (
+    commentId: number,
+    emoji: string
+  ) => {
+    if (!topicId) return
+    setPageError(null)
+    try {
+      await dispatch(
+        toggleCommentReactionThunk({
+          topicId: Number(topicId),
+          commentId,
+          emoji,
+        })
+      ).unwrap()
+    } catch (e) {
+      const p = e as ForumRejectPayload
+      if (p?.status !== 403) {
+        setPageError(
+          p?.message ||
+            'Не удалось изменить реакцию'
+        )
+      }
+    }
+  }
+
+  const handleOpenTopicEdit = () => {
+    if (!topic) return
+    setTopicDraftTitle(topic.title)
+    setTopicDraftContent(topic.content)
+    setTopicEditOpen(true)
+  }
+
+  const handleSaveTopic = async () => {
+    if (!topicId || !topicDraftTitle.trim())
+      return
+    setPageError(null)
+    try {
+      await dispatch(
+        updateTopicThunk({
+          topicId: Number(topicId),
+          title: topicDraftTitle.trim(),
+          content: topicDraftContent.trim(),
+        })
+      ).unwrap()
+      setTopicEditOpen(false)
+    } catch (e) {
+      const p = e as ForumRejectPayload
+      if (p?.status !== 403) {
+        setPageError(
+          p?.message ||
+            'Не удалось сохранить тему'
+        )
+      }
+    }
+  }
+
+  const handleDeleteTopic = async () => {
+    if (!topicId) return
+    if (
+      !window.confirm(
+        'Удалить тему и все комментарии?'
+      )
+    ) {
+      return
+    }
+    setPageError(null)
+    try {
+      await dispatch(
+        deleteTopicThunk(Number(topicId))
+      ).unwrap()
+      navigate('/forum')
+    } catch (e) {
+      const p = e as ForumRejectPayload
+      if (p?.status !== 403) {
+        setPageError(
+          p?.message || 'Не удалось удалить тему'
+        )
+      }
+    }
+  }
+
+  const handleSaveComment = async (
+    commentId: number
+  ) => {
+    if (!commentDraft.trim()) return
+    setPageError(null)
+    try {
+      await dispatch(
+        updateCommentThunk({
+          commentId,
+          content: commentDraft.trim(),
+        })
+      ).unwrap()
+      setEditingCommentId(null)
+      setCommentDraft('')
+    } catch (e) {
+      const p = e as ForumRejectPayload
+      if (p?.status !== 403) {
+        setPageError(
+          p?.message ||
+            'Не удалось сохранить комментарий'
+        )
+      }
+    }
+  }
+
+  const handleDeleteComment = async (
+    commentId: number
+  ) => {
+    if (!topicId) return
+    if (!window.confirm('Удалить комментарий?')) {
+      return
+    }
+    setPageError(null)
+    try {
+      await dispatch(
+        deleteCommentThunk({
+          topicId: Number(topicId),
+          commentId,
+        })
+      ).unwrap()
+      if (replyTo === commentId) {
+        setReplyTo(null)
+      }
+      if (editingCommentId === commentId) {
+        setEditingCommentId(null)
+      }
+    } catch (e) {
+      const p = e as ForumRejectPayload
+      if (p?.status !== 403) {
+        setPageError(
+          p?.message ||
+            'Не удалось удалить комментарий'
+        )
+      }
+    }
   }
 
   const renderComments = (
@@ -99,46 +300,128 @@ export const ForumTopicPage: React.FC = () => {
     )
     if (filtered.length === 0) return null
 
-    return filtered.map(comment => (
-      <React.Fragment key={comment.id}>
-        <div
-          className={clsx('forum-comment', {
-            'forum-comment--nested': depth > 0,
-          })}>
-          <div className="forum-comment__header">
-            <span className="forum-comment__author">
-              {comment.author}
-            </span>
-            <span className="forum-comment__date">
-              {new Date(
-                comment.createdAt
-              ).toLocaleString('ru-RU', {
-                day: 'numeric',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
+    return filtered.map(comment => {
+      const rows =
+        reactionsByCommentId[comment.id] ?? []
+      const isCommentAuthor =
+        user != null &&
+        user.id === comment.authorPraktikumId
+      const canEditComment =
+        isCommentAuthor || viewerIsModerator
+
+      return (
+        <React.Fragment key={comment.id}>
+          <div
+            className={clsx('forum-comment', {
+              'forum-comment--nested': depth > 0,
+            })}>
+            <div className="forum-comment__header">
+              <span className="forum-comment__author">
+                {comment.author}
+              </span>
+              <span className="forum-comment__date">
+                {new Date(
+                  comment.createdAt
+                ).toLocaleString('ru-RU', {
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            </div>
+            {editingCommentId === comment.id ? (
+              <div className="forum-comment__edit">
+                <TextArea
+                  value={commentDraft}
+                  onChange={e =>
+                    setCommentDraft(
+                      e.target.value
+                    )
+                  }
+                  rows={3}
+                />
+                <div className="forum-form__actions">
+                  <Button
+                    variant="primary"
+                    onClick={() =>
+                      void handleSaveComment(
+                        comment.id
+                      )
+                    }>
+                    Сохранить
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingCommentId(null)
+                      setCommentDraft('')
+                    }}>
+                    Отмена
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="forum-comment__text">
+                {comment.content}
+              </div>
+            )}
+
+            <ForumCommentReactions
+              rows={rows}
+              onToggle={emoji =>
+                void handleToggleReaction(
+                  comment.id,
+                  emoji
+                )
+              }>
+              <button
+                type="button"
+                className="forum-comment__reply-btn"
+                onClick={() =>
+                  setReplyTo(comment.id)
+                }>
+                Ответить
+              </button>
+              {canEditComment &&
+                editingCommentId !==
+                  comment.id && (
+                  <>
+                    <button
+                      type="button"
+                      className="forum-comment__reply-btn"
+                      onClick={() => {
+                        setEditingCommentId(
+                          comment.id
+                        )
+                        setCommentDraft(
+                          comment.content
+                        )
+                      }}>
+                      Изменить
+                    </button>
+                    <button
+                      type="button"
+                      className="forum-comment__reply-btn"
+                      onClick={() =>
+                        void handleDeleteComment(
+                          comment.id
+                        )
+                      }>
+                      Удалить
+                    </button>
+                  </>
+                )}
+            </ForumCommentReactions>
           </div>
-          <div className="forum-comment__text">
-            {comment.content}
-          </div>
-          <button
-            type="button"
-            className="forum-comment__reply-btn"
-            onClick={() =>
-              setReplyTo(comment.id)
-            }>
-            Ответить
-          </button>
-        </div>
-        {renderComments(
-          allComments,
-          comment.id,
-          depth + 1
-        )}
-      </React.Fragment>
-    ))
+          {renderComments(
+            allComments,
+            comment.id,
+            depth + 1
+          )}
+        </React.Fragment>
+      )
+    })
   }
 
   const replyComment = replyTo
@@ -176,16 +459,13 @@ export const ForumTopicPage: React.FC = () => {
             ← К форуму
           </Link>
 
-          {error && (
-            <div className="forum-error">
-              {error}
-              <button
-                className="forum-error__close"
-                onClick={handleClearError}>
-                ✕
-              </button>
+          {pageError ? (
+            <div className="auth-page__toast-wrap">
+              <div className="auth-page__toast">
+                {pageError}
+              </div>
             </div>
-          )}
+          ) : null}
 
           {isLoading && !topic ? (
             <p>Загрузка...</p>
@@ -203,11 +483,80 @@ export const ForumTopicPage: React.FC = () => {
                     topic.createdAt
                   ).toLocaleDateString('ru-RU')}
                 </p>
+                {canEditTopic ? (
+                  <div className="forum-form__actions forum-topic__actions">
+                    {!topicEditOpen ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          onClick={
+                            handleOpenTopicEdit
+                          }>
+                          Редактировать тему
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            void handleDeleteTopic()
+                          }>
+                          Удалить тему
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="primary"
+                          onClick={() =>
+                            void handleSaveTopic()
+                          }>
+                          Сохранить
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            setTopicEditOpen(
+                              false
+                            )
+                          }>
+                          Отмена
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                ) : null}
               </div>
 
-              <div className="forum-topic__content">
-                {topic.content}
-              </div>
+              {topicEditOpen ? (
+                <div className="extra-card extra-card--mb16">
+                  <div className="forum-form__field">
+                    <label>Заголовок</label>
+                    <Input
+                      value={topicDraftTitle}
+                      onChange={e =>
+                        setTopicDraftTitle(
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="forum-form__field">
+                    <label>Текст</label>
+                    <TextArea
+                      value={topicDraftContent}
+                      onChange={e =>
+                        setTopicDraftContent(
+                          e.target.value
+                        )
+                      }
+                      rows={6}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="forum-topic__content">
+                  {topic.content}
+                </div>
+              )}
 
               <h2 className="forum-comments__title">
                 Комментарии ({comments.length})
@@ -246,17 +595,21 @@ export const ForumTopicPage: React.FC = () => {
                   )}
 
                   <div className="forum-emoji-bar">
-                    {EMOJIS.map(emoji => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        className="forum-emoji-bar__btn"
-                        onClick={() =>
-                          handleEmojiClick(emoji)
-                        }>
-                        {emoji}
-                      </button>
-                    ))}
+                    {FORUM_REACTION_EMOJIS.map(
+                      emoji => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className="forum-emoji-bar__btn"
+                          onClick={() =>
+                            handleEmojiClick(
+                              emoji
+                            )
+                          }>
+                          {emoji}
+                        </button>
+                      )
+                    )}
                   </div>
 
                   <TextArea
@@ -273,7 +626,9 @@ export const ForumTopicPage: React.FC = () => {
                   <div className="forum-form__actions">
                     <Button
                       variant="primary"
-                      onClick={handleAddComment}>
+                      onClick={() =>
+                        void handleAddComment()
+                      }>
                       Отправить
                     </Button>
                   </div>
