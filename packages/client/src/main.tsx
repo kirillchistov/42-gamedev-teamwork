@@ -11,6 +11,7 @@ import { ThemeProvider } from '@gravity-ui/uikit'
 import { store } from './store'
 import { routes } from './routes'
 import { LandingThemeProvider } from './contexts/LandingThemeContext'
+import { ThemeServerSync } from './components/ThemeServerSync'
 import { withAuthGuard } from './hoc/withAuthGuard'
 import './shared/styles/normalize.pcss'
 import './shared/styles/base.pcss'
@@ -75,6 +76,7 @@ const rootElement = document.getElementById(
 const app = (
   <Provider store={store}>
     <LandingThemeProvider>
+      <ThemeServerSync />
       <ThemeProvider theme="light">
         <ErrorBoundary>
           <RouterProvider router={router} />

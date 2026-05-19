@@ -41,17 +41,12 @@
   - `cosmic-match.landing-theme.v1` — текущая тема;
   - `cosmic-match.last-light-theme.v1` — запоминание последней светлой (для `toggleColorMode`).
 
-**Сохранение на сервере (пробел по ТЗ)**
+**Сохранение на сервере (done)**
 
-- Сейчас выбор **не синхронизируется** с бэкендом: после перезагрузки на новом устройстве или при очистке `localStorage` тема сбросится на дефолт (`light-flat` при первом чтении).
-- **Что сделать на клиенте после появления API** (краткий чеклист, согласовано с §3):
-  1. После успешного логина и при старте приложения для уже залогиненного пользователя: прочитать тему из `localStorage`, затем **GET** с сервера — только для информации/обновления cookie гостя; **источник правды для отображения при первом же кадре** — локальное хранилище, если там уже есть значение.
-  2. **Сразу после получения актуальной сессии** (логин или готовность cookie гостя): отправить на сервер **PUT** с темой из `localStorage` (**локальное перетирает серверное** — см. Q1 в §3). Так офлайн-смена темы попадает в БД при следующем онлайне.
-  3. При каждом изменении темы пользователем — **debounce** (например 300–500 ms) и **PUT** на сервер; при ошибке оставить локальное значение и показать toast.
-  4. Для гостя — cookie с UUID сессии (`HttpOnly` по возможности); без валидной cookie после 72 ч — новая гостевая сессия на сервере (см. §2.1).
-  5. Не блокировать UI ожиданием сети: оптимистично применить тему через контекст как сейчас.
-
-**Ожидаемый результат после закрытия пробела:** пользователь переключает тему как сейчас; выбор **дублируется на сервере**; при следующем входе с любого клиента под тем же аккаунтом (или с тем же гостевым cookie в пределах 72 ч) сервер отражает последнюю отправленную с клиента тему.
+- API **`GET` / `PUT` `/api/ui/theme`** в [`packages/server`](../packages/server) — роутер [`uiThemeRouter.ts`](../packages/server/routes/uiThemeRouter.ts), middleware [`attachPraktikumUser`](../packages/server/middleware/attachPraktikumUser.ts) (без обязательного 403 для гостя).
+- Клиент: [`themeApi.ts`](../packages/client/src/shared/api/themeApi.ts), [`themeSync.ts`](../packages/client/src/utils/themeSync.ts), [`useThemeServerSync`](../packages/client/src/hooks/useThemeServerSync.ts) + [`ThemeServerSync`](../packages/client/src/components/ThemeServerSync.tsx) в [`main.tsx`](../packages/client/src/main.tsx).
+- Поведение (Q1): при первом кадре — **`localStorage`**; после `selectUserIsAuthChecked` — если ключа темы не было, **GET** с сервера; затем **PUT** локального значения (локальное перетирает серверное); при смене темы — **debounce 400 ms** и **PUT**.
+- Гость: cookie **`anonymous_session_id`** (`HttpOnly`, TTL 72 ч), таблицы `anonymous_sessions` / `user_ui_themes` — миграция [`20260516130000-create-ui-theme-tables.js`](../packages/server/migrations/20260516130000-create-ui-theme-tables.js).
 
 **Независимость от match-3:** тема лендинга (`LandingTheme`) и оформление поля игры [`boardFieldTheme`](../packages/client/src/pages/GamePage.tsx) **не синхронизируются** (см. Q4 в §3): отдельные состояния и сценарии использования.
 
@@ -88,7 +83,7 @@
 
 **Почему не одна JSONB-колонка в `users`:** отдельной таблицы `users` в репо пока нет; JSONB допустим для «пакета настроек UI», но для ТЗ с **FK** и **JOIN** явная таблица предпочтительнее. Если позже появится `users` с `id` bigint — можно добавить `user_id BIGINT REFERENCES users(id) ON DELETE CASCADE` и миграцию переноса с `praktikum_user_id`.
 
-**Sequelize:** модели `AnonymousSession`, `UserUiTheme` с `associate`, миграции в `packages/server/migrations` (как для форума). Запуск миграций — через тот же Docker/скрипт, что и для остальной БД.
+**Sequelize:** модели [`AnonymousSession`](../packages/server/models/AnonymousSession.ts), [`UserUiTheme`](../packages/server/models/UserUiTheme.ts), миграция [`20260516130000-create-ui-theme-tables.js`](../packages/server/migrations/20260516130000-create-ui-theme-tables.js). Запуск: `yarn db:migrate` из корня монорепы.
 
 ### 2.2. API и контроллеры
 
@@ -156,3 +151,148 @@ LIMIT 1;
 | Q4 | Синхронизация с **`boardFieldTheme`** (match-3)? | **Не нужна.** Тема лендинга и тема поля игры — **независимые оси** (в т.ч. потому что светлая тема лендинга на игровом поле выглядит слабо; пользователь может выбирать разное). |
 
 Дополнительно можно вынести константу `GUEST_SESSION_TTL_HOURS = 72` в общий модуль сервера и использовать в middleware/cron и в описании cookie `Max-Age`.
+
+---
+
+## 4. Проверка работы (локально, API, Docker)
+
+### 4.1. Предусловия
+
+1. Миграции применены (таблицы `anonymous_sessions`, `user_ui_themes`):
+
+   ```bash
+   yarn db:migrate
+   ```
+
+2. В `.env` (см. [`.env.sample`](../.env.sample)):
+
+   - `VITE_APP_API_URL=http://localhost:3000` — клиент ходит на Node API с хоста;
+   - `POSTGRES_HOST=localhost` — для `yarn db:migrate` **с хоста**;
+   - в Docker у сервиса `server` в [docker-compose.yml](../docker-compose.yml) уже `POSTGRES_HOST=postgres`.
+
+### 4.2. API без UI (curl)
+
+**Гость (без логина Практикума):**
+
+```bash
+# дефолт
+curl -s http://localhost:3000/api/ui/theme
+
+# сохранить тему — в ответе Set-Cookie: anonymous_session_id=...
+curl -s -c /tmp/theme-cookies.txt -X PUT http://localhost:3000/api/ui/theme \
+  -H 'Content-Type: application/json' \
+  -d '{"theme":"dark-neon"}'
+
+# прочитать с той же cookie
+curl -s -b /tmp/theme-cookies.txt http://localhost:3000/api/ui/theme
+# ожидаем: {"theme":"dark-neon"}
+```
+
+**Невалидная тема → 400:**
+
+```bash
+curl -s -X PUT http://localhost:3000/api/ui/theme \
+  -H 'Content-Type: application/json' \
+  -d '{"theme":"neon"}'
+```
+
+**Автотесты:**
+
+```bash
+yarn workspace server test
+# uiTheme.test.ts, landingThemes.test.ts
+```
+
+### 4.3. Локально: клиент + сервер
+
+```bash
+docker compose up -d postgres   # опционально, если нет локального PG
+yarn db:migrate
+yarn dev:server                 # :3000
+yarn dev:client                 # обычно :5173
+```
+
+**В браузере (DevTools → Network):**
+
+1. Открыть приложение, дождаться завершения проверки сессии (`fetchUserThunk`).
+2. Сменить тему (хедер на `/game` — луна/солнце, или выбор flat/3d на лендинге).
+3. Должен уйти **`PUT http://localhost:3000/api/ui/theme`** с `{"theme":"..."}` и **`credentials: include`**.
+4. У гостя при первом PUT — cookie **`anonymous_session_id`** (Application → Cookies).
+
+**localStorage** (сохраняется после F5):
+
+- `cosmic-match.landing-theme.v1`
+- `cosmic-match.last-light-theme.v1` — при светлой теме
+
+**Сценарий Q1 (локальное → сервер):** сменили тему без сети → UI и `localStorage` обновились; после восстановления сети и перезагрузки — снова **PUT** с локальной темой.
+
+**Авторизованный пользователь:** нужна сессия Практикума (логин / Яндекс). В БД появится строка с `praktikum_user_id`.
+
+**Dev без Практикума** (только локальный server, `NODE_ENV !== production`):
+
+```env
+LOCAL_PRAKTIKUM_AUTH_BYPASS=1
+```
+
+### 4.4. Проверка в БД
+
+```bash
+docker exec -it cosmic-match-postgres psql -U postgres -d postgres -c \
+  "SELECT theme, praktikum_user_id, anonymous_session_id FROM user_ui_themes;"
+```
+
+После гостевого PUT — заполнен `anonymous_session_id`; после логина и PUT — `praktikum_user_id`.
+
+### 4.5. Docker Compose
+
+```bash
+node init.js                    # как в README, если ещё не делали
+docker compose up -d postgres
+yarn db:migrate                 # с хоста, POSTGRES_HOST=localhost в .env
+docker compose build
+docker compose up
+```
+
+| Сервис   | URL с хоста              |
+|----------|--------------------------|
+| Клиент   | http://localhost:5173    |
+| API      | http://localhost:3000    |
+| Postgres | localhost:5432           |
+
+**Особенности Docker:**
+
+1. **Миграции** в образ `server` **не входят** и при старте **не выполняются** — один раз `yarn db:migrate` с хоста к порту `5432`.
+2. **`VITE_APP_API_URL`** подставляется при **сборке** клиента. Для портов по умолчанию подходит `http://localhost:3000` (fallback в [`constants.tsx`](../packages/client/src/constants.tsx)). При других портах — пересобрать client с нужным значением в `.env` на этапе `docker compose build`.
+3. В контейнере `server` **`NODE_ENV=production`** → **`LOCAL_PRAKTIKUM_AUTH_BYPASS` не работает**. В Docker удобно проверять **гостевую** тему; ветку «авторизован + `praktikum_user_id`» — через реальный логин в браузере или локальный `yarn dev:server` с bypass.
+4. Клиент (`5173`) и API (`3000`) — разные origin; нужны CORS + `credentials: 'include'` (в [`createApp.ts`](../packages/server/createApp.ts) настроено).
+
+**API в Docker:**
+
+```bash
+curl -s http://localhost:3000/api/ui/theme
+curl -s -c /tmp/c.txt -X PUT http://localhost:3000/api/ui/theme \
+  -H 'Content-Type: application/json' -d '{"theme":"light-3d"}'
+curl -s -b /tmp/c.txt http://localhost:3000/api/ui/theme
+```
+
+**UI в Docker:** тот же сценарий, что в §4.3, клиент по `http://localhost:5173`.
+
+### 4.6. Критерии «всё работает»
+
+| Сценарий | Ожидание |
+|----------|----------|
+| Гость, первый PUT | 200, cookie `anonymous_session_id`, тема в БД |
+| Гость, GET с cookie | та же тема |
+| Смена темы в UI | класс на `body` сразу; PUT с debounce ~400 ms |
+| F5 | тема из `localStorage` |
+| Логин + смена темы | PUT, строка с `praktikum_user_id` в БД |
+| PUT `theme: "bad"` | 400 |
+
+### 4.7. Типичные проблемы
+
+| Симптом | Что проверить |
+|---------|----------------|
+| **500** на `/api/ui/theme` | `yarn db:migrate`; Postgres доступен (`docker compose ps`) |
+| PUT не уходит из браузера | `VITE_APP_API_URL` в Network (хост запроса) |
+| Cookie не ставится | ответ PUT → Set-Cookie; для `localhost` реже блокируется |
+| Тема не уходит на сервер после логина | нет cookie Практикума; для dev — `LOCAL_PRAKTIKUM_AUTH_BYPASS` |
