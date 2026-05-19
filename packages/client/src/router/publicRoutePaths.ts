@@ -9,6 +9,7 @@ export const PUBLIC_ROUTE_PATHS: readonly string[] =
     '/sign-in',
     '/signin',
     '/logout',
+    '/oauth/yandex/callback',
     '/signup',
     '/register',
     '/premium',

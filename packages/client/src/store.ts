@@ -17,7 +17,7 @@ import userReducer from './slices/userSlice'
 // и задаем ему тип такой же как у стейта в сторе
 declare global {
   interface Window {
-    APP_INITIAL_STATE: RootState
+    APP_INITIAL_STATE?: RootState
   }
 }
 

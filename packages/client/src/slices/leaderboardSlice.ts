@@ -37,9 +37,13 @@ export const fetchLeaderboardThunk =
           limit,
         })
         return rows.map(mapLeaderboardRowToUi)
-      } catch (err: any) {
+      } catch (err: unknown) {
+        let errorMessage = 'Unknown error'
+        if (err instanceof Error) {
+          errorMessage = err.message
+        }
         return thunkAPI.rejectWithValue(
-          err.message || 'Unknown error'
+          errorMessage
         )
       }
     }
@@ -54,7 +58,6 @@ export const leaderboardSlice = createSlice({
       .addCase(
         fetchLeaderboardThunk.pending,
         state => {
-          state.data = []
           state.isLoading = true
           state.error = null
         }

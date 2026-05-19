@@ -1,4 +1,11 @@
+// 7.3 chores: лендинг — редирект OAuth с / только при совпадении state в session.
+
+import { useEffect } from 'react'
 import { Helmet } from 'react-helmet'
+import {
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
 import { Header } from '../components/Header'
@@ -18,6 +25,7 @@ import {
 } from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { useSelector } from '../store'
+import { YANDEX_OAUTH_STATE_KEY } from '../shared/api/oauthApi'
 // import { About } from '../components/Landing/About'
 // import { useSelector } from '../store';
 
@@ -26,6 +34,45 @@ export const LandingPage = () => {
   const { theme } = useLandingTheme()
   const user = useSelector(selectUser)
   const isAuthorized = Boolean(user)
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (location.pathname !== '/') return
+
+    const params = new URLSearchParams(
+      location.search
+    )
+    if (params.has('error')) {
+      navigate(
+        `/oauth/yandex/callback${location.search}`,
+        { replace: true }
+      )
+      return
+    }
+
+    if (params.has('code')) {
+      const stored =
+        window.sessionStorage.getItem(
+          YANDEX_OAUTH_STATE_KEY
+        )
+      const state = params.get('state')
+      if (
+        state != null &&
+        state !== '' &&
+        state === stored
+      ) {
+        navigate(
+          `/oauth/yandex/callback${location.search}`,
+          { replace: true }
+        )
+      }
+    }
+  }, [
+    location.pathname,
+    location.search,
+    navigate,
+  ])
 
   return (
     <div

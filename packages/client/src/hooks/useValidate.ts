@@ -4,8 +4,15 @@
  * Убрал устаревшее замыкание на первый render.
  * Поля смены пароля в профиле валидируются отдельно от других:
  * Убран стартовый doValidate для паролей из useEffect.
+ *
+ * syncValidationFromValues — полная проверка без режима submit (для данных с сервера и live-сводки).
+ * Ошибки полей показываются только после blur поля или после submit (getFieldError).
  **/
-import { useCallback, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 import {
   SignupFormValues,
   validationRules,
@@ -35,7 +42,7 @@ export const useValidate = () => {
   const [isSubmitted, setIsSubmitted] =
     useState(false)
   const [isValidateError, setIsValidateError] =
-    useState(true)
+    useState(false)
 
   const validate = useCallback(
     (values: SignupFormValues) => {
@@ -94,19 +101,36 @@ export const useValidate = () => {
     []
   )
 
+  useEffect(() => {
+    setIsValidateError(
+      (
+        Object.keys(
+          errors
+        ) as (keyof SignupFormValues)[]
+      ).some(k => Boolean(errors[k]))
+    )
+  }, [errors])
+
+  const syncValidationFromValues = useCallback(
+    (values: SignupFormValues) => {
+      const validationErrors = validate(values)
+      setErrors({ ...validationErrors })
+      setIsSubmitted(false)
+    },
+    [validate]
+  )
+
   const doValidate = useCallback(
     (
       values: SignupFormValues,
       callback?: () => void
     ) => {
       setIsSubmitted(true)
-      setIsValidateError(true)
       const validationErrors = validate(values)
       setErrors({ ...validationErrors })
       if (
         Object.keys(validationErrors).length === 0
       ) {
-        setIsValidateError(false)
         callback?.()
       }
     },
@@ -127,10 +151,18 @@ export const useValidate = () => {
             : '',
       })
 
-      setErrors(prev => ({
-        ...prev,
-        [field]: fieldErrors[field],
-      }))
+      setErrors(prev => {
+        const next: Partial<SignupFormValues> = {
+          ...prev,
+        }
+        const msg = fieldErrors[field]
+        if (msg) {
+          next[field] = msg
+        } else {
+          delete next[field]
+        }
+        return next
+      })
 
       return fieldErrors[field]
     },
@@ -138,11 +170,8 @@ export const useValidate = () => {
   )
 
   const handleFieldFocus = useCallback(
-    (field: keyof SignupFormValues) => {
-      setTouched(prev => ({
-        ...prev,
-        [field]: true,
-      }))
+    (_field: keyof SignupFormValues) => {
+      /* Валидация по ТЗ: blur + submit; focus не помечает поле как «тронутое». */
     },
     []
   )
@@ -175,12 +204,12 @@ export const useValidate = () => {
     setErrors({})
     setTouched({})
     setIsSubmitted(false)
-    setIsValidateError(true)
   }, [])
 
   return {
     errors,
     doValidate,
+    syncValidationFromValues,
     validateField,
     handleFieldFocus,
     handleFieldBlur,

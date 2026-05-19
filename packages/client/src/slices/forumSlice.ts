@@ -552,6 +552,102 @@ export const forumSlice = createSlice({
           }
         }
       )
+
+      .addCase(
+        toggleCommentReactionThunk.fulfilled.type,
+        (
+          state,
+          {
+            payload,
+          }: PayloadAction<{
+            commentId: number
+            items: ForumReactionAgg[]
+          }>
+        ) => {
+          state.reactionsByCommentId[
+            payload.commentId
+          ] = payload.items
+        }
+      )
+
+      .addCase(
+        updateTopicThunk.fulfilled.type,
+        (
+          state,
+          { payload }: PayloadAction<ForumTopic>
+        ) => {
+          state.currentTopic = payload
+          const idx = state.topics.findIndex(
+            t => t.id === payload.id
+          )
+          if (idx >= 0) {
+            state.topics[idx] = payload
+          }
+        }
+      )
+
+      .addCase(
+        deleteTopicThunk.fulfilled.type,
+        (
+          state,
+          { payload }: PayloadAction<number>
+        ) => {
+          state.topics = state.topics.filter(
+            t => t.id !== payload
+          )
+          if (
+            state.currentTopic?.id === payload
+          ) {
+            state.currentTopic = null
+            state.comments = []
+            state.reactionsByCommentId = {}
+          }
+        }
+      )
+
+      .addCase(
+        updateCommentThunk.fulfilled.type,
+        (
+          state,
+          { payload }: PayloadAction<ForumComment>
+        ) => {
+          state.comments = state.comments.map(c =>
+            c.id === payload.id ? payload : c
+          )
+        }
+      )
+
+      .addCase(
+        deleteCommentThunk.fulfilled.type,
+        (
+          state,
+          {
+            payload,
+          }: PayloadAction<{
+            topic: ForumTopic
+            comments: ForumComment[]
+            reactionsByCommentId: Record<
+              number,
+              ForumReactionAgg[]
+            >
+          }>
+        ) => {
+          state.currentTopic = payload.topic
+          state.comments = payload.comments
+          state.reactionsByCommentId =
+            payload.reactionsByCommentId
+        }
+      )
+
+      .addMatcher(
+        isForumRejectedWithValue,
+        (state, action) => {
+          state.isLoading = false
+          if (action.payload.status === 403) {
+            state.shouldRedirectToLogin = true
+          }
+        }
+      )
   },
 })
 
