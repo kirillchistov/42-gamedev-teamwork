@@ -7,7 +7,7 @@ WORKDIR /app
 FROM base AS builder
 
 COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --network-timeout 600000
 
 COPY . .
 
@@ -25,7 +25,7 @@ ENV PORT=80
 COPY package.json yarn.lock ./
 COPY packages/client/package.json ./packages/client/
 COPY packages/server/package.json ./packages/server/
-RUN yarn install --frozen-lockfile --production=true --ignore-scripts
+RUN yarn install --frozen-lockfile --production=true --ignore-scripts --network-timeout 600000
 
 COPY --from=builder /app/packages/client/dist ./packages/client/dist
 COPY --from=builder /app/packages/client/server ./packages/client/server

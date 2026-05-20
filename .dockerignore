@@ -1,0 +1,17 @@
+.git
+.idea
+.vscode
+.DS_Store
+
+.env
+.env.*
+!.env.sample
+
+node_modules
+**/node_modules
+dist
+coverage
+tmp
+
+lerna-debug.log
+package-lock.json
