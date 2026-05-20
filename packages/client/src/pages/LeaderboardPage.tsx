@@ -17,8 +17,11 @@ import {
   isLoadingLeaderboard,
 } from '../slices/leaderboardSlice'
 import { LeaderboardEntry } from '../shared/api/leaderboardConfig'
-import { fetchUserThunk } from '../slices/userSlice'
-import { selectUser } from '../slices/userSlice'
+import {
+  fetchUserThunk,
+  selectUser,
+  selectUserIsAuthChecked,
+} from '../slices/userSlice'
 import { usePage } from '../hooks/usePage'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { Button } from '../shared/ui'
@@ -382,8 +385,15 @@ export const initLeaderboardPage = ({
       })
     ),
   ]
-  if (!selectUser(state)) {
-    queue.push(dispatch(fetchUserThunk()))
+  if (
+    !selectUser(state) &&
+    !selectUserIsAuthChecked(state)
+  ) {
+    queue.push(
+      dispatch(fetchUserThunk()).catch(
+        () => undefined
+      )
+    )
   }
   return Promise.all(queue)
 }

@@ -107,6 +107,10 @@ export const SignupPage: React.FC = () => {
       ...prev,
       [name]: value,
     }))
+    signupValidate.handleFieldChange(
+      name as keyof SignupFormValues,
+      value
+    )
   }
 
   const handleYandexOAuth = async () => {

@@ -1,7 +1,10 @@
 # Форум: требования API и план реализации
 
 Текущее состояние:
-['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts) ходит на **`VITE_APP_API_URL`** + `/api/forum` (см. ['forumApi.ts'](../packages/client/src/shared/api/forumApi.ts)); демо-данные удалены. Типы ['forum.ts'](../packages/client/src/types/forum.ts), страницы ['ForumPage'](../packages/client/src/pages/ForumPage.tsx), ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx). Роуты '/forum', '/forum/:topicId' уже **за 'withAuthGuard'** — при отказе авторизации редирект на '/login' (['withAuthGuard.tsx'](../packages/client/src/hoc/withAuthGuard.tsx)). **403** от API форума: редирект на `/login` + подсказка (см. **§15**).
+['forumSlice.ts'](../packages/client/src/slices/forumSlice.ts) ходит на **`VITE_APP_API_URL`** + `/api/forum` (см. ['forumApi.ts'](../packages/client/src/shared/api/forumApi.ts)); демо-данные удалены. 
+Типы ['forum.ts'](../packages/client/src/types/forum.ts), страницы ['ForumPage'](../packages/client/src/pages/ForumPage.tsx), ['ForumTopicPage'](../packages/client/src/pages/ForumTopicPage.tsx). 
+Роуты '/forum', '/forum/:topicId' уже **за 'withAuthGuard'** — при отказе авторизации редирект на '/login' (['withAuthGuard.tsx'](../packages/client/src/hoc/withAuthGuard.tsx)). 
+**403** от API форума: редирект на `/login` + подсказка пользователю (см. **§15**).
 
 Бэкенд монорепы: ['packages/server'](../packages/server/index.ts) — Express, PostgreSQL через ['db.ts'](../packages/server/db.ts), проверка сессии Практикума в ['requirePraktikumAuth'](../packages/server/middleware/requirePraktikumAuth.ts) — **403** при отсутствии или недействительной сессии (как в спеке); при успехе доступен **`req.praktikumUser`** для форума. Роут **'/api/forum'** — по спеке.
 

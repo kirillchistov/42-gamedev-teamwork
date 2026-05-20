@@ -15,6 +15,10 @@ import React, {
 import clsx from 'clsx'
 import './match3.pcss'
 import {
+  MATCH3_PERF_PAUSE_EVENT,
+  type Match3PerfPauseDetail,
+} from '../../utils/performanceMetrics'
+import {
   createMatch3Game,
   type GameEndPayload,
   type GameHudState,
@@ -498,6 +502,15 @@ export const Match3Screen: React.FC<
     const game = gameRef.current
     if (!game) return
     game.setInputBlocked(isPauseOpen)
+  }, [isPauseOpen])
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent<Match3PerfPauseDetail>(
+        MATCH3_PERF_PAUSE_EVENT,
+        { detail: { paused: isPauseOpen } }
+      )
+    )
   }, [isPauseOpen])
 
   useEffect(() => {

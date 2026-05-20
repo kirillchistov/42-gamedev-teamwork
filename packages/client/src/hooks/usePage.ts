@@ -53,8 +53,10 @@ export const usePage = ({
       dispatch(
         setPageHasBeenInitializedOnServer(false)
       )
-      return
     }
+
+    // SSR часто не передаёт cookie в fetchData — стор пустой, но флаг SSR уже true.
+    // Клиентская initPage догружает данные (при навигации по SPA флаг false, дубля нет).
     void Promise.resolve(
       initPage({
         dispatch,

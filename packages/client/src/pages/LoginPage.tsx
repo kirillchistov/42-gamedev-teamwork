@@ -3,7 +3,11 @@
  * чтобы починить 400 «User already in system» (см. loginThunk).
  * При уже залогиненном пользователе на /login и /signup — logout + повторная проверка /auth/user.
  */
-import React, { FormEvent, useState } from 'react'
+import React, {
+  FormEvent,
+  useEffect,
+  useState,
+} from 'react'
 import { Helmet } from 'react-helmet'
 import {
   Link,
@@ -42,6 +46,10 @@ import {
   YANDEX_OAUTH_STATE_KEY,
 } from '../shared/api/oauthApi'
 import { consumeForumAuthRedirect } from '../shared/forumAuthRedirect'
+import {
+  consumeAuthLoginRedirect,
+  peekAuthLoginRedirect,
+} from '../shared/authLoginRedirect'
 
 export const LoginPage: React.FC = () => {
   usePage({ initPage: initLoginPage })
@@ -50,6 +58,7 @@ export const LoginPage: React.FC = () => {
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const user = useSelector(selectUser)
   const isAuthChecked = useSelector(
     selectUserIsAuthChecked
   )
@@ -66,6 +75,24 @@ export const LoginPage: React.FC = () => {
   const [oauthError, setOauthError] = useState<
     string | null
   >(null)
+
+  useEffect(() => {
+    if (!user) return
+    const returnPath =
+      consumeAuthLoginRedirect() ??
+      (
+        location.state as {
+          from?: { pathname?: string }
+        } | null
+      )?.from?.pathname
+    if (
+      returnPath &&
+      returnPath !== '/login' &&
+      !returnPath.startsWith('/sign')
+    ) {
+      navigate(returnPath, { replace: true })
+    }
+  }, [user, navigate, location.state])
 
   const handleYandexOAuth = async () => {
     setIsOAuthLoading(true)
@@ -169,9 +196,14 @@ export const LoginPage: React.FC = () => {
                   name="login"
                   placeholder="login"
                   value={login}
-                  onChange={e =>
-                    setLogin(e.target.value)
-                  }
+                  onChange={e => {
+                    const v = e.target.value
+                    setLogin(v)
+                    loginValidate.handleFieldChange(
+                      'login',
+                      v
+                    )
+                  }}
                   onBlur={e =>
                     loginValidate.handleFieldBlur(
                       'login',
@@ -194,9 +226,14 @@ export const LoginPage: React.FC = () => {
                   name="password"
                   placeholder="Пароль"
                   value={password}
-                  onChange={e =>
-                    setPassword(e.target.value)
-                  }
+                  onChange={e => {
+                    const v = e.target.value
+                    setPassword(v)
+                    loginValidate.handleFieldChange(
+                      'password',
+                      v
+                    )
+                  }}
                   onBlur={e =>
                     loginValidate.handleFieldBlur(
                       'password',
@@ -278,6 +315,8 @@ export const initLoginPage = ({
 }: PageInitArgs) => {
   const skipLogoutForForum =
     consumeForumAuthRedirect()
+  const skipLogoutForAuthRedirect =
+    peekAuthLoginRedirect() != null
 
   const ensureGuest = async () => {
     if (!selectUserIsAuthChecked(getState())) {
@@ -287,7 +326,8 @@ export const initLoginPage = ({
     }
     if (
       selectUser(getState()) &&
-      !skipLogoutForForum
+      !skipLogoutForForum &&
+      !skipLogoutForAuthRedirect
     ) {
       await dispatch(logoutThunk())
         .unwrap()

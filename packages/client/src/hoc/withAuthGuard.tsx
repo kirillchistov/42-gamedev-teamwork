@@ -14,6 +14,7 @@ import {
   useLocation,
 } from 'react-router-dom'
 import { useAuthGuard } from '../hooks/useAuthGuard'
+import { markAuthLoginRedirect } from '../shared/authLoginRedirect'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import {
   ARENA_BG_CHANGED_EVENT,
@@ -96,7 +97,15 @@ export function withAuthGuard<P extends object>(
     }
 
     if (status === 'denied') {
-      return <Navigate to="/login" replace />
+      const returnPath = `${location.pathname}${location.search}`
+      markAuthLoginRedirect(returnPath)
+      return (
+        <Navigate
+          to="/login"
+          replace
+          state={{ from: location }}
+        />
+      )
     }
 
     return (

@@ -5,10 +5,9 @@ on:
     branches:
       - main
       - dev
-      - sprint_6
       - sprint_7
-      - feature/7.0-improve-visuals
-      - feature/7.2-redux-router-ssr
+      - sprint_8
+      - feature/8.10-demo
   workflow_dispatch:
 
 permissions:

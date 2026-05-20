@@ -287,6 +287,11 @@ export const userSlice = createSlice({
       state.isLoading = false
       state.isAuthChecked = true
     },
+    /** После SSR без cookie сессия помечена проверенной без user — перепроверяем на клиенте. */
+    resetAuthChecked: state => {
+      state.isAuthChecked = false
+      state.isLoading = false
+    },
     patchUserProfile: (
       state,
       action: PayloadAction<Partial<User>>
@@ -467,6 +472,7 @@ export const userSlice = createSlice({
 export const {
   setUser,
   clearUser,
+  resetAuthChecked,
   patchUserProfile,
   updateUserAvatar,
 } = userSlice.actions

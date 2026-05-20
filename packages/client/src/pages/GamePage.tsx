@@ -83,6 +83,7 @@ import {
   markGameStart,
   markGameEndAndMeasure,
   startPerformanceMonitoring,
+  type PerformanceMonitoringHandle,
 } from '../utils/performanceMetrics'
 
 // 2DO: разобраться с алиасами @ для jest
@@ -500,9 +501,10 @@ export const GamePage: React.FC = () => {
     }, [])
 
   // ===== PERFORMANCE MONITORING =====
-  const perfMonitorRef = useRef<{
-    stop: () => void
-  } | null>(null)
+  const perfMonitorRef =
+    useRef<PerformanceMonitoringHandle | null>(
+      null
+    )
   // ===== END PERFORMANCE MONITORING =====
 
   useEffect(() => {
@@ -779,18 +781,21 @@ export const GamePage: React.FC = () => {
 
   // ===== PERFORMANCE MONITORING - MOUNT/UNMOUNT =====
   useEffect(() => {
-    console.log('[Performance] GamePage mounted')
-
     perfMonitorRef.current =
       startPerformanceMonitoring()
 
     return () => {
-      console.log(
-        '[Performance] GamePage unmounted'
-      )
-      if (perfMonitorRef.current) {
-        perfMonitorRef.current.stop()
+      const monitor = perfMonitorRef.current
+      perfMonitorRef.current = null
+      try {
+        monitor?.flushSummary()
+      } catch (e) {
+        console.warn(
+          '[Performance] flushSummary failed',
+          e
+        )
       }
+      monitor?.stop()
     }
   }, [])
   // ===== END PERFORMANCE MONITORING =====

@@ -700,9 +700,12 @@ export const ProfilePage: React.FC = () => {
   )
 }
 
-export const initProfilePage = (
-  _args: PageInitArgs
-) => {
-  // позже здесь будет загрузка данных профиля из API
+export const initProfilePage = ({
+  dispatch,
+  state,
+}: PageInitArgs) => {
+  if (!selectUser(state)) {
+    return dispatch(fetchUserThunk())
+  }
   return Promise.resolve()
 }

@@ -29,6 +29,11 @@ import {
 } from '../slices/forumSlice'
 import type { ForumRejectPayload } from '../slices/forumSlice'
 import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
+import {
+  fetchUserThunk,
+  selectUser,
+  selectUserIsAuthChecked,
+} from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 
 export const ForumPage: React.FC = () => {
@@ -227,7 +232,22 @@ export const ForumPage: React.FC = () => {
 
 export const initForumPage = async ({
   dispatch,
+  state,
+  getState,
 }: PageInitArgs) => {
+  if (
+    !selectUser(state) &&
+    !selectUserIsAuthChecked(state)
+  ) {
+    await dispatch(fetchUserThunk())
+      .unwrap()
+      .catch(() => undefined)
+  }
+
+  if (!selectUser(getState())) {
+    return
+  }
+
   try {
     await dispatch(fetchTopicsThunk()).unwrap()
   } catch {
