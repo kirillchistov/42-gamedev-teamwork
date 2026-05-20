@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Миграции через сеть контейнера postgres (обход конфликта с Homebrew PG на :5432).
 set -euo pipefail
+# 8.10 demo MCR (sprint_8):
+# # Runs Sequelize migrations from an isolated container attached to the Postgres
+# # container network. Useful when localhost:5432 is owned by another Postgres.
+# set -euo pipefail
+
 cd "$(dirname "$0")/.."
 
 docker compose up -d postgres
@@ -33,3 +38,16 @@ docker run --rm \
     export PATH="/repo/packages/server/node_modules/.bin:/repo/node_modules/.bin:$PATH"
     npx sequelize-cli db:migrate --config config/database.cjs
   '
+
+# 8.10 demo MCR (sprint_8 — docker compose run + фиксированное имя сети):
+# docker compose run --rm --no-deps \
+#   -v "${PWD}:/repo" \
+#   -w /repo/packages/server \
+#   --network "container:cosmic-match-postgres" \
+#   ...
+#   bash -lc '
+#     set -euo pipefail
+#     ...
+#     export PATH="/repo/node_modules/.bin:$PATH"
+#     sequelize-cli db:migrate --config config/database.cjs
+#   '

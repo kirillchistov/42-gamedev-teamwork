@@ -33,6 +33,11 @@ export type ResolvePraktikumUserResult =
  * Проверка cookie-сессии Практикума (GET /auth/user), без ответа клиенту.
  * Используется в requirePraktikumAuth и attachPraktikumUser.
  */
+// 8.10 demo MCR (sprint_8):
+// /**
+//  * Опциональная проверка сессии Практикума (без ответа клиенту).
+//  * Для attachPraktikumUser и requirePraktikumAuth.
+//  */
 export async function resolvePraktikumUser(
   req: Request
 ): Promise<ResolvePraktikumUserResult> {

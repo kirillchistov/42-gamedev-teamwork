@@ -62,6 +62,10 @@ function nodeProxy(nodeApiTarget, mountPath) {
         changeOrigin: true,
         proxyTimeout: 30000,
         timeout: 30000,
+        // 8.10 demo MCR (sprint_8):
+        // // http-proxy-middleware получает path уже без mountPath от Express.
+        // proxyTimeout: (не задано)
+        // timeout: (не задано)
     });
 }
 function registerApiProxy(app) {

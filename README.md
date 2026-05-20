@@ -72,16 +72,22 @@
 Все ваши PR будут автоматически деплоиться на vercel. URL вам предоставит деплоящий бот
 
 ## Production окружение в докере
-Перед первым запуском выполните `node init.js`
+Перед первым запуском выполните:
 
+```bash
+node init.js
+yarn install
+```
 
-`docker compose up` - запустит три сервиса
-1. nginx, раздающий клиентскую статику (client)
-2. node, ваш сервер (server)
-3. postgres, вашу базу данных (postgres)
+Проверьте `.env`: для Docker Postgres нужен пользователь `postgres`, пароль из `POSTGRES_PASSWORD`, база `postgres`, `POSTGRES_HOST=localhost` для миграций с хоста. Если порт `5432` занят локальным PostgreSQL, поменяйте `POSTGRES_PORT` на свободный порт.
 
-Если вам понадобится только один сервис, просто уточните какой в команде
-`docker compose up {sevice_name}`, например `docker compose up server`
+`docker compose up` запустит четыре сервиса:
+1. `postgres` — PostgreSQL.
+2. `migrate` — одноразовый запуск Sequelize-миграций после healthy Postgres.
+3. `server` — Node/Express API, стартует после успешных миграций.
+4. `client` — Node SSR-клиент, стартует после healthy API-сервера.
+
+Клиент доступен на `http://localhost:${CLIENT_PORT:-5173}`, API — на `http://localhost:${SERVER_PORT:-3000}`. Если нужно поднять только часть стека: `docker compose up server` или `docker compose up postgres`.
 
 ## Цели проекта
 
