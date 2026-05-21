@@ -2,8 +2,8 @@ import type { Request, Response } from 'express'
 import { Router } from 'express'
 import type { PraktikumUser } from '../middleware/praktikumUser'
 import {
-  col,
   fn,
+  literal,
   Op,
   UniqueConstraintError,
   ValidationError,
@@ -64,9 +64,20 @@ function parseOffsetParam(raw: unknown): number {
   return Math.floor(n)
 }
 
+type TopicCommentStats = {
+  commentsCount: number
+  repliesCount: number
+}
+
+const EMPTY_TOPIC_COMMENT_STATS: TopicCommentStats =
+  {
+    commentsCount: 0,
+    repliesCount: 0,
+  }
+
 function topicPayload(
   row: Topic,
-  commentsCount: number,
+  stats: TopicCommentStats,
   req: Request
 ) {
   const user = req.praktikumUser
@@ -79,7 +90,8 @@ function topicPayload(
     authorPraktikumId: row.authorPraktikumId,
     createdAt: row.createdAt.toISOString(),
     content: row.content,
-    commentsCount,
+    commentsCount: stats.commentsCount,
+    repliesCount: stats.repliesCount,
     viewerIsModerator,
   }
 }
@@ -96,17 +108,34 @@ function commentPayload(row: Comment) {
   }
 }
 
-async function commentCountsForTopicIds(
+async function commentStatsForTopicIds(
   ids: number[]
-): Promise<Map<number, number>> {
-  const map = new Map<number, number>()
+): Promise<Map<number, TopicCommentStats>> {
+  const map = new Map<number, TopicCommentStats>()
   if (ids.length === 0) {
     return map
   }
   const rows = await Comment.findAll({
     attributes: [
       'topicId',
-      [fn('COUNT', col('Comment.id')), 'cnt'],
+      [
+        fn(
+          'SUM',
+          literal(
+            'CASE WHEN parent_id IS NULL THEN 1 ELSE 0 END'
+          )
+        ),
+        'commentsCount',
+      ],
+      [
+        fn(
+          'SUM',
+          literal(
+            'CASE WHEN parent_id IS NOT NULL THEN 1 ELSE 0 END'
+          )
+        ),
+        'repliesCount',
+      ],
     ],
     where: {
       topicId: { [Op.in]: ids },
@@ -117,11 +146,34 @@ async function commentCountsForTopicIds(
   for (const r of rows) {
     const rec = r as unknown as {
       topicId: number
-      cnt: string
+      commentsCount: string
+      repliesCount: string
     }
-    map.set(rec.topicId, Number(rec.cnt) || 0)
+    map.set(rec.topicId, {
+      commentsCount:
+        Number(rec.commentsCount) || 0,
+      repliesCount: Number(rec.repliesCount) || 0,
+    })
   }
   return map
+}
+
+async function commentStatsForTopic(
+  topicId: number
+): Promise<TopicCommentStats> {
+  const [commentsCount, repliesCount] =
+    await Promise.all([
+      Comment.count({
+        where: { topicId, parentId: null },
+      }),
+      Comment.count({
+        where: {
+          topicId,
+          parentId: { [Op.ne]: null },
+        },
+      }),
+    ])
+  return { commentsCount, repliesCount }
 }
 
 /** GET /topics — список (limit default 20; offset или page). */
@@ -153,14 +205,15 @@ router.get('/topics', async (req, res) => {
     })
 
     const ids = rows.map(t => t.id)
-    const countMap =
-      await commentCountsForTopicIds(ids)
+    const statsMap =
+      await commentStatsForTopicIds(ids)
 
     res.json(
       rows.map(t =>
         topicPayload(
           t,
-          countMap.get(t.id) ?? 0,
+          statsMap.get(t.id) ??
+            EMPTY_TOPIC_COMMENT_STATS,
           req
         )
       )
@@ -193,13 +246,11 @@ router.get(
         return
       }
 
-      const commentsCount = await Comment.count({
-        where: { topicId },
-      })
-
-      res.json(
-        topicPayload(topic, commentsCount, req)
+      const stats = await commentStatsForTopic(
+        topicId
       )
+
+      res.json(topicPayload(topic, stats, req))
     } catch {
       res
         .status(500)
@@ -244,7 +295,13 @@ router.post('/topics', async (req, res) => {
 
     res
       .status(201)
-      .json(topicPayload(topic, 0, req))
+      .json(
+        topicPayload(
+          topic,
+          EMPTY_TOPIC_COMMENT_STATS,
+          req
+        )
+      )
   } catch (e) {
     if (e instanceof ValidationError) {
       res.status(400).json({
@@ -708,12 +765,10 @@ router.patch(
 
       await topic.update(patch)
       await topic.reload()
-      const commentsCount = await Comment.count({
-        where: { topicId },
-      })
-      res.json(
-        topicPayload(topic, commentsCount, req)
+      const stats = await commentStatsForTopic(
+        topicId
       )
+      res.json(topicPayload(topic, stats, req))
     } catch (e) {
       if (e instanceof ValidationError) {
         res.status(400).json({

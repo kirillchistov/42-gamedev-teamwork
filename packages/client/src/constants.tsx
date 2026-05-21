@@ -1,7 +1,5 @@
 import './client.d'
 
-const DEFAULT_PRAKTIKUM_API =
-  'https://ya-praktikum.tech/api/v2'
 const DEFAULT_NODE_API = 'http://localhost:3000'
 
 function trimTrailingSlash(
@@ -30,21 +28,23 @@ function readAppApiUrl(): string {
   return DEFAULT_NODE_API
 }
 
-function readPraktikumApiBase(): string {
-  if (isBrowserBundle()) {
-    return '/api/v2'
-  }
-  const raw =
-    process.env.PRAKTIKUM_API_URL?.trim()
-  if (raw) {
-    return trimTrailingSlash(raw)
-  }
-  return DEFAULT_PRAKTIKUM_API
-}
+const isBrowser = typeof window !== 'undefined'
 
-/** Базовый URL нашего Node API (friends, форум). В браузере — относительный путь. */
-export const SERVER_HOST = readAppApiUrl()
+/**
+ * Базовый URL нашего Node API (friends, форум).
+ * В браузере — same-origin (пустая строка), запросы идут через SSR apiProxy.
+ * На SSR — VITE_APP_API_URL или localhost:3000.
+ */
+export const SERVER_HOST = isBrowser
+  ? ''
+  : readAppApiUrl()
+
 export const DEFAULT_AVATAR_PATH =
   '/avatar-transp.png'
-export const BASE_URL = readPraktikumApiBase()
+
+/** Практикум: в браузере — /api/v2 через прокси клиента; на SSR — прямой origin. */
+export const BASE_URL = isBrowser
+  ? '/api/v2'
+  : 'https://ya-praktikum.tech/api/v2'
+
 export const API_RESOURCES_URL = `${BASE_URL}/resources`

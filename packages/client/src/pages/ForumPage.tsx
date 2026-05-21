@@ -28,8 +28,8 @@ import {
   clearForumAuthRedirect,
 } from '../slices/forumSlice'
 import type { ForumRejectPayload } from '../slices/forumSlice'
-import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
+import { useLandingTheme } from '../contexts/LandingThemeContext'
 
 export const ForumPage: React.FC = () => {
   const { theme } = useLandingTheme()
@@ -55,8 +55,8 @@ export const ForumPage: React.FC = () => {
     if (!shouldRedirectToLogin) {
       return
     }
-    dispatch(clearForumAuthRedirect())
     markForumAuthRedirect()
+    dispatch(clearForumAuthRedirect())
     navigate('/login', {
       replace: true,
       state: { fromForum: true },
@@ -184,7 +184,7 @@ export const ForumPage: React.FC = () => {
             <>
               <div className="forum-list__header">
                 <span>Форумы</span>
-                <span>Темы</span>
+                <span>Комментарии</span>
                 <span>Ответы</span>
               </div>
               <div className="forum-list">
@@ -207,10 +207,10 @@ export const ForumPage: React.FC = () => {
                       </div>
                     </div>
                     <span className="forum-list__count forum-list__count--accent">
-                      —
+                      {topic.commentsCount}
                     </span>
                     <span className="forum-list__count">
-                      {topic.commentsCount}
+                      {topic.repliesCount}
                     </span>
                   </Link>
                 ))}
