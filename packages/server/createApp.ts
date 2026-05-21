@@ -31,7 +31,16 @@ export function createApp(): express.Express {
     requirePraktikumAuth,
     forumRouter
   )
-  app.use(express.json())
+
+  app.get('/health', (_, res) => {
+    res.status(200).json({
+      ok: true,
+    })
+  })
+
+  app.get('/', (_, res) => {
+    res.json('👋 Howdy from the server :)')
+  })
 
   const protectedRouter = express.Router()
   protectedRouter.use(requirePraktikumAuth)
@@ -54,10 +63,6 @@ export function createApp(): express.Express {
   })
 
   app.use(protectedRouter)
-
-  app.get('/', (_, res) => {
-    res.json('👋 Howdy from the server :)')
-  })
 
   return app
 }
