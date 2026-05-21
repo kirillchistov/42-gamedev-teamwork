@@ -5,15 +5,187 @@
 
 **Длительность:** ~12 минут (таблица «Пошаговый сценарий»).
 
-**Подготовка к демо**
+**Текст для устного рассказа:** [sprint-7-8-demo-talk.md](sprint-7-8-demo-talk.md).
 
-1. `docker compose up -d postgres` — Postgres на порту **5433** (см. `.env`).
-2. `yarn db:migrate` (или `yarn db:migrate:docker`, если миграции только из контейнера) — таблицы форума и тем UI.
-3. Опционально: `yarn workspace server db:seed` — демо-тема форума.
-4. `yarn dev` — SSR-клиент **9000** (`CLIENT_PORT`), API **3000** (`SERVER_PORT` в `.env`; не открывать «голый» Vite без Express-прокси).
-5. Браузер: **http://localhost:9000**; DevTools (Network, Console, Application → cookies).
-6. Тестовый аккаунт Практикума: `testuser12345` / `Testuser12345`.
-7. IDE: ветка с merge 7.x / 8.x; вкладки `entry-server.tsx`, `apiProxy.ts`, `forumRouter.ts`, `createApp.ts`.
+---
+
+## Сборка и запуск (спринты 7–8)
+
+Общие шаги для всех режимов:
+
+```bash
+cp .env.sample .env   # при первом запуске
+yarn bootstrap        # обязательно после clone / смены ветки
+```
+
+Тестовый аккаунт Практикума: `testuser12345` / `Testuser12345`.
+
+**Карта портов (чтобы не путаться):**
+
+| Сервис | Переменная | Dev (рекомендуемый) | Docker Compose |
+| --- | --- | --- | --- |
+| UI + SSR + прокси | `CLIENT_PORT` | **9000** | **9000** (хост → контейнер :80) |
+| Node API | `SERVER_PORT` | **3000** | **3000** |
+| Postgres (хост) | `POSTGRES_PORT` | **5433** | **5433** → :5432 в контейнере |
+
+**Важно:** UI открывать только на порту **клиента** (9000). На `localhost:3000` — только API, без прокси `/api/v2` и без SSR.
+
+---
+
+### 1) Только dev (без Docker для app/server)
+
+Подходит для ежедневной разработки. Postgres можно поднять в Docker (только БД) или локально.
+
+**1.1. Postgres**
+
+```bash
+# Вариант A — только БД в Docker (удобно на macOS, порт 5433)
+docker compose up -d postgres
+yarn db:migrate
+# при конфликте :5432 с Homebrew PG:
+# yarn db:migrate:docker
+
+# Вариант B — локальный PostgreSQL на :5432
+# POSTGRES_PORT=5432 в .env, brew services stop postgresql@* при конфликте
+```
+
+**1.2. `.env` (минимум)**
+
+```env
+CLIENT_PORT=9000
+SERVER_PORT=3000
+POSTGRES_PORT=5433
+VITE_APP_API_URL=http://localhost:3000
+EXTERNAL_SERVER_URL=http://localhost:3000
+INTERNAL_SERVER_URL=http://server:3000
+PRAKTIKUM_API_URL=https://ya-praktikum.tech
+VITE_YANDEX_OAUTH_REDIRECT_URI=http://localhost:9000
+```
+
+`INTERNAL_SERVER_URL=http://server:…` в dev на хосте не резолвится — `apiProxy` подставит `EXTERNAL_SERVER_URL` (см. [`apiProxy.ts`](../packages/client/server/apiProxy.ts)).
+
+**1.3. Запуск**
+
+```bash
+# из корня — клиент (SSR) + сервер параллельно
+yarn dev
+
+# или в двух терминалах:
+yarn dev:server
+yarn dev:client
+```
+
+**1.4. Проверка**
+
+- UI: **http://localhost:9000**
+- API health: **http://localhost:3000/health** (или через прокси не нужен)
+- Опционально: `yarn workspace server db:seed`, `yarn workspace server test`
+
+---
+
+### 2) Только Docker (полный стек)
+
+Всё в контейнерах: postgres → migrate → server → client (SSR внутри client-образа).
+
+**2.1. Подготовка**
+
+```bash
+node init.js          # при первом docker-запуске
+yarn install
+cp .env.sample .env
+```
+
+В `.env` для Docker на хосте:
+
+```env
+CLIENT_PORT=9000
+SERVER_PORT=3000
+POSTGRES_PORT=5433
+```
+
+**2.2. Запуск**
+
+```bash
+docker compose up --build
+# или по шагам:
+# docker compose up -d postgres
+# docker compose up migrate server client
+```
+
+**2.3. Проверка**
+
+- UI: **http://localhost:9000** (не 5173 — в compose проброс `CLIENT_PORT:80`)
+- `docker compose ps` — postgres healthy, server healthy
+- Миграции уже в сервисе `migrate` при первом `up`
+
+Остановка: `docker compose down` (данные Postgres в volume `pgdata` сохраняются).
+
+---
+
+### 3) Параллельно: dev на хосте + Docker (без конфликта портов)
+
+Сценарий: **UI/API в dev на хосте**, **Postgres только в Docker** (или наоборот — отдельный API в Docker). Главное — **не дублировать один и тот же порт**.
+
+**Рекомендуемая схема «dev UI + Docker PG»:**
+
+| Что | Где | Порт |
+| --- | --- | --- |
+| Postgres | Docker `postgres` | хост **5433** |
+| Node API | `yarn dev:server` | **3000** |
+| SSR-клиент | `yarn dev:client` | **9000** |
+
+```bash
+docker compose up -d postgres
+yarn db:migrate
+yarn dev
+```
+
+**Схема «Docker API + dev только client»** (если нужно проверить production-образ server):
+
+| Что | Где | Порт |
+| --- | --- | --- |
+| Postgres + API | `docker compose up -d postgres server` | PG **5433**, API **3000** |
+| SSR-клиент | `yarn dev:client` | **9000** |
+
+В `.env` для клиента на хосте:
+
+```env
+CLIENT_PORT=9000
+EXTERNAL_SERVER_URL=http://localhost:3000
+VITE_APP_API_URL=http://localhost:3000
+```
+
+**Не запускать одновременно:** `docker compose up client` и `yarn dev:client` на одном `CLIENT_PORT=9000`.  
+**Не запускать:** `docker compose up server` и `yarn dev:server` оба на `3000`.
+
+**Проверка после старта:** `lsof -i :9000 -i :3000 -i :5433` — каждый порт занят не более чем одним процессом.
+
+---
+
+## GitHub Pages (статический деплой)
+
+Workflow: [`.github/workflows/gh-pages.yml`](../.github/workflows/gh-pages.yml). Собирается **только Vite-клиент** (`yarn build`), **без** Express SSR и **без** `apiProxy`.
+
+**Почему ломался login:** запросы шли на `https://…github.io/api/v2/…` — у Pages нет прокси → **404/405**. Service Worker дополнительно перехватывал `/api/*`.
+
+**Что сделано в коде (ветка `feature/8.10-demo`):**
+
+- `VITE_STATIC_DEPLOY=gh-pages` → в браузере `BASE_URL = https://ya-praktikum.tech/api/v2` (прямой CORS).
+- `VITE_YANDEX_OAUTH_REDIRECT_URI` с путём репозитория: `https://<user>.github.io/<repo>`.
+- `buildYandexRedirectUri()` учитывает `import.meta.env.BASE_URL` (подпапка репозитория).
+- SW не перехватывает пути `/api/*`.
+
+**Ограничения Pages:** форум (`/api/forum`), темы на Node (`PUT /api/ui/theme`), friends — **нужен живой server**; на Pages работают в основном **auth, OAuth, лидерборд, игра** через API Практикума.
+
+**После merge:** перезапустить workflow Deploy client to GitHub Pages. В OAuth Яндекса / Практикуме whitelist: origin `https://kirillchistov.github.io/42-gamedev-teamwork` (с путём репозитория, без завершающего `/`).
+
+---
+
+## Подготовка к демо (краткий чеклист)
+
+1. Режим **1)** или **2)** выше — полный функционал 7–8.
+2. Браузер: **http://localhost:9000**; DevTools → Network, Cookies.
+3. IDE: `entry-server.tsx`, `apiProxy.ts`, `forumRouter.ts`, `createApp.ts`.
 
 **Порядок колонок в таблицах задач:** кратко функционал → ключевые файлы → что открыть в браузере.
 

@@ -18,6 +18,17 @@ function isBrowserBundle(): boolean {
   )
 }
 
+/** Статический деплой (GitHub Pages): нет Express-прокси, только прямой API Практикума. */
+function isStaticGhPagesDeploy(): boolean {
+  if (!isBrowserBundle()) {
+    return false
+  }
+  return (
+    import.meta.env.VITE_STATIC_DEPLOY ===
+    'gh-pages'
+  )
+}
+
 /** Без import.meta: Jest/ts-jest собирают в CJS и не могут выполнить import.meta в Node. */
 function readAppApiUrl(): string {
   if (isBrowserBundle()) {
@@ -32,12 +43,19 @@ function readAppApiUrl(): string {
 
 function readPraktikumApiBase(): string {
   if (isBrowserBundle()) {
+    if (isStaticGhPagesDeploy()) {
+      return DEFAULT_PRAKTIKUM_API
+    }
     return '/api/v2'
   }
   const raw =
     process.env.PRAKTIKUM_API_URL?.trim()
   if (raw) {
-    return trimTrailingSlash(raw)
+    const normalized = trimTrailingSlash(raw)
+    if (normalized.endsWith('/api/v2')) {
+      return normalized
+    }
+    return `${normalized}/api/v2`
   }
   return DEFAULT_PRAKTIKUM_API
 }
@@ -45,9 +63,9 @@ function readPraktikumApiBase(): string {
 const isBrowser = typeof window !== 'undefined'
 
 /**
- * Базовый URL нашего Node API (friends, форум).
- * В браузере — same-origin (пустая строка), запросы идут через SSR apiProxy.
- * На SSR — VITE_APP_API_URL или localhost:3000.
+ * Базовый URL нашего Node API (friends, форум, /api/ui).
+ * В браузере на SSR — same-origin (пустая строка), запросы идут через apiProxy.
+ * На GitHub Pages — пусто: форум/темы на Node без отдельного бэкенда недоступны.
  */
 export const SERVER_HOST = isBrowser
   ? ''
@@ -56,9 +74,11 @@ export const SERVER_HOST = isBrowser
 export const DEFAULT_AVATAR_PATH =
   '/avatar-transp.png'
 
-/** Практикум: в браузере — /api/v2 через прокси клиента; на SSR — прямой origin. */
-export const BASE_URL = isBrowser
-  ? '/api/v2'
-  : 'https://ya-praktikum.tech/api/v2'
+/** Практикум: прокси /api/v2 локально; на GH Pages — прямой origin. */
+export const BASE_URL = readPraktikumApiBase()
 
 export const API_RESOURCES_URL = `${BASE_URL}/resources`
+
+/** true на GitHub Pages — UI без Node API (форум, PUT /api/ui/theme). */
+export const IS_STATIC_GH_PAGES_DEPLOY =
+  isStaticGhPagesDeploy()

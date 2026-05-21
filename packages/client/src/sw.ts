@@ -50,6 +50,11 @@ self.addEventListener('fetch', event => {
   const { request } = event
   const url = new URL(request.url)
 
+  // API same-origin на SSR; на GH Pages — не перехватываем (иначе 404/405 из статики)
+  if (url.pathname.startsWith('/api/')) {
+    return
+  }
+
   // Пропускаем не-GET запросы
   if (request.method !== 'GET') {
     return

@@ -38,6 +38,9 @@ jobs:
       - name: Build client
         env:
           GITHUB_PAGES_BASE_URL: /${{ github.event.repository.name }}/
+          # Статика без SSR-прокси: auth/leaderboard → ya-praktikum.tech (CORS + cookie)
+          VITE_STATIC_DEPLOY: gh-pages
+          VITE_YANDEX_OAUTH_REDIRECT_URI: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: cd packages/client && yarn build
 
       - name: SPA fallback for deep links

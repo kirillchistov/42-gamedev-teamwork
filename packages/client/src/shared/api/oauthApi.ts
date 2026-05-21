@@ -58,13 +58,20 @@ export function buildYandexRedirectUri(): string {
   }
 
   if (typeof window !== 'undefined') {
-    return window.location.origin.replace(
+    const origin = window.location.origin.replace(
       /\/+$/,
       ''
     )
+    const base = String(
+      import.meta.env.BASE_URL || '/'
+    ).replace(/\/+$/, '')
+    if (base && base !== '/') {
+      return `${origin}${base}`
+    }
+    return origin
   }
 
-  return 'http://localhost:3000'
+  return 'http://localhost:9000'
 }
 
 export async function getYandexServiceId(
