@@ -55,6 +55,7 @@ const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const static_page_1 = require("./static-page");
 const apiProxy_1 = require("./apiProxy");
+const csp_1 = require("./csp");
 const clientPath = path_1.default.join(__dirname, '..');
 const isDev = process.env.NODE_ENV === 'development';
 // Не 3000 (API) и не 5000 (часто AirPlay на macOS). 9000 — в whitelist OAuth Практикума.
@@ -161,6 +162,7 @@ function registerErrorHandler(app) {
 async function createServer() {
     const app = (0, express_1.default)();
     const portCandidates = resolvePortCandidates();
+    (0, csp_1.registerCspMiddleware)(app);
     app.use((0, cookie_parser_1.default)());
     (0, apiProxy_1.registerApiProxy)(app);
     let vite;
@@ -187,7 +189,7 @@ async function createServer() {
                 .replace('<!--ssr-styles-->', styleTags)
                 .replace(`<!--ssr-helmet-->`, `${helmet.meta.toString()} ${helmet.title.toString()} ${helmet.link.toString()}`)
                 .replace(`<!--ssr-outlet-->`, appHtml)
-                .replace(`<!--ssr-initial-state-->`, `<script>window.APP_INITIAL_STATE = ${(0, serialize_javascript_1.default)(initialState, {
+                .replace(`<!--ssr-initial-state-->`, `<script nonce="${(0, csp_1.getCspNonce)(res)}">window.APP_INITIAL_STATE = ${(0, serialize_javascript_1.default)(initialState, {
                 isJSON: true,
             })}</script>`);
             // Завершаю запрос и отдаю HTML-страницу

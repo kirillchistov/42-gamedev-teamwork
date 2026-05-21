@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import dotenv from 'dotenv'
 import path from 'path'
+import { buildGhPagesCspMetaContent } from './server/cspPolicy'
 
 dotenv.config({
   path: path.resolve(__dirname, '../../.env'),
@@ -29,6 +30,10 @@ export default defineConfig(({ mode }) => {
     env.VITE_APP_API_URL ??
     process.env.VITE_APP_API_URL ??
     ''
+  const isGhPagesDeploy =
+    (env.VITE_STATIC_DEPLOY ??
+      process.env.VITE_STATIC_DEPLOY ??
+      '') === 'gh-pages'
 
   return {
     base: viteBase,
@@ -61,6 +66,18 @@ export default defineConfig(({ mode }) => {
       format: 'cjs',
     },
     plugins: [
+      {
+        name: 'gh-pages-csp-meta',
+        transformIndexHtml(html) {
+          if (!isGhPagesDeploy) return html
+          const csp = buildGhPagesCspMetaContent()
+          const meta = `<meta http-equiv="Content-Security-Policy" content="${csp}" />`
+          return html.replace(
+            '</head>',
+            `    ${meta}\n  </head>`
+          )
+        },
+      },
       {
         name: 'html-public-links-for-subpath',
         transformIndexHtml(html) {

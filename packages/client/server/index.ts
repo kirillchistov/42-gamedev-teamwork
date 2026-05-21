@@ -31,6 +31,10 @@ import serialize from 'serialize-javascript'
 import cookieParser from 'cookie-parser'
 import { renderStaticPageHtml } from './static-page'
 import { registerApiProxy } from './apiProxy'
+import {
+  registerCspMiddleware,
+  getCspNonce,
+} from './csp'
 
 const clientPath = path.join(__dirname, '..')
 const isDev =
@@ -232,6 +236,7 @@ async function createServer() {
   const app = express()
   const portCandidates = resolvePortCandidates()
 
+  registerCspMiddleware(app)
   app.use(cookieParser())
   registerApiProxy(app)
   let vite: ViteDevServer | undefined
@@ -278,7 +283,9 @@ async function createServer() {
         .replace(`<!--ssr-outlet-->`, appHtml)
         .replace(
           `<!--ssr-initial-state-->`,
-          `<script>window.APP_INITIAL_STATE = ${serialize(
+          `<script nonce="${getCspNonce(
+            res
+          )}">window.APP_INITIAL_STATE = ${serialize(
             initialState,
             {
               isJSON: true,

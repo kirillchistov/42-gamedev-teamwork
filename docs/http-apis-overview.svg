@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
-  <title id="title">HTTP: browser, SSR, our API, Praktikum</title>
-  <desc id="desc">Browser gets SSR from packages/client server, calls Praktikum API and packages/server Express; server checks session and uses Postgres for forum.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 580" role="img" aria-labelledby="title desc">
+  <title id="title">HTTP layers overview</title>
+  <desc id="desc">Browser loads SSR from client server; same-origin fetch via apiProxy to Praktikum and packages/server; forum data in Postgres.</desc>
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0b1220"/>
@@ -14,57 +14,64 @@
       .box{fill:#334155;stroke:#64748b;stroke-width:1.5;rx:10}
       .boxHi{fill:#1e3a5f;stroke:#38bdf8;stroke-width:1.8;rx:10}
       .grp{fill:#0f172a;stroke:#475569;stroke-width:1;rx:12}
-      .t{fill:#f8fafc;font:600 14px system-ui,sans-serif}
-      .s{fill:#cbd5e1;font:11px ui-monospace,monospace}
+      .t{fill:#f8fafc;font:600 14px system-ui,sans-serif;text-anchor:middle}
+      .s{fill:#cbd5e1;font:11px ui-monospace,monospace;text-anchor:middle}
       .edge{stroke:#94a3b8;stroke-width:2;fill:none;marker-end:url(#arrow)}
       .edgeHi{stroke:#38bdf8;stroke-width:2;fill:none;marker-end:url(#arrow)}
-      .cap{fill:#fbbf24;font:600 11px system-ui,sans-serif}
+      .cap{fill:#fbbf24;font:600 11px system-ui,sans-serif;text-anchor:middle}
     </style>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
-  <text x="480" y="36" text-anchor="middle" class="t" font-size="18">HTTP layers: who talks to whom</text>
-  <text x="480" y="58" text-anchor="middle" class="s">Same Praktikum session cookie to ya-praktikum.tech and to our Node API</text>
+  <text x="480" y="36" class="t" font-size="18">HTTP: who talks to whom</text>
+  <text x="480" y="58" class="s">One browser origin (client :9000) proxies API; Praktikum session cookie on all hops</text>
 
-  <rect x="360" y="88" width="240" height="56" class="boxHi"/>
-  <text x="480" y="118" text-anchor="middle" class="t">Browser</text>
-  <text x="480" y="134" text-anchor="middle" class="s">React SPA after first load</text>
+  <rect x="360" y="78" width="240" height="58" class="boxHi"/>
+  <text x="480" y="104" class="t">Browser</text>
+  <text x="480" y="122" class="s">SPA + fetch /api/*</text>
 
-  <rect x="40" y="200" width="280" height="120" class="grp"/>
-  <text x="56" y="222" class="s">packages/client/server</text>
-  <rect x="56" y="232" width="248" height="76" class="box"/>
-  <text x="180" y="258" text-anchor="middle" class="t">SSR Express + Vite</text>
-  <text x="180" y="278" text-anchor="middle" class="s">HTML, APP_INITIAL_STATE</text>
-  <text x="180" y="296" text-anchor="middle" class="s">CLIENT_PORT / PORT</text>
+  <rect x="40" y="188" width="300" height="144" class="grp"/>
+  <rect x="56" y="204" width="268" height="84" class="box"/>
+  <text x="190" y="232" class="t">SSR Express + apiProxy</text>
+  <text x="190" y="250" class="s">HTML, APP_INITIAL_STATE, CSP</text>
+  <text x="190" y="268" class="s">CLIENT_PORT default 9000</text>
+  <text x="190" y="318" class="s">packages/client/server</text>
 
-  <rect x="340" y="200" width="280" height="120" class="grp"/>
-  <text x="356" y="222" class="s">packages/server (createApp)</text>
-  <rect x="356" y="232" width="248" height="76" class="box"/>
-  <text x="480" y="258" text-anchor="middle" class="t">Node API</text>
-  <text x="480" y="278" text-anchor="middle" class="s">/api/forum /friends /user</text>
-  <text x="480" y="296" text-anchor="middle" class="s">SERVER_PORT default 3000</text>
+  <rect x="360" y="188" width="300" height="144" class="grp"/>
+  <rect x="376" y="204" width="268" height="84" class="box"/>
+  <text x="510" y="232" class="t">Node API</text>
+  <text x="510" y="250" class="s">/api/forum /friends /user</text>
+  <text x="510" y="268" class="s">SERVER_PORT default 3000</text>
+  <text x="510" y="318" class="s">packages/server</text>
 
-  <rect x="640" y="200" width="280" height="120" class="grp"/>
-  <text x="656" y="222" class="s">Praktikum (external)</text>
-  <rect x="656" y="232" width="248" height="76" class="box"/>
-  <text x="780" y="258" text-anchor="middle" class="t">ya-praktikum.tech/api/v2</text>
-  <text x="780" y="278" text-anchor="middle" class="s">auth, profile, oauth, leaderboard</text>
-  <text x="780" y="296" text-anchor="middle" class="s">GET /auth/user with Cookie</text>
+  <rect x="680" y="188" width="260" height="144" class="grp"/>
+  <rect x="696" y="204" width="228" height="84" class="box"/>
+  <text x="810" y="232" class="t">ya-praktikum.tech</text>
+  <text x="810" y="250" class="s">/api/v2 auth, profile</text>
+  <text x="810" y="268" class="s">GET /auth/user + Cookie</text>
+  <text x="810" y="318" class="s">Praktikum</text>
 
-  <rect x="380" y="400" width="200" height="64" class="box"/>
-  <text x="480" y="430" text-anchor="middle" class="t">PostgreSQL</text>
-  <text x="480" y="448" text-anchor="middle" class="s">forum: topics, comments, reactions</text>
+  <rect x="376" y="400" width="268" height="64" class="box"/>
+  <text x="510" y="428" class="t">PostgreSQL</text>
+  <text x="510" y="446" class="s">forum topics, comments</text>
 
-  <path class="edgeHi" d="M 420 144 L 180 200"/>
-  <text x="260" y="168" class="cap">first page</text>
-  <path class="edgeHi" d="M 480 144 L 480 200"/>
-  <text x="492" y="178" class="cap">fetch</text>
-  <path class="edgeHi" d="M 540 144 L 780 200"/>
-  <text x="700" y="168" class="cap">fetch</text>
+  <path class="edgeHi" d="M 480 136 L 480 168 L 190 168 L 190 204"/>
+  <text x="300" y="160" class="cap">first document</text>
 
-  <path class="edge" d="M 604 276 L 656 276"/>
-  <text x="630" y="268" class="s" text-anchor="middle">middleware</text>
+  <path class="edgeHi" d="M 500 136 L 500 168 L 510 168 L 510 204"/>
+  <text x="520" y="160" class="cap">/api/forum</text>
 
-  <path class="edge" d="M 480 320 L 480 400"/>
+  <path class="edgeHi" d="M 460 136 L 460 168 L 810 168 L 810 204"/>
+  <text x="680" y="160" class="cap">/api/v2</text>
 
-  <text x="480" y="528" text-anchor="middle" class="s">middleware: packages/server/middleware/requirePraktikumAuth.ts</text>
+  <path class="edge" d="M 324 246 L 376 246"/>
+  <text x="350" y="238" class="s">proxy</text>
+
+  <path class="edge" d="M 644 246 L 696 246"/>
+  <text x="670" y="238" class="s">auth check</text>
+
+  <path class="edge" d="M 510 288 L 510 400"/>
+
+  <text x="190" y="496" class="s">apiProxy.ts</text>
+  <text x="510" y="496" class="s">requirePraktikumAuth.ts</text>
+  <text x="510" y="512" class="s">forumRouter.ts</text>
 </svg>
