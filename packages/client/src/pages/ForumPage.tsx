@@ -35,6 +35,9 @@ import {
   selectUserIsAuthChecked,
 } from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
+import { IS_STATIC_GH_PAGES_DEPLOY } from '../constants'
+import { StaticHostingForumNotice } from '../components/StaticHostingNotice'
+import { isStaticGhPagesDeploy } from '../shared/staticDeploy'
 
 export const ForumPage: React.FC = () => {
   const { theme } = useLandingTheme()
@@ -57,6 +60,9 @@ export const ForumPage: React.FC = () => {
   >(null)
 
   useEffect(() => {
+    if (IS_STATIC_GH_PAGES_DEPLOY) {
+      return
+    }
     if (!shouldRedirectToLogin) {
       return
     }
@@ -91,6 +97,33 @@ export const ForumPage: React.FC = () => {
         )
       }
     }
+  }
+
+  if (IS_STATIC_GH_PAGES_DEPLOY) {
+    return (
+      <div
+        className={clsx(
+          'landing',
+          `landing--${theme}`,
+          'AuthPage'
+        )}>
+        <Helmet>
+          <meta charSet="utf-8" />
+          <title>Форум Cosmic Match</title>
+        </Helmet>
+        <Header />
+        <main className="auth-main">
+          <div className="auth-card auth-card--wide">
+            <Link to="/" className="forum-back">
+              ← Назад
+            </Link>
+            <h1>Форум</h1>
+            <StaticHostingForumNotice />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
   }
 
   return (
@@ -235,6 +268,10 @@ export const initForumPage = async ({
   state,
   getState,
 }: PageInitArgs) => {
+  if (isStaticGhPagesDeploy()) {
+    return
+  }
+
   if (
     !selectUser(state) &&
     !selectUserIsAuthChecked(state)

@@ -45,6 +45,14 @@ export default defineConfig(({ mode }) => {
       ),
       'process.env.VITE_APP_API_URL':
         JSON.stringify(viteAppApiUrl),
+      'process.env.VITE_STATIC_DEPLOY':
+        JSON.stringify(
+          env.VITE_STATIC_DEPLOY ??
+            process.env.VITE_STATIC_DEPLOY ??
+            ''
+        ),
+      'process.env.GITHUB_PAGES_BASE_URL':
+        JSON.stringify(viteBase),
     },
     build: {
       outDir: path.join(__dirname, 'dist/client'),

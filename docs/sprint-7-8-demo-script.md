@@ -175,7 +175,9 @@ Workflow: [`.github/workflows/gh-pages.yml`](../.github/workflows/gh-pages.yml).
 - `buildYandexRedirectUri()` учитывает `import.meta.env.BASE_URL` (подпапка репозитория).
 - SW не перехватывает пути `/api/*`.
 
-**Ограничения Pages:** форум (`/api/forum`), темы на Node (`PUT /api/ui/theme`), friends — **нужен живой server**; на Pages работают в основном **auth, OAuth, лидерборд, игра** через API Практикума.
+**Ограничения Pages:** форум (`/api/forum`), темы на Node (`PUT /api/ui/theme`), friends — **нужен живой server**; на Pages работают в основном **вход по логину/паролю, лидерборд, игра** через API Практикума.
+
+**UI на Pages:** на `/forum` показывается баннер; кнопки «Войти / Зарегистрироваться через Яндекс» скрыты (OAuth на статике не поддерживается).
 
 **После merge:** перезапустить workflow Deploy client to GitHub Pages. В OAuth Яндекса / Практикуме whitelist: origin `https://kirillchistov.github.io/42-gamedev-teamwork` (с путём репозитория, без завершающего `/`).
 

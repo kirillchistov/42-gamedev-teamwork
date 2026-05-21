@@ -9,6 +9,7 @@ import {
 } from '../shared/landingTheme'
 import { pushLocalThemeToServer } from '../utils/themeSync'
 import { selectUserIsAuthChecked } from '../slices/userSlice'
+import { isStaticGhPagesDeploy } from '../shared/staticDeploy'
 
 // Синк темы с packages/server после проверки сессии ЯП.
 export function useThemeServerSync(): void {
@@ -19,6 +20,9 @@ export function useThemeServerSync(): void {
   const sessionSyncedRef = useRef(false)
 
   useEffect(() => {
+    if (isStaticGhPagesDeploy()) {
+      return
+    }
     if (
       !isAuthChecked ||
       sessionSyncedRef.current

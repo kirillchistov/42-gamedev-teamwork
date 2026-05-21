@@ -36,6 +36,7 @@ import { markGameLandingNeedsShow } from '../game/match3/gameLandingGate'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { AuthSessionNotice } from '../components/AuthSessionNotice'
+import { IS_STATIC_GH_PAGES_DEPLOY } from '../constants'
 import {
   buildYandexAuthorizeUrl,
   buildYandexRedirectUri,
@@ -377,29 +378,31 @@ export const SignupPage: React.FC = () => {
                     ? 'Регистрируем...'
                     : 'Зарегистрироваться'}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="auth-oauth-btn"
-                  disabled={
-                    isOAuthLoading || isLoading
-                  }
-                  onClick={handleYandexOAuth}>
-                  {isOAuthLoading ? (
-                    'Переход к OAuth...'
-                  ) : (
-                    <>
-                      <span>
-                        Зарегистрироваться через
-                      </span>
-                      <span
-                        className="auth-oauth-btn__logo"
-                        aria-hidden="true">
-                        Я
-                      </span>
-                    </>
-                  )}
-                </Button>
+                {!IS_STATIC_GH_PAGES_DEPLOY ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="auth-oauth-btn"
+                    disabled={
+                      isOAuthLoading || isLoading
+                    }
+                    onClick={handleYandexOAuth}>
+                    {isOAuthLoading ? (
+                      'Переход к OAuth...'
+                    ) : (
+                      <>
+                        <span>
+                          Зарегистрироваться через
+                        </span>
+                        <span
+                          className="auth-oauth-btn__logo"
+                          aria-hidden="true">
+                          Я
+                        </span>
+                      </>
+                    )}
+                  </Button>
+                ) : null}
               </div>
             </form>
 

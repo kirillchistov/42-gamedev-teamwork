@@ -41,6 +41,8 @@ import { selectUser } from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { FORUM_REACTION_EMOJIS } from '../constants/forumEmojis'
 import { ForumCommentReactions } from '../components/forum/ForumCommentReactions'
+import { IS_STATIC_GH_PAGES_DEPLOY } from '../constants'
+import { StaticHostingForumNotice } from '../components/StaticHostingNotice'
 
 export const ForumTopicPage: React.FC = () => {
   const { theme } = useLandingTheme()
@@ -87,6 +89,9 @@ export const ForumTopicPage: React.FC = () => {
   usePage({ initPage: initForumTopicPage })
 
   useEffect(() => {
+    if (IS_STATIC_GH_PAGES_DEPLOY) {
+      return
+    }
     if (!shouldRedirectToLogin) {
       return
     }
@@ -99,7 +104,7 @@ export const ForumTopicPage: React.FC = () => {
   }, [shouldRedirectToLogin, dispatch, navigate])
 
   useEffect(() => {
-    if (!topicId) {
+    if (IS_STATIC_GH_PAGES_DEPLOY || !topicId) {
       return
     }
     void (async () => {
@@ -427,6 +432,36 @@ export const ForumTopicPage: React.FC = () => {
   const replyComment = replyTo
     ? comments.find(c => c.id === replyTo)
     : null
+
+  if (IS_STATIC_GH_PAGES_DEPLOY) {
+    return (
+      <div
+        className={clsx(
+          'landing',
+          `landing--${theme}`,
+          'AuthPage'
+        )}>
+        <Helmet>
+          <meta charSet="utf-8" />
+          <title>
+            Топик форума — Cosmic Match
+          </title>
+        </Helmet>
+        <Header />
+        <main className="auth-main">
+          <div className="auth-card auth-card--wide">
+            <Link
+              to="/forum"
+              className="forum-back">
+              ← К списку тем
+            </Link>
+            <StaticHostingForumNotice />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
 
   return (
     <div

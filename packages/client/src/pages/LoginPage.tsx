@@ -45,6 +45,7 @@ import {
   getYandexServiceId,
   YANDEX_OAUTH_STATE_KEY,
 } from '../shared/api/oauthApi'
+import { IS_STATIC_GH_PAGES_DEPLOY } from '../constants'
 import { consumeForumAuthRedirect } from '../shared/forumAuthRedirect'
 import {
   consumeAuthLoginRedirect,
@@ -269,27 +270,29 @@ export const LoginPage: React.FC = () => {
                     ? 'Входим...'
                     : 'Войти'}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="auth-oauth-btn"
-                  disabled={
-                    isOAuthLoading || isLoading
-                  }
-                  onClick={handleYandexOAuth}>
-                  {isOAuthLoading ? (
-                    'Переход к OAuth...'
-                  ) : (
-                    <>
-                      <span>Войти через</span>
-                      <span
-                        className="auth-oauth-btn__logo"
-                        aria-hidden="true">
-                        Я
-                      </span>
-                    </>
-                  )}
-                </Button>
+                {!IS_STATIC_GH_PAGES_DEPLOY ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="auth-oauth-btn"
+                    disabled={
+                      isOAuthLoading || isLoading
+                    }
+                    onClick={handleYandexOAuth}>
+                    {isOAuthLoading ? (
+                      'Переход к OAuth...'
+                    ) : (
+                      <>
+                        <span>Войти через</span>
+                        <span
+                          className="auth-oauth-btn__logo"
+                          aria-hidden="true">
+                          Я
+                        </span>
+                      </>
+                    )}
+                  </Button>
+                ) : null}
               </div>
             </form>
 

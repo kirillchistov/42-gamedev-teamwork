@@ -90,7 +90,9 @@ yarn install
 3. `server` — Node/Express API, стартует после успешных миграций.
 4. `client` — Node SSR-клиент, стартует после healthy API-сервера.
 
-Клиент доступен на `http://localhost:${CLIENT_PORT:-5173}`, API — на `http://localhost:${SERVER_PORT:-3000}`. Если нужно поднять только часть стека: `docker compose up server` или `docker compose up postgres`.
+Клиент доступен на `http://localhost:${CLIENT_PORT:-9000}`, API — на `http://localhost:${SERVER_PORT:-3000}`. Если нужно поднять только часть стека: `docker compose up server` или `docker compose up postgres`.
+
+Подробнее режимы запуска (dev / Docker / параллельно): [docs/sprint-7-8-demo-script.md](docs/sprint-7-8-demo-script.md).
 
 ## Цели проекта
 

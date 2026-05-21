@@ -16,6 +16,10 @@ import ssrReducer from './slices/ssrSlice'
 import userReducer, {
   resetAuthChecked,
 } from './slices/userSlice'
+import {
+  getBrowserPathname,
+  isAuthShellPath,
+} from './shared/staticDeploy'
 
 // Глобально декларируем в window наш ключик
 // и задаем ему тип такой же как у стейта в сторе
@@ -65,7 +69,8 @@ if (typeof window !== 'undefined') {
   const hydrated = store.getState()
   if (
     hydrated.user.isAuthChecked &&
-    !hydrated.user.data
+    !hydrated.user.data &&
+    !isAuthShellPath(getBrowserPathname())
   ) {
     store.dispatch(resetAuthChecked())
   }

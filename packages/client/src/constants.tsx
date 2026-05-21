@@ -1,4 +1,10 @@
 import './client.d'
+import {
+  isStaticGhPagesDeploy,
+  IS_STATIC_GH_PAGES_DEPLOY,
+} from './shared/staticDeploy'
+
+export { IS_STATIC_GH_PAGES_DEPLOY }
 
 const DEFAULT_PRAKTIKUM_API =
   'https://ya-praktikum.tech/api/v2'
@@ -18,17 +24,6 @@ function isBrowserBundle(): boolean {
   )
 }
 
-/** Статический деплой (GitHub Pages): нет Express-прокси, только прямой API Практикума. */
-function isStaticGhPagesDeploy(): boolean {
-  if (!isBrowserBundle()) {
-    return false
-  }
-  return (
-    import.meta.env.VITE_STATIC_DEPLOY ===
-    'gh-pages'
-  )
-}
-
 /** Без import.meta: Jest/ts-jest собирают в CJS и не могут выполнить import.meta в Node. */
 function readAppApiUrl(): string {
   if (isBrowserBundle()) {
@@ -42,10 +37,13 @@ function readAppApiUrl(): string {
 }
 
 function readPraktikumApiBase(): string {
+  if (
+    isBrowserBundle() &&
+    isStaticGhPagesDeploy()
+  ) {
+    return DEFAULT_PRAKTIKUM_API
+  }
   if (isBrowserBundle()) {
-    if (isStaticGhPagesDeploy()) {
-      return DEFAULT_PRAKTIKUM_API
-    }
     return '/api/v2'
   }
   const raw =
@@ -78,7 +76,3 @@ export const DEFAULT_AVATAR_PATH =
 export const BASE_URL = readPraktikumApiBase()
 
 export const API_RESOURCES_URL = `${BASE_URL}/resources`
-
-/** true на GitHub Pages — UI без Node API (форум, PUT /api/ui/theme). */
-export const IS_STATIC_GH_PAGES_DEPLOY =
-  isStaticGhPagesDeploy()

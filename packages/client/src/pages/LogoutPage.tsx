@@ -51,10 +51,16 @@ export const LogoutPage: React.FC = () => {
   const [password, setPassword] = useState('')
   const [isLoggingOut, setIsLoggingOut] =
     useState(false)
+  const [hasMounted, setHasMounted] =
+    useState(false)
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
   // После проверки сессии — принудительный logout
   useEffect(() => {
-    if (!isAuthChecked) return
+    if (!hasMounted || !isAuthChecked) return
     let alive = true
     const reset = async () => {
       setIsLoggingOut(true)
@@ -65,7 +71,7 @@ export const LogoutPage: React.FC = () => {
     return () => {
       alive = false
     }
-  }, [dispatch, isAuthChecked])
+  }, [dispatch, hasMounted, isAuthChecked])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -92,7 +98,9 @@ export const LogoutPage: React.FC = () => {
       <Header />
 
       <main className="auth-main">
-        {!isAuthChecked || isLoggingOut ? (
+        {!hasMounted ||
+        !isAuthChecked ||
+        isLoggingOut ? (
           <section className="auth-card auth-card--wide">
             <p>Выходим из текущей сессии...</p>
           </section>

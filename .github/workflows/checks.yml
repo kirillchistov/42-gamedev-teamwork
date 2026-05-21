@@ -33,3 +33,9 @@ jobs:
         run: yarn workspace client test
       - name: Test (server)
         run: yarn workspace server test
+      - name: Build client (GitHub Pages smoke)
+        env:
+          GITHUB_PAGES_BASE_URL: /42-gamedev-teamwork/
+          VITE_STATIC_DEPLOY: gh-pages
+          VITE_YANDEX_OAUTH_REDIRECT_URI: https://example.github.io/42-gamedev-teamwork
+        run: cd packages/client && yarn build:client
