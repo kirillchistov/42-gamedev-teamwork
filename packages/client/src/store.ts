@@ -29,33 +29,19 @@ export const reducer = combineReducers({
   user: userReducer,
 })
 
-export type RootState = ReturnType<typeof reducer>
+export const store = configureStore({
+  reducer: {
+    forum: forumReducer,
+    friends: friendsReducer,
+    leaderboard: leaderboardReducer,
+    ssr: ssrReducer,
+    user: userReducer,
+  },
+})
 
-export const createAppStore = (
-  preloadedState?: RootState
-) =>
-  configureStore({
-    reducer,
-    preloadedState,
-  })
-
-function readAndConsumeInitialState():
-  | RootState
-  | undefined {
-  if (typeof window === 'undefined') {
-    return undefined
-  }
-
-  const state = window.APP_INITIAL_STATE
-  // После инициализации стор сам хранит state, глобальная ссылка больше не нужна.
-  delete window.APP_INITIAL_STATE
-  return state
-}
-
-export const store = createAppStore(
-  readAndConsumeInitialState()
-)
-
+export type RootState = ReturnType<
+  typeof store.getState
+>
 export type AppDispatch = typeof store.dispatch
 
 export const useDispatch: () => AppDispatch =

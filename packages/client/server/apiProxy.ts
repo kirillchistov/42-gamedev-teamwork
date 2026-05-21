@@ -33,14 +33,27 @@ function readPraktikumOrigin(): string {
 }
 
 function readNodeApiTarget(): string {
-  const internal =
-    process.env.INTERNAL_SERVER_URL?.trim()
-  if (internal) {
-    return trimTrailingSlash(internal)
-  }
   const external =
     process.env.EXTERNAL_SERVER_URL?.trim() ||
     process.env.VITE_APP_API_URL?.trim()
+  const internal =
+    process.env.INTERNAL_SERVER_URL?.trim()
+
+  // В dev на хосте INTERNAL_SERVER_URL=http://server:… из docker-compose не резолвится.
+  const internalIsDockerOnly =
+    internal != null &&
+    /:\/\/server(?::|\/|$)/.test(internal)
+
+  if (
+    process.env.NODE_ENV === 'development' &&
+    internalIsDockerOnly &&
+    external
+  ) {
+    return trimTrailingSlash(external)
+  }
+  if (internal) {
+    return trimTrailingSlash(internal)
+  }
   if (external) {
     return trimTrailingSlash(external)
   }
@@ -75,6 +88,8 @@ function nodeProxy(
     // http-proxy-middleware v3: target должен включать тот же base path, что и app.use(path).
     target: `${base}${prefix}`,
     changeOrigin: true,
+    proxyTimeout: 30_000,
+    timeout: 30_000,
   })
 }
 
@@ -83,6 +98,11 @@ export function registerApiProxy(
 ): void {
   const praktikumOrigin = readPraktikumOrigin()
   const nodeApiTarget = readNodeApiTarget()
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      `[apiProxy] Node API → ${nodeApiTarget} (forum, friends, /user)`
+    )
+  }
 
   app.use(
     '/api/v2',
