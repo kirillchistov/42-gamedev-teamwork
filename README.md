@@ -4,7 +4,10 @@
 
 На космической арене (игровом поле) игрок перемещает соседние фишки, чтобы собрать три и более одного цвета по горизонтали или вертикали.
 
-[Видео-презентация](https://www.loom.com/share/4dd7e2e383e34fce9ee22244edb2bb7b)
+## Видео-презентация
+- [Спринты 5 и 6](https://www.loom.com/share/4dd7e2e383e34fce9ee22244edb2bb7b)
+- [Спринты 7 и 8](https://disk.yandex.ru/i/oE5sNT-GRzXwuA)
+
 
 ### Как запускать?
 
@@ -159,25 +162,25 @@ yarn install
 - [x] 6.9 Получен командный зачёт (все). Ура!
 
 **Спринт 7 следующий (SSR, лидерборд)**
-- [x] 7.0 Улучшена визуальная часть игры (Артур / L0)
-- [x] 7.1 Настроен Express для SSR (Кирилл / L3)
-- [x] 7.2 Настроены Redux и Router в SSR (Артур / L4)
-- [x] 7.3 Добавлена OAuth-авторизация в проект (Анна / L3)
-- [x] 7.4 Добавлен API для лидерборда (Сергей / L2)
-- [x] 7.5 Добавлен Performance API (Антон / L2)
-- [x] 7.6 Добавлен MEMORYLEAKS.md (Кирилл / L1)
+- [x] [7.0 Улучшена визуальная часть игры (Артур / L0)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/109)
+- [x] [7.1 Настроен Express для SSR (Кирилл / L3)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/114)
+- [x] [7.2 Настроены Redux и Router в SSR (Артур / L4)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/120)
+- [x] [7.3 Добавлена OAuth-авторизация в проект (Анна / L3)](https://github.com/kirillchistov/42-gamedev-teamwork/issues/60)
+- [x] [7.4 Добавлен API для лидерборда (Сергей / L2)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/119)
+- [x] [7.5 Добавлен Performance API (Антон / L2)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/121)
+- [x] [7.6 Добавлен MEMORYLEAKS.md (Кирилл / L1)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/118)
 
-**Спринт 8 (форум, темизация)**
-- [x] 8.1 Настроить Docker для Postgres (Кирилл / L2)
-- [x] 8.2 Реализовать API для форума (Кирилл / L5)
-- [x] 8.3 Переключение тем (клиент) (Артур / L3)
-- [x] 8.4 Проверка авторизации на бекэнде (Сергей / L3)
-- [x] 8.5 Эмодзи (клиент) (Артур / L2)
-- [x] 8.6 Эмодзи (бэкенд) (Сергей / L2)
-- [x] 8.7 Переключение темы (бэкенд) (Анна / L2)
-- [x] 8.8 Серверная инфраструктура для форума (Анна / L5)
-- [x] 8.9 Поддержать API форума на клиенте (Антон / L3)
-- [ ] 8.10 Командный зачёт (все / L0)
+**Спринт 8 (докер, форум, темизация)**
+- [x] [8.1 Настроить Docker для Postgres (Кирилл / L2)](https://github.com/kirillchistov/42-gamedev-teamwork/issues/64)
+- [x] [8.2 Реализовать API для форума (Кирилл / L5)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/126)
+- [x] [8.3 Переключение тем (клиент) (Артур / L3)](https://github.com/kirillchistov/42-gamedev-teamwork/issues/66)
+- [x] [8.4 Проверка авторизации на бекэнде (Сергей / L3)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/129)
+- [x] [8.5 Эмодзи (клиент) (Артур / L2)](https://github.com/kirillchistov/42-gamedev-teamwork/issues/68)
+- [x] [8.6 Эмодзи (бэкенд) (Сергей / L2)](https://github.com/kirillchistov/42-gamedev-teamwork/issues/69)
+- [x] [8.7 Переключение темы (бэкенд) (Анна / L2)](https://github.com/kirillchistov/42-gamedev-teamwork/issues/70)
+- [x] [8.8 Серверная инфраструктура для форума (Анна / L5)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/134)
+- [x] [8.9 Поддержать API форума на клиенте (Антон / L3)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/133)
+- [x] [8.10 Демо для командного зачёта (все / L0)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/131)
 
 **Спринт 9 (безопасность)**
 - [ ] 9.0 Улучшить визуальную часть игры (Кирилл / L0)
