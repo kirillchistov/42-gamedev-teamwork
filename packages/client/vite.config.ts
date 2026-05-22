@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => {
         Number(process.env.CLIENT_PORT) || 9000,
     },
     define: {
+      __APP_BASE_URL__: JSON.stringify(viteBase),
       __EXTERNAL_SERVER_URL__: JSON.stringify(
         process.env.EXTERNAL_SERVER_URL
       ),
@@ -62,13 +63,20 @@ export default defineConfig(({ mode }) => {
       {
         name: 'html-public-links-for-subpath',
         transformIndexHtml(html) {
+          const baseScript = `<script>globalThis.__APP_BASE_URL__=${JSON.stringify(
+            viteBase
+          )};</script>`
+          const out = html.replace(
+            /<head>/i,
+            `<head>\n    ${baseScript}`
+          )
           if (viteBase === '/' || viteBase === '')
-            return html
+            return out
           const prefix = viteBase.replace(
             /\/+$/,
             ''
           )
-          return html
+          return out
             .replace(
               /href="\/vite\.svg"/g,
               `href="${prefix}/vite.svg"`
