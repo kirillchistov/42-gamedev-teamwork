@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react'
+import { validateForumContent } from '../shared/security/plainTextContent'
+import { ForumPlainText } from './forum/ForumPlainText'
 
 type HeroChatMessage = {
   id: string
@@ -30,6 +32,9 @@ export const HeroChatPanel: React.FC<
   onSend,
 }) => {
   const [draft, setDraft] = useState('')
+  const [sendError, setSendError] = useState<
+    string | null
+  >(null)
   const sorted = useMemo(
     () =>
       [...messages].sort((a, b) =>
@@ -39,9 +44,13 @@ export const HeroChatPanel: React.FC<
   )
 
   const submit = () => {
-    const text = draft.trim()
-    if (!text) return
-    onSend(text)
+    setSendError(null)
+    const check = validateForumContent(draft)
+    if (!check.ok) {
+      setSendError(check.reason)
+      return
+    }
+    onSend(check.value)
     setDraft('')
   }
 
@@ -66,7 +75,11 @@ export const HeroChatPanel: React.FC<
                 })}
               </span>
             </header>
-            <p>{message.text}</p>
+            <p>
+              <ForumPlainText
+                text={message.text}
+              />
+            </p>
           </article>
         ))}
       </div>
@@ -83,9 +96,17 @@ export const HeroChatPanel: React.FC<
           </button>
         ))}
       </div>
+      {sendError ? (
+        <p className="match3-hero-chat__error">
+          {sendError}
+        </p>
+      ) : null}
       <textarea
         value={draft}
-        onChange={e => setDraft(e.target.value)}
+        onChange={e => {
+          setSendError(null)
+          setDraft(e.target.value)
+        }}
         rows={3}
         placeholder="Сообщение в чат героев..."
       />

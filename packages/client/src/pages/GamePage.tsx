@@ -18,6 +18,7 @@ import {
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { HeroChatPanel } from '../components/HeroChatPanel'
+import { validateForumContent } from '../shared/security/plainTextContent'
 import { usePage } from '../hooks/usePage'
 import { BoardFieldThemePreview } from '../game/match3/BoardFieldThemePreview'
 import {
@@ -1071,13 +1072,17 @@ export const GamePage: React.FC = () => {
   )
   const handleSendHeroChatMessage = useCallback(
     (text: string) => {
+      const check = validateForumContent(text)
+      if (!check.ok) {
+        return
+      }
       setHeroChatMessages(prev =>
         [
           ...prev,
           {
             id: `hero-chat-${Date.now()}`,
             author: 'Вы',
-            text,
+            text: check.value,
             createdAt: new Date().toISOString(),
           },
         ].slice(-HERO_CHAT_MAX_MESSAGES)

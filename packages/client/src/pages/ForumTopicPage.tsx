@@ -43,6 +43,11 @@ import { FORUM_REACTION_EMOJIS } from '../constants/forumEmojis'
 import { ForumCommentReactions } from '../components/forum/ForumCommentReactions'
 import { IS_STATIC_GH_PAGES_DEPLOY } from '../constants'
 import { StaticHostingForumNotice } from '../components/StaticHostingNotice'
+import {
+  validateForumContent,
+  validateForumTitle,
+} from '../shared/security/plainTextContent'
+import { ForumPlainText } from '../components/forum/ForumPlainText'
 
 export const ForumTopicPage: React.FC = () => {
   const { theme } = useLandingTheme()
@@ -130,13 +135,19 @@ export const ForumTopicPage: React.FC = () => {
     isTopicAuthor || viewerIsModerator
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !topicId) return
+    if (!topicId) return
     setPageError(null)
+    const contentCheck =
+      validateForumContent(newComment)
+    if (!contentCheck.ok) {
+      setPageError(contentCheck.reason)
+      return
+    }
     try {
       await dispatch(
         createCommentThunk({
           topicId: Number(topicId),
-          content: newComment.trim(),
+          content: contentCheck.value,
           parentCommentId: replyTo ?? undefined,
         })
       ).unwrap()
@@ -190,15 +201,28 @@ export const ForumTopicPage: React.FC = () => {
   }
 
   const handleSaveTopic = async () => {
-    if (!topicId || !topicDraftTitle.trim())
-      return
+    if (!topicId) return
     setPageError(null)
+    const titleCheck = validateForumTitle(
+      topicDraftTitle
+    )
+    if (!titleCheck.ok) {
+      setPageError(titleCheck.reason)
+      return
+    }
+    const contentCheck = validateForumContent(
+      topicDraftContent
+    )
+    if (!contentCheck.ok) {
+      setPageError(contentCheck.reason)
+      return
+    }
     try {
       await dispatch(
         updateTopicThunk({
           topicId: Number(topicId),
-          title: topicDraftTitle.trim(),
-          content: topicDraftContent.trim(),
+          title: titleCheck.value,
+          content: contentCheck.value,
         })
       ).unwrap()
       setTopicEditOpen(false)
@@ -241,13 +265,18 @@ export const ForumTopicPage: React.FC = () => {
   const handleSaveComment = async (
     commentId: number
   ) => {
-    if (!commentDraft.trim()) return
     setPageError(null)
+    const contentCheck =
+      validateForumContent(commentDraft)
+    if (!contentCheck.ok) {
+      setPageError(contentCheck.reason)
+      return
+    }
     try {
       await dispatch(
         updateCommentThunk({
           commentId,
-          content: commentDraft.trim(),
+          content: contentCheck.value,
         })
       ).unwrap()
       setEditingCommentId(null)
@@ -368,7 +397,9 @@ export const ForumTopicPage: React.FC = () => {
               </div>
             ) : (
               <div className="forum-comment__text">
-                {comment.content}
+                <ForumPlainText
+                  text={comment.content}
+                />
               </div>
             )}
 
@@ -511,7 +542,12 @@ export const ForumTopicPage: React.FC = () => {
           ) : (
             <>
               <div className="forum-topic__header">
-                <h1>{topic.title}</h1>
+                <h1>
+                  <ForumPlainText
+                    text={topic.title}
+                    multiline={false}
+                  />
+                </h1>
                 <p className="forum-topic__meta">
                   {topic.author} ·{' '}
                   {new Date(
@@ -589,7 +625,9 @@ export const ForumTopicPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="forum-topic__content">
-                  {topic.content}
+                  <ForumPlainText
+                    text={topic.content}
+                  />
                 </div>
               )}
 

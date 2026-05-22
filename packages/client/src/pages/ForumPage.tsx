@@ -38,6 +38,11 @@ import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { IS_STATIC_GH_PAGES_DEPLOY } from '../constants'
 import { StaticHostingForumNotice } from '../components/StaticHostingNotice'
 import { isStaticGhPagesDeploy } from '../shared/staticDeploy'
+import {
+  validateForumContent,
+  validateForumTitle,
+} from '../shared/security/plainTextContent'
+import { ForumPlainText } from '../components/forum/ForumPlainText'
 
 export const ForumPage: React.FC = () => {
   const { theme } = useLandingTheme()
@@ -77,13 +82,23 @@ export const ForumPage: React.FC = () => {
   usePage({ initPage: initForumPage })
 
   const handleCreateTopic = async () => {
-    if (!title.trim() || !content.trim()) return
     setActionError(null)
+    const titleCheck = validateForumTitle(title)
+    if (!titleCheck.ok) {
+      setActionError(titleCheck.reason)
+      return
+    }
+    const contentCheck =
+      validateForumContent(content)
+    if (!contentCheck.ok) {
+      setActionError(contentCheck.reason)
+      return
+    }
     try {
       await dispatch(
         createTopicThunk({
-          title: title.trim(),
-          content: content.trim(),
+          title: titleCheck.value,
+          content: contentCheck.value,
         })
       ).unwrap()
       setTitle('')
@@ -233,7 +248,10 @@ export const ForumPage: React.FC = () => {
                     className="forum-list__row">
                     <div>
                       <div className="forum-list__title">
-                        {topic.title}
+                        <ForumPlainText
+                          text={topic.title}
+                          multiline={false}
+                        />
                       </div>
                       <div className="forum-list__meta">
                         {topic.author} ·{' '}
