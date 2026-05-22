@@ -1,6 +1,8 @@
 // 7.3 chores: OAuth — без дефолтного service_id; только env или ответ API.
 
 import { BASE_URL } from '../../constants'
+import { waitForGhPagesServiceWorker } from '../ghPagesPraktikumProxy'
+import { isStaticGhPagesDeploy } from '../staticDeploy'
 import {
   humanizePraktikumAuthReason,
   parseJsonReasonFromText,
@@ -77,6 +79,9 @@ export function buildYandexRedirectUri(): string {
 export async function getYandexServiceId(
   redirectUri: string
 ): Promise<string> {
+  if (isStaticGhPagesDeploy()) {
+    await waitForGhPagesServiceWorker()
+  }
   const envServiceId =
     readYandexServiceIdFromEnv()
   if (envServiceId) return envServiceId
@@ -119,6 +124,9 @@ export async function getYandexServiceId(
 export async function signInByYandexCode(
   payload: YandexOAuthPayload
 ): Promise<void> {
+  if (isStaticGhPagesDeploy()) {
+    await waitForGhPagesServiceWorker()
+  }
   const response = await fetch(
     `${BASE_URL}/oauth/yandex`,
     {

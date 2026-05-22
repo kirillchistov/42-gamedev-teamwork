@@ -1,4 +1,5 @@
 import './client.d'
+import { ghPagesPraktikumProxyBase } from './shared/ghPagesPraktikumProxy'
 import { isStaticGhPagesDeploy } from './shared/staticDeploy'
 
 const DEFAULT_PRAKTIKUM_API =
@@ -34,7 +35,11 @@ function readAppApiUrl(): string {
 function readPraktikumApiBase(): string {
   if (isBrowserBundle()) {
     if (isStaticGhPagesDeploy()) {
-      return DEFAULT_PRAKTIKUM_API
+      return ghPagesPraktikumProxyBase(
+        typeof __APP_BASE_URL__ === 'string'
+          ? __APP_BASE_URL__
+          : '/'
+      )
     }
     return '/api/v2'
   }

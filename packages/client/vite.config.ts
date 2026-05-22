@@ -52,6 +52,9 @@ export default defineConfig(({ mode }) => {
         JSON.stringify(viteAppApiUrl),
       'process.env.VITE_STATIC_DEPLOY':
         JSON.stringify(viteStaticDeploy),
+      __GH_PAGES_API_PROXY__: JSON.stringify(
+        viteStaticDeploy === 'gh-pages'
+      ),
     },
     build: {
       outDir: path.join(__dirname, 'dist/client'),

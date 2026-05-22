@@ -7,6 +7,8 @@
 ## Демо
 - [Демо-фронт на GitHub pages](https://kirillchistov.github.io/42-gamedev-teamwork)
 
+На Pages авторизация идёт через **Service Worker** (same-origin `/api/v2` → Практикум), иначе Safari на телефоне не сохраняет cookie сессии. После обновления деплоя — жёсткое обновление страницы; при сбое входа — очистить данные сайта.
+
 
 ## Видео-презентация
 - [Спринты 5 и 6](https://www.loom.com/share/4dd7e2e383e34fce9ee22244edb2bb7b)

@@ -18,6 +18,8 @@ import type {
   SignupData,
   User,
 } from '../types/user'
+import { waitForGhPagesServiceWorker } from '../shared/ghPagesPraktikumProxy'
+import { isStaticGhPagesDeploy } from '../shared/staticDeploy'
 import { humanizePraktikumAuthReason } from '../shared/utils/praktikumAuthErrors'
 import {
   userApi,
@@ -29,7 +31,7 @@ const AUTH_REQUEST_TIMEOUT_MS = 12_000
 const AUTH_RELOGIN_CONFLICT_MESSAGE =
   'Аккаунт уже активен на другом устройстве. Выйдите из аккаунта там и повторите вход.'
 const AUTH_SESSION_CONFIRMATION_FAILED_MESSAGE =
-  'Вход выполнен, но сессия не подтвердилась. Очистите данные сайта (или откройте в приватной вкладке) и войдите снова.'
+  'Вход выполнен, но сессия не подтвердилась. Обновите страницу (жёстко), очистите данные сайта или откройте в приватной вкладке и войдите снова.'
 const AUTH_SESSION_CONFIRM_RETRIES = 4
 const AUTH_SESSION_CONFIRM_RETRY_MS = 200
 
@@ -200,7 +202,12 @@ const readErrorReason = async (
 
 export const fetchUserThunk = createAsyncThunk(
   'user/fetchUser',
-  async () => fetchCurrentUser()
+  async () => {
+    if (isStaticGhPagesDeploy()) {
+      await waitForGhPagesServiceWorker()
+    }
+    return fetchCurrentUser()
+  }
 )
 
 export const loginThunk = createAsyncThunk(
@@ -209,6 +216,9 @@ export const loginThunk = createAsyncThunk(
     credentials: LoginCredentials,
     { rejectWithValue }
   ) => {
+    if (isStaticGhPagesDeploy()) {
+      await waitForGhPagesServiceWorker()
+    }
     await clearAuthSessionBeforeLogin()
 
     const signinRes = await fetchWithTimeout(
@@ -264,6 +274,9 @@ export const signupThunk = createAsyncThunk(
     data: SignupData,
     { rejectWithValue }
   ) => {
+    if (isStaticGhPagesDeploy()) {
+      await waitForGhPagesServiceWorker()
+    }
     await clearAuthSessionBeforeLogin()
 
     const signupRes = await fetchWithTimeout(

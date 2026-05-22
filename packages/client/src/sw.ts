@@ -1,12 +1,16 @@
 /// <reference lib="webworker" />
 
 import type { PrecacheEntry } from './sw-env'
+import {
+  isPraktikumProxyPath,
+  proxyPraktikumApiRequest,
+} from './sw/praktikumApiProxy'
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<PrecacheEntry | string>
 }
 
-const CACHE_NAME = 'match3-cache-v1'
+const CACHE_NAME = 'match3-cache-v2'
 
 // self.__WB_MANIFEST заменяется плагином на массив ресурсов при сборке
 const PRECACHE_ENTRIES = self.__WB_MANIFEST || []
@@ -50,7 +54,25 @@ self.addEventListener('fetch', event => {
   const { request } = event
   const url = new URL(request.url)
 
-  // API same-origin на SSR; на GH Pages — не перехватываем (иначе 404/405 из статики)
+  // GitHub Pages: same-origin /api/v2 → SW → ya-praktikum.tech (cookie first-party)
+  if (
+    typeof __GH_PAGES_API_PROXY__ !==
+      'undefined' &&
+    __GH_PAGES_API_PROXY__ &&
+    url.origin === self.location.origin &&
+    isPraktikumProxyPath(url.pathname)
+  ) {
+    const appBase =
+      typeof __APP_BASE_URL__ === 'string'
+        ? __APP_BASE_URL__
+        : '/'
+    event.respondWith(
+      proxyPraktikumApiRequest(request, appBase)
+    )
+    return
+  }
+
+  // SSR / dev: /api/* обслуживает Express, SW не трогает
   if (url.pathname.startsWith('/api/')) {
     return
   }
