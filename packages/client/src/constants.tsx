@@ -1,4 +1,5 @@
 import './client.d'
+import { isStaticGhPagesDeploy } from './shared/staticDeploy'
 
 const DEFAULT_PRAKTIKUM_API =
   'https://ya-praktikum.tech/api/v2'
@@ -15,17 +16,6 @@ function isBrowserBundle(): boolean {
   return (
     typeof window !== 'undefined' &&
     typeof document !== 'undefined'
-  )
-}
-
-/** Статический деплой (GitHub Pages): нет Express-прокси, только прямой API Практикума. */
-function isStaticGhPagesDeploy(): boolean {
-  if (!isBrowserBundle()) {
-    return false
-  }
-  return (
-    import.meta.env.VITE_STATIC_DEPLOY ===
-    'gh-pages'
   )
 }
 
