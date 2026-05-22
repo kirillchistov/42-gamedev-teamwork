@@ -11,15 +11,15 @@
 
 ### Как запускать?
 
-1. Убедитесь что у вас установлен `node` и `docker`
-2. Выполните команду `yarn bootstrap` - это обязательный шаг, без него ничего работать не будет :)
-3. Выполните команду `yarn dev`
-3. Выполните команду `yarn dev --scope=client` чтобы запустить только клиент
-4. Выполните команду `yarn dev --scope=server` чтобы запустить только server
+1. Убедитесь что у вас установлен 'node' и 'docker'
+2. Выполните команду 'yarn bootstrap' - это обязательный шаг, без него ничего работать не будет :)
+3. Выполните команду 'yarn dev'
+3. Выполните команду 'yarn dev --scope=client' чтобы запустить только клиент
+4. Выполните команду 'yarn dev --scope=server' чтобы запустить только server
 
 
 ### Как добавить зависимости?
-В этом проекте используется `monorepo` на основе [`lerna`](https://github.com/lerna/lerna)
+В этом проекте используется 'monorepo' на основе ['lerna'](https://github.com/lerna/lerna)
 
 Чтобы добавить зависимость для клиента 
 ```yarn lerna add {your_dep} --scope client```
@@ -31,13 +31,13 @@
 ```yarn lerna add {your_dep}```
 
 
-Если вы хотите добавить dev зависимость, проделайте то же самое, но с флагом `dev`
+Если вы хотите добавить dev зависимость, проделайте то же самое, но с флагом 'dev'
 ```yarn lerna add {your_dep} --dev --scope server```
 
 
 ### Тесты
 
-Для клиента используется [`react-testing-library`](https://testing-library.com/docs/react-testing-library/intro/)
+Для клиента используется ['react-testing-library'](https://testing-library.com/docs/react-testing-library/intro/)
 
 ```yarn test```
 
@@ -53,15 +53,14 @@
 
 ```yarn build```
 
-И чтобы посмотреть что получилось
+И чтобы посмотреть что получилось:
 
-
-`yarn preview --scope client`
-`yarn preview --scope server`
+'yarn preview --scope client'
+'yarn preview --scope server'
 
 ## Хуки
 В проекте используется [lefthook](https://github.com/evilmartians/lefthook)
-Если очень-очень нужно пропустить проверки, используйте `--no-verify` (но не злоупотребляйте :)
+Если очень-очень нужно пропустить проверки, используйте '--no-verify' (но не злоупотребляйте :)
 
 ## Ой, ничего не работает :(
 
@@ -70,7 +69,7 @@
 ## Автодеплой статики на vercel
 Зарегистрируйте аккаунт на [vercel](https://vercel.com/)
 Следуйте [инструкции](https://vitejs.dev/guide/static-deploy.html#vercel-for-git)
-В качестве `root directory` укажите `packages/client`
+В качестве 'root directory' укажите 'packages/client'
 
 Все ваши PR будут автоматически деплоиться на vercel. URL вам предоставит деплоящий бот
 
@@ -82,15 +81,15 @@ node init.js
 yarn install
 ```
 
-Проверьте `.env`: для Docker Postgres нужен пользователь `postgres`, пароль из `POSTGRES_PASSWORD`, база `postgres`, `POSTGRES_HOST=localhost` для миграций с хоста. Если порт `5432` занят локальным PostgreSQL, поменяйте `POSTGRES_PORT` на свободный порт.
+Проверьте '.env': для Docker Postgres нужен пользователь 'postgres', пароль из 'POSTGRES_PASSWORD', база 'postgres', 'POSTGRES_HOST=localhost' для миграций с хоста. Если порт '5432' занят локальным PostgreSQL, поменяйте 'POSTGRES_PORT' на свободный порт.
 
-`docker compose up` запустит четыре сервиса:
-1. `postgres` — PostgreSQL.
-2. `migrate` — одноразовый запуск Sequelize-миграций после healthy Postgres.
-3. `server` — Node/Express API, стартует после успешных миграций.
-4. `client` — Node SSR-клиент, стартует после healthy API-сервера.
+'docker compose up' запустит четыре сервиса:
+1. 'postgres' — PostgreSQL.
+2. 'migrate' — одноразовый запуск Sequelize-миграций после healthy Postgres.
+3. 'server' — Node/Express API, стартует после успешных миграций.
+4. 'client' — Node SSR-клиент, стартует после healthy API-сервера.
 
-Клиент доступен на `http://localhost:${CLIENT_PORT:-9000}`, API — на `http://localhost:${SERVER_PORT:-3000}`. Если нужно поднять только часть стека: `docker compose up server` или `docker compose up postgres`.
+Клиент доступен на 'http://localhost:${CLIENT_PORT:-9000}', API — на 'http://localhost:${SERVER_PORT:-3000}'. Если нужно поднять только часть стека: 'docker compose up server' или 'docker compose up postgres'.
 
 Подробнее режимы запуска (dev / Docker / параллельно): [docs/sprint-7-8-demo-script.md](docs/sprint-7-8-demo-script.md).
 
@@ -180,19 +179,19 @@ yarn install
 - [x] [8.5 Эмодзи (клиент) (Артур / L2)](https://github.com/kirillchistov/42-gamedev-teamwork/issues/68)
 - [x] [8.6 Эмодзи (бэкенд) (Сергей / L2)](https://github.com/kirillchistov/42-gamedev-teamwork/issues/69)
 - [x] [8.7 Переключение темы (бэкенд) (Анна / L2)](https://github.com/kirillchistov/42-gamedev-teamwork/issues/70)
-- [x] [8.8 Серверная инфраструктура для форума (Анна / L5)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/134)
+- [x] [8.8 Серверная инфраструктура форума (Анна / L5)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/134)
 - [x] [8.9 Поддержать API форума на клиенте (Антон / L3)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/133)
 - [x] [8.10 Демо для командного зачёта (все / L0)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/131)
 
 **Спринт 9 (безопасность)**
 - [ ] 9.0 Улучшить визуальную часть игры (Кирилл / L0)
-- [ ] 9.1 Добавить CSP (Кирилл / L4) — [docs/csp.md](docs/csp.md)
+- [x] 9.1 Добавить CSP (Кирилл / L4) — [docs/csp.md](docs/csp.md)
 - [ ] 9.2 Написать конфиг nginx: HTTP2, SSL (Сергей / L4) 
 - [ ] 9.3 Добавить ещё одно WEB API (Антон / L2)
 - [ ] 9.4 Добавить защиту от XSS (Кирилл / L2)
 - [ ] 9.5 Настроить Action для автодеплоя (Артур / L4)
 - [ ] 9.6 Выложить сервис в Яндекс.Облако (Анна / L4)
-- [ ] 9.7 Настроить A-запись на домене (Кирилл / L2)
+- [ ] 9.7 Настроить A-запись на домене (Анна / L2)
 - [ ] 9.8 Финальное демо (Все / L0)
 
 ## Команда

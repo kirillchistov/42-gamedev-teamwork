@@ -1,7 +1,4 @@
-/**
- * Правила CSP для SSR (заголовок) и GitHub Pages (meta).
- * См. docs/csp.md
- */
+// Правила CSP для SSR (заголовок) и GitHub Pages (meta) по docs/csp.md
 
 export const CSP_ORIGINS = {
   praktikumApi: 'https://ya-praktikum.tech',
@@ -17,7 +14,7 @@ function isGhPagesStaticBuild(): boolean {
   return flag === 'gh-pages'
 }
 
-/** Сериализация директив в значение заголовка / meta. */
+// Сериализация директив в значение заголовка / meta
 export function formatCspHeader(
   directives: Record<string, string[]>
 ): string {
@@ -31,7 +28,7 @@ export function formatCspHeader(
     .join('; ')
 }
 
-/** SSR и preview: nonce для window.APP_INITIAL_STATE. */
+// SSR и preview: nonce для window.APP_INITIAL_STATE
 export function buildSsrCspDirectives(
   nonce: string
 ): Record<string, string[]> {
@@ -91,7 +88,7 @@ export function buildSsrCspHeader(
   )
 }
 
-/** Статика GitHub Pages: без nonce, без API нашего Node. */
+// Статика GitHub Pages: без nonce, без API нашего Node
 export function buildGhPagesCspDirectives(): Record<
   string,
   string[]
