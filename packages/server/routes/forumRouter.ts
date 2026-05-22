@@ -18,8 +18,19 @@ import {
   isForumModeratorUser,
 } from './forumAccess'
 import { isAllowedForumReactionEmoji } from './forumEmojiGuard'
+import {
+  validateForumContent,
+  validateForumTitle,
+} from '../utils/plainTextContent'
 
 const router = Router()
+
+function rejectPlainText(
+  res: Response,
+  reason: string
+): void {
+  res.status(400).json({ reason })
+}
 
 function requireSessionUser(
   req: Request,
@@ -286,9 +297,21 @@ router.post('/topics', async (req, res) => {
         ? o.content
         : ''
 
+    const titleCheck = validateForumTitle(title)
+    if (!titleCheck.ok) {
+      rejectPlainText(res, titleCheck.reason)
+      return
+    }
+    const contentCheck =
+      validateForumContent(content)
+    if (!contentCheck.ok) {
+      rejectPlainText(res, contentCheck.reason)
+      return
+    }
+
     const topic = await Topic.create({
-      title,
-      content,
+      title: titleCheck.value,
+      content: contentCheck.value,
       authorPraktikumId: user.id,
       authorDisplay: user.displayLabel,
     })
@@ -420,6 +443,12 @@ router.post(
         typeof o.content === 'string'
           ? o.content
           : ''
+      const contentCheck =
+        validateForumContent(content)
+      if (!contentCheck.ok) {
+        rejectPlainText(res, contentCheck.reason)
+        return
+      }
       const rawParent = o.parentCommentId
       const parentCommentId =
         rawParent === null ||
@@ -456,7 +485,7 @@ router.post(
         parentId: parentCommentId,
         authorPraktikumId: user.id,
         authorDisplay: user.displayLabel,
-        content,
+        content: contentCheck.value,
       })
 
       res
@@ -757,10 +786,27 @@ router.patch(
         content?: string
       } = {}
       if (typeof o.title === 'string') {
-        patch.title = o.title
+        const titleCheck = validateForumTitle(
+          o.title
+        )
+        if (!titleCheck.ok) {
+          rejectPlainText(res, titleCheck.reason)
+          return
+        }
+        patch.title = titleCheck.value
       }
       if (typeof o.content === 'string') {
-        patch.content = o.content
+        const contentCheck = validateForumContent(
+          o.content
+        )
+        if (!contentCheck.ok) {
+          rejectPlainText(
+            res,
+            contentCheck.reason
+          )
+          return
+        }
+        patch.content = contentCheck.value
       }
       if (Object.keys(patch).length === 0) {
         res.status(400).json({
@@ -897,8 +943,16 @@ router.patch(
         return
       }
 
+      const contentCheck = validateForumContent(
+        o.content
+      )
+      if (!contentCheck.ok) {
+        rejectPlainText(res, contentCheck.reason)
+        return
+      }
+
       await comment.update({
-        content: o.content,
+        content: contentCheck.value,
       })
       await comment.reload()
       res.json(commentPayload(comment))
