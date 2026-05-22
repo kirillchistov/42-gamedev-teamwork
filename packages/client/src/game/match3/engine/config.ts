@@ -71,6 +71,7 @@ export const GAME_ICON_THEME_OPTIONS = [
   'cosmic',
   'food',
   'coder',
+  'stellar',
 ] as const
 export type GameIconThemeOption =
   typeof GAME_ICON_THEME_OPTIONS[number]
@@ -81,9 +82,21 @@ export const BOARD_FIELD_THEME_OPTIONS = [
   'food',
   'coder',
   'hieroglyph',
+  'stellar',
 ] as const
 export type BoardFieldThemeOption =
   typeof BOARD_FIELD_THEME_OPTIONS[number]
+
+export const BOARD_FIELD_THEME_LABELS: Record<
+  BoardFieldThemeOption,
+  string
+> = {
+  space: 'Космос',
+  food: 'Еда',
+  coder: 'Кодер',
+  hieroglyph: 'Иероглиф',
+  stellar: 'Stellar Burger',
+}
 
 /** Полный VFX (частицы, вспышка, тряска) или упрощённый (только подсветка на поле). */
 export const GAME_VFX_QUALITY_OPTIONS = [

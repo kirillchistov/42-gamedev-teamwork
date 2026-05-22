@@ -6,6 +6,7 @@ import { publicAssetUrl } from '../../../utils/publicAssetUrl'
 
 export { MATCH3_FOOD_ICON_URLS } from './match3FoodIconUrls'
 export { MATCH3_TECH_ICON_URLS } from './match3TechIconUrls'
+export { MATCH3_STELLAR_ICON_URLS } from './match3StellarIconUrls'
 
 export const MATCH3_COSMIC_ICON_URLS: readonly string[] =
   [

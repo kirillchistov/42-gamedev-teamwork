@@ -1,6 +1,8 @@
 import React from 'react'
+import clsx from 'clsx'
 import type { BoardFieldThemeOption } from './engine/config'
 import { MATCH3_FOOD_ICON_URLS } from './engine/match3FoodIconUrls'
+import { MATCH3_STELLAR_ICON_URLS } from './engine/match3StellarIconUrls'
 import { MATCH3_TECH_ICON_URLS } from './engine/match3TechIconUrls'
 import { HIEROGLYPH_DECK } from './hieroglyphData'
 
@@ -46,15 +48,23 @@ export const BoardFieldThemePreview: React.FC<
   const icons =
     theme === 'food'
       ? MATCH3_FOOD_ICON_URLS
+      : theme === 'stellar'
+      ? MATCH3_STELLAR_ICON_URLS
       : MATCH3_TECH_ICON_URLS
   const previewTitle =
     theme === 'food'
       ? 'Предпросмотр поля в теме «Еда»'
+      : theme === 'stellar'
+      ? 'Предпросмотр поля Stellar Burger'
       : 'Предпросмотр поля в теме «Кодер»'
   return (
     <div className="match3-page__field-preview-wrap">
       <div
-        className="match3-page__field-preview"
+        className={clsx(
+          'match3-page__field-preview',
+          theme === 'stellar' &&
+            'match3-page__field-preview--stellar'
+        )}
         role="img"
         aria-label={previewTitle}>
         {Array.from({ length: n }, (_, i) => (

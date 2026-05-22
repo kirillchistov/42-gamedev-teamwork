@@ -65,6 +65,8 @@ import {
   GAME_DURATION_OPTIONS,
   MOVE_LIMIT_OPTIONS,
   TILE_KINDS_BY_BOARD_SIZE,
+  BOARD_FIELD_THEME_LABELS,
+  BOARD_FIELD_THEME_OPTIONS,
   type BoardFieldThemeOption,
   type BoardSizeOption,
   type GameDurationOption,
@@ -819,6 +821,8 @@ export const GamePage: React.FC = () => {
         return 'food'
       if (boardFieldTheme === 'coder')
         return 'coder'
+      if (boardFieldTheme === 'stellar')
+        return 'stellar'
       if (boardFieldTheme === 'hieroglyph')
         return 'cosmic'
       return 'cosmic'
@@ -1491,15 +1495,11 @@ export const GamePage: React.FC = () => {
                       setShowSettingsPanel(true)
                     }>
                     Поле:{' '}
-                    {boardFieldTheme === 'food'
-                      ? 'Еда'
-                      : boardFieldTheme ===
-                        'coder'
-                      ? 'Кодер'
-                      : boardFieldTheme ===
-                        'hieroglyph'
-                      ? 'Иероглиф'
-                      : 'Космос'}
+                    {
+                      BOARD_FIELD_THEME_LABELS[
+                        boardFieldTheme
+                      ]
+                    }
                   </button>
                   <button
                     type="button"
@@ -1725,18 +1725,19 @@ export const GamePage: React.FC = () => {
                                   .value as BoardFieldThemeOption
                               )
                             }}>
-                            <option value="space">
-                              Космос
-                            </option>
-                            <option value="food">
-                              Еда
-                            </option>
-                            <option value="coder">
-                              Кодер
-                            </option>
-                            <option value="hieroglyph">
-                              Иероглиф
-                            </option>
+                            {BOARD_FIELD_THEME_OPTIONS.map(
+                              value => (
+                                <option
+                                  key={value}
+                                  value={value}>
+                                  {
+                                    BOARD_FIELD_THEME_LABELS[
+                                      value
+                                    ]
+                                  }
+                                </option>
+                              )
+                            )}
                           </select>
                         </label>
                         <label className="match3-page__settings-label match3-page__settings-label--bg-url">

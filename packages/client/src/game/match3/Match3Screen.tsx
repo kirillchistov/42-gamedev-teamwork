@@ -27,6 +27,7 @@ import { HieroglyphCardOverlay } from './HieroglyphCardOverlay'
 import {
   GAME_DURATION_SEC,
   PRESTART_COUNTDOWN_SEC,
+  BOARD_FIELD_THEME_LABELS,
   type BoardFieldThemeOption,
   type BoardSizeOption,
   type GameDurationOption,
@@ -1182,7 +1183,9 @@ export const Match3Screen: React.FC<
               boardFieldTheme === 'coder' &&
                 'match3__board-wrap--coder',
               boardFieldTheme === 'hieroglyph' &&
-                'match3__board-wrap--hieroglyph'
+                'match3__board-wrap--hieroglyph',
+              boardFieldTheme === 'stellar' &&
+                'match3__board-wrap--stellar'
             )}>
             <div
               className={clsx(
@@ -1264,15 +1267,11 @@ export const Match3Screen: React.FC<
                     </div>
                     <div>
                       Поле:{' '}
-                      {boardFieldTheme === 'food'
-                        ? 'Еда'
-                        : boardFieldTheme ===
-                          'coder'
-                        ? 'Кодер'
-                        : boardFieldTheme ===
-                          'hieroglyph'
-                        ? 'Иероглиф'
-                        : 'Космос'}
+                      {
+                        BOARD_FIELD_THEME_LABELS[
+                          boardFieldTheme
+                        ]
+                      }
                     </div>
                     <div>
                       {limitMode === 'moves'
