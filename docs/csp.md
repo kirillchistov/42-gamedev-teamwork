@@ -4,6 +4,13 @@
 CSP (Content Security Policy) — это HTTP-заголовок Content Security Policy (CSP) - HTTP - MDN Web Docs, который определяет, какие ресурсы (скрипты, изображения, стили) браузер может загружать в нашем приложении.
 CSP ограничивает, откуда браузер может грузить контент. Это снижает риск XSS: даже если в страницу попадёт чужой скрипт, браузер его не выполнит без разрешения в политике.
 
+## Полезные источники
+- [MDN Web Docs](https://developer.mozilla.org/ru/docs/Glossary/CSP)
+- [MDN Web Docs - directives](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy#Directives)
+- [Xaker Обзор CSP](https://xakep.ru/2013/12/23/61798/)
+- [Rechecker CSP Guide](https://rechecker.ru/blog/csp-header-guide)
+
+
 ## Где применяется
 
 | Режим | Как отдаётся CSP |
