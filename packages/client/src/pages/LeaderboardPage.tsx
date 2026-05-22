@@ -8,6 +8,7 @@ import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { useSelector } from '../store'
 import {
+  fetchFriendsThunk,
   selectFriends,
   selectIsLoadingFriends,
 } from '../slices/friendsSlice'
@@ -25,14 +26,74 @@ import {
 import { usePage } from '../hooks/usePage'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { Button } from '../shared/ui'
-import { formatLeaderboardRecordDateForDisplay } from '../shared/utils/leaderboardDate'
+import {
+  compareLeaderboardRecordDates,
+  formatLeaderboardRecordDateForDisplay,
+} from '../shared/utils/leaderboardDate'
 
 type SortKey =
+  | 'rank'
+  | 'nickname'
   | 'CM42_score'
   | 'bestScore'
-  | 'nickname'
+  | 'bestScoreDate'
 type SortDir = 'asc' | 'desc'
 type ViewMode = 'table' | 'grid'
+
+function compareLeaderboardEntries(
+  a: LeaderboardEntry,
+  b: LeaderboardEntry,
+  sortKey: SortKey,
+  sortDir: SortDir
+): number {
+  const dir = sortDir === 'asc' ? 1 : -1
+
+  switch (sortKey) {
+    case 'rank':
+    case 'CM42_score': {
+      const byRating =
+        (a.CM42_score - b.CM42_score) * dir
+      if (byRating !== 0) return byRating
+      const byBest =
+        (a.bestScore - b.bestScore) * dir
+      if (byBest !== 0) return byBest
+      return (
+        a.nickname.localeCompare(
+          b.nickname,
+          'ru'
+        ) * dir
+      )
+    }
+    case 'bestScore': {
+      const byBest =
+        (a.bestScore - b.bestScore) * dir
+      if (byBest !== 0) return byBest
+      return (a.CM42_score - b.CM42_score) * dir
+    }
+    case 'nickname':
+      return (
+        a.nickname.localeCompare(
+          b.nickname,
+          'ru'
+        ) * dir
+      )
+    case 'bestScoreDate':
+      return (
+        compareLeaderboardRecordDates(
+          a.bestScoreDate,
+          b.bestScoreDate
+        ) * dir
+      )
+    default:
+      return 0
+  }
+}
+
+function defaultSortDirForKey(
+  key: SortKey
+): SortDir {
+  return key === 'nickname' ? 'asc' : 'desc'
+}
 
 export const LeaderboardPage: React.FC = () => {
   const { theme } = useLandingTheme()
@@ -78,24 +139,14 @@ export const LeaderboardPage: React.FC = () => {
     }
 
     const copy = [...list]
-    copy.sort((a, b) => {
-      const dir = sortDir === 'asc' ? 1 : -1
-      switch (sortKey) {
-        case 'CM42_score':
-          return (
-            (a.CM42_score - b.CM42_score) * dir
-          )
-        case 'bestScore':
-          return (a.bestScore - b.bestScore) * dir
-        case 'nickname':
-          return (
-            a.nickname.localeCompare(b.nickname) *
-            dir
-          )
-        default:
-          return 0
-      }
-    })
+    copy.sort((a, b) =>
+      compareLeaderboardEntries(
+        a,
+        b,
+        sortKey,
+        sortDir
+      )
+    )
     return copy
   }, [
     sortKey,
@@ -106,16 +157,14 @@ export const LeaderboardPage: React.FC = () => {
   ])
 
   const handleSort = (key: SortKey) => {
-    setSortKey(prevKey => {
-      if (prevKey === key) {
-        setSortDir(prevDir =>
-          prevDir === 'asc' ? 'desc' : 'asc'
-        )
-        return prevKey
-      }
-      setSortDir('desc')
-      return key
-    })
+    if (sortKey === key) {
+      setSortDir(prev =>
+        prev === 'asc' ? 'desc' : 'asc'
+      )
+      return
+    }
+    setSortKey(key)
+    setSortDir(defaultSortDirForKey(key))
   }
 
   const sortLabel = (
@@ -230,8 +279,15 @@ export const LeaderboardPage: React.FC = () => {
               <table className="leaderboard-table">
                 <thead>
                   <tr>
-                    <th>#</th>
-                    <th>Игрок</th>
+                    <th>
+                      {sortLabel('rank', '#')}
+                    </th>
+                    <th>
+                      {sortLabel(
+                        'nickname',
+                        'Игрок'
+                      )}
+                    </th>
                     <th>
                       {sortLabel(
                         'CM42_score',
@@ -244,10 +300,26 @@ export const LeaderboardPage: React.FC = () => {
                         'Рекорд'
                       )}
                     </th>
-                    <th>Дата рекорда</th>
+                    <th>
+                      {sortLabel(
+                        'bestScoreDate',
+                        'Дата рекорда'
+                      )}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
+                  {!isLoadingResults &&
+                    sortedEntries.length ===
+                      0 && (
+                      <tr>
+                        <td colSpan={5}>
+                          {showFriendsOnly
+                            ? 'Нет записей среди ваших друзей.'
+                            : 'Записей пока нет.'}
+                        </td>
+                      </tr>
+                    )}
                   {!isLoadingResults &&
                     sortedEntries.map(
                       (entry, index) => (
@@ -296,6 +368,19 @@ export const LeaderboardPage: React.FC = () => {
           ) : (
             <div className="extra-card leaderboard-card">
               <h3>Лучшие игроки</h3>
+              <div className="leaderboard-grid-sort">
+                {sortLabel('rank', '#')}
+                {sortLabel('nickname', 'Игрок')}
+                {sortLabel(
+                  'CM42_score',
+                  'Рейтинг'
+                )}
+                {sortLabel('bestScore', 'Рекорд')}
+                {sortLabel(
+                  'bestScoreDate',
+                  'Дата'
+                )}
+              </div>
               <div className="leaderboard-grid">
                 {sortedEntries.map(
                   (entry, index) => (
@@ -383,6 +468,9 @@ export const initLeaderboardPage = ({
         cursor: 0,
         limit: 10,
       })
+    ),
+    dispatch(fetchFriendsThunk()).catch(
+      () => undefined
     ),
   ]
   if (

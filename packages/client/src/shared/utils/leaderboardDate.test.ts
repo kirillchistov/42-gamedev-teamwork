@@ -1,4 +1,5 @@
 import {
+  compareLeaderboardRecordDates,
   formatLeaderboardRecordDateForDisplay,
   normalizeLeaderboardRecordDate,
 } from './leaderboardDate'
@@ -14,6 +15,15 @@ describe('leaderboardDate', () => {
     expect(
       normalizeLeaderboardRecordDate('30.04.2026')
     ).toBe('2026-04-30')
+  })
+
+  it('compareLeaderboardRecordDates orders ISO chronologically', () => {
+    expect(
+      compareLeaderboardRecordDates(
+        '2026-04-30',
+        '2026-05-06'
+      )
+    ).toBeLessThan(0)
   })
 
   it('formats normalized date for ru-RU display', () => {

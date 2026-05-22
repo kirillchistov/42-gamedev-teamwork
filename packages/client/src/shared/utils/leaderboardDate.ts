@@ -73,6 +73,19 @@ export function leaderboardRecordDateToday(): string {
 }
 
 /** Отображение в UI: dd.MM.yyyy (ru-RU) из нормализованной ISO-даты. */
+/** Сравнение дат рекорда для сортировки (пустые — в конец). */
+export function compareLeaderboardRecordDates(
+  a: string,
+  b: string
+): number {
+  const na = normalizeLeaderboardRecordDate(a)
+  const nb = normalizeLeaderboardRecordDate(b)
+  if (!na && !nb) return 0
+  if (!na) return 1
+  if (!nb) return -1
+  return na.localeCompare(nb)
+}
+
 export function formatLeaderboardRecordDateForDisplay(
   isoDate: string
 ): string {
