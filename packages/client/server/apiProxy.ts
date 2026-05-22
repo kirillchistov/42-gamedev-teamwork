@@ -73,6 +73,7 @@ const sharedProxyOptions: Pick<
   },
   cookiePathRewrite: {
     '/api/v2': '/api/v2',
+    '/': '/',
   },
 }
 

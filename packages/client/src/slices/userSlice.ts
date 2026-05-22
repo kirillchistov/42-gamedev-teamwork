@@ -29,7 +29,9 @@ const AUTH_REQUEST_TIMEOUT_MS = 12_000
 const AUTH_RELOGIN_CONFLICT_MESSAGE =
   'Аккаунт уже активен на другом устройстве. Выйдите из аккаунта там и повторите вход.'
 const AUTH_SESSION_CONFIRMATION_FAILED_MESSAGE =
-  'Вход выполнен, но сессия не подтвердилась. Попробуйте войти еще раз.'
+  'Вход выполнен, но сессия не подтвердилась. Очистите данные сайта (или откройте в приватной вкладке) и войдите снова.'
+const AUTH_SESSION_CONFIRM_RETRIES = 4
+const AUTH_SESSION_CONFIRM_RETRY_MS = 200
 
 function fetchWithTimeout(
   url: string,
@@ -124,6 +126,58 @@ const fetchCurrentUser =
     return (await res.json()) as Promise<User>
   }
 
+/** Сброс старой сессии Практикума перед signin (битые cookie на мобильном Safari). */
+async function clearAuthSessionBeforeLogin(): Promise<void> {
+  try {
+    await fetchWithTimeout(
+      `${BASE_URL}/auth/logout`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      }
+    )
+  } catch {
+    /* сеть/таймаут — всё равно пробуем signin */
+  }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => {
+    window.setTimeout(resolve, ms)
+  })
+}
+
+/**
+ * После signin cookie иногда появляется с задержкой (iOS/Android).
+ * Несколько попыток /auth/user снижают ложное «сессия не подтвердилась».
+ */
+async function fetchCurrentUserWithRetry(): Promise<User> {
+  let lastError: unknown = new Error(
+    'Unauthorized'
+  )
+  for (
+    let attempt = 0;
+    attempt < AUTH_SESSION_CONFIRM_RETRIES;
+    attempt += 1
+  ) {
+    try {
+      return await fetchCurrentUser()
+    } catch (e) {
+      lastError = e
+      if (
+        attempt <
+        AUTH_SESSION_CONFIRM_RETRIES - 1
+      ) {
+        await delay(AUTH_SESSION_CONFIRM_RETRY_MS)
+      }
+    }
+  }
+  throw lastError
+}
+
 const readErrorReason = async (
   response: Response,
   fallback: string
@@ -155,6 +209,8 @@ export const loginThunk = createAsyncThunk(
     credentials: LoginCredentials,
     { rejectWithValue }
   ) => {
+    await clearAuthSessionBeforeLogin()
+
     const signinRes = await fetchWithTimeout(
       `${BASE_URL}/auth/signin`,
       {
@@ -175,7 +231,7 @@ export const loginThunk = createAsyncThunk(
       // Конфликт активной сессии: показываем понятный сценарий для "входа с другого устройства".
       if (isAlreadyLoggedInError(reason)) {
         try {
-          return await fetchCurrentUser()
+          return await fetchCurrentUserWithRetry()
         } catch {
           return rejectWithValue(
             AUTH_RELOGIN_CONFLICT_MESSAGE
@@ -193,7 +249,7 @@ export const loginThunk = createAsyncThunk(
     }
 
     try {
-      return await fetchCurrentUser()
+      return await fetchCurrentUserWithRetry()
     } catch {
       return rejectWithValue(
         AUTH_SESSION_CONFIRMATION_FAILED_MESSAGE
@@ -208,6 +264,8 @@ export const signupThunk = createAsyncThunk(
     data: SignupData,
     { rejectWithValue }
   ) => {
+    await clearAuthSessionBeforeLogin()
+
     const signupRes = await fetchWithTimeout(
       `${BASE_URL}/auth/signup`,
       {
@@ -230,7 +288,13 @@ export const signupThunk = createAsyncThunk(
       )
     }
 
-    return fetchCurrentUser()
+    try {
+      return await fetchCurrentUserWithRetry()
+    } catch {
+      return rejectWithValue(
+        AUTH_SESSION_CONFIRMATION_FAILED_MESSAGE
+      )
+    }
   }
 )
 

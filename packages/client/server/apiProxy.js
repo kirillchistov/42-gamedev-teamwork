@@ -49,6 +49,7 @@ const sharedProxyOptions = {
     },
     cookiePathRewrite: {
         '/api/v2': '/api/v2',
+        '/': '/',
     },
 };
 function nodeProxy(nodeApiTarget, mountPath) {
