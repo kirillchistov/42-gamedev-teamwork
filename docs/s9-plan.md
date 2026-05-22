@@ -14,7 +14,7 @@
 | 9.1 | CSP | Кирилл | L4 | Политика контента: заголовки на SSR, мета на GH Pages |
 | 9.2 | nginx HTTP/2 + SSL | Сергей | L4 | Конфиг reverse-proxy перед Node |
 | 9.3 | Ещё одно Web API | Антон | L2 | **Page Visibility** — пауза match-3 при скрытой вкладке; см. [add-web-api.md](add-web-api.md) |
-| 9.4 | Защита от XSS | Кирилл | L2 | Санитизация вывода, запрет опасных паттернов в UI |
+| 9.4 | Защита от XSS | Кирилл | L2 | Plain-text валидация, безопасный вывод; см. [xss.md](xss.md) |
 | 9.5 | GitHub Action автодеплоя | Артур | L4 | CI/CD на сервер или статику |
 | 9.6 | Деплой в Яндекс.Облако | Анна | L4 | ВМ/контейнер, env, миграции |
 | 9.7 | A-запись домена | Кирилл | L2 | DNS на IP облака |
@@ -45,6 +45,17 @@
 - GitHub Pages: мета-тег CSP в `index.html` при сборке `VITE_STATIC_DEPLOY=gh-pages` (без SSR и без nonce).
 - Разрешённые внешние источники: API Практикума, OAuth Яндекс, картинки (https, data), в dev — Vite HMR (ws, unsafe-eval).
 
+## 9.4 XSS
+
+Требования и реализация: [xss.md](xss.md).
+
+Кратко:
+
+- Валидация тем/комментариев на Node API и на клиенте перед отправкой.
+- Вывод через `ForumPlainText` (React text nodes), без HTML.
+- Заголовок `X-XSS-Protection` на SSR вместе с CSP ([csp.md](csp.md)).
+- Реакции форума — белый список эмодзи (спринт 8).
+
 ## 9.2 nginx (черновик)
 
 - `client` → Node SSR :9000
@@ -59,10 +70,12 @@
 - [ ] Форум: тема, комментарий, реакции
 - [ ] Тема light/dark (сервер + клиент)
 - [ ] CSP без ошибок в консоли на главных страницах
+- [ ] XSS: отклонение `<script>` в теме/комментарии, обычный текст проходит
 - [ ] Прод-URL или Docker compose up
 
 ## Ссылки
 
 - [csp.md](csp.md) — политика 9.1
+- [xss.md](xss.md) — защита 9.4
 - [forum-server-infra.md](forum-server-infra.md) — Docker и API
 - [auth-middleware-backend.md](auth-middleware-backend.md) — авторизация на бэкенде
