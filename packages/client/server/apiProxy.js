@@ -22,12 +22,22 @@ function readPraktikumOrigin() {
 }
 function readNodeApiTarget() {
     var _a, _b, _c;
-    const internal = (_a = process.env.INTERNAL_SERVER_URL) === null || _a === void 0 ? void 0 : _a.trim();
+    const external = ((_a = process.env.EXTERNAL_SERVER_URL) === null || _a === void 0 ? void 0 : _a.trim()) ||
+        ((_b = process.env.VITE_APP_API_URL) === null || _b === void 0 ? void 0 : _b.trim());
+    const internal = (_c = process.env.INTERNAL_SERVER_URL) === null || _c === void 0 ? void 0 : _c.trim();
+    const internalIsDockerOnly = internal != null &&
+        /:\/\/server(?::|\/|$)/.test(internal);
+    // На хосте (yarn dev:client) hostname `server` из docker-compose не резолвится.
+    if (process.env.NODE_ENV === 'development' &&
+        internalIsDockerOnly) {
+        if (external) {
+            return trimTrailingSlash(external);
+        }
+        return DEFAULT_NODE_API;
+    }
     if (internal) {
         return trimTrailingSlash(internal);
     }
-    const external = ((_b = process.env.EXTERNAL_SERVER_URL) === null || _b === void 0 ? void 0 : _b.trim()) ||
-        ((_c = process.env.VITE_APP_API_URL) === null || _c === void 0 ? void 0 : _c.trim());
     if (external) {
         return trimTrailingSlash(external);
     }
@@ -41,6 +51,7 @@ const sharedProxyOptions = {
     },
     cookiePathRewrite: {
         '/api/v2': '/api/v2',
+        '/': '/',
     },
 };
 function nodeProxy(nodeApiTarget, mountPath) {
@@ -49,14 +60,23 @@ function nodeProxy(nodeApiTarget, mountPath) {
         ? mountPath
         : `/${mountPath}`;
     return (0, http_proxy_middleware_1.createProxyMiddleware)({
-        // http-proxy-middleware получает path уже без mountPath от Express.
+        // http-proxy-middleware v3: target должен включать тот же base path, что и app.use(path).
         target: `${base}${prefix}`,
         changeOrigin: true,
+        proxyTimeout: 30000,
+        timeout: 30000,
+        // 8.10 demo MCR (sprint_8):
+        // // http-proxy-middleware получает path уже без mountPath от Express.
+        // proxyTimeout: (не задано)
+        // timeout: (не задано)
     });
 }
 function registerApiProxy(app) {
     const praktikumOrigin = readPraktikumOrigin();
     const nodeApiTarget = readNodeApiTarget();
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`[apiProxy] Node API → ${nodeApiTarget} (forum, friends, /user)`);
+    }
     app.use('/api/v2', (0, http_proxy_middleware_1.createProxyMiddleware)({
         target: `${praktikumOrigin}/api/v2`,
         ...sharedProxyOptions,

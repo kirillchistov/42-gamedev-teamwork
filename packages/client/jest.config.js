@@ -9,6 +9,7 @@ module.exports = {
   globals: {
     __SERVER_PORT__: process.env.SERVER_PORT,
   },
+  setupFiles: ['<rootDir>/jest.setupAppBase.js'],
   setupFilesAfterEnv: [
     '@testing-library/jest-dom',
   ],

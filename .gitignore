@@ -1,9 +1,17 @@
 node_modules/
 coverage/
 .env
+.claude/
 .idea
 .vscode
 .DS_Store
 dist
 tmp
+# Случайный `tsc` в packages/client/src ломает Vite SSR (резолв .js/.d.ts вместо .tsx).
+packages/client/src/**/*.js
+packages/client/src/**/*.d.ts
+!packages/client/src/vite-env.d.ts
+!packages/client/src/client.d.ts
+!packages/client/src/sw-env.d.ts
+!packages/client/src/types/jest-dom.d.ts
 package-lock.json

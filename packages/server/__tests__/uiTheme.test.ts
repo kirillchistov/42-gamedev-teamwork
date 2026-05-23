@@ -20,7 +20,7 @@ describe('/api/ui/theme', () => {
       .send({ theme: 'invalid' })
     expect(res.status).toBe(400)
     expect(res.body).toEqual({
-      reason: 'Invalid theme',
+      reason: 'Invalid theme / Неверная тема',
     })
   })
 

@@ -5,15 +5,13 @@
  * Компонент создаёт экземпляр игры один раз и подписывается на обновления HUD через onHudChange.
  */
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import './match3.pcss'
+import {
+  MATCH3_PERF_PAUSE_EVENT,
+  type Match3PerfPauseDetail,
+} from '../../utils/performanceMetrics'
 import {
   createMatch3Game,
   type GameEndPayload,
@@ -23,6 +21,7 @@ import { HieroglyphCardOverlay } from './HieroglyphCardOverlay'
 import {
   GAME_DURATION_SEC,
   PRESTART_COUNTDOWN_SEC,
+  BOARD_FIELD_THEME_LABELS,
   type BoardFieldThemeOption,
   type BoardSizeOption,
   type GameDurationOption,
@@ -32,20 +31,10 @@ import {
   type GameThemeOption,
   type GameVfxQualityOption,
 } from './engine/config'
-import {
-  DEFAULT_MATCH3_LEVEL_ID,
-  getMatch3LevelById,
-} from './engine/levels'
+import { DEFAULT_MATCH3_LEVEL_ID, getMatch3LevelById } from './engine/levels'
 
-type UiPhase =
-  | 'countdown'
-  | 'ready'
-  | 'playing'
-  | 'results'
-type PlayerHintsMode =
-  | 'always'
-  | 'never'
-  | 'pauses'
+type UiPhase = 'countdown' | 'ready' | 'playing' | 'results'
+type PlayerHintsMode = 'always' | 'never' | 'pauses'
 
 type QuestPreview = {
   id: string
@@ -55,12 +44,9 @@ type QuestPreview = {
 
 const BORDER_SPARK_COUNT = 34
 const BORDER_SPARK_STEP_MS = 42
-const BORDER_SPARK_CLEAR_MS =
-  BORDER_SPARK_COUNT * BORDER_SPARK_STEP_MS + 400
+const BORDER_SPARK_CLEAR_MS = BORDER_SPARK_COUNT * BORDER_SPARK_STEP_MS + 400
 
-function buildBorderSparkPositions(
-  n: number
-): { left: string; top: string }[] {
+function buildBorderSparkPositions(n: number): { left: string; top: string }[] {
   const out: { left: string; top: string }[] = []
   for (let i = 0; i < n; i += 1) {
     const u = (i / n) * 4
@@ -89,19 +75,15 @@ function buildBorderSparkPositions(
   return out
 }
 
-const BORDER_SPARK_POSITIONS =
-  buildBorderSparkPositions(BORDER_SPARK_COUNT)
+const BORDER_SPARK_POSITIONS = buildBorderSparkPositions(BORDER_SPARK_COUNT)
 const COACH_MESSAGES = [
   'Собирайте 3+ в ряд и находите спрятанные сокровища!',
   'За комбинации 4+ и бомбы/ракеты получайте комбо-баллы!',
   'Цель: набрать максимум баллов за минимальное время и число ходов',
 ]
-const ROOKIE_TUTORIAL_GAMES_KEY =
-  'match3:rookie-tutorial-games'
-const ROOKIE_TUTORIAL_DONE_KEY =
-  'match3:rookie-tutorial-done'
-const MATCH3_HINTS_HIDDEN_KEY =
-  'match3:hints-hidden'
+const ROOKIE_TUTORIAL_GAMES_KEY = 'match3:rookie-tutorial-games'
+const ROOKIE_TUTORIAL_DONE_KEY = 'match3:rookie-tutorial-done'
+const MATCH3_HINTS_HIDDEN_KEY = 'match3:hints-hidden'
 const ROOKIE_TUTORIAL_MAX_GAMES = 3
 
 function IconSettings() {
@@ -164,14 +146,10 @@ type Match3ScreenProps = {
   playerHintsMode?: PlayerHintsMode
   onOpenSettings?: () => void
   forcePlayMode?: boolean
-  onGameFinished?: (
-    payload: GameEndPayload
-  ) => void
+  onGameFinished?: (payload: GameEndPayload) => void
 }
 
-export const Match3Screen: React.FC<
-  Match3ScreenProps
-> = ({
+export function Match3Screen({
   selectedLevelId = DEFAULT_MATCH3_LEVEL_ID,
   goalScore,
   limitMode = 'moves',
@@ -191,14 +169,10 @@ export const Match3Screen: React.FC<
   onOpenSettings,
   forcePlayMode = false,
   onGameFinished,
-}) => {
-  const canvasRef =
-    useRef<HTMLCanvasElement | null>(null)
-  const fxCanvasRef =
-    useRef<HTMLCanvasElement | null>(null)
-  const gameRef = useRef<ReturnType<
-    typeof createMatch3Game
-  > | null>(null)
+}: Match3ScreenProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const fxCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const gameRef = useRef<ReturnType<typeof createMatch3Game> | null>(null)
 
   const [hud, setHud] = useState<GameHudState>({
     score: 0,
@@ -217,118 +191,71 @@ export const Match3Screen: React.FC<
   const [uiPhase, setUiPhase] = useState<UiPhase>(
     forcePlayMode ? 'playing' : 'countdown'
   )
-  const [countdownVal, setCountdownVal] =
-    useState(PRESTART_COUNTDOWN_SEC)
-  const [resultSnapshot, setResultSnapshot] =
-    useState<GameHudState | null>(null)
-  const [gameEndReason, setGameEndReason] =
-    useState<GameEndPayload['reason'] | null>(
-      null
-    )
-  const [boardShakeLevel, setBoardShakeLevel] =
-    useState<'off' | 'light' | 'strong'>('off')
-  const [borderSpark, setBorderSpark] = useState<
-    'off' | 'line4plus' | 'tOrL'
+  const [countdownVal, setCountdownVal] = useState(PRESTART_COUNTDOWN_SEC)
+  const [resultSnapshot, setResultSnapshot] = useState<GameHudState | null>(
+    null
+  )
+  const [gameEndReason, setGameEndReason] = useState<
+    GameEndPayload['reason'] | null
+  >(null)
+  const [boardShakeLevel, setBoardShakeLevel] = useState<
+    'off' | 'light' | 'strong'
   >('off')
-  const [sparkBurstId, setSparkBurstId] =
-    useState(0)
+  const [borderSpark, setBorderSpark] = useState<'off' | 'line4plus' | 'tOrL'>(
+    'off'
+  )
+  const [sparkBurstId, setSparkBurstId] = useState(0)
   const [coachStep, setCoachStep] = useState(0)
-  const [showKeyboardHint, setShowKeyboardHint] =
-    useState(false)
-  const [
-    comboSuccessCount,
-    setComboSuccessCount,
-  ] = useState(0)
-  const [
-    showIdleCoachHint,
-    setShowIdleCoachHint,
-  ] = useState(false)
-  const [
-    isRookieTutorialActive,
-    setIsRookieTutorialActive,
-  ] = useState(false)
-  const [showInitialHint, setShowInitialHint] =
-    useState(false)
-  const [isPauseOpen, setIsPauseOpen] =
-    useState(false)
-  const [isQuestListOpen, setIsQuestListOpen] =
-    useState(false)
-  const [
-    justCompletedQuestIds,
-    setJustCompletedQuestIds,
-  ] = useState<string[]>([])
-  const [questToastText, setQuestToastText] =
-    useState('')
+  const [showKeyboardHint, setShowKeyboardHint] = useState(false)
+  const [comboSuccessCount, setComboSuccessCount] = useState(0)
+  const [showIdleCoachHint, setShowIdleCoachHint] = useState(false)
+  const [isRookieTutorialActive, setIsRookieTutorialActive] = useState(false)
+  const [showInitialHint, setShowInitialHint] = useState(false)
+  const [isPauseOpen, setIsPauseOpen] = useState(false)
+  const [isQuestListOpen, setIsQuestListOpen] = useState(false)
+  const [justCompletedQuestIds, setJustCompletedQuestIds] = useState<string[]>(
+    []
+  )
+  const [questToastText, setQuestToastText] = useState('')
   const initialHintShownRef = useRef(false)
-  const [
-    playingElapsedSec,
-    setPlayingElapsedSec,
-  ] = useState(0)
-  const [hintsHidden, setHintsHidden] =
-    useState(false)
-  const [
-    hieroglyphOverlayKind,
-    setHieroglyphOverlayKind,
-  ] = useState<number | null>(null)
-  const hieroglyphFieldRef = useRef(
-    boardFieldTheme
-  )
-  hieroglyphFieldRef.current = boardFieldTheme
-  const shakeResetRef = useRef<number | null>(
-    null
-  )
-  const sparkResetRef = useRef<number | null>(
-    null
-  )
-  const idleCoachTimerRef = useRef<number | null>(
-    null
-  )
-  const prevScoreRef = useRef(0)
-  const playSessionTrackedRef = useRef(false)
-  const prevCompletedQuestIdsRef = useRef<
-    Set<string>
-  >(new Set())
-  const questToastTimerRef = useRef<
+  const [playingElapsedSec, setPlayingElapsedSec] = useState(0)
+  const [hintsHidden, setHintsHidden] = useState(false)
+  const [hieroglyphOverlayKind, setHieroglyphOverlayKind] = useState<
     number | null
   >(null)
+  const hieroglyphFieldRef = useRef(boardFieldTheme)
+  hieroglyphFieldRef.current = boardFieldTheme
+  const shakeResetRef = useRef<number | null>(null)
+  const sparkResetRef = useRef<number | null>(null)
+  const idleCoachTimerRef = useRef<number | null>(null)
+  const prevScoreRef = useRef(0)
+  const playSessionTrackedRef = useRef(false)
+  const prevCompletedQuestIdsRef = useRef<Set<string>>(new Set())
+  const questToastTimerRef = useRef<number | null>(null)
 
-  const onComboShake = useCallback(
-    (chain: number) => {
-      if (chain < 3) return
-      if (shakeResetRef.current !== null) {
-        window.clearTimeout(shakeResetRef.current)
-      }
-      setBoardShakeLevel(
-        chain >= 5 ? 'strong' : 'light'
-      )
-      shakeResetRef.current = window.setTimeout(
-        () => {
-          setBoardShakeLevel('off')
-          shakeResetRef.current = null
-        },
-        480
-      )
-    },
-    []
-  )
+  const onComboShake = useCallback((chain: number) => {
+    if (chain < 3) return
+    if (shakeResetRef.current !== null) {
+      window.clearTimeout(shakeResetRef.current)
+    }
+    setBoardShakeLevel(chain >= 5 ? 'strong' : 'light')
+    shakeResetRef.current = window.setTimeout(() => {
+      setBoardShakeLevel('off')
+      shakeResetRef.current = null
+    }, 480)
+  }, [])
 
-  const onPremiumMatchBorder = useCallback(
-    (shape: 'line4plus' | 'tOrL') => {
-      if (sparkResetRef.current !== null) {
-        window.clearTimeout(sparkResetRef.current)
-      }
-      setBorderSpark(shape)
-      setSparkBurstId(v => v + 1)
-      sparkResetRef.current = window.setTimeout(
-        () => {
-          setBorderSpark('off')
-          sparkResetRef.current = null
-        },
-        BORDER_SPARK_CLEAR_MS
-      )
-    },
-    []
-  )
+  const onPremiumMatchBorder = useCallback((shape: 'line4plus' | 'tOrL') => {
+    if (sparkResetRef.current !== null) {
+      window.clearTimeout(sparkResetRef.current)
+    }
+    setBorderSpark(shape)
+    setSparkBurstId(v => v + 1)
+    sparkResetRef.current = window.setTimeout(() => {
+      setBorderSpark('off')
+      sparkResetRef.current = null
+    }, BORDER_SPARK_CLEAR_MS)
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -343,10 +270,7 @@ export const Match3Screen: React.FC<
       onComboShake,
       onPremiumMatchBorder,
       onHieroglyphCardOpen: ({ kind }) => {
-        if (
-          hieroglyphFieldRef.current !==
-          'hieroglyph'
-        ) {
+        if (hieroglyphFieldRef.current !== 'hieroglyph') {
           return
         }
         setHieroglyphOverlayKind(kind)
@@ -377,20 +301,13 @@ export const Match3Screen: React.FC<
         sparkResetRef.current = null
       }
       if (questToastTimerRef.current !== null) {
-        window.clearTimeout(
-          questToastTimerRef.current
-        )
+        window.clearTimeout(questToastTimerRef.current)
         questToastTimerRef.current = null
       }
       game.destroy()
       gameRef.current = null
     }
-  }, [
-    forcePlayMode,
-    onGameFinished,
-    onComboShake,
-    onPremiumMatchBorder,
-  ])
+  }, [forcePlayMode, onGameFinished, onComboShake, onPremiumMatchBorder])
 
   useEffect(() => {
     const game = gameRef.current
@@ -405,8 +322,7 @@ export const Match3Screen: React.FC<
   }, [debugBoostersMode])
 
   useEffect(() => {
-    if (forcePlayMode || uiPhase !== 'countdown')
-      return
+    if (forcePlayMode || uiPhase !== 'countdown') return
     if (countdownVal <= 0) {
       setUiPhase('ready')
       return
@@ -424,24 +340,13 @@ export const Match3Screen: React.FC<
   const appliedLevel = useMemo(
     () => ({
       ...selectedLevel,
-      goalValue:
-        goalScore ?? selectedLevel.goalValue,
-      boardSize:
-        boardSize ?? selectedLevel.boardSize,
+      goalValue: goalScore ?? selectedLevel.goalValue,
+      boardSize: boardSize ?? selectedLevel.boardSize,
       theme: themeOption ?? selectedLevel.theme,
-      durationSec:
-        durationSec ?? selectedLevel.durationSec,
-      tileKinds:
-        tileKinds ?? selectedLevel.tileKinds,
+      durationSec: durationSec ?? selectedLevel.durationSec,
+      tileKinds: tileKinds ?? selectedLevel.tileKinds,
     }),
-    [
-      selectedLevel,
-      goalScore,
-      boardSize,
-      themeOption,
-      durationSec,
-      tileKinds,
-    ]
+    [selectedLevel, goalScore, boardSize, themeOption, durationSec, tileKinds]
   )
 
   useEffect(() => {
@@ -485,19 +390,22 @@ export const Match3Screen: React.FC<
     if (!game) return
     const shouldPauseTimer =
       isPauseOpen ||
-      (boardFieldTheme === 'hieroglyph' &&
-        hieroglyphOverlayKind !== null)
+      (boardFieldTheme === 'hieroglyph' && hieroglyphOverlayKind !== null)
     game.setRoundTimerPaused(shouldPauseTimer)
-  }, [
-    isPauseOpen,
-    boardFieldTheme,
-    hieroglyphOverlayKind,
-  ])
+  }, [isPauseOpen, boardFieldTheme, hieroglyphOverlayKind])
 
   useEffect(() => {
     const game = gameRef.current
     if (!game) return
     game.setInputBlocked(isPauseOpen)
+  }, [isPauseOpen])
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent<Match3PerfPauseDetail>(MATCH3_PERF_PAUSE_EVENT, {
+        detail: { paused: isPauseOpen },
+      })
+    )
   }, [isPauseOpen])
 
   useEffect(() => {
@@ -523,10 +431,7 @@ export const Match3Screen: React.FC<
     if (playerHintsMode === 'never') {
       setHintsHidden(true)
       try {
-        window.localStorage.setItem(
-          MATCH3_HINTS_HIDDEN_KEY,
-          '1'
-        )
+        window.localStorage.setItem(MATCH3_HINTS_HIDDEN_KEY, '1')
       } catch {
         // noop
       }
@@ -534,10 +439,7 @@ export const Match3Screen: React.FC<
     }
     setHintsHidden(false)
     try {
-      window.localStorage.setItem(
-        MATCH3_HINTS_HIDDEN_KEY,
-        '0'
-      )
+      window.localStorage.setItem(MATCH3_HINTS_HIDDEN_KEY, '0')
     } catch {
       // noop
     }
@@ -554,33 +456,21 @@ export const Match3Screen: React.FC<
 
     let nextGamesCount = 1
     try {
-      const raw = window.localStorage.getItem(
-        ROOKIE_TUTORIAL_GAMES_KEY
-      )
+      const raw = window.localStorage.getItem(ROOKIE_TUTORIAL_GAMES_KEY)
       const prevCount = Number(raw || '0')
       nextGamesCount =
-        Number.isFinite(prevCount) &&
-        prevCount > 0
-          ? prevCount + 1
-          : 1
+        Number.isFinite(prevCount) && prevCount > 0 ? prevCount + 1 : 1
       window.localStorage.setItem(
         ROOKIE_TUTORIAL_GAMES_KEY,
         String(nextGamesCount)
       )
-      if (
-        nextGamesCount > ROOKIE_TUTORIAL_MAX_GAMES
-      ) {
-        window.localStorage.setItem(
-          ROOKIE_TUTORIAL_DONE_KEY,
-          '1'
-        )
+      if (nextGamesCount > ROOKIE_TUTORIAL_MAX_GAMES) {
+        window.localStorage.setItem(ROOKIE_TUTORIAL_DONE_KEY, '1')
       }
     } catch {
       nextGamesCount = 1
     }
-    setIsRookieTutorialActive(
-      nextGamesCount <= ROOKIE_TUTORIAL_MAX_GAMES
-    )
+    setIsRookieTutorialActive(nextGamesCount <= ROOKIE_TUTORIAL_MAX_GAMES)
   }, [uiPhase, selectedLevel.id])
 
   useEffect(() => {
@@ -638,8 +528,7 @@ export const Match3Screen: React.FC<
     if (uiPhase !== 'playing') return
     const canvas = canvasRef.current
     const onKeyDown = (ev: KeyboardEvent) => {
-      if (document.activeElement !== canvas)
-        return
+      if (document.activeElement !== canvas) return
       const isKeyboardControl =
         ev.code === 'Enter' ||
         ev.code === 'Space' ||
@@ -657,11 +546,7 @@ export const Match3Screen: React.FC<
       }
     }
     window.addEventListener('keydown', onKeyDown)
-    return () =>
-      window.removeEventListener(
-        'keydown',
-        onKeyDown
-      )
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [uiPhase, comboSuccessCount])
 
   useEffect(() => {
@@ -669,15 +554,12 @@ export const Match3Screen: React.FC<
     const canvas = canvasRef.current
     const resetIdleCoachTimer = () => {
       if (idleCoachTimerRef.current !== null) {
-        window.clearTimeout(
-          idleCoachTimerRef.current
-        )
+        window.clearTimeout(idleCoachTimerRef.current)
       }
       setShowIdleCoachHint(false)
-      idleCoachTimerRef.current =
-        window.setTimeout(() => {
-          setShowIdleCoachHint(true)
-        }, 10000)
+      idleCoachTimerRef.current = window.setTimeout(() => {
+        setShowIdleCoachHint(true)
+      }, 10000)
     }
 
     resetIdleCoachTimer()
@@ -688,94 +570,57 @@ export const Match3Screen: React.FC<
       resetIdleCoachTimer()
     }
     window.addEventListener('keydown', onKeyDown)
-    canvas?.addEventListener(
-      'pointerdown',
-      onPointerDown
-    )
+    canvas?.addEventListener('pointerdown', onPointerDown)
     return () => {
       if (idleCoachTimerRef.current !== null) {
-        window.clearTimeout(
-          idleCoachTimerRef.current
-        )
+        window.clearTimeout(idleCoachTimerRef.current)
         idleCoachTimerRef.current = null
       }
-      window.removeEventListener(
-        'keydown',
-        onKeyDown
-      )
-      canvas?.removeEventListener(
-        'pointerdown',
-        onPointerDown
-      )
+      window.removeEventListener('keydown', onKeyDown)
+      canvas?.removeEventListener('pointerdown', onPointerDown)
     }
   }, [uiPhase])
 
   const timeLabel = useMemo(() => {
-    const mm = String(
-      Math.floor(hud.timeLeftSec / 60)
-    ).padStart(2, '0')
-    const ss = String(
-      hud.timeLeftSec % 60
-    ).padStart(2, '0')
+    const mm = String(Math.floor(hud.timeLeftSec / 60)).padStart(2, '0')
+    const ss = String(hud.timeLeftSec % 60).padStart(2, '0')
     return `${mm}:${ss}`
   }, [hud.timeLeftSec])
   const remainingLabel =
-    limitMode === 'moves'
-      ? `${Math.max(moveLimit - hud.moves, 0)}`
-      : timeLabel
+    limitMode === 'moves' ? `${Math.max(moveLimit - hud.moves, 0)}` : timeLabel
   const hudHintCore = showInitialHint
     ? 'Следите за подсказками, чтобы не пропустить комбинацию'
     : playerHintsMode === 'pauses'
     ? showIdleCoachHint
-      ? isRookieTutorialActive &&
-        playingElapsedSec >= 30
+      ? isRookieTutorialActive && playingElapsedSec >= 30
         ? 'Совет новичку: ищите двойные комбинации и ходы внизу поля — каскады дают больше очков'
         : 'Пауза в игре: проверьте нижние ряды и возможные каскады'
       : ''
     : showKeyboardHint
     ? 'Enter или Space - выбор, Стрелки - переход к цели'
     : showIdleCoachHint
-    ? isRookieTutorialActive &&
-      playingElapsedSec >= 30
+    ? isRookieTutorialActive && playingElapsedSec >= 30
       ? 'Совет новичку: ищите двойные комбинации и ходы внизу поля — каскады дают больше очков'
       : 'Пауза в игре: проверьте нижние ряды и возможные каскады'
-    : isRookieTutorialActive &&
-      playingElapsedSec >= 35 &&
-      comboSuccessCount < 2
+    : isRookieTutorialActive && playingElapsedSec >= 35 && comboSuccessCount < 2
     ? 'Совет новичку: комбинации 4+ и бомбы/ракеты ускоряют набор очков'
     : isRookieTutorialActive &&
       playingElapsedSec >= 20 &&
       comboSuccessCount === 0
     ? 'Совет новичку: начинайте с нижней части поля, чтобы чаще запускать каскады'
-    : COACH_MESSAGES[
-        Math.min(
-          coachStep,
-          COACH_MESSAGES.length - 1
-        )
-      ]
+    : COACH_MESSAGES[Math.min(coachStep, COACH_MESSAGES.length - 1)]
   const hieroglyphHudTip =
-    boardFieldTheme === 'hieroglyph' &&
-    uiPhase === 'playing'
+    boardFieldTheme === 'hieroglyph' && uiPhase === 'playing'
       ? 'Повторный тап по уже выбранной фишке — карточка иероглифа; в режиме на время таймер стоит, пока карточка открыта.'
       : ''
-  const hudHintText = [
-    hudHintCore,
-    hieroglyphHudTip,
-  ]
-    .filter(Boolean)
-    .join(' ')
+  const hudHintText = [hudHintCore, hieroglyphHudTip].filter(Boolean).join(' ')
   const shouldShowHudHints =
-    !hintsHidden &&
-    (playerHintsMode !== 'pauses' ||
-      showIdleCoachHint)
+    !hintsHidden && (playerHintsMode !== 'pauses' || showIdleCoachHint)
 
   const handleHideHints = () => {
     setHintsHidden(true)
     try {
-      window.localStorage.setItem(
-        MATCH3_HINTS_HIDDEN_KEY,
-        '1'
-      )
+      window.localStorage.setItem(MATCH3_HINTS_HIDDEN_KEY, '1')
     } catch {
       // noop: optional persistence
     }
@@ -818,34 +663,25 @@ export const Match3Screen: React.FC<
     const isWin =
       gameEndReason === 'goalReached' ||
       (resultSnapshot.goalScore > 0 &&
-        resultSnapshot.score >=
-          resultSnapshot.goalScore &&
+        resultSnapshot.score >= resultSnapshot.goalScore &&
         resultSnapshot.goalTargetsLeft <= 0)
     const goalRemain = Math.max(
       0,
-      resultSnapshot.goalScore -
-        resultSnapshot.score
+      resultSnapshot.goalScore - resultSnapshot.score
     )
-    const comboBonus =
-      resultSnapshot.maxCombo * 25
-    const timeBonus =
-      resultSnapshot.timeLeftSec * 2
-    const totalWithBonus =
-      resultSnapshot.score +
-      comboBonus +
-      timeBonus
+    const comboBonus = resultSnapshot.maxCombo * 25
+    const timeBonus = resultSnapshot.timeLeftSec * 2
+    const totalWithBonus = resultSnapshot.score + comboBonus + timeBonus
     return {
       isWin,
       goalRemain,
-      targetsRemain:
-        resultSnapshot.goalTargetsLeft,
+      targetsRemain: resultSnapshot.goalTargetsLeft,
       comboBonus,
       timeBonus,
       totalWithBonus,
     }
   }, [resultSnapshot, gameEndReason])
-  const isStartPhase =
-    uiPhase === 'countdown' || uiPhase === 'ready'
+  const isStartPhase = uiPhase === 'countdown' || uiPhase === 'ready'
   const showBoard = forcePlayMode || !isStartPhase
   const questSummary = useMemo(() => {
     const progress = hud.questProgress
@@ -880,9 +716,7 @@ export const Match3Screen: React.FC<
       setQuestToastText('')
       prevCompletedQuestIdsRef.current = new Set()
       if (questToastTimerRef.current !== null) {
-        window.clearTimeout(
-          questToastTimerRef.current
-        )
+        window.clearTimeout(questToastTimerRef.current)
         questToastTimerRef.current = null
       }
     }
@@ -891,54 +725,34 @@ export const Match3Screen: React.FC<
   useEffect(() => {
     const progress = hud.questProgress
     if (!progress) return
-    const completedQuests =
-      progress.quests.filter(q => q.completed)
-    const nowCompleted = new Set(
-      completedQuests.map(q => q.id)
+    const completedQuests = progress.quests.filter(q => q.completed)
+    const nowCompleted = new Set(completedQuests.map(q => q.id))
+    const justCompletedQuests = completedQuests.filter(
+      q => !prevCompletedQuestIdsRef.current.has(q.id)
     )
-    const justCompletedQuests =
-      completedQuests.filter(
-        q =>
-          !prevCompletedQuestIdsRef.current.has(
-            q.id
-          )
-      )
-    const justCompleted = justCompletedQuests.map(
-      q => q.id
-    )
-    prevCompletedQuestIdsRef.current =
-      nowCompleted
+    const justCompleted = justCompletedQuests.map(q => q.id)
+    prevCompletedQuestIdsRef.current = nowCompleted
     if (justCompleted.length === 0) return
     setJustCompletedQuestIds(prev =>
-      Array.from(
-        new Set([...prev, ...justCompleted])
-      )
+      Array.from(new Set([...prev, ...justCompleted]))
     )
     const flatReward = justCompletedQuests.reduce(
-      (acc, quest) =>
-        acc + (quest.reward?.flatScore ?? 0),
+      (acc, quest) => acc + (quest.reward?.flatScore ?? 0),
       0
     )
     if (flatReward > 0) {
-      setQuestToastText(
-        `Квест выполнен: +${flatReward}`
-      )
+      setQuestToastText(`Квест выполнен: +${flatReward}`)
       if (questToastTimerRef.current !== null) {
-        window.clearTimeout(
-          questToastTimerRef.current
-        )
+        window.clearTimeout(questToastTimerRef.current)
       }
-      questToastTimerRef.current =
-        window.setTimeout(() => {
-          setQuestToastText('')
-          questToastTimerRef.current = null
-        }, 1700)
+      questToastTimerRef.current = window.setTimeout(() => {
+        setQuestToastText('')
+        questToastTimerRef.current = null
+      }, 1700)
     }
     const timeout = window.setTimeout(() => {
       setJustCompletedQuestIds(prev =>
-        prev.filter(
-          id => !justCompleted.includes(id)
-        )
+        prev.filter(id => !justCompleted.includes(id))
       )
     }, 1800)
     return () => window.clearTimeout(timeout)
@@ -952,17 +766,11 @@ export const Match3Screen: React.FC<
     (limitMode === 'time' ? 1 : 0)
 
   return (
-    <section
-      className={
-        'match3' +
-        (isStartPhase ? ' match3--start' : '')
-      }>
+    <section className={'match3' + (isStartPhase ? ' match3--start' : '')}>
       <div
         className={
           'match3__arena' +
-          (uiPhase === 'playing'
-            ? ' match3__arena--playing'
-            : '')
+          (uiPhase === 'playing' ? ' match3__arena--playing' : '')
         }>
         {uiPhase === 'playing' && (
           <>
@@ -970,8 +778,7 @@ export const Match3Screen: React.FC<
               className="match3__hud-top"
               style={
                 {
-                  ['--match3-hud-cols' as string]:
-                    String(hudColsCount),
+                  ['--match3-hud-cols' as string]: String(hudColsCount),
                 } as React.CSSProperties
               }>
               <div className="match3__hud-mobile-item">
@@ -985,20 +792,15 @@ export const Match3Screen: React.FC<
               <div className="match3__hud-mobile-item">
                 <span>Цель</span>
                 <strong>
-                  {Math.min(
-                    hud.score,
-                    hud.goalScore
-                  )}
-                  /{hud.goalScore}
+                  {Math.min(hud.score, hud.goalScore)}/{hud.goalScore}
                 </strong>
               </div>
               {hud.goalTargetsTotal > 0 && (
                 <div className="match3__hud-mobile-item">
                   <span>Метки</span>
                   <strong>
-                    {hud.goalTargetsTotal -
-                      hud.goalTargetsLeft}
-                    /{hud.goalTargetsTotal}
+                    {hud.goalTargetsTotal - hud.goalTargetsLeft}/
+                    {hud.goalTargetsTotal}
                   </strong>
                 </div>
               )}
@@ -1006,22 +808,17 @@ export const Match3Screen: React.FC<
                 <span>Осталось</span>
                 <strong>
                   {remainingLabel}
-                  {limitMode === 'moves'
-                    ? ' ход.'
-                    : ''}
+                  {limitMode === 'moves' ? ' ход.' : ''}
                 </strong>
               </div>
               {questSummary.totalCount > 0 && (
                 <button
                   type="button"
                   className="match3__hud-mobile-item match3__hud-mobile-item--quests"
-                  onClick={() =>
-                    setIsQuestListOpen(v => !v)
-                  }>
+                  onClick={() => setIsQuestListOpen(v => !v)}>
                   <span>Квесты</span>
                   <strong>
-                    {questSummary.completedCount}/
-                    {questSummary.totalCount}
+                    {questSummary.completedCount}/{questSummary.totalCount}
                   </strong>
                 </button>
               )}
@@ -1033,28 +830,16 @@ export const Match3Screen: React.FC<
                     ? () => setIsPauseOpen(false)
                     : handleRestartFromHud
                 }
-                aria-label={
-                  isPauseOpen
-                    ? 'Продолжить игру'
-                    : 'Начать заново'
-                }
-                title={
-                  isPauseOpen
-                    ? 'Продолжить игру'
-                    : 'Начать заново'
-                }>
+                aria-label={isPauseOpen ? 'Продолжить игру' : 'Начать заново'}
+                title={isPauseOpen ? 'Продолжить игру' : 'Начать заново'}>
                 {isPauseOpen ? (
                   <>
-                    <span className="match3__hud-btn-label">
-                      Играть
-                    </span>
+                    <span className="match3__hud-btn-label">Играть</span>
                     <IconRestart />
                   </>
                 ) : (
                   <>
-                    <span className="match3__hud-btn-label">
-                      Заново
-                    </span>
+                    <span className="match3__hud-btn-label">Заново</span>
                     <IconRestart />
                   </>
                 )}
@@ -1063,70 +848,48 @@ export const Match3Screen: React.FC<
                 <button
                   type="button"
                   className="match3__hud-pause"
-                  onClick={() =>
-                    setIsPauseOpen(true)
-                  }
+                  onClick={() => setIsPauseOpen(true)}
                   aria-label="Пауза"
                   title="Пауза">
-                  <span className="match3__hud-btn-label">
-                    Пауза
-                  </span>
+                  <span className="match3__hud-btn-label">Пауза</span>
                   <IconPause />
                 </button>
               )}
             </div>
             {questToastText ? (
-              <div className="match3__quest-toast">
-                {questToastText}
-              </div>
+              <div className="match3__quest-toast">{questToastText}</div>
             ) : null}
-            {questSummary.totalCount > 0 &&
-              isQuestListOpen && (
-                <div className="match3__quests-panel">
-                  <strong>
-                    Квесты:{' '}
-                    {questSummary.completedCount}/
-                    {questSummary.totalCount}
-                  </strong>
-                  <ul>
-                    {questSummary.quests.map(
-                      quest => (
-                        <li
-                          key={quest.id}
-                          className={clsx(
-                            quest.completed &&
-                              'match3__quest-item--done',
-                            justCompletedQuestIds.includes(
-                              quest.id
-                            ) &&
-                              'match3__quest-item--just-done'
-                          )}>
-                          <span>
-                            {quest.title}
-                          </span>
-                          <span>
-                            {quest.completed
-                              ? '✓ '
-                              : ''}
-                            {quest.progress}/
-                            {quest.target}
-                          </span>
-                        </li>
-                      )
-                    )}
-                  </ul>
-                </div>
-              )}
+            {questSummary.totalCount > 0 && isQuestListOpen && (
+              <div className="match3__quests-panel">
+                <strong>
+                  Квесты: {questSummary.completedCount}/
+                  {questSummary.totalCount}
+                </strong>
+                <ul>
+                  {questSummary.quests.map(quest => (
+                    <li
+                      key={quest.id}
+                      className={clsx(
+                        quest.completed && 'match3__quest-item--done',
+                        justCompletedQuestIds.includes(quest.id) &&
+                          'match3__quest-item--just-done'
+                      )}>
+                      <span>{quest.title}</span>
+                      <span>
+                        {quest.completed ? '✓ ' : ''}
+                        {quest.progress}/{quest.target}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {shouldShowHudHints && (
               <div className="match3__hud-kbd-hint-wrap">
-                <div className="match3__hud-kbd-hint">
-                  {hudHintText}
-                </div>
+                <div className="match3__hud-kbd-hint">{hudHintText}</div>
                 <div className="match3__hud-legend">
                   <span className="match3__hud-legend-item">
-                    <span className="match3__hud-chip">
-                      |
-                    </span>
+                    <span className="match3__hud-chip">|</span>
                     Столбец
                   </span>
                   <span className="match3__hud-legend-item">
@@ -1138,9 +901,7 @@ export const Match3Screen: React.FC<
                   <span className="match3__hud-legend-item">
                     <span className="match3__hud-chip match3__hud-chip--target">
                       <span className="match3__hud-target-crosshair" />
-                      <span className="match3__hud-target-bomb">
-                        💣
-                      </span>
+                      <span className="match3__hud-target-bomb">💣</span>
                     </span>
                     Блокер: взрыв
                   </span>
@@ -1164,24 +925,20 @@ export const Match3Screen: React.FC<
           <div
             className={clsx(
               'match3__board-wrap',
-              boardFieldTheme === 'food' &&
-                'match3__board-wrap--food',
-              boardFieldTheme === 'coder' &&
-                'match3__board-wrap--coder',
+              boardFieldTheme === 'food' && 'match3__board-wrap--food',
+              boardFieldTheme === 'coder' && 'match3__board-wrap--coder',
               boardFieldTheme === 'hieroglyph' &&
-                'match3__board-wrap--hieroglyph'
+                'match3__board-wrap--hieroglyph',
+              boardFieldTheme === 'stellar' && 'match3__board-wrap--stellar'
             )}>
             <div
               className={clsx(
                 'match3__board',
                 'match3__board--stack',
-                (uiPhase === 'countdown' ||
-                  uiPhase === 'ready') &&
+                (uiPhase === 'countdown' || uiPhase === 'ready') &&
                   'is-overlay-only',
-                boardShakeLevel === 'light' &&
-                  'match3__board--shake-light',
-                boardShakeLevel === 'strong' &&
-                  'match3__board--shake-strong'
+                boardShakeLevel === 'light' && 'match3__board--shake-light',
+                boardShakeLevel === 'strong' && 'match3__board--shake-strong'
               )}>
               <canvas
                 ref={canvasRef}
@@ -1198,89 +955,50 @@ export const Match3Screen: React.FC<
                 aria-hidden
               />
 
-              {boardFieldTheme === 'hieroglyph' &&
-                uiPhase === 'playing' && (
-                  <HieroglyphCardOverlay
-                    kind={hieroglyphOverlayKind}
-                    soundEnabled={soundEnabled}
-                    onClose={closeHieroglyphCard}
-                  />
-                )}
+              {boardFieldTheme === 'hieroglyph' && uiPhase === 'playing' && (
+                <HieroglyphCardOverlay
+                  kind={hieroglyphOverlayKind}
+                  soundEnabled={soundEnabled}
+                  onClose={closeHieroglyphCard}
+                />
+              )}
 
-              {uiPhase === 'countdown' &&
-                countdownVal > 0 && (
-                  <div
-                    className="match3__overlay match3__overlay--countdown"
-                    aria-live="polite">
-                    <div className="match3__countdown">
-                      {countdownVal}
-                    </div>
-                  </div>
-                )}
+              {uiPhase === 'countdown' && countdownVal > 0 && (
+                <div
+                  className="match3__overlay match3__overlay--countdown"
+                  aria-live="polite">
+                  <div className="match3__countdown">{countdownVal}</div>
+                </div>
+              )}
 
               {uiPhase === 'ready' && (
                 <div className="match3__overlay match3__overlay--ready">
                   <p className="match3__start-glow-note">
-                    Cosmic Match: комбинируй,
-                    набирай очки, закрывай цель!
+                    Cosmic Match: комбинируй, набирай очки, закрывай цель!
                   </p>
                   <div className="match3__start-info">
-                    <div>
-                      Уровень:{' '}
-                      {appliedLevel.title}
-                    </div>
-                    <div>
-                      Цель:{' '}
-                      {appliedLevel.goalValue}{' '}
-                      очков
-                    </div>
+                    <div>Уровень: {appliedLevel.title}</div>
+                    <div>Цель: {appliedLevel.goalValue} очков</div>
                     {appliedLevel.targetCells &&
-                      appliedLevel.targetCells >
-                        0 && (
-                        <div>
-                          Меток для бомб:{' '}
-                          {
-                            appliedLevel.targetCells
-                          }
-                        </div>
+                      appliedLevel.targetCells > 0 && (
+                        <div>Меток для бомб: {appliedLevel.targetCells}</div>
                       )}
                     <div>
-                      Поле:{' '}
-                      {appliedLevel.boardSize}x
-                      {appliedLevel.boardSize}
+                      Поле: {appliedLevel.boardSize}x{appliedLevel.boardSize}
                     </div>
-                    <div>
-                      Поле:{' '}
-                      {boardFieldTheme === 'food'
-                        ? 'Еда'
-                        : boardFieldTheme ===
-                          'coder'
-                        ? 'Кодер'
-                        : boardFieldTheme ===
-                          'hieroglyph'
-                        ? 'Иероглиф'
-                        : 'Космос'}
-                    </div>
+                    <div>Поле: {BOARD_FIELD_THEME_LABELS[boardFieldTheme]}</div>
                     <div>
                       {limitMode === 'moves'
                         ? `Ходы: ${moveLimit}`
-                        : `Время: ${
-                            appliedLevel.durationSec /
-                            60
-                          } мин`}
+                        : `Время: ${appliedLevel.durationSec / 60} мин`}
                     </div>
-                    <div>
-                      Типов фишек:{' '}
-                      {appliedLevel.tileKinds}
-                    </div>
+                    <div>Типов фишек: {appliedLevel.tileKinds}</div>
                   </div>
                   <div className="match3__start-actions">
                     <button
                       type="button"
                       className="btn btn--outline match3__settings-play-btn"
-                      onClick={() =>
-                        onOpenSettings?.()
-                      }>
+                      onClick={() => onOpenSettings?.()}>
                       <IconSettings />
                       Настройки
                     </button>
@@ -1294,49 +1012,39 @@ export const Match3Screen: React.FC<
                 </div>
               )}
 
-              {uiPhase === 'playing' &&
-                isPauseOpen && (
-                  <div className="match3__overlay match3__overlay--pause">
-                    <p className="match3__pause-title">
-                      Игра на паузе
-                    </p>
-                    <button
-                      type="button"
-                      className="btn btn--primary match3__play-btn"
-                      onClick={() =>
-                        setIsPauseOpen(false)
-                      }>
-                      Играть дальше
-                    </button>
-                  </div>
-                )}
+              {uiPhase === 'playing' && isPauseOpen && (
+                <div className="match3__overlay match3__overlay--pause">
+                  <p className="match3__pause-title">Игра на паузе</p>
+                  <button
+                    type="button"
+                    className="btn btn--primary match3__play-btn"
+                    onClick={() => setIsPauseOpen(false)}>
+                    Играть дальше
+                  </button>
+                </div>
+              )}
             </div>
             {borderSpark !== 'off' && (
               <div
                 key={sparkBurstId}
                 className="match3__board-sparks"
                 aria-hidden>
-                {BORDER_SPARK_POSITIONS.map(
-                  (pos, i) => (
-                    <span
-                      key={i}
-                      className={
-                        'match3__spark-dot ' +
-                        (borderSpark ===
-                        'line4plus'
-                          ? 'match3__spark-dot--line4'
-                          : 'match3__spark-dot--tl')
-                      }
-                      style={{
-                        left: pos.left,
-                        top: pos.top,
-                        animationDelay: `${
-                          i * BORDER_SPARK_STEP_MS
-                        }ms`,
-                      }}
-                    />
-                  )
-                )}
+                {BORDER_SPARK_POSITIONS.map((pos, i) => (
+                  <span
+                    key={i}
+                    className={
+                      'match3__spark-dot ' +
+                      (borderSpark === 'line4plus'
+                        ? 'match3__spark-dot--line4'
+                        : 'match3__spark-dot--tl')
+                    }
+                    style={{
+                      left: pos.left,
+                      top: pos.top,
+                      animationDelay: `${i * BORDER_SPARK_STEP_MS}ms`,
+                    }}
+                  />
+                ))}
               </div>
             )}
           </div>
@@ -1345,16 +1053,12 @@ export const Match3Screen: React.FC<
         {uiPhase === 'results' && resultSnapshot && (
           <div className="match3__overlay match3__overlay--results">
             <h3 className="match3__results-title">
-              {resultStats?.isWin
-                ? 'Вы выиграли!'
-                : 'Можно лучше'}
+              {resultStats?.isWin ? 'Вы выиграли!' : 'Можно лучше'}
             </h3>
             <p
               className={
                 'match3__results-verdict ' +
-                (resultStats?.isWin
-                  ? 'is-win'
-                  : 'is-lose')
+                (resultStats?.isWin ? 'is-win' : 'is-lose')
               }>
               {resultStats?.isWin
                 ? 'Цель уровня выполнена'
@@ -1365,58 +1069,26 @@ export const Match3Screen: React.FC<
                 : 'Цель не достигнута'}
             </p>
             <ul className="match3__results-list">
-              <li>
-                Счёт: {resultSnapshot.score}
-              </li>
-              <li>
-                Цель: {resultSnapshot.goalScore}
-              </li>
+              <li>Счёт: {resultSnapshot.score}</li>
+              <li>Цель: {resultSnapshot.goalScore}</li>
               <li>
                 Ходов: {resultSnapshot.moves}
-                {limitMode === 'moves'
-                  ? ` / ${moveLimit}`
-                  : ''}
+                {limitMode === 'moves' ? ` / ${moveLimit}` : ''}
               </li>
               <li>
                 Прогресс цели:{' '}
-                {Math.min(
-                  resultSnapshot.score,
-                  resultSnapshot.goalScore
-                )}{' '}
-                / {resultSnapshot.goalScore}
+                {Math.min(resultSnapshot.score, resultSnapshot.goalScore)} /{' '}
+                {resultSnapshot.goalScore}
               </li>
-              <li>
-                Осталось до цели:{' '}
-                {resultStats?.goalRemain ?? 0}
-              </li>
-              {resultSnapshot.goalTargetsTotal >
-                0 && (
-                <li>
-                  Осталось меток:{' '}
-                  {resultStats?.targetsRemain ??
-                    0}
-                </li>
+              <li>Осталось до цели: {resultStats?.goalRemain ?? 0}</li>
+              {resultSnapshot.goalTargetsTotal > 0 && (
+                <li>Осталось меток: {resultStats?.targetsRemain ?? 0}</li>
               )}
-              <li>
-                Лучшее комбо: x
-                {resultSnapshot.maxCombo}
-              </li>
-              <li>
-                Бонус за комбо: +
-                {resultStats?.comboBonus ?? 0}
-              </li>
-              <li>
-                Бонус за время: +
-                {resultStats?.timeBonus ?? 0}
-              </li>
-              <li>
-                Итог с бонусами:{' '}
-                {resultStats?.totalWithBonus ?? 0}
-              </li>
-              <li>
-                Ваш рекорд:{' '}
-                {resultSnapshot.playerRecord}
-              </li>
+              <li>Лучшее комбо: x{resultSnapshot.maxCombo}</li>
+              <li>Бонус за комбо: +{resultStats?.comboBonus ?? 0}</li>
+              <li>Бонус за время: +{resultStats?.timeBonus ?? 0}</li>
+              <li>Итог с бонусами: {resultStats?.totalWithBonus ?? 0}</li>
+              <li>Ваш рекорд: {resultSnapshot.playerRecord}</li>
             </ul>
             <button
               type="button"

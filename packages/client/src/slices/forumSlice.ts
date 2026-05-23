@@ -438,7 +438,21 @@ export const forumSlice = createSlice({
             state.currentTopic.id ===
               payload.topicId
           ) {
-            state.currentTopic.commentsCount += 1
+            if (payload.parentCommentId != null) {
+              state.currentTopic.repliesCount += 1
+            } else {
+              state.currentTopic.commentsCount += 1
+            }
+          }
+          const topicInList = state.topics.find(
+            t => t.id === payload.topicId
+          )
+          if (topicInList) {
+            if (payload.parentCommentId != null) {
+              topicInList.repliesCount += 1
+            } else {
+              topicInList.commentsCount += 1
+            }
           }
         }
       )
@@ -533,7 +547,10 @@ export const forumSlice = createSlice({
         isForumRejectedWithValue,
         (state, action) => {
           state.isLoading = false
-          if (action.payload.status === 403) {
+          if (
+            action.payload.status === 403 &&
+            typeof window !== 'undefined'
+          ) {
             state.shouldRedirectToLogin = true
           }
         }

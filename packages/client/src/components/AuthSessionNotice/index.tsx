@@ -1,13 +1,7 @@
 ﻿import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Button,
-  LinkButton,
-} from '../../shared/ui'
-import {
-  useDispatch,
-  useSelector,
-} from '../../store'
+import { Button, LinkButton } from '../../shared/ui'
+import { useDispatch, useSelector } from '../../store'
 import {
   logoutThunk,
   selectUser,
@@ -18,26 +12,17 @@ type AuthSessionNoticeProps = {
   actionLabel: string
 }
 
-export const AuthSessionNotice: React.FC<
-  AuthSessionNoticeProps
-> = ({ actionLabel }) => {
+export function AuthSessionNotice({ actionLabel }: AuthSessionNoticeProps) {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector(selectUser)
-  const isLoading = useSelector(
-    selectUserIsLoading
-  )
+  const isLoading = useSelector(selectUserIsLoading)
 
   if (!user) {
     return null
   }
 
-  const fullName = [
-    user.first_name,
-    user.second_name,
-  ]
-    .filter(Boolean)
-    .join(' ')
+  const fullName = [user.first_name, user.second_name].filter(Boolean).join(' ')
 
   const handleLogout = async () => {
     const result = await dispatch(logoutThunk())
@@ -51,15 +36,11 @@ export const AuthSessionNotice: React.FC<
     <section className="auth-card auth-card--wide">
       <h1>Вы уже вошли в систему</h1>
       <p className="auth-note">
-        Сейчас активен аккаунт{' '}
-        {fullName || user.login}. Из соображений
-        безопасности мы не разлогиниваем вас
-        автоматически.
+        Сейчас активен аккаунт {fullName || user.login}. Из соображений
+        безопасности мы не разлогиниваем вас автоматически.
       </p>
       <div className="auth-form__actions">
-        <LinkButton
-          to="/profile"
-          variant="primary">
+        <LinkButton to="/profile" variant="primary">
           Открыть профиль
         </LinkButton>
         <LinkButton to="/" variant="outline">

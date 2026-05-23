@@ -17,13 +17,13 @@ const topLeaders = [
   { place: 5, nickname: 'Sanka', score: 20970 },
 ]
 
-export const LandingLeaders: React.FC = () => {
+export function LandingLeaders() {
   return (
     <section className="section" id="leaderboard">
       <h2>Лидеры</h2>
       <p className="section-subtitle">
-        Топ игроков по текущему рейтингу. Полная
-        таблица доступна на отдельной странице.
+        Топ игроков по текущему рейтингу. Полная таблица доступна на отдельной
+        странице.
       </p>
       <div className="leaders-card">
         <ul className="leaders-list">
@@ -31,17 +31,11 @@ export const LandingLeaders: React.FC = () => {
             <li key={leader.place}>
               <span>#{leader.place}</span>
               <span>{leader.nickname}</span>
-              <span>
-                {leader.score.toLocaleString(
-                  'ru-RU'
-                )}
-              </span>
+              <span>{leader.score.toLocaleString('ru-RU')}</span>
             </li>
           ))}
         </ul>
-        <Link
-          to="/leaderboard"
-          className="btn btn--outline">
+        <Link to="/leaderboard" className="btn btn--outline">
           Открыть лидерборд
         </Link>
       </div>

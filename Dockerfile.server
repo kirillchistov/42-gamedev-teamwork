@@ -24,6 +24,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# yarn для сборки; migrate в compose вызывает sequelize-cli напрямую (см. docker-migrate.sh).
+RUN corepack enable
+
 COPY package.json yarn.lock ./
 COPY packages/client/package.json ./packages/client/
 COPY packages/server/package.json ./packages/server/
@@ -34,6 +37,8 @@ COPY --from=builder /app/packages/server/config ./packages/server/config
 COPY --from=builder /app/packages/server/migrations ./packages/server/migrations
 COPY --from=builder /app/packages/server/seeders ./packages/server/seeders
 COPY --from=builder /app/packages/server/.sequelizerc ./packages/server/.sequelizerc
+COPY packages/server/scripts/docker-migrate.sh ./packages/server/scripts/docker-migrate.sh
+RUN chmod +x /app/packages/server/scripts/docker-migrate.sh
 
 EXPOSE $SERVER_PORT
 CMD ["node", "packages/server/dist/index.js"]

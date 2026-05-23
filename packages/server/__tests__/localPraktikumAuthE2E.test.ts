@@ -114,3 +114,87 @@ describe('LOCAL_PRAKTIKUM_AUTH_BYPASS (HTTP)', () => {
     expect(res.status).toBe(403)
   })
 })
+
+/** ТЗ 8.4: без сессии — 403 Forbidden на всех защищённых ручках (не 401). */
+describe('requirePraktikumAuth — 403 без cookie (аудит ручек)', () => {
+  const envStore: Record<
+    string,
+    string | undefined
+  > = {}
+
+  beforeEach(() => {
+    envStore.NODE_ENV = process.env.NODE_ENV
+    envStore.LOCAL_PRAKTIKUM_AUTH_BYPASS =
+      process.env.LOCAL_PRAKTIKUM_AUTH_BYPASS
+    process.env.NODE_ENV = 'test'
+    delete process.env.LOCAL_PRAKTIKUM_AUTH_BYPASS
+  })
+
+  afterEach(() => {
+    for (const k of Object.keys(envStore)) {
+      const v = envStore[k]
+      if (v === undefined) {
+        delete process.env[k]
+      } else {
+        process.env[k] = v
+      }
+    }
+  })
+
+  const cases: Array<{
+    method: 'get' | 'post'
+    path: string
+    body?: object
+  }> = [
+    { method: 'get', path: '/api/forum/topics' },
+    {
+      method: 'post',
+      path: '/api/forum/topics',
+      body: { title: 't', content: 'c' },
+    },
+    {
+      method: 'get',
+      path: '/api/forum/topics/1',
+    },
+    {
+      method: 'get',
+      path: '/api/forum/topics/1/comments',
+    },
+    { method: 'get', path: '/friends' },
+    { method: 'get', path: '/user' },
+  ]
+
+  it.each(cases)(
+    '$method $path → 403 { reason: Forbidden }',
+    async ({ method, path, body }) => {
+      const app = createApp()
+      const agent = request(app)
+      const res =
+        method === 'get'
+          ? await agent.get(path)
+          : await agent.post(path).send(body)
+      expect(res.status).toBe(403)
+      expect(res.body).toEqual({
+        reason: 'Forbidden',
+      })
+    }
+  )
+})
+
+describe('public routes without requirePraktikumAuth', () => {
+  it('GET /health → 200 without cookie', async () => {
+    const app = createApp()
+    const res = await request(app).get('/health')
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ ok: true })
+  })
+
+  it('GET /api/ui/theme → 200 for guest without cookie', async () => {
+    const app = createApp()
+    const res = await request(app).get(
+      '/api/ui/theme'
+    )
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty('theme')
+  })
+})

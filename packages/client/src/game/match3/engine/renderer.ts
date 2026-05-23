@@ -35,6 +35,7 @@ import {
 import {
   MATCH3_COSMIC_ICON_URLS,
   MATCH3_FOOD_ICON_URLS,
+  MATCH3_STELLAR_ICON_URLS,
   MATCH3_TECH_ICON_URLS,
 } from './match3IconUrls'
 import { getHieroglyphForKind } from '../hieroglyphData'
@@ -74,6 +75,9 @@ const COSMIC_ICON_PATHS = [
 
 const FOOD_ICON_PATHS = [...MATCH3_FOOD_ICON_URLS]
 const TECH_ICON_PATHS = [...MATCH3_TECH_ICON_URLS]
+const STELLAR_ICON_PATHS = [
+  ...MATCH3_STELLAR_ICON_URLS,
+]
 
 const iconCache: Partial<
   Record<GameIconThemeOption, HTMLImageElement[]>
@@ -200,6 +204,8 @@ function iconsForTheme(
       ? COSMIC_ICON_PATHS
       : theme === 'food'
       ? FOOD_ICON_PATHS
+      : theme === 'stellar'
+      ? STELLAR_ICON_PATHS
       : TECH_ICON_PATHS
   const icons = loadIcons(paths)
   iconCache[theme] = icons
@@ -590,8 +596,54 @@ function drawIceOverlay(
   ctx.restore()
 }
 
-/** Доля площади клетки под SVG-иконку еды (остальное — поле и рамка). */
-const FOOD_ICON_AREA_RATIO = 0.98
+/** Доля площади клетки под иконку (contain внутри квадрата areaRatio×cell²). */
+const FOOD_ICON_AREA_RATIO = 0.88
+const STELLAR_ICON_AREA_RATIO = 0.82
+
+function snapCanvasDim(value: number): number {
+  return Math.round(value * 2) / 2
+}
+
+/**
+ * Рисует PNG/SVG в клетку без растягивания (как object-fit: contain).
+ * Старые stellar-ассеты 240×120 в квадрат давали «вытянутость» и размытие.
+ */
+function drawTileIconContained(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  cellX: number,
+  cellY: number,
+  cell: number,
+  areaRatio: number,
+  dropShadow?: { color: string; blur: number }
+): void {
+  const nw = img.naturalWidth
+  const nh = img.naturalHeight
+  if (nw <= 0 || nh <= 0) {
+    return
+  }
+
+  const box = cell * Math.sqrt(areaRatio)
+  const scale = Math.min(box / nw, box / nh)
+  const dw = nw * scale
+  const dh = nh * scale
+  const dx = cellX + (cell - dw) / 2
+  const dy = cellY + (cell - dh) / 2
+
+  ctx.save()
+  if (dropShadow) {
+    ctx.shadowColor = dropShadow.color
+    ctx.shadowBlur = dropShadow.blur
+  }
+  ctx.drawImage(
+    img,
+    snapCanvasDim(dx),
+    snapCanvasDim(dy),
+    snapCanvasDim(dw),
+    snapCanvasDim(dh)
+  )
+  ctx.restore()
+}
 
 /**
  * Толщина градиентной рамки клетки — одна для «Космос», «Еда», «Кодер».
@@ -658,6 +710,9 @@ function tileFillByThemeAndKind(
     } else if (boardField === 'hieroglyph') {
       g.addColorStop(0, '#4a3c2c')
       g.addColorStop(1, '#2f251b')
+    } else if (boardField === 'stellar') {
+      g.addColorStop(0, '#1a1028')
+      g.addColorStop(1, '#0a0612')
     } else {
       g.addColorStop(0, '#1f2d4e')
       g.addColorStop(1, '#121d35')
@@ -678,6 +733,10 @@ function tileFillByThemeAndKind(
     g.addColorStop(0, `hsl(${hue} 42% 46%)`)
     g.addColorStop(0.52, `hsl(${hue} 36% 31%)`)
     g.addColorStop(1, '#2b1f16')
+  } else if (boardField === 'stellar') {
+    g.addColorStop(0, `hsl(${hue} 55% 38%)`)
+    g.addColorStop(0.45, `hsl(${hue} 48% 22%)`)
+    g.addColorStop(1, '#0c0814')
   } else {
     g.addColorStop(0, `hsl(${hue} 74% 44%)`)
     g.addColorStop(0.48, `hsl(${hue} 70% 28%)`)
@@ -878,6 +937,51 @@ function strokeFoodCellBorderByKind(
   )
   ctx.lineWidth = 1
   ctx.strokeStyle = 'rgba(255, 248, 220, 0.1)'
+  ctx.strokeRect(
+    x + inset + 0.6,
+    y + inset + 0.6,
+    cell - lw - 1.2,
+    cell - lw - 1.2
+  )
+  ctx.restore()
+}
+
+/** Рамка клетки Stellar Burger: тёмная панель + неоновый акцент. */
+function strokeStellarCellBorderByKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  kindOrNull: number | null
+) {
+  const lw = MATCH3_CELL_BORDER_LINE_WIDTH
+  const inset = lw / 2
+  const accent =
+    kindOrNull === null
+      ? 'rgba(168, 85, 247, 0.45)'
+      : kindRainbowAccent(kindOrNull)
+
+  ctx.save()
+  const g = ctx.createLinearGradient(
+    x,
+    y,
+    x + cell,
+    y + cell
+  )
+  g.addColorStop(0, 'rgba(244, 114, 182, 0.55)')
+  g.addColorStop(0.32, 'rgba(124, 58, 237, 0.75)')
+  g.addColorStop(0.58, accent)
+  g.addColorStop(1, 'rgba(12, 6, 20, 0.98)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lw
+  ctx.strokeRect(
+    x + inset,
+    y + inset,
+    cell - lw,
+    cell - lw
+  )
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(34, 211, 238, 0.12)'
   ctx.strokeRect(
     x + inset + 0.6,
     y + inset + 0.6,
@@ -1157,6 +1261,7 @@ export function renderBoard(
     opts?.boardField ?? 'space'
   const isFoodField = boardField === 'food'
   const isCoderField = boardField === 'coder'
+  const isStellarField = boardField === 'stellar'
   const isHieroglyphField =
     boardField === 'hieroglyph'
 
@@ -1261,6 +1366,31 @@ export function renderBoard(
       cols * cell + 12,
       rows * cell + 12
     )
+  } else if (isStellarField) {
+    const pad = 10
+    const fw = cols * cell + pad * 2
+    const fh = rows * cell + pad * 2
+    const gx = ctx.createLinearGradient(
+      ox - pad,
+      oy - pad,
+      ox - pad + fw,
+      oy - pad + fh
+    )
+    gx.addColorStop(0, '#2a1440')
+    gx.addColorStop(0.4, '#140a20')
+    gx.addColorStop(1, '#050308')
+    ctx.fillStyle = gx
+    ctx.fillRect(ox - pad, oy - pad, fw, fh)
+    ctx.shadowColor = 'rgba(236, 72, 153, 0.35)'
+    ctx.shadowBlur = 22
+    ctx.strokeStyle = 'rgba(192, 132, 252, 0.65)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(
+      ox - 6,
+      oy - 6,
+      cols * cell + 12,
+      rows * cell + 12
+    )
   } else {
     ctx.fillStyle = 'rgba(5, 12, 28, 0.95)'
     ctx.fillRect(
@@ -1351,6 +1481,25 @@ export function renderBoard(
           cell,
           hasTile ? v : null
         )
+      } else if (isStellarField) {
+        ctx.fillStyle = tileFillByThemeAndKind(
+          ctx,
+          x,
+          y,
+          cell,
+          {
+            kindOrNull: hasTile ? v : null,
+            boardField: 'stellar',
+          }
+        )
+        ctx.fillRect(x, y, cell, cell)
+        strokeStellarCellBorderByKind(
+          ctx,
+          x,
+          y,
+          cell,
+          hasTile ? v : null
+        )
       } else {
         ctx.fillStyle = tileFillByThemeAndKind(
           ctx,
@@ -1424,40 +1573,50 @@ export function renderBoard(
         typeof icon.naturalWidth === 'number' &&
         icon.naturalWidth > 0
       ) {
-        ctx.save()
-        ctx.shadowColor = isFoodField
-          ? 'rgba(62, 39, 24, 0.28)'
-          : isCoderField
-          ? 'rgba(15, 23, 42, 0.55)'
-          : 'rgba(148, 163, 184, 0.45)'
-        ctx.shadowBlur = Math.max(
-          4,
-          Math.floor(cell * 0.12)
-        )
-        if (isFoodField) {
-          const side =
-            cell * Math.sqrt(FOOD_ICON_AREA_RATIO)
-          const inset = (cell - side) / 2
-          const dx = drawX + inset
-          const dy = drawY + inset
-          const s = Math.round(side * 2) / 2
-          const ix = Math.round(dx * 2) / 2
-          const iy = Math.round(dy * 2) / 2
-          ctx.drawImage(icon, ix, iy, s, s)
+        if (isFoodField || isStellarField) {
+          const ratio = isStellarField
+            ? STELLAR_ICON_AREA_RATIO
+            : FOOD_ICON_AREA_RATIO
+          drawTileIconContained(
+            ctx,
+            icon,
+            drawX,
+            drawY,
+            cell,
+            ratio,
+            isStellarField
+              ? undefined
+              : {
+                  color: 'rgba(62, 39, 24, 0.22)',
+                  blur: Math.max(
+                    2,
+                    Math.floor(cell * 0.06)
+                  ),
+                }
+          )
         } else {
+          ctx.save()
+          ctx.shadowColor = isCoderField
+            ? 'rgba(15, 23, 42, 0.55)'
+            : 'rgba(148, 163, 184, 0.45)'
+          ctx.shadowBlur = Math.max(
+            4,
+            Math.floor(cell * 0.12)
+          )
           const pad = Math.max(
             4,
             Math.floor(cell * 0.14)
           )
-          ctx.drawImage(
+          drawTileIconContained(
+            ctx,
             icon,
-            drawX + pad,
-            drawY + pad,
-            cell - pad * 2,
-            cell - pad * 2
+            drawX,
+            drawY,
+            cell,
+            0.76
           )
+          ctx.restore()
         }
-        ctx.restore()
       } else if (!isHieroglyphField) {
         const color = colorForKind(v, theme)
         drawShape(

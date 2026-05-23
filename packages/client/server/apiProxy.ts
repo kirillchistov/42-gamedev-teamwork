@@ -3,18 +3,12 @@
  * SSR-сервер пробрасывает их в ya-praktikum.tech и packages/server.
  */
 import type { Express } from 'express'
-import {
-  createProxyMiddleware,
-  type Options,
-} from 'http-proxy-middleware'
+import { createProxyMiddleware, type Options } from 'http-proxy-middleware'
 
-const DEFAULT_PRAKTIKUM_ORIGIN =
-  'https://ya-praktikum.tech'
+const DEFAULT_PRAKTIKUM_ORIGIN = 'https://ya-praktikum.tech'
 const DEFAULT_NODE_API = 'http://localhost:3000'
 
-function trimTrailingSlash(
-  value: string
-): string {
+function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '')
 }
 
@@ -33,14 +27,24 @@ function readPraktikumOrigin(): string {
 }
 
 function readNodeApiTarget(): string {
-  const internal =
-    process.env.INTERNAL_SERVER_URL?.trim()
-  if (internal) {
-    return trimTrailingSlash(internal)
-  }
   const external =
     process.env.EXTERNAL_SERVER_URL?.trim() ||
     process.env.VITE_APP_API_URL?.trim()
+  const internal = process.env.INTERNAL_SERVER_URL?.trim()
+
+  const internalIsDockerOnly =
+    internal != null && /:\/\/server(?::|\/|$)/.test(internal)
+
+  // На хосте (yarn dev:client) hostname `server` из docker-compose не резолвится.
+  if (process.env.NODE_ENV === 'development' && internalIsDockerOnly) {
+    if (external) {
+      return trimTrailingSlash(external)
+    }
+    return DEFAULT_NODE_API
+  }
+  if (internal) {
+    return trimTrailingSlash(internal)
+  }
   if (external) {
     return trimTrailingSlash(external)
   }
@@ -49,9 +53,7 @@ function readNodeApiTarget(): string {
 
 const sharedProxyOptions: Pick<
   Options,
-  | 'changeOrigin'
-  | 'cookieDomainRewrite'
-  | 'cookiePathRewrite'
+  'changeOrigin' | 'cookieDomainRewrite' | 'cookiePathRewrite'
 > = {
   changeOrigin: true,
   cookieDomainRewrite: {
@@ -60,30 +62,34 @@ const sharedProxyOptions: Pick<
   },
   cookiePathRewrite: {
     '/api/v2': '/api/v2',
+    '/': '/',
   },
 }
 
-function nodeProxy(
-  nodeApiTarget: string,
-  mountPath: string
-) {
+function nodeProxy(nodeApiTarget: string, mountPath: string) {
   const base = trimTrailingSlash(nodeApiTarget)
-  const prefix = mountPath.startsWith('/')
-    ? mountPath
-    : `/${mountPath}`
-
+  const prefix = mountPath.startsWith('/') ? mountPath : `/${mountPath}`
   return createProxyMiddleware({
-    // http-proxy-middleware получает path уже без mountPath от Express.
+    // http-proxy-middleware v3: target должен включать тот же base path, что и app.use(path).
     target: `${base}${prefix}`,
     changeOrigin: true,
+    proxyTimeout: 30_000,
+    timeout: 30_000,
+    // 8.10 demo MCR (sprint_8):
+    // // http-proxy-middleware получает path уже без mountPath от Express.
+    // proxyTimeout: (не задано)
+    // timeout: (не задано)
   })
 }
 
-export function registerApiProxy(
-  app: Express
-): void {
+export function registerApiProxy(app: Express): void {
   const praktikumOrigin = readPraktikumOrigin()
   const nodeApiTarget = readNodeApiTarget()
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      `[apiProxy] Node API → ${nodeApiTarget} (forum, friends, /user)`
+    )
+  }
 
   app.use(
     '/api/v2',
@@ -94,20 +100,8 @@ export function registerApiProxy(
     })
   )
 
-  app.use(
-    '/api/forum',
-    nodeProxy(nodeApiTarget, '/api/forum')
-  )
-  app.use(
-    '/api/ui',
-    nodeProxy(nodeApiTarget, '/api/ui')
-  )
-  app.use(
-    '/friends',
-    nodeProxy(nodeApiTarget, '/friends')
-  )
-  app.use(
-    '/user',
-    nodeProxy(nodeApiTarget, '/user')
-  )
+  app.use('/api/forum', nodeProxy(nodeApiTarget, '/api/forum'))
+  app.use('/api/ui', nodeProxy(nodeApiTarget, '/api/ui'))
+  app.use('/friends', nodeProxy(nodeApiTarget, '/friends'))
+  app.use('/user', nodeProxy(nodeApiTarget, '/user'))
 }

@@ -7,11 +7,15 @@ import {
 import { combineReducers } from 'redux'
 import { configureStore } from '@reduxjs/toolkit'
 
-import forumReducer from './slices/forumSlice'
+import forumReducer, {
+  clearForumAuthRedirect,
+} from './slices/forumSlice'
 import friendsReducer from './slices/friendsSlice'
 import leaderboardReducer from './slices/leaderboardSlice'
 import ssrReducer from './slices/ssrSlice'
-import userReducer from './slices/userSlice'
+import userReducer, {
+  resetAuthChecked,
+} from './slices/userSlice'
 
 // Глобально декларируем в window наш ключик
 // и задаем ему тип такой же как у стейта в сторе
@@ -52,9 +56,25 @@ function readAndConsumeInitialState():
   return state
 }
 
-export const store = createAppStore(
+const store = createAppStore(
   readAndConsumeInitialState()
 )
+
+/** SSR без браузерных cookie мог пометить auth/forum как «проверенные» — сбрасываем до гидратации. */
+if (typeof window !== 'undefined') {
+  const hydrated = store.getState()
+  if (
+    hydrated.user.isAuthChecked &&
+    !hydrated.user.data
+  ) {
+    store.dispatch(resetAuthChecked())
+  }
+  if (hydrated.forum.shouldRedirectToLogin) {
+    store.dispatch(clearForumAuthRedirect())
+  }
+}
+
+export { store }
 
 export type AppDispatch = typeof store.dispatch
 

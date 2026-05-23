@@ -6,7 +6,10 @@ export interface ForumTopic {
   authorPraktikumId: number
   createdAt: string
   content: string
+  /** Комментарии верхнего уровня (без parentCommentId). */
   commentsCount: number
+  /** Ответы на комментарии (вложенные). */
+  repliesCount: number
   /** Текущая сессия в списке модераторов форума (env FORUM_MODERATOR_PRAKTIKUM_IDS). */
   viewerIsModerator: boolean
 }

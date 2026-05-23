@@ -2,29 +2,19 @@ import type { Request, Response } from 'express'
 import { Router } from 'express'
 import type { PraktikumUser } from '../middleware/praktikumUser'
 import {
-  col,
   fn,
+  literal,
   Op,
   UniqueConstraintError,
   ValidationError,
 } from 'sequelize'
-import {
-  Comment,
-  CommentReaction,
-  Topic,
-} from '../models'
-import {
-  canForumAuthorOrModerator,
-  isForumModeratorUser,
-} from './forumAccess'
+import { Comment, CommentReaction, Topic } from '../models'
+import { canForumAuthorOrModerator, isForumModeratorUser } from './forumAccess'
 import { isAllowedForumReactionEmoji } from './forumEmojiGuard'
 
 const router = Router()
 
-function requireSessionUser(
-  req: Request,
-  res: Response
-): PraktikumUser | null {
+function requireSessionUser(req: Request, res: Response): PraktikumUser | null {
   const user = req.praktikumUser
   if (!user) {
     res.status(403).json({ reason: 'Forbidden' })
@@ -33,9 +23,7 @@ function requireSessionUser(
   return user
 }
 
-function reactionRowPayload(
-  row: CommentReaction
-) {
+function reactionRowPayload(row: CommentReaction) {
   return {
     id: row.id,
     commentId: row.commentId,
@@ -44,11 +32,7 @@ function reactionRowPayload(
   }
 }
 
-function parseLimitParam(
-  raw: unknown,
-  fallback: number,
-  max: number
-): number {
+function parseLimitParam(raw: unknown, fallback: number, max: number): number {
   const n = Number(raw)
   if (!Number.isFinite(n) || n < 1) {
     return fallback
@@ -64,14 +48,19 @@ function parseOffsetParam(raw: unknown): number {
   return Math.floor(n)
 }
 
-function topicPayload(
-  row: Topic,
-  commentsCount: number,
-  req: Request
-) {
+type TopicCommentStats = {
+  commentsCount: number
+  repliesCount: number
+}
+
+const EMPTY_TOPIC_COMMENT_STATS: TopicCommentStats = {
+  commentsCount: 0,
+  repliesCount: 0,
+}
+
+function topicPayload(row: Topic, stats: TopicCommentStats, req: Request) {
   const user = req.praktikumUser
-  const viewerIsModerator =
-    user != null && isForumModeratorUser(user.id)
+  const viewerIsModerator = user != null && isForumModeratorUser(user.id)
   return {
     id: row.id,
     title: row.title,
@@ -79,7 +68,8 @@ function topicPayload(
     authorPraktikumId: row.authorPraktikumId,
     createdAt: row.createdAt.toISOString(),
     content: row.content,
-    commentsCount,
+    commentsCount: stats.commentsCount,
+    repliesCount: stats.repliesCount,
     viewerIsModerator,
   }
 }
@@ -96,17 +86,24 @@ function commentPayload(row: Comment) {
   }
 }
 
-async function commentCountsForTopicIds(
+async function commentStatsForTopicIds(
   ids: number[]
-): Promise<Map<number, number>> {
-  const map = new Map<number, number>()
+): Promise<Map<number, TopicCommentStats>> {
+  const map = new Map<number, TopicCommentStats>()
   if (ids.length === 0) {
     return map
   }
   const rows = await Comment.findAll({
     attributes: [
       'topicId',
-      [fn('COUNT', col('Comment.id')), 'cnt'],
+      [
+        fn('SUM', literal('CASE WHEN parent_id IS NULL THEN 1 ELSE 0 END')),
+        'commentsCount',
+      ],
+      [
+        fn('SUM', literal('CASE WHEN parent_id IS NOT NULL THEN 1 ELSE 0 END')),
+        'repliesCount',
+      ],
     ],
     where: {
       topicId: { [Op.in]: ids },
@@ -117,24 +114,61 @@ async function commentCountsForTopicIds(
   for (const r of rows) {
     const rec = r as unknown as {
       topicId: number
-      cnt: string
+      commentsCount: string
+      repliesCount: string
     }
-    map.set(rec.topicId, Number(rec.cnt) || 0)
+    map.set(rec.topicId, {
+      commentsCount: Number(rec.commentsCount) || 0,
+      repliesCount: Number(rec.repliesCount) || 0,
+    })
   }
   return map
+}
+
+async function commentStatsForTopic(
+  topicId: number
+): Promise<TopicCommentStats> {
+  const map = await commentStatsForTopicIds([topicId])
+  return map.get(topicId) ?? EMPTY_TOPIC_COMMENT_STATS
+}
+
+type ReactionAggItem = {
+  emoji: string
+  count: number
+  mine: boolean
+}
+
+function aggregateReactionsForRows(
+  rows: Array<{
+    emoji: string
+    authorPraktikumId: number
+  }>,
+  viewerId: number | undefined
+): ReactionAggItem[] {
+  const map = new Map<string, { count: number; mine: boolean }>()
+  for (const r of rows) {
+    const cur = map.get(r.emoji) ?? {
+      count: 0,
+      mine: false,
+    }
+    cur.count += 1
+    if (viewerId !== undefined && r.authorPraktikumId === viewerId) {
+      cur.mine = true
+    }
+    map.set(r.emoji, cur)
+  }
+  return [...map.entries()].map(([emoji, v]) => ({
+    emoji,
+    count: v.count,
+    mine: v.mine,
+  }))
 }
 
 /** GET /topics — список (limit default 20; offset или page). */
 router.get('/topics', async (req, res) => {
   try {
-    const limit = parseLimitParam(
-      req.query.limit,
-      20,
-      100
-    )
-    let offset = parseOffsetParam(
-      req.query.offset
-    )
+    const limit = parseLimitParam(req.query.limit, 20, 100)
+    let offset = parseOffsetParam(req.query.offset)
     const pageRaw = req.query.page
     const pageNum = Number(pageRaw)
     if (
@@ -153,60 +187,40 @@ router.get('/topics', async (req, res) => {
     })
 
     const ids = rows.map(t => t.id)
-    const countMap =
-      await commentCountsForTopicIds(ids)
+    const statsMap = await commentStatsForTopicIds(ids)
 
     res.json(
       rows.map(t =>
-        topicPayload(
-          t,
-          countMap.get(t.id) ?? 0,
-          req
-        )
+        topicPayload(t, statsMap.get(t.id) ?? EMPTY_TOPIC_COMMENT_STATS, req)
       )
     )
   } catch {
-    res
-      .status(500)
-      .json({ reason: 'Internal error' })
+    res.status(500).json({ reason: 'Internal error' })
   }
 })
 
 /** GET /topics/:topicId */
-router.get(
-  '/topics/:topicId',
-  async (req, res) => {
-    try {
-      const topicId = Number(req.params.topicId)
-      if (!Number.isFinite(topicId)) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      const topic = await Topic.findByPk(topicId)
-      if (!topic) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      const commentsCount = await Comment.count({
-        where: { topicId },
-      })
-
-      res.json(
-        topicPayload(topic, commentsCount, req)
-      )
-    } catch {
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
+router.get('/topics/:topicId', async (req, res) => {
+  try {
+    const topicId = Number(req.params.topicId)
+    if (!Number.isFinite(topicId)) {
+      res.status(404).json({ reason: 'Not found' })
+      return
     }
+
+    const topic = await Topic.findByPk(topicId)
+    if (!topic) {
+      res.status(404).json({ reason: 'Not found' })
+      return
+    }
+
+    const stats = await commentStatsForTopic(topicId)
+
+    res.json(topicPayload(topic, stats, req))
+  } catch {
+    res.status(500).json({ reason: 'Internal error' })
   }
-)
+})
 
 /** POST /topics */
 router.post('/topics', async (req, res) => {
@@ -218,22 +232,13 @@ router.post('/topics', async (req, res) => {
 
   try {
     const body = req.body as unknown
-    if (
-      body === null ||
-      typeof body !== 'object'
-    ) {
-      res
-        .status(400)
-        .json({ reason: 'Invalid body' })
+    if (body === null || typeof body !== 'object') {
+      res.status(400).json({ reason: 'Invalid body' })
       return
     }
     const o = body as Record<string, unknown>
-    const title =
-      typeof o.title === 'string' ? o.title : ''
-    const content =
-      typeof o.content === 'string'
-        ? o.content
-        : ''
+    const title = typeof o.title === 'string' ? o.title : ''
+    const content = typeof o.content === 'string' ? o.content : ''
 
     const topic = await Topic.create({
       title,
@@ -242,9 +247,7 @@ router.post('/topics', async (req, res) => {
       authorDisplay: user.displayLabel,
     })
 
-    res
-      .status(201)
-      .json(topicPayload(topic, 0, req))
+    res.status(201).json(topicPayload(topic, EMPTY_TOPIC_COMMENT_STATS, req))
   } catch (e) {
     if (e instanceof ValidationError) {
       res.status(400).json({
@@ -252,166 +255,189 @@ router.post('/topics', async (req, res) => {
       })
       return
     }
-    res
-      .status(500)
-      .json({ reason: 'Internal error' })
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[forum] POST /topics failed:', e)
+    }
+    res.status(500).json({ reason: 'Internal error' })
+  }
+})
+
+/**
+ * GET /topics/:topicId/reactions-map
+ * Все реакции темы одним запросом (вместо N× GET …/comments/:id/reactions).
+ */
+router.get('/topics/:topicId/reactions-map', async (req, res) => {
+  try {
+    const topicId = Number(req.params.topicId)
+    if (!Number.isFinite(topicId)) {
+      res.status(404).json({ reason: 'Not found' })
+      return
+    }
+
+    const topic = await Topic.findByPk(topicId)
+    if (!topic) {
+      res.status(404).json({ reason: 'Not found' })
+      return
+    }
+
+    const rows = await CommentReaction.findAll({
+      attributes: ['commentId', 'emoji', 'authorPraktikumId'],
+      include: [
+        {
+          model: Comment,
+          as: 'comment',
+          required: true,
+          attributes: [],
+          where: { topicId },
+        },
+      ],
+      order: [
+        ['commentId', 'ASC'],
+        ['emoji', 'ASC'],
+      ],
+    })
+
+    const byComment = new Map<
+      number,
+      Array<{
+        emoji: string
+        authorPraktikumId: number
+      }>
+    >()
+    for (const r of rows) {
+      const list = byComment.get(r.commentId) ?? []
+      list.push({
+        emoji: r.emoji,
+        authorPraktikumId: r.authorPraktikumId,
+      })
+      byComment.set(r.commentId, list)
+    }
+
+    const viewerId = req.praktikumUser?.id
+    const byCommentId: Record<number, { items: ReactionAggItem[] }> = {}
+    for (const [commentId, reactionRows] of byComment) {
+      byCommentId[commentId] = {
+        items: aggregateReactionsForRows(reactionRows, viewerId),
+      }
+    }
+
+    res.json({ byCommentId })
+  } catch {
+    res.status(500).json({ reason: 'Internal error' })
   }
 })
 
 /** GET /topics/:topicId/comments */
-router.get(
-  '/topics/:topicId/comments',
-  async (req, res) => {
-    try {
-      const topicId = Number(req.params.topicId)
-      if (!Number.isFinite(topicId)) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      const topic = await Topic.findByPk(topicId)
-      if (!topic) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      const limit = parseLimitParam(
-        req.query.limit,
-        50,
-        100
-      )
-      const offset = parseOffsetParam(
-        req.query.offset
-      )
-
-      const { rows, count } =
-        await Comment.findAndCountAll({
-          where: { topicId },
-          order: [
-            ['createdAt', 'ASC'],
-            ['id', 'ASC'],
-          ],
-          limit,
-          offset,
-        })
-
-      res.json({
-        items: rows.map(commentPayload),
-        total: count,
-        limit,
-        offset,
-      })
-    } catch {
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
-    }
-  }
-)
-
-/** POST /topics/:topicId/comments */
-router.post(
-  '/topics/:topicId/comments',
-  async (req, res) => {
-    const user = req.praktikumUser
-    if (!user) {
-      res
-        .status(403)
-        .json({ reason: 'Forbidden' })
+router.get('/topics/:topicId/comments', async (req, res) => {
+  try {
+    const topicId = Number(req.params.topicId)
+    if (!Number.isFinite(topicId)) {
+      res.status(404).json({ reason: 'Not found' })
       return
     }
 
-    try {
-      const topicId = Number(req.params.topicId)
-      if (!Number.isFinite(topicId)) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
+    const topic = await Topic.findByPk(topicId)
+    if (!topic) {
+      res.status(404).json({ reason: 'Not found' })
+      return
+    }
 
-      const topic = await Topic.findByPk(topicId)
-      if (!topic) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
+    const limit = parseLimitParam(req.query.limit, 50, 100)
+    const offset = parseOffsetParam(req.query.offset)
 
-      const body = req.body as unknown
-      if (
-        body === null ||
-        typeof body !== 'object'
-      ) {
-        res
-          .status(400)
-          .json({ reason: 'Invalid body' })
-        return
-      }
-      const o = body as Record<string, unknown>
-      const content =
-        typeof o.content === 'string'
-          ? o.content
-          : ''
-      const rawParent = o.parentCommentId
-      const parentCommentId =
-        rawParent === null ||
-        rawParent === undefined
-          ? null
-          : Number(rawParent)
-      if (
-        parentCommentId !== null &&
-        !Number.isFinite(parentCommentId)
-      ) {
+    const { rows, count } = await Comment.findAndCountAll({
+      where: { topicId },
+      order: [
+        ['createdAt', 'ASC'],
+        ['id', 'ASC'],
+      ],
+      limit,
+      offset,
+    })
+
+    res.json({
+      items: rows.map(commentPayload),
+      total: count,
+      limit,
+      offset,
+    })
+  } catch {
+    res.status(500).json({ reason: 'Internal error' })
+  }
+})
+
+/** POST /topics/:topicId/comments */
+router.post('/topics/:topicId/comments', async (req, res) => {
+  const user = req.praktikumUser
+  if (!user) {
+    res.status(403).json({ reason: 'Forbidden' })
+    return
+  }
+
+  try {
+    const topicId = Number(req.params.topicId)
+    if (!Number.isFinite(topicId)) {
+      res.status(404).json({ reason: 'Not found' })
+      return
+    }
+
+    const topic = await Topic.findByPk(topicId)
+    if (!topic) {
+      res.status(404).json({ reason: 'Not found' })
+      return
+    }
+
+    const body = req.body as unknown
+    if (body === null || typeof body !== 'object') {
+      res.status(400).json({ reason: 'Invalid body' })
+      return
+    }
+    const o = body as Record<string, unknown>
+    const content = typeof o.content === 'string' ? o.content : ''
+    const rawParent = o.parentCommentId
+    const parentCommentId =
+      rawParent === null || rawParent === undefined ? null : Number(rawParent)
+    if (parentCommentId !== null && !Number.isFinite(parentCommentId)) {
+      res.status(400).json({
+        reason: 'Invalid parentCommentId',
+      })
+      return
+    }
+
+    if (parentCommentId !== null) {
+      const parent = await Comment.findOne({
+        where: {
+          id: parentCommentId,
+          topicId,
+        },
+      })
+      if (!parent) {
         res.status(400).json({
           reason: 'Invalid parentCommentId',
         })
         return
       }
-
-      if (parentCommentId !== null) {
-        const parent = await Comment.findOne({
-          where: {
-            id: parentCommentId,
-            topicId,
-          },
-        })
-        if (!parent) {
-          res.status(400).json({
-            reason: 'Invalid parentCommentId',
-          })
-          return
-        }
-      }
-
-      const comment = await Comment.create({
-        topicId,
-        parentId: parentCommentId,
-        authorPraktikumId: user.id,
-        authorDisplay: user.displayLabel,
-        content,
-      })
-
-      res
-        .status(201)
-        .json(commentPayload(comment))
-    } catch (e) {
-      if (e instanceof ValidationError) {
-        res.status(400).json({
-          reason: 'Validation failed',
-        })
-        return
-      }
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
     }
+
+    const comment = await Comment.create({
+      topicId,
+      parentId: parentCommentId,
+      authorPraktikumId: user.id,
+      authorDisplay: user.displayLabel,
+      content,
+    })
+
+    res.status(201).json(commentPayload(comment))
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      res.status(400).json({
+        reason: 'Validation failed',
+      })
+      return
+    }
+    res.status(500).json({ reason: 'Internal error' })
   }
-)
+})
 
 /** GET /topics/:topicId/comments/:commentId/reactions */
 router.get(
@@ -419,24 +445,15 @@ router.get(
   async (req, res) => {
     try {
       const topicId = Number(req.params.topicId)
-      const commentId = Number(
-        req.params.commentId
-      )
-      if (
-        !Number.isFinite(topicId) ||
-        !Number.isFinite(commentId)
-      ) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
+      const commentId = Number(req.params.commentId)
+      if (!Number.isFinite(topicId) || !Number.isFinite(commentId)) {
+        res.status(404).json({ reason: 'Not found' })
         return
       }
 
       const topic = await Topic.findByPk(topicId)
       if (!topic) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
+        res.status(404).json({ reason: 'Not found' })
         return
       }
 
@@ -444,467 +461,318 @@ router.get(
         where: { id: commentId, topicId },
       })
       if (!comment) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
+        res.status(404).json({ reason: 'Not found' })
         return
       }
 
-      const myId = req.praktikumUser?.id
       const rows = await CommentReaction.findAll({
         where: { commentId },
-        attributes: [
-          'emoji',
-          'authorPraktikumId',
-        ],
+        attributes: ['emoji', 'authorPraktikumId'],
         order: [['emoji', 'ASC']],
       })
 
-      const map = new Map<
-        string,
-        { count: number; mine: boolean }
-      >()
-      for (const r of rows) {
-        const cur = map.get(r.emoji) ?? {
-          count: 0,
-          mine: false,
-        }
-        cur.count += 1
-        if (
-          myId !== undefined &&
-          r.authorPraktikumId === myId
-        ) {
-          cur.mine = true
-        }
-        map.set(r.emoji, cur)
-      }
-
-      const items = [...map.entries()].map(
-        ([emoji, v]) => ({
-          emoji,
-          count: v.count,
-          mine: v.mine,
-        })
-      )
+      const items = aggregateReactionsForRows(rows, req.praktikumUser?.id)
 
       res.json({ items })
     } catch {
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
+      res.status(500).json({ reason: 'Internal error' })
     }
   }
 )
 
 /** POST /comments/:commentId/reactions */
-router.post(
-  '/comments/:commentId/reactions',
-  async (req, res) => {
-    const user = requireSessionUser(req, res)
-    if (!user) {
-      return
-    }
-
-    try {
-      const commentId = Number(
-        req.params.commentId
-      )
-      if (!Number.isFinite(commentId)) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      const comment = await Comment.findByPk(
-        commentId
-      )
-      if (!comment) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      const body = req.body as unknown
-      if (
-        body === null ||
-        typeof body !== 'object'
-      ) {
-        res
-          .status(400)
-          .json({ reason: 'Invalid body' })
-        return
-      }
-      const o = body as Record<string, unknown>
-      const emoji =
-        typeof o.emoji === 'string' ? o.emoji : ''
-      if (!isAllowedForumReactionEmoji(emoji)) {
-        res.status(400).json({
-          reason: 'Invalid emoji',
-        })
-        return
-      }
-
-      try {
-        const row = await CommentReaction.create({
-          commentId,
-          authorPraktikumId: user.id,
-          emoji,
-        })
-        res
-          .status(201)
-          .json(reactionRowPayload(row))
-      } catch (e) {
-        if (e instanceof UniqueConstraintError) {
-          const existing =
-            await CommentReaction.findOne({
-              where: {
-                commentId,
-                authorPraktikumId: user.id,
-                emoji,
-              },
-            })
-          if (existing) {
-            res
-              .status(200)
-              .json(reactionRowPayload(existing))
-            return
-          }
-        }
-        if (e instanceof ValidationError) {
-          res.status(400).json({
-            reason: 'Validation failed',
-          })
-          return
-        }
-        throw e
-      }
-    } catch {
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
-    }
+router.post('/comments/:commentId/reactions', async (req, res) => {
+  const user = requireSessionUser(req, res)
+  if (!user) {
+    return
   }
-)
 
-/** DELETE /comments/:commentId/reactions/:emoji */
-router.delete(
-  '/comments/:commentId/reactions/:emoji',
-  async (req, res) => {
-    const user = requireSessionUser(req, res)
-    if (!user) {
+  try {
+    const commentId = Number(req.params.commentId)
+    if (!Number.isFinite(commentId)) {
+      res.status(404).json({ reason: 'Not found' })
+      return
+    }
+
+    const comment = await Comment.findByPk(commentId)
+    if (!comment) {
+      res.status(404).json({ reason: 'Not found' })
+      return
+    }
+
+    const body = req.body as unknown
+    if (body === null || typeof body !== 'object') {
+      res.status(400).json({ reason: 'Invalid body' })
+      return
+    }
+    const o = body as Record<string, unknown>
+    const emoji = typeof o.emoji === 'string' ? o.emoji : ''
+    if (!isAllowedForumReactionEmoji(emoji)) {
+      res.status(400).json({
+        reason: 'Invalid emoji',
+      })
       return
     }
 
     try {
-      const commentId = Number(
-        req.params.commentId
-      )
-      const emoji = decodeURIComponent(
-        String(req.params.emoji ?? '')
-      )
-      if (!Number.isFinite(commentId)) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-      if (!isAllowedForumReactionEmoji(emoji)) {
-        res.status(400).json({
-          reason: 'Invalid emoji',
-        })
-        return
-      }
-
-      const deleted =
-        await CommentReaction.destroy({
+      const row = await CommentReaction.create({
+        commentId,
+        authorPraktikumId: user.id,
+        emoji,
+      })
+      res.status(201).json(reactionRowPayload(row))
+    } catch (e) {
+      if (e instanceof UniqueConstraintError) {
+        const existing = await CommentReaction.findOne({
           where: {
             commentId,
             authorPraktikumId: user.id,
             emoji,
           },
         })
-      if (deleted === 0) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
+        if (existing) {
+          res.status(200).json(reactionRowPayload(existing))
+          return
+        }
+      }
+      if (e instanceof ValidationError) {
+        res.status(400).json({
+          reason: 'Validation failed',
+        })
         return
       }
-      res.status(204).send()
-    } catch {
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
+      throw e
     }
+  } catch {
+    res.status(500).json({ reason: 'Internal error' })
   }
-)
+})
+
+/** DELETE /comments/:commentId/reactions/:emoji */
+router.delete('/comments/:commentId/reactions/:emoji', async (req, res) => {
+  const user = requireSessionUser(req, res)
+  if (!user) {
+    return
+  }
+
+  try {
+    const commentId = Number(req.params.commentId)
+    const emoji = decodeURIComponent(String(req.params.emoji ?? ''))
+    if (!Number.isFinite(commentId)) {
+      res.status(404).json({ reason: 'Not found' })
+      return
+    }
+    if (!isAllowedForumReactionEmoji(emoji)) {
+      res.status(400).json({
+        reason: 'Invalid emoji',
+      })
+      return
+    }
+
+    const deleted = await CommentReaction.destroy({
+      where: {
+        commentId,
+        authorPraktikumId: user.id,
+        emoji,
+      },
+    })
+    if (deleted === 0) {
+      res.status(404).json({ reason: 'Not found' })
+      return
+    }
+    res.status(204).send()
+  } catch {
+    res.status(500).json({ reason: 'Internal error' })
+  }
+})
 
 /** PATCH /topics/:topicId */
-router.patch(
-  '/topics/:topicId',
-  async (req, res) => {
-    const user = requireSessionUser(req, res)
-    if (!user) {
+router.patch('/topics/:topicId', async (req, res) => {
+  const user = requireSessionUser(req, res)
+  if (!user) {
+    return
+  }
+
+  try {
+    const topicId = Number(req.params.topicId)
+    if (!Number.isFinite(topicId)) {
+      res.status(404).json({ reason: 'Not found' })
       return
     }
 
-    try {
-      const topicId = Number(req.params.topicId)
-      if (!Number.isFinite(topicId)) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      const topic = await Topic.findByPk(topicId)
-      if (!topic) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      if (
-        !canForumAuthorOrModerator(
-          user.id,
-          topic.authorPraktikumId
-        )
-      ) {
-        res.status(403).json({
-          reason: 'Not author or moderator',
-        })
-        return
-      }
-
-      const body = req.body as unknown
-      if (
-        body === null ||
-        typeof body !== 'object'
-      ) {
-        res
-          .status(400)
-          .json({ reason: 'Invalid body' })
-        return
-      }
-      const o = body as Record<string, unknown>
-      const patch: {
-        title?: string
-        content?: string
-      } = {}
-      if (typeof o.title === 'string') {
-        patch.title = o.title
-      }
-      if (typeof o.content === 'string') {
-        patch.content = o.content
-      }
-      if (Object.keys(patch).length === 0) {
-        res.status(400).json({
-          reason: 'Empty patch',
-        })
-        return
-      }
-
-      await topic.update(patch)
-      await topic.reload()
-      const commentsCount = await Comment.count({
-        where: { topicId },
-      })
-      res.json(
-        topicPayload(topic, commentsCount, req)
-      )
-    } catch (e) {
-      if (e instanceof ValidationError) {
-        res.status(400).json({
-          reason: 'Validation failed',
-        })
-        return
-      }
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
+    const topic = await Topic.findByPk(topicId)
+    if (!topic) {
+      res.status(404).json({ reason: 'Not found' })
+      return
     }
+
+    if (!canForumAuthorOrModerator(user.id, topic.authorPraktikumId)) {
+      res.status(403).json({
+        reason: 'Not author or moderator',
+      })
+      return
+    }
+
+    const body = req.body as unknown
+    if (body === null || typeof body !== 'object') {
+      res.status(400).json({ reason: 'Invalid body' })
+      return
+    }
+    const o = body as Record<string, unknown>
+    const patch: {
+      title?: string
+      content?: string
+    } = {}
+    if (typeof o.title === 'string') {
+      patch.title = o.title
+    }
+    if (typeof o.content === 'string') {
+      patch.content = o.content
+    }
+    if (Object.keys(patch).length === 0) {
+      res.status(400).json({
+        reason: 'Empty patch',
+      })
+      return
+    }
+
+    await topic.update(patch)
+    await topic.reload()
+    const stats = await commentStatsForTopic(topicId)
+    res.json(topicPayload(topic, stats, req))
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      res.status(400).json({
+        reason: 'Validation failed',
+      })
+      return
+    }
+    res.status(500).json({ reason: 'Internal error' })
   }
-)
+})
 
 /** DELETE /topics/:topicId */
-router.delete(
-  '/topics/:topicId',
-  async (req, res) => {
-    const user = requireSessionUser(req, res)
-    if (!user) {
+router.delete('/topics/:topicId', async (req, res) => {
+  const user = requireSessionUser(req, res)
+  if (!user) {
+    return
+  }
+
+  try {
+    const topicId = Number(req.params.topicId)
+    if (!Number.isFinite(topicId)) {
+      res.status(404).json({ reason: 'Not found' })
       return
     }
 
-    try {
-      const topicId = Number(req.params.topicId)
-      if (!Number.isFinite(topicId)) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      const topic = await Topic.findByPk(topicId)
-      if (!topic) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      if (
-        !canForumAuthorOrModerator(
-          user.id,
-          topic.authorPraktikumId
-        )
-      ) {
-        res.status(403).json({
-          reason: 'Not author or moderator',
-        })
-        return
-      }
-
-      await topic.destroy()
-      res.status(204).send()
-    } catch {
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
+    const topic = await Topic.findByPk(topicId)
+    if (!topic) {
+      res.status(404).json({ reason: 'Not found' })
+      return
     }
+
+    if (!canForumAuthorOrModerator(user.id, topic.authorPraktikumId)) {
+      res.status(403).json({
+        reason: 'Not author or moderator',
+      })
+      return
+    }
+
+    await topic.destroy()
+    res.status(204).send()
+  } catch {
+    res.status(500).json({ reason: 'Internal error' })
   }
-)
+})
 
 /** PATCH /comments/:commentId */
-router.patch(
-  '/comments/:commentId',
-  async (req, res) => {
-    const user = requireSessionUser(req, res)
-    if (!user) {
+router.patch('/comments/:commentId', async (req, res) => {
+  const user = requireSessionUser(req, res)
+  if (!user) {
+    return
+  }
+
+  try {
+    const commentId = Number(req.params.commentId)
+    if (!Number.isFinite(commentId)) {
+      res.status(404).json({ reason: 'Not found' })
       return
     }
 
-    try {
-      const commentId = Number(
-        req.params.commentId
-      )
-      if (!Number.isFinite(commentId)) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      const comment = await Comment.findByPk(
-        commentId
-      )
-      if (!comment) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      if (
-        !canForumAuthorOrModerator(
-          user.id,
-          comment.authorPraktikumId
-        )
-      ) {
-        res.status(403).json({
-          reason: 'Not author or moderator',
-        })
-        return
-      }
-
-      const body = req.body as unknown
-      if (
-        body === null ||
-        typeof body !== 'object'
-      ) {
-        res
-          .status(400)
-          .json({ reason: 'Invalid body' })
-        return
-      }
-      const o = body as Record<string, unknown>
-      if (typeof o.content !== 'string') {
-        res.status(400).json({
-          reason: 'Invalid body',
-        })
-        return
-      }
-
-      await comment.update({
-        content: o.content,
-      })
-      await comment.reload()
-      res.json(commentPayload(comment))
-    } catch (e) {
-      if (e instanceof ValidationError) {
-        res.status(400).json({
-          reason: 'Validation failed',
-        })
-        return
-      }
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
+    const comment = await Comment.findByPk(commentId)
+    if (!comment) {
+      res.status(404).json({ reason: 'Not found' })
+      return
     }
+
+    if (!canForumAuthorOrModerator(user.id, comment.authorPraktikumId)) {
+      res.status(403).json({
+        reason: 'Not author or moderator',
+      })
+      return
+    }
+
+    const body = req.body as unknown
+    if (body === null || typeof body !== 'object') {
+      res.status(400).json({ reason: 'Invalid body' })
+      return
+    }
+    const o = body as Record<string, unknown>
+    if (typeof o.content !== 'string') {
+      res.status(400).json({
+        reason: 'Invalid body',
+      })
+      return
+    }
+
+    await comment.update({
+      content: o.content,
+    })
+    await comment.reload()
+    res.json(commentPayload(comment))
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      res.status(400).json({
+        reason: 'Validation failed',
+      })
+      return
+    }
+    res.status(500).json({ reason: 'Internal error' })
   }
-)
+})
 
 /** DELETE /comments/:commentId */
-router.delete(
-  '/comments/:commentId',
-  async (req, res) => {
-    const user = requireSessionUser(req, res)
-    if (!user) {
+router.delete('/comments/:commentId', async (req, res) => {
+  const user = requireSessionUser(req, res)
+  if (!user) {
+    return
+  }
+
+  try {
+    const commentId = Number(req.params.commentId)
+    if (!Number.isFinite(commentId)) {
+      res.status(404).json({ reason: 'Not found' })
       return
     }
 
-    try {
-      const commentId = Number(
-        req.params.commentId
-      )
-      if (!Number.isFinite(commentId)) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      const comment = await Comment.findByPk(
-        commentId
-      )
-      if (!comment) {
-        res
-          .status(404)
-          .json({ reason: 'Not found' })
-        return
-      }
-
-      if (
-        !canForumAuthorOrModerator(
-          user.id,
-          comment.authorPraktikumId
-        )
-      ) {
-        res.status(403).json({
-          reason: 'Not author or moderator',
-        })
-        return
-      }
-
-      await comment.destroy()
-      res.status(204).send()
-    } catch {
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
+    const comment = await Comment.findByPk(commentId)
+    if (!comment) {
+      res.status(404).json({ reason: 'Not found' })
+      return
     }
+
+    if (!canForumAuthorOrModerator(user.id, comment.authorPraktikumId)) {
+      res.status(403).json({
+        reason: 'Not author or moderator',
+      })
+      return
+    }
+
+    await comment.destroy()
+    res.status(204).send()
+  } catch {
+    res.status(500).json({ reason: 'Internal error' })
   }
-)
+})
 
 export { router as forumRouter }

@@ -2,6 +2,7 @@ import {
   type LeaderboardApiRow,
   type LeaderboardEntry,
 } from './leaderboardConfig'
+import { normalizeLeaderboardRecordDate } from '../utils/leaderboardDate'
 
 const asNumber = (
   v: unknown,
@@ -34,6 +35,8 @@ export function mapLeaderboardRowToUi(
         : null,
     CM42_score: asNumber(d.CM42_score, 0),
     bestScore: asNumber(d.bestScore, 0),
-    bestScoreDate: asString(d.bestScoreDate, ''),
+    bestScoreDate: normalizeLeaderboardRecordDate(
+      asString(d.bestScoreDate, '')
+    ),
   }
 }
