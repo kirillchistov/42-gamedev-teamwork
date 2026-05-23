@@ -1,15 +1,14 @@
+import { cancelScheduledTimeout, scheduleTimeout } from './isomorphicTimer'
+
 /**
  * GitHub Pages: API Практикума через same-origin (Service Worker),
  * чтобы cookie сессии были first-party (Safari на iOS блокирует cross-site Set-Cookie).
  */
 
-export const PRAKTIKUM_API_V2_ORIGIN =
-  'https://ya-praktikum.tech/api/v2'
+export const PRAKTIKUM_API_V2_ORIGIN = 'https://ya-praktikum.tech/api/v2'
 
 /** Путь same-origin прокси: `/repo-name/api/v2` или `/api/v2` на корне. */
-export function ghPagesPraktikumProxyBase(
-  appBaseUrl: string
-): string {
+export function ghPagesPraktikumProxyBase(appBaseUrl: string): string {
   const trimmed = appBaseUrl.replace(/\/+$/, '')
   if (!trimmed || trimmed === '/') {
     return '/api/v2'
@@ -24,28 +23,14 @@ export function rewritePraktikumSetCookie(
 ): string {
   let out = line.trim()
   out = out.replace(/;\s*Domain=[^;]*/gi, '')
-  out = out.replace(
-    /;\s*SameSite=None/gi,
-    '; SameSite=Lax'
-  )
+  out = out.replace(/;\s*SameSite=None/gi, '; SameSite=Lax')
 
-  const apiPath = repoBasePath
-    ? `${repoBasePath}/api/v2`
-    : '/api/v2'
-  out = out.replace(
-    /;\s*Path=\/api\/v2\b/gi,
-    `; Path=${apiPath}`
-  )
+  const apiPath = repoBasePath ? `${repoBasePath}/api/v2` : '/api/v2'
+  out = out.replace(/;\s*Path=\/api\/v2\b/gi, `; Path=${apiPath}`)
 
   if (repoBasePath) {
-    out = out.replace(
-      /;\s*Path=\/$/i,
-      `; Path=${repoBasePath}/`
-    )
-    out = out.replace(
-      /;\s*Path=\/;/gi,
-      `; Path=${repoBasePath}/;`
-    )
+    out = out.replace(/;\s*Path=\/$/i, `; Path=${repoBasePath}/`)
+    out = out.replace(/;\s*Path=\/;/gi, `; Path=${repoBasePath}/;`)
   }
 
   return out
@@ -53,10 +38,7 @@ export function rewritePraktikumSetCookie(
 
 /** Дождаться controlling SW (прокси /api/v2) перед auth на GitHub Pages. */
 export async function waitForGhPagesServiceWorker(): Promise<void> {
-  if (
-    typeof window === 'undefined' ||
-    !('serviceWorker' in navigator)
-  ) {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     return
   }
   try {
@@ -65,14 +47,11 @@ export async function waitForGhPagesServiceWorker(): Promise<void> {
       return
     }
     await new Promise<void>(resolve => {
-      const maxWait = window.setTimeout(
-        () => resolve(),
-        4000
-      )
+      const maxWait = scheduleTimeout(() => resolve(), 4000)
       navigator.serviceWorker.addEventListener(
         'controllerchange',
         () => {
-          window.clearTimeout(maxWait)
+          cancelScheduledTimeout(maxWait)
           resolve()
         },
         { once: true }
@@ -83,16 +62,11 @@ export async function waitForGhPagesServiceWorker(): Promise<void> {
   }
 }
 
-export function readSetCookieLines(
-  headers: Headers
-): string[] {
+export function readSetCookieLines(headers: Headers): string[] {
   const withGetSetCookie = headers as Headers & {
     getSetCookie?: () => string[]
   }
-  if (
-    typeof withGetSetCookie.getSetCookie ===
-    'function'
-  ) {
+  if (typeof withGetSetCookie.getSetCookie === 'function') {
     return withGetSetCookie.getSetCookie()
   }
   const merged = headers.get('set-cookie')
