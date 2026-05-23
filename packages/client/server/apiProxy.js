@@ -25,13 +25,15 @@ function readNodeApiTarget() {
     const external = ((_a = process.env.EXTERNAL_SERVER_URL) === null || _a === void 0 ? void 0 : _a.trim()) ||
         ((_b = process.env.VITE_APP_API_URL) === null || _b === void 0 ? void 0 : _b.trim());
     const internal = (_c = process.env.INTERNAL_SERVER_URL) === null || _c === void 0 ? void 0 : _c.trim();
-    // В dev на хосте INTERNAL_SERVER_URL=http://server:… из docker-compose не резолвится.
     const internalIsDockerOnly = internal != null &&
         /:\/\/server(?::|\/|$)/.test(internal);
+    // На хосте (yarn dev:client) hostname `server` из docker-compose не резолвится.
     if (process.env.NODE_ENV === 'development' &&
-        internalIsDockerOnly &&
-        external) {
-        return trimTrailingSlash(external);
+        internalIsDockerOnly) {
+        if (external) {
+            return trimTrailingSlash(external);
+        }
+        return DEFAULT_NODE_API;
     }
     if (internal) {
         return trimTrailingSlash(internal);

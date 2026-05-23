@@ -3,27 +3,16 @@
  * - профиль обновляется через updateProfileThunk
  * - аватар обновляется через updateAvatarThunk
  **/
-import React, {
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
-import {
-  useDispatch,
-  useSelector,
-} from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Helmet } from 'react-helmet'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { Avatar } from '../components/Avatar'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
-import {
-  Button,
-  Input,
-  FieldError,
-} from '../shared/ui'
+import { Button, Input, FieldError } from '../shared/ui'
 import {
   userApi,
   ProfileData,
@@ -46,10 +35,7 @@ import {
   fetchUserThunk,
 } from '../slices/userSlice'
 
-function profilesEqual(
-  a: ProfileData,
-  b: ProfileData
-): boolean {
+function profilesEqual(a: ProfileData, b: ProfileData): boolean {
   return (
     a.first_name === b.first_name &&
     a.second_name === b.second_name &&
@@ -60,20 +46,19 @@ function profilesEqual(
   )
 }
 
-export const ProfilePage: React.FC = () => {
+export function ProfilePage() {
   const dispatch = useDispatch<AppDispatch>()
   const userFromStore = useSelector(selectUser)
   const { theme } = useLandingTheme()
 
-  const [profile, setProfile] =
-    useState<ProfileData>({
-      first_name: '',
-      second_name: '',
-      display_name: '',
-      email: '',
-      phone: '',
-      login: '',
-    })
+  const [profile, setProfile] = useState<ProfileData>({
+    first_name: '',
+    second_name: '',
+    display_name: '',
+    email: '',
+    phone: '',
+    login: '',
+  })
   const [passwords, setPasswords] = useState<{
     [key: string]: string
   }>({
@@ -81,34 +66,23 @@ export const ProfilePage: React.FC = () => {
     newPassword: '',
   })
 
-  const [avatar, setAvatar] = useState<
-    string | null
-  >(null)
+  const [avatar, setAvatar] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [
-    showPasswordPanel,
-    setShowPasswordPanel,
-  ] = useState(false)
-  const [toastMessage, setToastMessage] =
-    useState('')
-  const [savedProfile, setSavedProfile] =
-    useState<ProfileData | null>(null)
-  const [pwdFieldBlurred, setPwdFieldBlurred] =
-    useState({
-      oldPassword: false,
-      newPassword: false,
-    })
+  const [showPasswordPanel, setShowPasswordPanel] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [savedProfile, setSavedProfile] = useState<ProfileData | null>(null)
+  const [pwdFieldBlurred, setPwdFieldBlurred] = useState({
+    oldPassword: false,
+    newPassword: false,
+  })
 
   const passwordsRef = useRef(passwords)
   passwordsRef.current = passwords
 
   const profileValidate = useValidate()
-  const { syncValidationFromValues } =
-    profileValidate
+  const { syncValidationFromValues } = profileValidate
 
-  const notifyProfileSuccess = (
-    message: string
-  ) => {
+  const notifyProfileSuccess = (message: string) => {
     console.info('[Profile]', message)
     setToastMessage(message)
   }
@@ -128,12 +102,9 @@ export const ProfilePage: React.FC = () => {
       dispatch(fetchUserThunk())
     } else {
       const nextProfile: ProfileData = {
-        first_name:
-          userFromStore.first_name || '',
-        second_name:
-          userFromStore.second_name || '',
-        display_name:
-          userFromStore.display_name || '',
+        first_name: userFromStore.first_name || '',
+        second_name: userFromStore.second_name || '',
+        display_name: userFromStore.display_name || '',
         email: userFromStore.email || '',
         phone: userFromStore.phone || '',
         login: userFromStore.login || '',
@@ -149,14 +120,8 @@ export const ProfilePage: React.FC = () => {
 
   useEffect(() => {
     if (savedProfile === null) return
-    syncValidationFromValues(
-      profile as SignupFormValues
-    )
-  }, [
-    profile,
-    savedProfile,
-    syncValidationFromValues,
-  ])
+    syncValidationFromValues(profile as SignupFormValues)
+  }, [profile, savedProfile, syncValidationFromValues])
 
   const applyServerProfile = (
     data: ProfileResponse,
@@ -174,17 +139,13 @@ export const ProfilePage: React.FC = () => {
     setSavedProfile({ ...next })
     const base = resourceFileUrl(data.avatar)
     setAvatar(
-      base && opts?.bustAvatar
-        ? `${base.split('?')[0]}?v=${Date.now()}`
-        : base
+      base && opts?.bustAvatar ? `${base.split('?')[0]}?v=${Date.now()}` : base
     )
 
     dispatch(patchUserProfile(data))
   }
 
-  const handleChange: React.ChangeEventHandler<
-    HTMLInputElement
-  > = e => {
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = e => {
     const { name, value } = e.target
     setProfile(prev => {
       return {
@@ -195,30 +156,20 @@ export const ProfilePage: React.FC = () => {
   }
 
   const isProfileDirty =
-    savedProfile !== null &&
-    !profilesEqual(profile, savedProfile)
+    savedProfile !== null && !profilesEqual(profile, savedProfile)
 
   const canSaveProfile =
-    isProfileDirty &&
-    !loading &&
-    !profileValidate.isValidateError
+    isProfileDirty && !loading && !profileValidate.isValidateError
 
-  const handlePasswordFieldBlur = (
-    field: 'oldPassword' | 'newPassword'
-  ) => {
+  const handlePasswordFieldBlur = (field: 'oldPassword' | 'newPassword') => {
     setPwdFieldBlurred(prev => ({
       ...prev,
       [field]: true,
     }))
-    passwordsValidate.handleFieldBlur(
-      field,
-      passwordsRef.current[field]
-    )
+    passwordsValidate.handleFieldBlur(field, passwordsRef.current[field])
   }
 
-  const handleOldPasswordChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleOldPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setPasswords(prev => {
       const next = { ...prev, oldPassword: value }
@@ -235,9 +186,7 @@ export const ProfilePage: React.FC = () => {
     }
   }
 
-  const handleNewPasswordChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setPasswords(prev => {
       const next = { ...prev, newPassword: value }
@@ -255,80 +204,54 @@ export const ProfilePage: React.FC = () => {
   }
 
   const hasPasswordValidationErrors =
-    Object.keys(passwordsValidate.errors).length >
-    0
+    Object.keys(passwordsValidate.errors).length > 0
 
   const canSubmitPassword =
-    Boolean(
-      passwords.oldPassword.trim() &&
-        passwords.newPassword.trim()
-    ) &&
-    passwords.newPassword !==
-      passwords.oldPassword &&
+    Boolean(passwords.oldPassword.trim() && passwords.newPassword.trim()) &&
+    passwords.newPassword !== passwords.oldPassword &&
     !hasPasswordValidationErrors
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    profileValidate.doValidate(
-      profile,
-      async () => {
-        setLoading(true)
-        try {
-          const result = await dispatch(
-            updateProfileThunk(profile)
-          ).unwrap()
-          applyServerProfile(result)
-          notifyProfileSuccess(
-            'Изменения профиля сохранены'
-          )
-        } catch {
-          console.warn(
-            '[Profile]',
-            'Не удалось сохранить профиль'
-          )
-        } finally {
-          setLoading(false)
-        }
+    profileValidate.doValidate(profile, async () => {
+      setLoading(true)
+      try {
+        const result = await dispatch(updateProfileThunk(profile)).unwrap()
+        applyServerProfile(result)
+        notifyProfileSuccess('Изменения профиля сохранены')
+      } catch {
+        console.warn('[Profile]', 'Не удалось сохранить профиль')
+      } finally {
+        setLoading(false)
       }
-    )
+    })
   }
 
-  const handlePasswordChange = (
-    e: React.FormEvent
-  ) => {
+  const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault()
-    passwordsValidate.doValidate(
-      passwords,
-      async () => {
-        const { oldPassword, newPassword } =
-          passwords
-        if (newPassword === oldPassword) return
-        try {
-          await userApi.changePassword({
-            oldPassword,
-            newPassword,
-          })
-          notifyProfileSuccess(
-            'Пароль успешно изменён'
-          )
-          setPasswords({
-            oldPassword: '',
-            newPassword: '',
-          })
-          setShowPasswordPanel(false)
-          setPwdFieldBlurred({
-            oldPassword: false,
-            newPassword: false,
-          })
-          passwordsValidate.resetValidation()
-        } catch {
-          console.warn(
-            '[Profile]',
-            'Не удалось сменить пароль'
-          )
-        }
+    passwordsValidate.doValidate(passwords, async () => {
+      const { oldPassword, newPassword } = passwords
+      if (newPassword === oldPassword) return
+      try {
+        await userApi.changePassword({
+          oldPassword,
+          newPassword,
+        })
+        notifyProfileSuccess('Пароль успешно изменён')
+        setPasswords({
+          oldPassword: '',
+          newPassword: '',
+        })
+        setShowPasswordPanel(false)
+        setPwdFieldBlurred({
+          oldPassword: false,
+          newPassword: false,
+        })
+        passwordsValidate.resetValidation()
+      } catch {
+        console.warn('[Profile]', 'Не удалось сменить пароль')
       }
-    )
+    })
   }
 
   const closePasswordPanel = () => {
@@ -353,9 +276,7 @@ export const ProfilePage: React.FC = () => {
     setShowPasswordPanel(true)
   }
 
-  const handleAvatarChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     const avatarErr = validateAvatarFile(file)
@@ -365,23 +286,12 @@ export const ProfilePage: React.FC = () => {
       return
     }
     try {
-      const result = await dispatch(
-        updateAvatarThunk(file)
-      ).unwrap()
+      const result = await dispatch(updateAvatarThunk(file)).unwrap()
       const base = resourceFileUrl(result.avatar)
-      setAvatar(
-        base
-          ? `${
-              base.split('?')[0]
-            }?v=${Date.now()}`
-          : null
-      )
+      setAvatar(base ? `${base.split('?')[0]}?v=${Date.now()}` : null)
       notifyProfileSuccess('Аватар обновлён')
     } catch {
-      console.warn(
-        '[Profile]',
-        'Не удалось загрузить аватар'
-      )
+      console.warn('[Profile]', 'Не удалось загрузить аватар')
       alert('Ошибка загрузки аватара')
     }
   }
@@ -393,10 +303,7 @@ export const ProfilePage: React.FC = () => {
       setAvatar(null)
       notifyProfileSuccess('Аватар удалён')
     } catch {
-      console.warn(
-        '[Profile]',
-        'Не удалось удалить аватар'
-      )
+      console.warn('[Profile]', 'Не удалось удалить аватар')
       alert('Ошибка удаления аватара')
     }
   }
@@ -404,8 +311,7 @@ export const ProfilePage: React.FC = () => {
   usePage({ initPage: initProfilePage })
 
   return (
-    <div
-      className={`landing landing--${theme} AuthPage`}>
+    <div className={`landing landing--${theme} AuthPage`}>
       <Helmet>
         <meta charSet="utf-8" />
         <title>Профиль игрока</title>
@@ -424,9 +330,7 @@ export const ProfilePage: React.FC = () => {
               role="status"
               aria-live="polite"
               className="auth-page__toast-wrap">
-              <div className="auth-page__toast">
-                {toastMessage}
-              </div>
+              <div className="auth-page__toast">{toastMessage}</div>
             </div>
           ) : null}
           <h1>Профиль игрока</h1>
@@ -434,12 +338,8 @@ export const ProfilePage: React.FC = () => {
           {/* Аватар */}
           <Avatar
             url={avatar}
-            handleAvatarChange={
-              handleAvatarChange
-            }
-            handleAvatarDelete={
-              handleAvatarDelete
-            }
+            handleAvatarChange={handleAvatarChange}
+            handleAvatarDelete={handleAvatarDelete}
           />
 
           {/* Форма профиля */}
@@ -457,16 +357,11 @@ export const ProfilePage: React.FC = () => {
                 value={profile.first_name}
                 onChange={handleChange}
                 onBlur={e =>
-                  profileValidate.handleFieldBlur(
-                    'first_name',
-                    e.target.value
-                  )
+                  profileValidate.handleFieldBlur('first_name', e.target.value)
                 }
               />
               <FieldError
-                message={profileValidate.getFieldError(
-                  'first_name'
-                )}
+                message={profileValidate.getFieldError('first_name')}
               />
             </label>
 
@@ -479,16 +374,11 @@ export const ProfilePage: React.FC = () => {
                 value={profile.second_name}
                 onChange={handleChange}
                 onBlur={e =>
-                  profileValidate.handleFieldBlur(
-                    'second_name',
-                    e.target.value
-                  )
+                  profileValidate.handleFieldBlur('second_name', e.target.value)
                 }
               />
               <FieldError
-                message={profileValidate.getFieldError(
-                  'second_name'
-                )}
+                message={profileValidate.getFieldError('second_name')}
               />
             </label>
 
@@ -501,17 +391,10 @@ export const ProfilePage: React.FC = () => {
                 value={profile.email}
                 onChange={handleChange}
                 onBlur={e =>
-                  profileValidate.handleFieldBlur(
-                    'email',
-                    e.target.value
-                  )
+                  profileValidate.handleFieldBlur('email', e.target.value)
                 }
               />
-              <FieldError
-                message={profileValidate.getFieldError(
-                  'email'
-                )}
-              />
+              <FieldError message={profileValidate.getFieldError('email')} />
             </label>
 
             <label>
@@ -523,17 +406,10 @@ export const ProfilePage: React.FC = () => {
                 value={profile.phone}
                 onChange={handleChange}
                 onBlur={e =>
-                  profileValidate.handleFieldBlur(
-                    'phone',
-                    e.target.value
-                  )
+                  profileValidate.handleFieldBlur('phone', e.target.value)
                 }
               />
-              <FieldError
-                message={profileValidate.getFieldError(
-                  'phone'
-                )}
-              />
+              <FieldError message={profileValidate.getFieldError('phone')} />
             </label>
 
             <label>
@@ -545,17 +421,10 @@ export const ProfilePage: React.FC = () => {
                 value={profile.login}
                 onChange={handleChange}
                 onBlur={e =>
-                  profileValidate.handleFieldBlur(
-                    'login',
-                    e.target.value
-                  )
+                  profileValidate.handleFieldBlur('login', e.target.value)
                 }
               />
-              <FieldError
-                message={profileValidate.getFieldError(
-                  'login'
-                )}
-              />
+              <FieldError message={profileValidate.getFieldError('login')} />
             </label>
 
             <label>
@@ -574,9 +443,7 @@ export const ProfilePage: React.FC = () => {
                 }
               />
               <FieldError
-                message={profileValidate.getFieldError(
-                  'display_name'
-                )}
+                message={profileValidate.getFieldError('display_name')}
               />
             </label>
 
@@ -596,12 +463,9 @@ export const ProfilePage: React.FC = () => {
                 variant="primary"
                 disabled={!canSaveProfile}
                 className={clsx({
-                  'btn--disabled':
-                    !canSaveProfile,
+                  'btn--disabled': !canSaveProfile,
                 })}>
-                {loading
-                  ? 'Сохранение...'
-                  : 'Сохранить изменения'}
+                {loading ? 'Сохранение...' : 'Сохранить изменения'}
               </Button>
             </div>
           </form>
@@ -621,20 +485,12 @@ export const ProfilePage: React.FC = () => {
                     placeholder="Старый пароль"
                     name="oldPassword"
                     value={passwords.oldPassword}
-                    onChange={
-                      handleOldPasswordChange
-                    }
-                    onBlur={() =>
-                      handlePasswordFieldBlur(
-                        'oldPassword'
-                      )
-                    }
+                    onChange={handleOldPasswordChange}
+                    onBlur={() => handlePasswordFieldBlur('oldPassword')}
                     autoComplete="current-password"
                   />
                   <FieldError
-                    message={passwordsValidate.getFieldError(
-                      'oldPassword'
-                    )}
+                    message={passwordsValidate.getFieldError('oldPassword')}
                   />
                 </label>
                 <label>
@@ -644,29 +500,18 @@ export const ProfilePage: React.FC = () => {
                     placeholder="Новый пароль"
                     name="newPassword"
                     value={passwords.newPassword}
-                    onChange={
-                      handleNewPasswordChange
-                    }
-                    onBlur={() =>
-                      handlePasswordFieldBlur(
-                        'newPassword'
-                      )
-                    }
+                    onChange={handleNewPasswordChange}
+                    onBlur={() => handlePasswordFieldBlur('newPassword')}
                     autoComplete="new-password"
                   />
                   <FieldError
-                    message={passwordsValidate.getFieldError(
-                      'newPassword'
-                    )}
+                    message={passwordsValidate.getFieldError('newPassword')}
                   />
                   {pwdFieldBlurred.oldPassword &&
                   pwdFieldBlurred.newPassword &&
-                  passwords.oldPassword.trim() !==
-                    '' &&
-                  passwords.newPassword.trim() !==
-                    '' &&
-                  passwords.newPassword ===
-                    passwords.oldPassword ? (
+                  passwords.oldPassword.trim() !== '' &&
+                  passwords.newPassword.trim() !== '' &&
+                  passwords.newPassword === passwords.oldPassword ? (
                     <FieldError message="Новый пароль должен отличаться от текущего" />
                   ) : null}
                 </label>
@@ -683,8 +528,7 @@ export const ProfilePage: React.FC = () => {
                     variant="primary"
                     disabled={!canSubmitPassword}
                     className={clsx({
-                      'btn--disabled':
-                        !canSubmitPassword,
+                      'btn--disabled': !canSubmitPassword,
                     })}>
                     Сохранить пароль
                   </Button>
@@ -700,10 +544,7 @@ export const ProfilePage: React.FC = () => {
   )
 }
 
-export const initProfilePage = ({
-  dispatch,
-  state,
-}: PageInitArgs) => {
+export const initProfilePage = ({ dispatch, state }: PageInitArgs) => {
   if (!selectUser(state)) {
     return dispatch(fetchUserThunk())
   }

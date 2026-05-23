@@ -42,17 +42,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const dotenv_1 = __importDefault(require("dotenv"));
+const loadEnv_1 = require("./loadEnv");
+(0, loadEnv_1.loadMonorepoEnv)();
 const path_1 = __importDefault(require("path"));
-// Монорепо: .env в корне репозитория (yarn dev из packages/client иначе его не видит).
-const repoRootEnv = path_1.default.resolve(__dirname, '../../../.env');
-dotenv_1.default.config({ path: repoRootEnv });
-dotenv_1.default.config();
 const express_1 = __importDefault(require("express"));
 const promises_1 = __importDefault(require("fs/promises"));
 const vite_1 = require("vite");
 const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const ssrErrorPage_1 = require("./ssrErrorPage");
 const static_page_1 = require("./static-page");
 const apiProxy_1 = require("./apiProxy");
 const clientPath = path_1.default.join(__dirname, '..');
@@ -154,8 +152,8 @@ function registerErrorHandler(app) {
         console.error(err);
         res
             .status(500)
-            .type('text/plain')
-            .send('SSR error');
+            .type('html')
+            .send((0, ssrErrorPage_1.renderSsrErrorHtml)());
     });
 }
 async function createServer() {

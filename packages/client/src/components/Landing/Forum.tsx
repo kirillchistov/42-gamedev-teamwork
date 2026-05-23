@@ -1,14 +1,13 @@
 // Блок "О проекте" на лендинге с описанием преимуществ и навигацией по ним
 import React from 'react'
 
-export const Forum: React.FC = () => {
+export function Forum() {
   return (
     <section className="section" id="forum">
       <h1>Форум Cosmic Match</h1>
       <p className="auth-note">
-        Темы и ответы пока статичны. Друзья и
-        пользователь подгружаются так же, как на
-        странице друзей.
+        Темы и ответы пока статичны. Друзья и пользователь подгружаются так же,
+        как на странице друзей.
       </p>
 
       <div className="extra-card extra-card--mb16">
@@ -37,9 +36,7 @@ export const Forum: React.FC = () => {
       </div>
 
       <div className="extra-card extra-card--mb16">
-        <h3>
-          Демо‑список друзей (как на FriendsPage)
-        </h3>
+        <h3>Демо‑список друзей (как на FriendsPage)</h3>
         <p>Вы вошли как User</p>
         <p>Здесь будет загрузка списка друзей…</p>
       </div>
@@ -49,21 +46,13 @@ export const Forum: React.FC = () => {
         <form>
           <label>
             Заголовок темы
-            <input
-              type="text"
-              placeholder="Идеи бонусных уровней"
-            />
+            <input type="text" placeholder="Идеи бонусных уровней" />
           </label>
           <label>
             Сообщение
-            <textarea
-              rows={4}
-              placeholder="Опишите вашу идею или вопрос"
-            />
+            <textarea rows={4} placeholder="Опишите вашу идею или вопрос" />
           </label>
-          <button
-            type="button"
-            className="btn btn--primary">
+          <button type="button" className="btn btn--primary">
             Опубликовать
           </button>
         </form>

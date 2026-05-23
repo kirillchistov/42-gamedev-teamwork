@@ -2,16 +2,11 @@
 import React from 'react'
 import clsx from 'clsx'
 
-type InputProps =
-  React.InputHTMLAttributes<HTMLInputElement> & {
-    fullWidth?: boolean
-  }
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  fullWidth?: boolean
+}
 
-export const Input: React.FC<InputProps> = ({
-  className,
-  fullWidth,
-  ...rest
-}) => {
+export function Input({ className, fullWidth, ...rest }: InputProps) {
   return (
     <input
       className={clsx(

@@ -3,32 +3,17 @@
  * чтобы починить 400 «User already in system» (см. loginThunk).
  * При уже залогиненном пользователе на /login и /signup — logout + повторная проверка /auth/user.
  */
-import React, {
-  FormEvent,
-  useEffect,
-  useState,
-} from 'react'
+import React, { FormEvent, useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
-import {
-  Link,
-  useLocation,
-  useNavigate,
-} from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
-import {
-  Button,
-  FieldError,
-  Input,
-} from '../shared/ui'
+import { Button, FieldError, Input } from '../shared/ui'
 import { useValidate } from '../hooks/useValidate'
-import {
-  useDispatch,
-  useSelector,
-} from '../store'
+import { useDispatch, useSelector } from '../store'
 import {
   fetchUserThunk,
   loginThunk,
@@ -51,7 +36,7 @@ import {
   peekAuthLoginRedirect,
 } from '../shared/authLoginRedirect'
 
-export const LoginPage: React.FC = () => {
+export function LoginPage() {
   usePage({ initPage: initLoginPage })
   const { theme } = useLandingTheme()
   const location = useLocation()
@@ -59,22 +44,15 @@ export const LoginPage: React.FC = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector(selectUser)
-  const isAuthChecked = useSelector(
-    selectUserIsAuthChecked
-  )
-  const isLoading = useSelector(
-    selectUserIsLoading
-  )
+  const isAuthChecked = useSelector(selectUserIsAuthChecked)
+  const isLoading = useSelector(selectUserIsLoading)
   const error = useSelector(selectUserError)
   const loginValidate = useValidate()
 
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
-  const [isOAuthLoading, setIsOAuthLoading] =
-    useState(false)
-  const [oauthError, setOauthError] = useState<
-    string | null
-  >(null)
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false)
+  const [oauthError, setOauthError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -101,31 +79,19 @@ export const LoginPage: React.FC = () => {
     try {
       const redirectUri = buildYandexRedirectUri()
       const state =
-        typeof crypto !== 'undefined' &&
-        'randomUUID' in crypto
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
           ? crypto.randomUUID()
           : Math.random().toString(36).slice(2)
 
-      window.sessionStorage.setItem(
-        YANDEX_OAUTH_STATE_KEY,
-        state
-      )
+      window.sessionStorage.setItem(YANDEX_OAUTH_STATE_KEY, state)
 
-      const serviceId = await getYandexServiceId(
-        redirectUri
-      )
-      const url = buildYandexAuthorizeUrl(
-        serviceId,
-        redirectUri,
-        state
-      )
+      const serviceId = await getYandexServiceId(redirectUri)
+      const url = buildYandexAuthorizeUrl(serviceId, redirectUri, state)
 
       window.location.assign(url)
     } catch (e) {
       setOauthError(
-        e instanceof Error
-          ? e.message
-          : 'Не удалось запустить OAuth вход'
+        e instanceof Error ? e.message : 'Не удалось запустить OAuth вход'
       )
       setIsOAuthLoading(false)
     }
@@ -133,18 +99,13 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    loginValidate.doValidate(
-      { login, password },
-      async () => {
-        const result = await dispatch(
-          loginThunk({ login, password })
-        )
-        if (loginThunk.fulfilled.match(result)) {
-          markGameLandingNeedsShow()
-          navigate('/game', { replace: true })
-        }
+    loginValidate.doValidate({ login, password }, async () => {
+      const result = await dispatch(loginThunk({ login, password }))
+      if (loginThunk.fulfilled.match(result)) {
+        markGameLandingNeedsShow()
+        navigate('/game', { replace: true })
       }
-    )
+    })
   }
 
   const fromForum = Boolean(
@@ -160,10 +121,7 @@ export const LoginPage: React.FC = () => {
       <Helmet>
         <meta charSet="utf-8" />
         <title>Вход — Cosmic Match</title>
-        <meta
-          name="description"
-          content="Авторизация"
-        />
+        <meta name="description" content="Авторизация" />
       </Helmet>
 
       <Header />
@@ -179,8 +137,7 @@ export const LoginPage: React.FC = () => {
             {fromForum ? (
               <div className="auth-page__toast-wrap">
                 <div className="auth-page__toast">
-                  Сессия для доступа к форуму
-                  недоступна. Войдите снова.
+                  Сессия для доступа к форуму недоступна. Войдите снова.
                 </div>
               </div>
             ) : null}
@@ -199,24 +156,14 @@ export const LoginPage: React.FC = () => {
                   onChange={e => {
                     const v = e.target.value
                     setLogin(v)
-                    loginValidate.handleFieldChange(
-                      'login',
-                      v
-                    )
+                    loginValidate.handleFieldChange('login', v)
                   }}
                   onBlur={e =>
-                    loginValidate.handleFieldBlur(
-                      'login',
-                      e.target.value
-                    )
+                    loginValidate.handleFieldBlur('login', e.target.value)
                   }
                   autoComplete="username"
                 />
-                <FieldError
-                  message={loginValidate.getFieldError(
-                    'login'
-                  )}
-                />
+                <FieldError message={loginValidate.getFieldError('login')} />
               </label>
 
               <label>
@@ -229,62 +176,35 @@ export const LoginPage: React.FC = () => {
                   onChange={e => {
                     const v = e.target.value
                     setPassword(v)
-                    loginValidate.handleFieldChange(
-                      'password',
-                      v
-                    )
+                    loginValidate.handleFieldChange('password', v)
                   }}
                   onBlur={e =>
-                    loginValidate.handleFieldBlur(
-                      'password',
-                      e.target.value
-                    )
+                    loginValidate.handleFieldBlur('password', e.target.value)
                   }
                   autoComplete="current-password"
                 />
-                <FieldError
-                  message={loginValidate.getFieldError(
-                    'password'
-                  )}
-                />
+                <FieldError message={loginValidate.getFieldError('password')} />
               </label>
 
-              {error && (
-                <p className="auth-form__error">
-                  {error}
-                </p>
-              )}
-              {oauthError && (
-                <p className="auth-form__error">
-                  {oauthError}
-                </p>
-              )}
+              {error && <p className="auth-form__error">{error}</p>}
+              {oauthError && <p className="auth-form__error">{oauthError}</p>}
 
               <div className="auth-form__actions">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={isLoading}>
-                  {isLoading
-                    ? 'Входим...'
-                    : 'Войти'}
+                <Button type="submit" variant="primary" disabled={isLoading}>
+                  {isLoading ? 'Входим...' : 'Войти'}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   className="auth-oauth-btn"
-                  disabled={
-                    isOAuthLoading || isLoading
-                  }
+                  disabled={isOAuthLoading || isLoading}
                   onClick={handleYandexOAuth}>
                   {isOAuthLoading ? (
                     'Переход к OAuth...'
                   ) : (
                     <>
                       <span>Войти через</span>
-                      <span
-                        className="auth-oauth-btn__logo"
-                        aria-hidden="true">
+                      <span className="auth-oauth-btn__logo" aria-hidden="true">
                         Я
                       </span>
                     </>
@@ -295,9 +215,7 @@ export const LoginPage: React.FC = () => {
 
             <p className="auth-switch">
               Нет аккаунта?{' '}
-              <Link
-                to="/signup"
-                className="auth-link">
+              <Link to="/signup" className="auth-link">
                 Зарегистрируйтесь
               </Link>
             </p>
@@ -309,14 +227,9 @@ export const LoginPage: React.FC = () => {
   )
 }
 
-export const initLoginPage = ({
-  dispatch,
-  getState,
-}: PageInitArgs) => {
-  const skipLogoutForForum =
-    consumeForumAuthRedirect()
-  const skipLogoutForAuthRedirect =
-    peekAuthLoginRedirect() != null
+export const initLoginPage = ({ dispatch, getState }: PageInitArgs) => {
+  const skipLogoutForForum = consumeForumAuthRedirect()
+  const skipLogoutForAuthRedirect = peekAuthLoginRedirect() != null
 
   const ensureGuest = async () => {
     if (!selectUserIsAuthChecked(getState())) {

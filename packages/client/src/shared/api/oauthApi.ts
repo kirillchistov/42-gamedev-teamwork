@@ -1,6 +1,6 @@
 // 7.3 chores: OAuth — без дефолтного service_id; только env или ответ API.
 
-import { BASE_URL } from '../../constants'
+import { getBaseUrl } from '../../constants'
 import { waitForGhPagesServiceWorker } from '../ghPagesPraktikumProxy'
 import { isStaticGhPagesDeploy } from '../staticDeploy'
 import {
@@ -8,10 +8,7 @@ import {
   parseJsonReasonFromText,
 } from '../utils/praktikumAuthErrors'
 
-function throwHttpError(
-  text: string,
-  fallback: string
-): never {
+function throwHttpError(text: string, fallback: string): never {
   const raw = parseJsonReasonFromText(text)
   const msg = humanizePraktikumAuthReason(raw)
   throw new Error(msg || fallback)
@@ -26,22 +23,14 @@ type YandexOAuthPayload = {
   redirect_uri: string
 }
 
-const YA_OAUTH_AUTHORIZE_URL =
-  'https://oauth.yandex.ru/authorize'
+const YA_OAUTH_AUTHORIZE_URL = 'https://oauth.yandex.ru/authorize'
 
-export const YANDEX_OAUTH_STATE_KEY =
-  'oauth:yandex:state'
+export const YANDEX_OAUTH_STATE_KEY = 'oauth:yandex:state'
 
-function readYandexServiceIdFromEnv():
-  | string
-  | null {
-  const envValue = import.meta.env
-    .VITE_YANDEX_OAUTH_SERVICE_ID
+function readYandexServiceIdFromEnv(): string | null {
+  const envValue = import.meta.env.VITE_YANDEX_OAUTH_SERVICE_ID
 
-  if (
-    typeof envValue === 'string' &&
-    envValue.trim() !== ''
-  ) {
+  if (typeof envValue === 'string' && envValue.trim() !== '') {
     return envValue.trim()
   }
 
@@ -49,24 +38,15 @@ function readYandexServiceIdFromEnv():
 }
 
 export function buildYandexRedirectUri(): string {
-  const envValue = import.meta.env
-    .VITE_YANDEX_OAUTH_REDIRECT_URI
+  const envValue = import.meta.env.VITE_YANDEX_OAUTH_REDIRECT_URI
 
-  if (
-    typeof envValue === 'string' &&
-    envValue.trim() !== ''
-  ) {
+  if (typeof envValue === 'string' && envValue.trim() !== '') {
     return envValue.trim().replace(/\/+$/, '')
   }
 
   if (typeof window !== 'undefined') {
-    const origin = window.location.origin.replace(
-      /\/+$/,
-      ''
-    )
-    const base = String(
-      import.meta.env.BASE_URL || '/'
-    ).replace(/\/+$/, '')
+    const origin = window.location.origin.replace(/\/+$/, '')
+    const base = String(import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
     if (base && base !== '/') {
       return `${origin}${base}`
     }
@@ -76,14 +56,11 @@ export function buildYandexRedirectUri(): string {
   return 'http://localhost:9000'
 }
 
-export async function getYandexServiceId(
-  redirectUri: string
-): Promise<string> {
+export async function getYandexServiceId(redirectUri: string): Promise<string> {
   if (isStaticGhPagesDeploy()) {
     await waitForGhPagesServiceWorker()
   }
-  const envServiceId =
-    readYandexServiceIdFromEnv()
+  const envServiceId = readYandexServiceIdFromEnv()
   if (envServiceId) return envServiceId
 
   const params = new URLSearchParams({
@@ -91,7 +68,7 @@ export async function getYandexServiceId(
   })
 
   const response = await fetch(
-    `${BASE_URL}/oauth/yandex/service-id?${params.toString()}`,
+    `${getBaseUrl()}/oauth/yandex/service-id?${params.toString()}`,
     {
       method: 'GET',
       credentials: 'include',
@@ -100,23 +77,15 @@ export async function getYandexServiceId(
 
   if (!response.ok) {
     const text = await response.text()
-    throwHttpError(
-      text,
-      'Не удалось получить service_id'
-    )
+    throwHttpError(text, 'Не удалось получить service_id')
   }
 
-  const data =
-    (await response.json()) as YandexServiceIdResponse
+  const data = (await response.json()) as YandexServiceIdResponse
 
   const serviceId =
-    typeof data.service_id === 'string'
-      ? data.service_id.trim()
-      : ''
+    typeof data.service_id === 'string' ? data.service_id.trim() : ''
   if (!serviceId) {
-    throw new Error(
-      'Сервер не вернул service_id для Yandex OAuth'
-    )
+    throw new Error('Сервер не вернул service_id для Yandex OAuth')
   }
   return serviceId
 }
@@ -127,24 +96,18 @@ export async function signInByYandexCode(
   if (isStaticGhPagesDeploy()) {
     await waitForGhPagesServiceWorker()
   }
-  const response = await fetch(
-    `${BASE_URL}/oauth/yandex`,
-    {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    }
-  )
+  const response = await fetch(`${getBaseUrl()}/oauth/yandex`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
 
   if (!response.ok) {
     const text = await response.text()
-    throwHttpError(
-      text,
-      'Не удалось завершить OAuth вход'
-    )
+    throwHttpError(text, 'Не удалось завершить OAuth вход')
   }
 }
 

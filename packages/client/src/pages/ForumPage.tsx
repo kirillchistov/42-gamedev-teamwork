@@ -1,24 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
-import {
-  Link,
-  useNavigate,
-} from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
-import {
-  useSelector,
-  useDispatch,
-} from '../store'
+import { useSelector, useDispatch } from '../store'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
-import {
-  Button,
-  Input,
-  TextArea,
-} from '../shared/ui'
+import { Button, Input, TextArea } from '../shared/ui'
 import {
   fetchTopicsThunk,
   createTopicThunk,
@@ -36,25 +26,18 @@ import {
 } from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 
-export const ForumPage: React.FC = () => {
+export function ForumPage() {
   const { theme } = useLandingTheme()
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const topics = useSelector(selectTopics)
-  const isLoading = useSelector(
-    selectIsLoadingForum
-  )
-  const shouldRedirectToLogin = useSelector(
-    selectForumShouldRedirectToLogin
-  )
+  const isLoading = useSelector(selectIsLoadingForum)
+  const shouldRedirectToLogin = useSelector(selectForumShouldRedirectToLogin)
 
-  const [showCreateForm, setShowCreateForm] =
-    useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [actionError, setActionError] = useState<
-    string | null
-  >(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!shouldRedirectToLogin) {
@@ -86,20 +69,13 @@ export const ForumPage: React.FC = () => {
     } catch (e) {
       const p = e as ForumRejectPayload
       if (p?.status !== 403) {
-        setActionError(
-          p?.message || 'Не удалось создать тему'
-        )
+        setActionError(p?.message || 'Не удалось создать тему')
       }
     }
   }
 
   return (
-    <div
-      className={clsx(
-        'landing',
-        `landing--${theme}`,
-        'AuthPage'
-      )}>
+    <div className={clsx('landing', `landing--${theme}`, 'AuthPage')}>
       <Helmet>
         <meta charSet="utf-8" />
         <title>Форум Cosmic Match</title>
@@ -121,25 +97,15 @@ export const ForumPage: React.FC = () => {
 
           {actionError ? (
             <div className="auth-page__toast-wrap">
-              <div className="auth-page__toast">
-                {actionError}
-              </div>
+              <div className="auth-page__toast">{actionError}</div>
             </div>
           ) : null}
 
           <div className="forum-create-btn">
             <Button
-              variant={
-                showCreateForm
-                  ? 'outline'
-                  : 'primary'
-              }
-              onClick={() =>
-                setShowCreateForm(v => !v)
-              }>
-              {showCreateForm
-                ? 'Отмена'
-                : '+ Новая тема'}
+              variant={showCreateForm ? 'outline' : 'primary'}
+              onClick={() => setShowCreateForm(v => !v)}>
+              {showCreateForm ? 'Отмена' : '+ Новая тема'}
             </Button>
           </div>
 
@@ -151,9 +117,7 @@ export const ForumPage: React.FC = () => {
                   <label>Заголовок</label>
                   <Input
                     value={title}
-                    onChange={e =>
-                      setTitle(e.target.value)
-                    }
+                    onChange={e => setTitle(e.target.value)}
                     placeholder="Название темы"
                   />
                 </div>
@@ -161,17 +125,13 @@ export const ForumPage: React.FC = () => {
                   <label>Сообщение</label>
                   <TextArea
                     value={content}
-                    onChange={e =>
-                      setContent(e.target.value)
-                    }
+                    onChange={e => setContent(e.target.value)}
                     rows={4}
                     placeholder="Опишите вашу идею или вопрос"
                   />
                 </div>
                 <div className="forum-form__actions">
-                  <Button
-                    variant="primary"
-                    onClick={handleCreateTopic}>
+                  <Button variant="primary" onClick={handleCreateTopic}>
                     Опубликовать
                   </Button>
                 </div>
@@ -182,9 +142,7 @@ export const ForumPage: React.FC = () => {
           {isLoading ? (
             <p>Загрузка...</p>
           ) : topics.length === 0 ? (
-            <div className="forum-empty">
-              Тем пока нет. Создайте первую!
-            </div>
+            <div className="forum-empty">Тем пока нет. Создайте первую!</div>
           ) : (
             <>
               <div className="forum-list__header">
@@ -199,16 +157,10 @@ export const ForumPage: React.FC = () => {
                     key={topic.id}
                     className="forum-list__row">
                     <div>
-                      <div className="forum-list__title">
-                        {topic.title}
-                      </div>
+                      <div className="forum-list__title">{topic.title}</div>
                       <div className="forum-list__meta">
                         {topic.author} ·{' '}
-                        {new Date(
-                          topic.createdAt
-                        ).toLocaleDateString(
-                          'ru-RU'
-                        )}
+                        {new Date(topic.createdAt).toLocaleDateString('ru-RU')}
                       </div>
                     </div>
                     <span className="forum-list__count forum-list__count--accent">
@@ -235,10 +187,7 @@ export const initForumPage = async ({
   state,
   getState,
 }: PageInitArgs) => {
-  if (
-    !selectUser(state) &&
-    !selectUserIsAuthChecked(state)
-  ) {
+  if (!selectUser(state) && !selectUserIsAuthChecked(state)) {
     await dispatch(fetchUserThunk())
       .unwrap()
       .catch(() => undefined)

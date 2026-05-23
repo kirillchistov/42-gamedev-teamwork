@@ -16,48 +16,32 @@ const GEM_COLORS = [
 ]
 
 const isMatchCell = (row: number, col: number) =>
-  (row === 2 && col >= 1 && col <= 3) ||
-  (col === 4 && row >= 1 && row <= 3)
+  (row === 2 && col >= 1 && col <= 3) || (col === 4 && row >= 1 && row <= 3)
 
-const getGemColorClass = (
-  row: number,
-  col: number
-) => {
-  const idx =
-    (row * BOARD_COLS + col) % GEM_COLORS.length
+const getGemColorClass = (row: number, col: number) => {
+  const idx = (row * BOARD_COLS + col) % GEM_COLORS.length
   return GEM_COLORS[idx]
 }
 
-export const Hero: React.FC = () => {
+export function Hero() {
   const user = useSelector(selectUser)
   const ctaLink = user ? '/profile' : '/signup'
-  const ctaText = user
-    ? 'Профиль'
-    : 'Зарегистрироваться'
+  const ctaText = user ? 'Профиль' : 'Зарегистрироваться'
 
   return (
     <section className="hero" id="top-hero">
       <div className="hero__text">
-        <h1>
-          Cosmic Match: match‑3 с прогрессией и
-          живыми событиями
-        </h1>
+        <h1>Cosmic Match: match‑3 с прогрессией и живыми событиями</h1>
         <p>
-          Уже сейчас в браузере доступны уровни,
-          цели и комбо‑каскады. В ближайших
-          итерациях добавим игру по ходам,
-          расширенные цели, бустеры и мета‑слой с
-          персонажем и историей.
+          Уже сейчас в браузере доступны уровни, цели и комбо‑каскады. В
+          ближайших итерациях добавим игру по ходам, расширенные цели, бустеры и
+          мета‑слой с персонажем и историей.
         </p>
         <div className="hero__actions">
-          <Link
-            className="btn btn--primary"
-            to="/game">
+          <Link className="btn btn--primary" to="/game">
             Перейти к игре
           </Link>
-          <Link
-            className="btn btn--outline"
-            to={ctaLink}>
+          <Link className="btn btn--outline" to={ctaLink}>
             {ctaText}
           </Link>
         </div>
@@ -65,44 +49,32 @@ export const Hero: React.FC = () => {
 
       <div className="hero__visual">
         <div className="hero-board">
-          {Array.from({ length: BOARD_ROWS }).map(
-            (_, row) => (
-              <div
-                className="hero-board__row"
-                key={row}>
-                {Array.from({
-                  length: BOARD_COLS,
-                }).map((__, col) => {
-                  const isMatch = isMatchCell(
-                    row,
-                    col
-                  )
-                  const gemColorClass =
-                    getGemColorClass(row, col)
-                  return (
+          {Array.from({ length: BOARD_ROWS }).map((_, row) => (
+            <div className="hero-board__row" key={row}>
+              {Array.from({
+                length: BOARD_COLS,
+              }).map((__, col) => {
+                const isMatch = isMatchCell(row, col)
+                const gemColorClass = getGemColorClass(row, col)
+                return (
+                  <div
+                    key={col}
+                    className={
+                      'hero-board__cell' +
+                      (isMatch ? ' hero-board__cell--match' : '')
+                    }>
                     <div
-                      key={col}
                       className={
-                        'hero-board__cell' +
-                        (isMatch
-                          ? ' hero-board__cell--match'
-                          : '')
-                      }>
-                      <div
-                        className={
-                          'hero-board__gem ' +
-                          gemColorClass +
-                          (isMatch
-                            ? ' hero-board__gem--pulse'
-                            : '')
-                        }
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          )}
+                        'hero-board__gem ' +
+                        gemColorClass +
+                        (isMatch ? ' hero-board__gem--pulse' : '')
+                      }
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          ))}
 
           {/* пара неоновых вспышек поверх доски */}
           <div className="hero-board__flash hero-board__flash--one" />
@@ -110,9 +82,7 @@ export const Hero: React.FC = () => {
           <div className="hero-board__combo-burst" />
           <div className="hero-board__combo-line hero-board__combo-line--h" />
           <div className="hero-board__combo-line hero-board__combo-line--v" />
-          <div className="hero-board__combo-tag">
-            MEGA COMBO x8
-          </div>
+          <div className="hero-board__combo-tag">MEGA COMBO x8</div>
           <div className="hero-board__effect" />
         </div>
       </div>

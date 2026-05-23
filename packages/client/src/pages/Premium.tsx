@@ -11,18 +11,15 @@ import { CustomizationScreenStub } from '../components/Premium/CustomizationScre
 import { SeasonPassStub } from '../components/Premium/SeasonPassStub'
 import { ShopScreen } from '../components/Premium/ShopScreen'
 
-export const PremiumPage: React.FC = () => {
+export function PremiumPage() {
   usePage({ initPage: initPremiumPage })
   const { theme } = useLandingTheme()
 
   return (
-    <div
-      className={`landing landing--${theme} premium-page`}>
+    <div className={`landing landing--${theme} premium-page`}>
       <Helmet>
         <meta charSet="utf-8" />
-        <title>
-          Демо-страница про монетизацию
-        </title>
+        <title>Демо-страница про монетизацию</title>
         <meta
           name="description"
           content="Демо-страница UI-заготовок монетизации Cosmic Match."
@@ -35,8 +32,7 @@ export const PremiumPage: React.FC = () => {
         <section className="premium-hero premium-card">
           <h1>Демо-компоненты для монетизации</h1>
           <p className="premium-muted">
-            Демо-компоновка экранов пока без
-            бизнес-логики и API.
+            Демо-компоновка экранов пока без бизнес-логики и API.
           </p>
         </section>
 
@@ -52,5 +48,4 @@ export const PremiumPage: React.FC = () => {
   )
 }
 
-export const initPremiumPage = () =>
-  Promise.resolve()
+export const initPremiumPage = () => Promise.resolve()

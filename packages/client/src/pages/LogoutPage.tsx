@@ -3,26 +3,16 @@
  * Аналогично LoginPage: logout перед signin.
  */
 
-import React, {
-  FormEvent,
-  useEffect,
-  useState,
-} from 'react'
+import React, { FormEvent, useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
-import {
-  Link,
-  useNavigate,
-} from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
 import { Button, Input } from '../shared/ui'
-import {
-  useDispatch,
-  useSelector,
-} from '../store'
+import { useDispatch, useSelector } from '../store'
 import {
   fetchUserThunk,
   loginThunk,
@@ -33,24 +23,19 @@ import {
 } from '../slices/userSlice'
 
 // Разлогиниаем на серверне и клиенте, затем /login + «Вы вышли».
-export const LogoutPage: React.FC = () => {
+export function LogoutPage() {
   usePage({ initPage: initLogoutPage })
   const { theme } = useLandingTheme()
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
-  const isAuthChecked = useSelector(
-    selectUserIsAuthChecked
-  )
-  const isLoading = useSelector(
-    selectUserIsLoading
-  )
+  const isAuthChecked = useSelector(selectUserIsAuthChecked)
+  const isLoading = useSelector(selectUserIsLoading)
   const error = useSelector(selectUserError)
 
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
-  const [isLoggingOut, setIsLoggingOut] =
-    useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   // После проверки сессии — принудительный logout
   useEffect(() => {
@@ -70,9 +55,7 @@ export const LogoutPage: React.FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     await dispatch(logoutThunk())
-    const result = await dispatch(
-      loginThunk({ login, password })
-    )
+    const result = await dispatch(loginThunk({ login, password }))
     if (loginThunk.fulfilled.match(result)) {
       navigate('/game', { replace: true })
     }
@@ -83,10 +66,7 @@ export const LogoutPage: React.FC = () => {
       <Helmet>
         <meta charSet="utf-8" />
         <title>Выход — Cosmic Match</title>
-        <meta
-          name="description"
-          content="Выход из аккаунта"
-        />
+        <meta name="description" content="Выход из аккаунта" />
       </Helmet>
 
       <Header />
@@ -99,9 +79,7 @@ export const LogoutPage: React.FC = () => {
         ) : (
           <section className="auth-card auth-card--wide">
             <h1>Вы вышли</h1>
-            <p className="auth-note">
-              Войти снова
-            </p>
+            <p className="auth-note">Войти снова</p>
             <form
               className="auth-form auth-form--grid"
               id="logout-login-form"
@@ -114,9 +92,7 @@ export const LogoutPage: React.FC = () => {
                   name="login"
                   placeholder="login"
                   value={login}
-                  onChange={e =>
-                    setLogin(e.target.value)
-                  }
+                  onChange={e => setLogin(e.target.value)}
                   autoComplete="username"
                 />
               </label>
@@ -128,36 +104,23 @@ export const LogoutPage: React.FC = () => {
                   name="password"
                   placeholder="Пароль"
                   value={password}
-                  onChange={e =>
-                    setPassword(e.target.value)
-                  }
+                  onChange={e => setPassword(e.target.value)}
                   autoComplete="current-password"
                 />
               </label>
 
-              {error && (
-                <p className="auth-form__error">
-                  {error}
-                </p>
-              )}
+              {error && <p className="auth-form__error">{error}</p>}
 
               <div className="auth-form__actions">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={isLoading}>
-                  {isLoading
-                    ? 'Входим...'
-                    : 'Войти'}
+                <Button type="submit" variant="primary" disabled={isLoading}>
+                  {isLoading ? 'Входим...' : 'Войти'}
                 </Button>
               </div>
             </form>
 
             <p className="auth-switch">
               Нет аккаунта?{' '}
-              <Link
-                to="/signup"
-                className="auth-link">
+              <Link to="/signup" className="auth-link">
                 Зарегистрируйтесь
               </Link>
             </p>
@@ -169,15 +132,10 @@ export const LogoutPage: React.FC = () => {
   )
 }
 
-export const initLogoutPage = ({
-  dispatch,
-  state,
-}: PageInitArgs) => {
+export const initLogoutPage = ({ dispatch, state }: PageInitArgs) => {
   if (selectUserIsAuthChecked(state)) {
     return Promise.resolve()
   }
 
-  return dispatch(fetchUserThunk()).catch(
-    () => undefined
-  )
+  return dispatch(fetchUserThunk()).catch(() => undefined)
 }

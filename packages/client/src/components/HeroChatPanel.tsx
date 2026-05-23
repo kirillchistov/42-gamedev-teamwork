@@ -13,28 +13,16 @@ type HeroChatPanelProps = {
   onSend: (text: string) => void
 }
 
-const EMOJIS = [
-  '😀',
-  '👍',
-  '🔥',
-  '🚀',
-  '💡',
-  '🤝',
-]
+const EMOJIS = ['😀', '👍', '🔥', '🚀', '💡', '🤝']
 
-export const HeroChatPanel: React.FC<
-  HeroChatPanelProps
-> = ({
+export function HeroChatPanel({
   title = 'Чат героев',
   messages,
   onSend,
-}) => {
+}: HeroChatPanelProps) {
   const [draft, setDraft] = useState('')
   const sorted = useMemo(
-    () =>
-      [...messages].sort((a, b) =>
-        a.createdAt.localeCompare(b.createdAt)
-      ),
+    () => [...messages].sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
     [messages]
   )
 
@@ -50,15 +38,11 @@ export const HeroChatPanel: React.FC<
       <h3>{title}</h3>
       <div className="match3-hero-chat__list">
         {sorted.map(message => (
-          <article
-            key={message.id}
-            className="match3-hero-chat__item">
+          <article key={message.id} className="match3-hero-chat__item">
             <header>
               <strong>{message.author}</strong>
               <span>
-                {new Date(
-                  message.createdAt
-                ).toLocaleString('ru-RU', {
+                {new Date(message.createdAt).toLocaleString('ru-RU', {
                   day: 'numeric',
                   month: 'short',
                   hour: '2-digit',
@@ -76,9 +60,7 @@ export const HeroChatPanel: React.FC<
             key={emoji}
             type="button"
             className="match3-hero-chat__emoji-btn"
-            onClick={() =>
-              setDraft(prev => prev + emoji)
-            }>
+            onClick={() => setDraft(prev => prev + emoji)}>
             {emoji}
           </button>
         ))}
@@ -90,10 +72,7 @@ export const HeroChatPanel: React.FC<
         placeholder="Сообщение в чат героев..."
       />
       <div className="match3-hero-chat__actions">
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={submit}>
+        <button type="button" className="btn btn--primary" onClick={submit}>
           Отправить
         </button>
       </div>

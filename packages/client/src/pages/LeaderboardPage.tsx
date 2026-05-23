@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { API_RESOURCES_URL } from '../constants'
+import { getApiResourcesUrl } from '../constants'
 import { Helmet } from 'react-helmet'
 import clsx from 'clsx'
 
@@ -51,138 +51,83 @@ function compareLeaderboardEntries(
   switch (sortKey) {
     case 'rank':
     case 'CM42_score': {
-      const byRating =
-        (a.CM42_score - b.CM42_score) * dir
+      const byRating = (a.CM42_score - b.CM42_score) * dir
       if (byRating !== 0) return byRating
-      const byBest =
-        (a.bestScore - b.bestScore) * dir
+      const byBest = (a.bestScore - b.bestScore) * dir
       if (byBest !== 0) return byBest
-      return (
-        a.nickname.localeCompare(
-          b.nickname,
-          'ru'
-        ) * dir
-      )
+      return a.nickname.localeCompare(b.nickname, 'ru') * dir
     }
     case 'bestScore': {
-      const byBest =
-        (a.bestScore - b.bestScore) * dir
+      const byBest = (a.bestScore - b.bestScore) * dir
       if (byBest !== 0) return byBest
       return (a.CM42_score - b.CM42_score) * dir
     }
     case 'nickname':
-      return (
-        a.nickname.localeCompare(
-          b.nickname,
-          'ru'
-        ) * dir
-      )
+      return a.nickname.localeCompare(b.nickname, 'ru') * dir
     case 'bestScoreDate':
       return (
-        compareLeaderboardRecordDates(
-          a.bestScoreDate,
-          b.bestScoreDate
-        ) * dir
+        compareLeaderboardRecordDates(a.bestScoreDate, b.bestScoreDate) * dir
       )
     default:
       return 0
   }
 }
 
-function defaultSortDirForKey(
-  key: SortKey
-): SortDir {
+function defaultSortDirForKey(key: SortKey): SortDir {
   return key === 'nickname' ? 'asc' : 'desc'
 }
 
-export const LeaderboardPage: React.FC = () => {
+export function LeaderboardPage() {
   const { theme } = useLandingTheme()
   const friends = useSelector(selectFriends)
-  const isLoading = useSelector(
-    selectIsLoadingFriends
-  )
-  const isLoadingResults = useSelector(
-    isLoadingLeaderboard
-  )
+  const isLoading = useSelector(selectIsLoadingFriends)
+  const isLoadingResults = useSelector(isLoadingLeaderboard)
   const user = useSelector(selectUser)
 
   usePage({ initPage: initLeaderboardPage })
 
-  const [viewMode, setViewMode] =
-    useState<ViewMode>('table')
-  const [sortKey, setSortKey] =
-    useState<SortKey>('CM42_score')
-  const [sortDir, setSortDir] =
-    useState<SortDir>('desc')
-  const [showFriendsOnly, setShowFriendsOnly] =
-    useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('table')
+  const [sortKey, setSortKey] = useState<SortKey>('CM42_score')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [showFriendsOnly, setShowFriendsOnly] = useState(false)
 
   const friendNicknames = useMemo(
     () => new Set(friends.map(f => f.name)),
     [friends]
   )
 
-  const leaderboardTable = useSelector(
-    leaderboardData
-  )
+  const leaderboardTable = useSelector(leaderboardData)
 
   const sortedEntries = useMemo(() => {
     let list = leaderboardTable
-    if (
-      showFriendsOnly &&
-      friendNicknames.size > 0
-    ) {
-      list = list.filter(
-        (entry: LeaderboardEntry) =>
-          friendNicknames.has(entry.nickname)
+    if (showFriendsOnly && friendNicknames.size > 0) {
+      list = list.filter((entry: LeaderboardEntry) =>
+        friendNicknames.has(entry.nickname)
       )
     }
 
     const copy = [...list]
-    copy.sort((a, b) =>
-      compareLeaderboardEntries(
-        a,
-        b,
-        sortKey,
-        sortDir
-      )
-    )
+    copy.sort((a, b) => compareLeaderboardEntries(a, b, sortKey, sortDir))
     return copy
-  }, [
-    sortKey,
-    sortDir,
-    showFriendsOnly,
-    friendNicknames,
-    leaderboardTable,
-  ])
+  }, [sortKey, sortDir, showFriendsOnly, friendNicknames, leaderboardTable])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
-      setSortDir(prev =>
-        prev === 'asc' ? 'desc' : 'asc'
-      )
+      setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'))
       return
     }
     setSortKey(key)
     setSortDir(defaultSortDirForKey(key))
   }
 
-  const sortLabel = (
-    key: SortKey,
-    label: string
-  ) => {
+  const sortLabel = (key: SortKey, label: string) => {
     const isActive = sortKey === key
-    const arrow = !isActive
-      ? ''
-      : sortDir === 'asc'
-      ? '↑'
-      : '↓'
+    const arrow = !isActive ? '' : sortDir === 'asc' ? '↑' : '↓'
     return (
       <button
         type="button"
         className={clsx('leaderboard-sort-btn', {
-          'leaderboard-sort-btn--active':
-            isActive,
+          'leaderboard-sort-btn--active': isActive,
         })}
         onClick={() => handleSort(key)}>
         {label} {arrow}
@@ -191,12 +136,7 @@ export const LeaderboardPage: React.FC = () => {
   }
 
   return (
-    <div
-      className={clsx(
-        'landing',
-        `landing--${theme}`,
-        'AuthPage'
-      )}>
+    <div className={clsx('landing', `landing--${theme}`, 'AuthPage')}>
       <Helmet>
         <meta charSet="utf-8" />
         <title>Лидерборд CosMatch</title>
@@ -212,23 +152,16 @@ export const LeaderboardPage: React.FC = () => {
         <div className="auth-card auth-card--wide">
           <h1>Лидерборд</h1>
           <p className="auth-note">
-            Демо-лидерборд. В будущем данные будут
-            через API для всех и для фильтра
-            друзей.
+            Демо-лидерборд. В будущем данные будут через API для всех и для
+            фильтра друзей.
           </p>
 
           <div className="leaderboard-toolbar">
             <div className="leaderboard-toolbar__left">
               <Button
                 type="button"
-                variant={
-                  showFriendsOnly
-                    ? 'primary'
-                    : 'outline'
-                }
-                onClick={() =>
-                  setShowFriendsOnly(v => !v)
-                }>
+                variant={showFriendsOnly ? 'primary' : 'outline'}
+                onClick={() => setShowFriendsOnly(v => !v)}>
                 Друзья
               </Button>
               {isLoading && (
@@ -243,30 +176,18 @@ export const LeaderboardPage: React.FC = () => {
                 Вид:
                 <button
                   type="button"
-                  className={clsx(
-                    'leaderboard-view-toggle__btn',
-                    {
-                      'is-active':
-                        viewMode === 'table',
-                    }
-                  )}
-                  onClick={() =>
-                    setViewMode('table')
-                  }>
+                  className={clsx('leaderboard-view-toggle__btn', {
+                    'is-active': viewMode === 'table',
+                  })}
+                  onClick={() => setViewMode('table')}>
                   Таблица
                 </button>
                 <button
                   type="button"
-                  className={clsx(
-                    'leaderboard-view-toggle__btn',
-                    {
-                      'is-active':
-                        viewMode === 'grid',
-                    }
-                  )}
-                  onClick={() =>
-                    setViewMode('grid')
-                  }>
+                  className={clsx('leaderboard-view-toggle__btn', {
+                    'is-active': viewMode === 'grid',
+                  })}
+                  onClick={() => setViewMode('grid')}>
                   Плитка
                 </button>
               </span>
@@ -279,89 +200,55 @@ export const LeaderboardPage: React.FC = () => {
               <table className="leaderboard-table">
                 <thead>
                   <tr>
-                    <th>
-                      {sortLabel('rank', '#')}
-                    </th>
-                    <th>
-                      {sortLabel(
-                        'nickname',
-                        'Игрок'
-                      )}
-                    </th>
-                    <th>
-                      {sortLabel(
-                        'CM42_score',
-                        'Рейтинг'
-                      )}
-                    </th>
-                    <th>
-                      {sortLabel(
-                        'bestScore',
-                        'Рекорд'
-                      )}
-                    </th>
-                    <th>
-                      {sortLabel(
-                        'bestScoreDate',
-                        'Дата рекорда'
-                      )}
-                    </th>
+                    <th>{sortLabel('rank', '#')}</th>
+                    <th>{sortLabel('nickname', 'Игрок')}</th>
+                    <th>{sortLabel('CM42_score', 'Рейтинг')}</th>
+                    <th>{sortLabel('bestScore', 'Рекорд')}</th>
+                    <th>{sortLabel('bestScoreDate', 'Дата рекорда')}</th>
                   </tr>
                 </thead>
                 <tbody>
+                  {!isLoadingResults && sortedEntries.length === 0 && (
+                    <tr>
+                      <td colSpan={5}>
+                        {showFriendsOnly
+                          ? 'Нет записей среди ваших друзей.'
+                          : 'Записей пока нет.'}
+                      </td>
+                    </tr>
+                  )}
                   {!isLoadingResults &&
-                    sortedEntries.length ===
-                      0 && (
-                      <tr>
-                        <td colSpan={5}>
-                          {showFriendsOnly
-                            ? 'Нет записей среди ваших друзей.'
-                            : 'Записей пока нет.'}
+                    sortedEntries.map((entry, index) => (
+                      <tr key={entry.id}>
+                        <td>{index + 1}</td>
+                        <td>
+                          <span className="leaderboard-player">
+                            <span className="leaderboard-avatar">
+                              {entry.avatar ? (
+                                <img
+                                  src={`${getApiResourcesUrl()}${entry.avatar}`}
+                                />
+                              ) : (
+                                <div>👤</div>
+                              )}
+                            </span>
+                            <span>{entry.nickname || 'Gaius Anonimous'}</span>
+                          </span>
+                        </td>
+                        <td>{entry.CM42_score}</td>
+                        <td>{entry.bestScore}</td>
+                        <td>
+                          {formatLeaderboardRecordDateForDisplay(
+                            entry.bestScoreDate
+                          )}
                         </td>
                       </tr>
-                    )}
-                  {!isLoadingResults &&
-                    sortedEntries.map(
-                      (entry, index) => (
-                        <tr key={entry.id}>
-                          <td>{index + 1}</td>
-                          <td>
-                            <span className="leaderboard-player">
-                              <span className="leaderboard-avatar">
-                                {entry.avatar ? (
-                                  <img
-                                    src={`${API_RESOURCES_URL}${entry.avatar}`}
-                                  />
-                                ) : (
-                                  <div>👤</div>
-                                )}
-                              </span>
-                              <span>
-                                {entry.nickname ||
-                                  'Gaius Anonimous'}
-                              </span>
-                            </span>
-                          </td>
-                          <td>
-                            {entry.CM42_score}
-                          </td>
-                          <td>
-                            {entry.bestScore}
-                          </td>
-                          <td>
-                            {formatLeaderboardRecordDateForDisplay(
-                              entry.bestScoreDate
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    )}
+                    ))}
                 </tbody>
               </table>
               {isLoadingResults && (
                 <div className="leaderboard-card-loader">
-                  Идет загрузка лучших
-                  результатов...
+                  Идет загрузка лучших результатов...
                 </div>
               )}
             </div>
@@ -371,55 +258,39 @@ export const LeaderboardPage: React.FC = () => {
               <div className="leaderboard-grid-sort">
                 {sortLabel('rank', '#')}
                 {sortLabel('nickname', 'Игрок')}
-                {sortLabel(
-                  'CM42_score',
-                  'Рейтинг'
-                )}
+                {sortLabel('CM42_score', 'Рейтинг')}
                 {sortLabel('bestScore', 'Рекорд')}
-                {sortLabel(
-                  'bestScoreDate',
-                  'Дата'
-                )}
+                {sortLabel('bestScoreDate', 'Дата')}
               </div>
               <div className="leaderboard-grid">
-                {sortedEntries.map(
-                  (entry, index) => (
-                    <div
-                      className="leaderboard-grid-item"
-                      key={entry.id}>
-                      <div className="leaderboard-grid-rank">
-                        {index + 1}
+                {sortedEntries.map((entry, index) => (
+                  <div className="leaderboard-grid-item" key={entry.id}>
+                    <div className="leaderboard-grid-rank">{index + 1}</div>
+                    <div className="leaderboard-grid-main">
+                      <div className="leaderboard-avatar-large">
+                        {entry.avatar ? (
+                          <img src={`${getApiResourcesUrl()}${entry.avatar}`} />
+                        ) : (
+                          <div>👤</div>
+                        )}
                       </div>
-                      <div className="leaderboard-grid-main">
-                        <div className="leaderboard-avatar-large">
-                          {entry.avatar ? (
-                            <img
-                              src={`${API_RESOURCES_URL}${entry.avatar}`}
-                            />
-                          ) : (
-                            <div>👤</div>
-                          )}
+                      <div className="leaderboard-grid-text">
+                        <div className="leaderboard-grid-nickname">
+                          {entry.nickname}
                         </div>
-                        <div className="leaderboard-grid-text">
-                          <div className="leaderboard-grid-nickname">
-                            {entry.nickname}
-                          </div>
-                          <div className="leaderboard-grid-rating">
-                            Рейтинг:{' '}
-                            {entry.CM42_score}
-                          </div>
-                          <div className="leaderboard-grid-meta">
-                            Рекорд:{' '}
-                            {entry.bestScore} от{' '}
-                            {formatLeaderboardRecordDateForDisplay(
-                              entry.bestScoreDate
-                            )}
-                          </div>
+                        <div className="leaderboard-grid-rating">
+                          Рейтинг: {entry.CM42_score}
+                        </div>
+                        <div className="leaderboard-grid-meta">
+                          Рекорд: {entry.bestScore} от{' '}
+                          {formatLeaderboardRecordDateForDisplay(
+                            entry.bestScoreDate
+                          )}
                         </div>
                       </div>
                     </div>
-                  )
-                )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -428,8 +299,7 @@ export const LeaderboardPage: React.FC = () => {
             <h3>Ваши друзья</h3>
             {user ? (
               <p>
-                Вы вошли как {user.first_name}{' '}
-                {user.second_name}
+                Вы вошли как {user.first_name} {user.second_name}
               </p>
             ) : (
               <p>Пользователь не найден</p>
@@ -443,8 +313,7 @@ export const LeaderboardPage: React.FC = () => {
               <ul>
                 {friends.map(friend => (
                   <li key={friend.name}>
-                    {friend.name}{' '}
-                    {friend.secondName}
+                    {friend.name} {friend.secondName}
                   </li>
                 ))}
               </ul>
@@ -458,10 +327,7 @@ export const LeaderboardPage: React.FC = () => {
   )
 }
 
-export const initLeaderboardPage = ({
-  dispatch,
-  state,
-}: PageInitArgs) => {
+export const initLeaderboardPage = ({ dispatch, state }: PageInitArgs) => {
   const queue: Array<Promise<unknown>> = [
     dispatch(
       fetchLeaderboardThunk({
@@ -469,19 +335,10 @@ export const initLeaderboardPage = ({
         limit: 10,
       })
     ),
-    dispatch(fetchFriendsThunk()).catch(
-      () => undefined
-    ),
+    dispatch(fetchFriendsThunk()).catch(() => undefined),
   ]
-  if (
-    !selectUser(state) &&
-    !selectUserIsAuthChecked(state)
-  ) {
-    queue.push(
-      dispatch(fetchUserThunk()).catch(
-        () => undefined
-      )
-    )
+  if (!selectUser(state) && !selectUserIsAuthChecked(state)) {
+    queue.push(dispatch(fetchUserThunk()).catch(() => undefined))
   }
   return Promise.all(queue)
 }

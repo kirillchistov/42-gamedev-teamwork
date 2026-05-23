@@ -1,13 +1,6 @@
-import React, {
-  useCallback,
-  useEffect,
-  useId,
-} from 'react'
+import React, { useCallback, useEffect, useId } from 'react'
 
-import {
-  getHieroglyphForKind,
-  type HieroglyphEntry,
-} from './hieroglyphData'
+import { getHieroglyphForKind, type HieroglyphEntry } from './hieroglyphData'
 
 export type HieroglyphCardOverlayProps = {
   /** Индекс типа фишки (kind) с поля. */
@@ -16,22 +9,14 @@ export type HieroglyphCardOverlayProps = {
   onClose: () => void
 }
 
-function speakEntry(
-  entry: HieroglyphEntry,
-  enabled: boolean
-) {
+function speakEntry(entry: HieroglyphEntry, enabled: boolean) {
   if (!enabled) return
-  if (
-    typeof window === 'undefined' ||
-    !window.speechSynthesis
-  ) {
+  if (typeof window === 'undefined' || !window.speechSynthesis) {
     return
   }
   try {
     window.speechSynthesis.cancel()
-    const u = new SpeechSynthesisUtterance(
-      `${entry.pinyin}. ${entry.hanzi}`
-    )
+    const u = new SpeechSynthesisUtterance(`${entry.pinyin}. ${entry.hanzi}`)
     u.lang = 'zh-CN'
     u.rate = 0.82
     window.speechSynthesis.speak(u)
@@ -40,14 +25,14 @@ function speakEntry(
   }
 }
 
-export const HieroglyphCardOverlay: React.FC<
-  HieroglyphCardOverlayProps
-> = ({ kind, soundEnabled, onClose }) => {
+export function HieroglyphCardOverlay({
+  kind,
+  soundEnabled,
+  onClose,
+}: HieroglyphCardOverlayProps) {
   const titleId = useId()
   const entry: HieroglyphEntry | null =
-    kind === null
-      ? null
-      : getHieroglyphForKind(kind)
+    kind === null ? null : getHieroglyphForKind(kind)
 
   useEffect(() => {
     if (!entry) return
@@ -65,8 +50,7 @@ export const HieroglyphCardOverlay: React.FC<
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
-    return () =>
-      window.removeEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [entry, onClose])
 
   const handleBackdrop = useCallback(
@@ -164,23 +148,17 @@ export const HieroglyphCardOverlay: React.FC<
           </div>
 
           <div className="m3-hiero-card__meta">
-            <p
-              id={titleId}
-              className="m3-hiero-card__pinyin">
+            <p id={titleId} className="m3-hiero-card__pinyin">
               {entry.pinyin}
             </p>
             <p className="m3-hiero-card__meanings">
               {entry.meaningsRu.join(' · ')}
             </p>
-            <p className="m3-hiero-card__section">
-              Частые слова с этим знаком
-            </p>
+            <p className="m3-hiero-card__section">Частые слова с этим знаком</p>
             <ul className="m3-hiero-card__examples">
               {entry.examples.map((ex, i) => (
                 <li key={i}>
-                  <span className="m3-hiero-card__zh">
-                    {ex.zh}
-                  </span>
+                  <span className="m3-hiero-card__zh">{ex.zh}</span>
                   <span>{ex.ru}</span>
                 </li>
               ))}

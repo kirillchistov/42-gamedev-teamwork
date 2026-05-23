@@ -97,25 +97,19 @@ const sections = [
   },
 ]
 
-export const ShopScreen: React.FC = () => {
+export function ShopScreen() {
   return (
     <section className="premium-card">
       <div className="premium-card__header">
         <h2>Магазин артефактов (заготовка)</h2>
-        <span className="premium-chip">
-          UI-заготовка
-        </span>
+        <span className="premium-chip">UI-заготовка</span>
       </div>
       <div className="premium-grid premium-grid--2">
         {sections.map(section => (
-          <article
-            key={section.title}
-            className="premium-panel">
+          <article key={section.title} className="premium-panel">
             <div className="premium-panel__header">
               <h3>{section.title}</h3>
-              <span className="premium-soft-note">
-                3 оффера
-              </span>
+              <span className="premium-soft-note">3 оффера</span>
             </div>
             <ul className="premium-offer-list">
               {section.items.map(item => (
@@ -124,9 +118,7 @@ export const ShopScreen: React.FC = () => {
                   className="premium-offer-row">
                   <div>
                     <div>{item.name}</div>
-                    <div className="premium-soft-note">
-                      {item.price}
-                    </div>
+                    <div className="premium-soft-note">{item.price}</div>
                   </div>
                   <span
                     className={`premium-price-badge premium-price-badge--${item.badgeKind}`}>
@@ -136,12 +128,8 @@ export const ShopScreen: React.FC = () => {
               ))}
             </ul>
             <div className="premium-stack premium-stack--row">
-              <Button variant="outline">
-                Открыть раздел
-              </Button>
-              <Button variant="flat">
-                Подробнее
-              </Button>
+              <Button variant="outline">Открыть раздел</Button>
+              <Button variant="flat">Подробнее</Button>
             </div>
           </article>
         ))}

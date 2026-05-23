@@ -48,22 +48,16 @@ const premiumTrack = [
   },
 ]
 
-export const SeasonPassStub: React.FC = () => {
+export function SeasonPassStub() {
   return (
     <section className="premium-card">
       <div className="premium-card__header">
         <h2>Проездной (заготовка)</h2>
-        <span className="premium-chip">
-          UI-заготовка
-        </span>
+        <span className="premium-chip">UI-заготовка</span>
       </div>
       <div className="premium-meta-row">
-        <span className="premium-soft-note">
-          Прогресс сезона: 18 / 60
-        </span>
-        <span className="premium-soft-note">
-          До конца: 12 дней
-        </span>
+        <span className="premium-soft-note">Прогресс сезона: 18 / 60</span>
+        <span className="premium-soft-note">До конца: 12 дней</span>
       </div>
       <div className="premium-grid premium-grid--2">
         <article className="premium-panel">
@@ -83,9 +77,7 @@ export const SeasonPassStub: React.FC = () => {
                     {item.tier}: {item.reward}
                   </div>
                 </div>
-                <span className="premium-soft-note">
-                  {item.status}
-                </span>
+                <span className="premium-soft-note">{item.status}</span>
               </li>
             ))}
           </ol>
@@ -107,21 +99,15 @@ export const SeasonPassStub: React.FC = () => {
                     {item.tier}: {item.reward}
                   </div>
                 </div>
-                <span className="premium-soft-note">
-                  {item.status}
-                </span>
+                <span className="premium-soft-note">{item.status}</span>
               </li>
             ))}
           </ol>
         </article>
       </div>
       <div className="premium-stack premium-stack--row">
-        <Button variant="primary">
-          Купить премиум-пропуск
-        </Button>
-        <Button variant="outline">
-          Показать все награды
-        </Button>
+        <Button variant="primary">Купить премиум-пропуск</Button>
+        <Button variant="outline">Показать все награды</Button>
       </div>
     </section>
   )
