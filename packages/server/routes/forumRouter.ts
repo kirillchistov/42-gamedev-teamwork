@@ -53,17 +53,12 @@ type TopicCommentStats = {
   repliesCount: number
 }
 
-const EMPTY_TOPIC_COMMENT_STATS: TopicCommentStats =
-  {
-    commentsCount: 0,
-    repliesCount: 0,
-  }
+const EMPTY_TOPIC_COMMENT_STATS: TopicCommentStats = {
+  commentsCount: 0,
+  repliesCount: 0,
+}
 
-function topicPayload(
-  row: Topic,
-  stats: TopicCommentStats,
-  req: Request
-) {
+function topicPayload(row: Topic, stats: TopicCommentStats, req: Request) {
   const user = req.praktikumUser
   const viewerIsModerator = user != null && isForumModeratorUser(user.id)
   return {
@@ -102,21 +97,11 @@ async function commentStatsForTopicIds(
     attributes: [
       'topicId',
       [
-        fn(
-          'SUM',
-          literal(
-            'CASE WHEN parent_id IS NULL THEN 1 ELSE 0 END'
-          )
-        ),
+        fn('SUM', literal('CASE WHEN parent_id IS NULL THEN 1 ELSE 0 END')),
         'commentsCount',
       ],
       [
-        fn(
-          'SUM',
-          literal(
-            'CASE WHEN parent_id IS NOT NULL THEN 1 ELSE 0 END'
-          )
-        ),
+        fn('SUM', literal('CASE WHEN parent_id IS NOT NULL THEN 1 ELSE 0 END')),
         'repliesCount',
       ],
     ],
@@ -133,8 +118,7 @@ async function commentStatsForTopicIds(
       repliesCount: string
     }
     map.set(rec.topicId, {
-      commentsCount:
-        Number(rec.commentsCount) || 0,
+      commentsCount: Number(rec.commentsCount) || 0,
       repliesCount: Number(rec.repliesCount) || 0,
     })
   }
@@ -144,18 +128,17 @@ async function commentStatsForTopicIds(
 async function commentStatsForTopic(
   topicId: number
 ): Promise<TopicCommentStats> {
-  const [commentsCount, repliesCount] =
-    await Promise.all([
-      Comment.count({
-        where: { topicId, parentId: null },
-      }),
-      Comment.count({
-        where: {
-          topicId,
-          parentId: { [Op.ne]: null },
-        },
-      }),
-    ])
+  const [commentsCount, repliesCount] = await Promise.all([
+    Comment.count({
+      where: { topicId, parentId: null },
+    }),
+    Comment.count({
+      where: {
+        topicId,
+        parentId: { [Op.ne]: null },
+      },
+    }),
+  ])
   return { commentsCount, repliesCount }
 }
 
@@ -182,17 +165,11 @@ router.get('/topics', async (req, res) => {
     })
 
     const ids = rows.map(t => t.id)
-    const statsMap =
-      await commentStatsForTopicIds(ids)
+    const statsMap = await commentStatsForTopicIds(ids)
 
     res.json(
       rows.map(t =>
-        topicPayload(
-          t,
-          statsMap.get(t.id) ??
-            EMPTY_TOPIC_COMMENT_STATS,
-          req
-        )
+        topicPayload(t, statsMap.get(t.id) ?? EMPTY_TOPIC_COMMENT_STATS, req)
       )
     )
   } catch {
@@ -215,16 +192,11 @@ router.get('/topics/:topicId', async (req, res) => {
       return
     }
 
-      const stats = await commentStatsForTopic(
-        topicId
-      )
+    const stats = await commentStatsForTopic(topicId)
 
-      res.json(topicPayload(topic, stats, req))
-    } catch {
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
-    }
+    res.json(topicPayload(topic, stats, req))
+  } catch {
+    res.status(500).json({ reason: 'Internal error' })
   }
 })
 
@@ -253,15 +225,7 @@ router.post('/topics', async (req, res) => {
       authorDisplay: user.displayLabel,
     })
 
-    res
-      .status(201)
-      .json(
-        topicPayload(
-          topic,
-          EMPTY_TOPIC_COMMENT_STATS,
-          req
-        )
-      )
+    res.status(201).json(topicPayload(topic, EMPTY_TOPIC_COMMENT_STATS, req))
   } catch (e) {
     if (e instanceof ValidationError) {
       res.status(400).json({
@@ -620,22 +584,11 @@ router.patch('/topics/:topicId', async (req, res) => {
       return
     }
 
-      await topic.update(patch)
-      await topic.reload()
-      const stats = await commentStatsForTopic(
-        topicId
-      )
-      res.json(topicPayload(topic, stats, req))
-    } catch (e) {
-      if (e instanceof ValidationError) {
-        res.status(400).json({
-          reason: 'Validation failed',
-        })
-        return
-      }
-      res
-        .status(500)
-        .json({ reason: 'Internal error' })
+    if (!canForumAuthorOrModerator(user.id, topic.authorPraktikumId)) {
+      res.status(403).json({
+        reason: 'Not author or moderator',
+      })
+      return
     }
 
     const body = req.body as unknown
