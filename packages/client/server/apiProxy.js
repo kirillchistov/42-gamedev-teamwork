@@ -27,13 +27,10 @@ function readNodeApiTarget() {
     const internal = (_c = process.env.INTERNAL_SERVER_URL) === null || _c === void 0 ? void 0 : _c.trim();
     const internalIsDockerOnly = internal != null &&
         /:\/\/server(?::|\/|$)/.test(internal);
-    // На хосте (yarn dev:client) hostname `server` из docker-compose не резолвится.
     if (process.env.NODE_ENV === 'development' &&
-        internalIsDockerOnly) {
-        if (external) {
-            return trimTrailingSlash(external);
-        }
-        return DEFAULT_NODE_API;
+        internalIsDockerOnly &&
+        external) {
+        return trimTrailingSlash(external);
     }
     if (internal) {
         return trimTrailingSlash(internal);
@@ -65,10 +62,6 @@ function nodeProxy(nodeApiTarget, mountPath) {
         changeOrigin: true,
         proxyTimeout: 30000,
         timeout: 30000,
-        // 8.10 demo MCR (sprint_8):
-        // // http-proxy-middleware получает path уже без mountPath от Express.
-        // proxyTimeout: (не задано)
-        // timeout: (не задано)
     });
 }
 function registerApiProxy(app) {

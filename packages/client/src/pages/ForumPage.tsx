@@ -19,11 +19,6 @@ import {
 } from '../slices/forumSlice'
 import type { ForumRejectPayload } from '../slices/forumSlice'
 import { markForumAuthRedirect } from '../shared/forumAuthRedirect'
-import {
-  fetchUserThunk,
-  selectUser,
-  selectUserIsAuthChecked,
-} from '../slices/userSlice'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 
 export function ForumPage() {

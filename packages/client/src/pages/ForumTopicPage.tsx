@@ -84,7 +84,9 @@ export function ForumTopicPage() {
   }, [topicId, dispatch])
 
   const isTopicAuthor =
-    user != null && topic != null && user.id === topic.authorPraktikumId
+    user != null &&
+    topic != null &&
+    user.id === topic.authorPraktikumId
 
   const viewerIsModerator = Boolean(topic?.viewerIsModerator)
   const canEditTopic = isTopicAuthor || viewerIsModerator
@@ -235,8 +237,10 @@ export function ForumTopicPage() {
     return filtered.map(comment => {
       const rows = reactionsByCommentId[comment.id] ?? []
       const isCommentAuthor =
-        user != null && user.id === comment.authorPraktikumId
-      const canEditComment = isCommentAuthor || viewerIsModerator
+        user != null &&
+        user.id === comment.authorPraktikumId
+      const canEditComment =
+        isCommentAuthor || viewerIsModerator
 
       return (
         <React.Fragment key={comment.id}>
@@ -284,32 +288,47 @@ export function ForumTopicPage() {
 
             <ForumCommentReactions
               rows={rows}
-              onToggle={emoji => void handleToggleReaction(comment.id, emoji)}>
+              onToggle={emoji =>
+                void handleToggleReaction(
+                  comment.id,
+                  emoji
+                )
+              }>
               <button
                 type="button"
                 className="forum-comment__reply-btn"
                 onClick={() => setReplyTo(comment.id)}>
                 Ответить
               </button>
-              {canEditComment && editingCommentId !== comment.id && (
-                <>
-                  <button
-                    type="button"
-                    className="forum-comment__reply-btn"
-                    onClick={() => {
-                      setEditingCommentId(comment.id)
-                      setCommentDraft(comment.content)
-                    }}>
-                    Изменить
-                  </button>
-                  <button
-                    type="button"
-                    className="forum-comment__reply-btn"
-                    onClick={() => void handleDeleteComment(comment.id)}>
-                    Удалить
-                  </button>
-                </>
-              )}
+              {canEditComment &&
+                editingCommentId !==
+                  comment.id && (
+                  <>
+                    <button
+                      type="button"
+                      className="forum-comment__reply-btn"
+                      onClick={() => {
+                        setEditingCommentId(
+                          comment.id
+                        )
+                        setCommentDraft(
+                          comment.content
+                        )
+                      }}>
+                      Изменить
+                    </button>
+                    <button
+                      type="button"
+                      className="forum-comment__reply-btn"
+                      onClick={() =>
+                        void handleDeleteComment(
+                          comment.id
+                        )
+                      }>
+                      Удалить
+                    </button>
+                  </>
+                )}
             </ForumCommentReactions>
           </div>
           {renderComments(allComments, comment.id, depth + 1)}
