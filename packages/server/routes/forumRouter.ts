@@ -142,6 +142,38 @@ async function commentStatsForTopic(
   return { commentsCount, repliesCount }
 }
 
+type ReactionAggItem = {
+  emoji: string
+  count: number
+  mine: boolean
+}
+
+function aggregateReactionsForRows(
+  rows: Array<{
+    emoji: string
+    authorPraktikumId: number
+  }>,
+  viewerId: number | undefined
+): ReactionAggItem[] {
+  const map = new Map<string, { count: number; mine: boolean }>()
+  for (const r of rows) {
+    const cur = map.get(r.emoji) ?? {
+      count: 0,
+      mine: false,
+    }
+    cur.count += 1
+    if (viewerId !== undefined && r.authorPraktikumId === viewerId) {
+      cur.mine = true
+    }
+    map.set(r.emoji, cur)
+  }
+  return [...map.entries()].map(([emoji, v]) => ({
+    emoji,
+    count: v.count,
+    mine: v.mine,
+  }))
+}
+
 /** GET /topics — список (limit default 20; offset или page). */
 router.get('/topics', async (req, res) => {
   try {
