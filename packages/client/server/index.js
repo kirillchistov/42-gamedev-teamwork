@@ -62,9 +62,7 @@ function toValidPort(value) {
     if (!value)
         return null;
     const parsed = Number(value);
-    if (!Number.isInteger(parsed) ||
-        parsed < 1 ||
-        parsed > 65535) {
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
         return null;
     }
     return parsed;
@@ -96,8 +94,7 @@ async function sendRouterResponse(response, res) {
     res.sendStatus(response.status);
 }
 function isRouterResponse(value) {
-    if (typeof value !== 'object' ||
-        value === null) {
+    if (typeof value !== 'object' || value === null) {
         return false;
     }
     const maybeResponse = value;
@@ -105,10 +102,8 @@ function isRouterResponse(value) {
         typeof maybeResponse.text === 'function' &&
         typeof maybeResponse.headers === 'object' &&
         maybeResponse.headers !== null &&
-        typeof maybeResponse.headers.get ===
-            'function' &&
-        typeof maybeResponse.headers.forEach ===
-            'function');
+        typeof maybeResponse.headers.get === 'function' &&
+        typeof maybeResponse.headers.forEach === 'function');
 }
 async function resolveSsrRender(vite, url) {
     if (vite) {
@@ -150,10 +145,7 @@ function registerErrorHandler(app) {
         // Error handler must keep 4 args signature for Express.
         void next;
         console.error(err);
-        res
-            .status(500)
-            .type('html')
-            .send((0, ssrErrorPage_1.renderSsrErrorHtml)());
+        res.status(500).type('html').send((0, ssrErrorPage_1.renderSsrErrorHtml)());
     });
 }
 async function createServer() {
@@ -189,10 +181,7 @@ async function createServer() {
                 isJSON: true,
             })}</script>`);
             // Завершаю запрос и отдаю HTML-страницу
-            res
-                .status(200)
-                .set({ 'Content-Type': 'text/html' })
-                .end(html);
+            res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
         }
         catch (e) {
             if (isRouterResponse(e)) {
@@ -214,8 +203,7 @@ async function createServer() {
             console.log(`Client is listening on port: ${port} — open http://localhost:${port} (OAuth: use 9000 if in Praktikum whitelist)`);
         })
             .on('error', err => {
-            if (err.code ===
-                'EADDRINUSE' &&
+            if (err.code === 'EADDRINUSE' &&
                 index < portCandidates.length - 1) {
                 console.warn(`Port ${port} is busy, trying next port...`);
                 tryListen(index + 1);
