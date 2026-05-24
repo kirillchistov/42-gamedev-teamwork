@@ -10,8 +10,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    # На macOS :5432 часто занят Homebrew Postgres — с хоста подключаемся к 5433 (см. .env.sample).
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -41,7 +42,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
-    command: ["yarn", "workspace", "server", "db:migrate"]
+    command: ["/app/packages/server/scripts/docker-migrate.sh"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,13 +92,14 @@ services:
     restart: unless-stopped
     ports:
       # На хосте не занимать тот же порт, что у API (по умолчанию 3000 у server).
-      - "${CLIENT_PORT:-5173}:80"
+      - "${CLIENT_PORT:-9000}:80"
     environment:
       NODE_ENV: production
       PORT: "80"
-      # Прокси на SSR-сервере клиента (server/apiProxy.ts)
       INTERNAL_SERVER_URL: http://server:${SERVER_PORT:-3000}
       PRAKTIKUM_API_URL: ${PRAKTIKUM_API_URL:-https://ya-praktikum.tech}
+      # SSR в контейнере: entry-server ходит на server:PORT, не на localhost:3000
+      EXTERNAL_SERVER_URL: http://server:${SERVER_PORT:-3000}
     depends_on:
       server:
         condition: service_healthy

@@ -2,13 +2,13 @@
 
 Документация: [OpenAPI — Leaderboard](https://ya-praktikum.tech/api/v2/openapi/leaderboard) (и Swagger [Leaderboard](https://ya-praktikum.tech/api/v2/swagger/#/Leaderboard)).
 
-В **`packages/client`** страница `/leaderboard` уже есть (`LeaderboardPage.tsx`), но данные сейчас **демо-массив** `DEMO_LEADERBOARD`, а `initLeaderboardPage` — заглушка `Promise.resolve()`. Ниже — как заменить это на реальное API, не ломая Redux/SSR-паттерн.
+В **'packages/client'** страница '/leaderboard' ('LeaderboardPage.tsx') загружает таблицу через **'leaderboardSlice'** и API Практикума. Ниже — контракт API, врезки в код и **фильтр «только друзья»** через **'friendsSlice'**.
 
 ## 1. Контракт API (кратко)
 
 ### 1.1. Отправить результат игры
 
-**POST** `/leaderboard` (полный URL: `https://ya-praktikum.tech/api/v2/leaderboard` при использовании того же `BASE_URL`, что в проекте).
+**POST** '/leaderboard' (полный URL: 'https://ya-praktikum.tech/api/v2/leaderboard' при использовании того же 'BASE_URL', что в проекте).
 
 Тело (логика из задания):
 
@@ -22,12 +22,12 @@
 }
 ```
 
-- **`data`** — произвольный объект с полями игры (ник, счёт, уровень и т.д.).
-- **`ratingFieldName`** — имя поля внутри `data`, по которому сравнивается результат. Меньшее значение не перезаписывает запись; **большее** — обновляет.
+- **'data'** — произвольный объект с полями игры (ник, счёт, уровень и т.д.).
+- **'ratingFieldName'** — имя поля внутри 'data', по которому сравнивается результат. Меньшее значение не перезаписывает запись; **большее** — обновляет.
 
 ### 1.2. Получить таблицу лидеров
 
-**POST** `/leaderboard/all`
+**POST** '/leaderboard/all'
 
 ```json
 {
@@ -37,12 +37,12 @@
 }
 ```
 
-- **`ratingFieldName`** — то же поле сортировки, что и при отправке.
-- **`cursor`** / **`limit`** — пагинация.
+- **'ratingFieldName'** — то же поле сортировки, что и при отправке.
+- **'cursor'** / **'limit'** — пагинация.
 
 ### 1.3. Уникальное имя поля рейтинга
 
-API общий для всех команд: задайте **`ratingFieldName`** и поля внутри **`data`** так, чтобы они **уникально** отличали вашу игру (например, префикс команды в имени поля: `cosmicMatch42_bestScore` как ключ и такое же значение `ratingFieldName` — уточните у ментора соглашение по именованию).
+API общий для всех команд: задайте **'ratingFieldName'** и поля внутри **'data'** так, чтобы они **уникально** отличали вашу игру (например, префикс команды в имени поля: 'cosmicMatch42_bestScore' как ключ и такое же значение 'ratingFieldName' — уточните у ментора соглашение по именованию).
 
 ---
 
@@ -51,10 +51,10 @@ API общий для всех команд: задайте **`ratingFieldName`*
 ```12:14:packages/client/src/constants.tsx
 export const BASE_URL =
   'https://ya-praktikum.tech/api/v2'
-export const API_RESOURCES_URL = `${BASE_URL}/resources`
+export const API_RESOURCES_URL = '${BASE_URL}/resources'
 ```
 
-Запросы с cookie-сессией, как у авторизации: **`credentials: 'include'`** (если API принимает сессию так же, как `/auth/*`).
+Запросы с cookie-сессией, как у авторизации: **'credentials: 'include''** (если API принимает сессию так же, как '/auth/*').
 
 ---
 
@@ -62,7 +62,7 @@ export const API_RESOURCES_URL = `${BASE_URL}/resources`
 
 ### 3.1. Константа уникального рейтинга
 
-Новый файл, например `packages/client/src/shared/api/leaderboardConfig.ts`:
+Новый файл, например 'packages/client/src/shared/api/leaderboardConfig.ts':
 
 ```ts
 /** Уникально для команды / игры — не делить таблицу с другими проектами */
@@ -78,7 +78,7 @@ export type LeaderboardTeamData = {
 
 ### 3.2. Тонкий API-слой
 
-`packages/client/src/shared/api/leaderboardApi.ts`:
+'packages/client/src/shared/api/leaderboardApi.ts':
 
 ```ts
 import { BASE_URL } from '../../constants'
@@ -89,7 +89,7 @@ export async function submitLeaderboardScore(
   data: LeaderboardTeamData
 ) {
   const res = await fetch(
-    `${BASE_URL}/leaderboard`,
+    '${BASE_URL}/leaderboard',
     {
       method: 'POST',
       credentials: 'include',
@@ -116,7 +116,7 @@ export async function fetchLeaderboardPage(params: {
   limit: number
 }) {
   const res = await fetch(
-    `${BASE_URL}/leaderboard/all`,
+    '${BASE_URL}/leaderboard/all',
     {
       method: 'POST',
       credentials: 'include',
@@ -142,53 +142,159 @@ export async function fetchLeaderboardPage(params: {
 }
 ```
 
-Тип ответа уточните по OpenAPI (имена полей `leaders` / `data` могут отличаться).
+Тип ответа уточните по OpenAPI (имена полей 'leaders' / 'data' могут отличаться).
 
-### 3.3. Redux (по аналогии с `friendsSlice`)
+### 3.3. Redux (по аналогии с 'friendsSlice')
 
-1. Добавьте `leaderboardSlice.ts` со статусами `loading / error / rows / cursor`.
-2. Thunk **`fetchLeaderboardThunk`** вызывает `fetchLeaderboardPage`.
-3. Thunk **`submitScoreThunk`** вызывает `submitLeaderboardScore` в конце партии.
+1. Добавьте 'leaderboardSlice.ts' со статусами 'loading / error / rows / cursor'.
+2. Thunk **'fetchLeaderboardThunk'** вызывает 'fetchLeaderboardPage'.
+3. Thunk **'submitScoreThunk'** вызывает 'submitLeaderboardScore' в конце партии.
 
-Подключите редьюсер в `packages/client/src/store.ts` в `combineReducers`.
+Подключите редьюсер в 'packages/client/src/store.ts' в 'combineReducers'.
 
 ### 3.4. Задача 4.1 — «начать использовать API»
 
-- Вызов **`fetchLeaderboardThunk`** из **`initLeaderboardPage`** (сервер + клиент через тот же `usePage`), раскомментировав и расширив паттерн, который уже был закомментирован для друзей:
-
-```433:442:packages/client/src/pages/LeaderboardPage.tsx
-// export const initLeaderboardPage = ({ dispatch, state }: PageInitArgs) => {
-//   const queue: Array<Promise<unknown>> = [dispatch(fetchFriendsThunk())]
-//   if (!selectUser(state)) {
-//     queue.push(dispatch(fetchUserThunk()))
-//   }
-//   return Promise.all(queue)
-// }
-
-export const initLeaderboardPage = () =>
-  Promise.resolve()
-```
-
-Целевая версия `initLeaderboardPage` должна возвращать `Promise.all([dispatch(fetchLeaderboardThunk(...)), ...])` по необходимости.
+- Вызов **'fetchLeaderboardThunk'** и **'fetchFriendsThunk'** из **'initLeaderboardPage'** — см. раздел 4.2 и актуальный код в 'LeaderboardPage.tsx'.
 
 ### 3.5. Задача 4.2 — подключить к компонентам
 
-- **`LeaderboardPage.tsx`**: заменить `sortedEntries` на данные из селектора; сохранить UI сортировки/сетки, либо сортировать на сервере, если API отдаёт уже отсортированный список.
-- **`GamePage.tsx`**: в обработчике окончания игры (там, где сейчас пишется результат в `localStorage` и `navigate('/leaderboard')`) после подсчёта финального счёта вызвать **`submitLeaderboardScore`** (или `dispatch(submitScoreThunk(...))`), не блокируя навигацию (можно `void` + toast при ошибке).
-
-Ищите по файлу ключ **`LAST_RESULT_KEY`** и логику перехода на `/leaderboard` — это естественная точка для отправки рекорда.
+- **'LeaderboardPage.tsx'**: данные из 'leaderboardData' (селектор slice); клиентская сортировка по колонкам (# / игрок / рейтинг / рекорд / дата).
+- **'GamePage.tsx'**: после партии — **'submitLeaderboardScore'** (см. 'LAST_RESULT_KEY' и переход на '/leaderboard').
 
 ---
 
-## 4. SSR
+## 4. Фильтр «только друзья» ('friendsSlice')
 
-Если лидерборд должен быть в HTML первого запроса, **`initLeaderboardPage`** в `routes.tsx` уже указан как **`fetchData`** для пути `/leaderboard` — достаточно, чтобы thunk использовал на сервере те же cookie, что пришли в `req` (при необходимости — серверный fetch с пробросом `Cookie`; иначе данные подтянутся на клиенте при первом монтировании).
+На странице уже есть кнопка **«Друзья»** и логика фильтрации; чтобы список друзей подгружался при открытии '/leaderboard', нужны шаги ниже.
+
+### 4.1. Redux: 'friendsSlice'
+
+Файл: 'packages/client/src/slices/friendsSlice.ts'
+
+| Элемент | Назначение |
+|--------|------------|
+| 'fetchFriendsThunk' | 'GET ${SERVER_HOST}/friends' (прокси на Node или SSR) |
+| 'selectFriends' | 'Friend[]' — '{ name, secondName, avatar }' |
+| 'selectIsLoadingFriends' | индикатор загрузки |
+
+Редьюсер подключён в 'store.ts' ('friends').
+
+### 4.2. Загрузка при входе на страницу (SSR + клиент)
+
+В **'initLeaderboardPage'** добавьте thunk друзей **рядом** с лидербордом:
+
+```ts
+export const initLeaderboardPage = ({
+  dispatch,
+  state,
+}: PageInitArgs) => {
+  const queue: Array<Promise<unknown>> = [
+    dispatch(
+      fetchLeaderboardThunk({ cursor: 0, limit: 10 })
+    ),
+    dispatch(fetchFriendsThunk()).catch(() => undefined),
+  ]
+  // при необходимости — fetchUserThunk, если user ещё не в state
+  return Promise.all(queue)
+}
+```
+
+Маршрут '/leaderboard' в 'routes.tsx' уже вызывает 'initLeaderboardPage' как 'fetchData' — после этого друзья будут в store и на SSR, и после гидрации.
+
+### 4.3. UI на 'LeaderboardPage.tsx'
+
+1. **Селекторы**
+
+```ts
+const friends = useSelector(selectFriends)
+const isLoading = useSelector(selectIsLoadingFriends)
+```
+
+2. **Множество ников для фильтра**
+
+```ts
+const friendNicknames = useMemo(
+  () => new Set(friends.map(f => f.name)),
+  [friends]
+)
+```
+
+Сопоставление: 'friend.name' ↔ 'entry.nickname' в 'LeaderboardEntry'. Если на бэкенде ник хранится иначе (логин / 'displayName'), измените маппер в 'leaderboardMapper.ts' или сравнение здесь.
+
+3. **Локальный флаг**
+
+```ts
+const [showFriendsOnly, setShowFriendsOnly] = useState(false)
+```
+
+4. **Фильтр перед сортировкой** (в 'useMemo' для 'sortedEntries'):
+
+```ts
+let list = leaderboardTable
+if (showFriendsOnly && friendNicknames.size > 0) {
+  list = list.filter(entry =>
+    friendNicknames.has(entry.nickname)
+  )
+}
+// далее copy.sort(...) по выбранной колонке
+```
+
+5. **Кнопка в тулбаре**
+
+```tsx
+<Button
+  variant={showFriendsOnly ? 'primary' : 'outline'}
+  onClick={() => setShowFriendsOnly(v => !v)}
+>
+  Друзья
+</Button>
+```
+
+Пока 'isLoading' — подпись «Загрузка списка друзей…». Если фильтр включён, а друзей нет — пустая таблица с текстом «Нет записей среди ваших друзей».
+
+### 4.4. Проверка
+
+1. Войти под пользователем с друзьями ('/friends' показывает список).
+2. Открыть '/leaderboard' — без перезагрузки друзей кнопка «Друзья» должна отфильтровать строки.
+3. В DevTools → Network: запрос 'GET …/friends' при первом заходе на лидерборд.
+4. Отключить фильтр — снова полная таблица API.
+
+### 4.5. Ограничения
+
+- Фильтр **клиентский**: в API уходит полная выборка 'limit'; для больших таблиц понадобится серверная фильтрация или отдельный endpoint.
+- Друзья без записи в лидерборде в таблице не появятся (это ожидаемо).
+- На GitHub Pages без Node-прокси 'GET /friends' может быть недоступен — фильтр работает только на полном стеке (Docker / 'yarn dev').
 
 ---
 
-## 5. Чеклист
+## 5. Сортировка колонок (клиент)
 
-- [ ] Согласовано уникальное имя `ratingFieldName` с ментором.
-- [ ] Реализованы POST `/leaderboard` и `/leaderboard/all`.
-- [ ] Страница лидерборда читает данные из Redux (или из RTK Query, если выберете его).
+В таблице и в режиме «Плитка» заголовки — кнопки сортировки:
+
+| Колонка | Ключ 'SortKey' | Поведение по умолчанию при первом клике |
+|--------|----------------|------------------------------------------|
+| # | 'rank' | по убыванию рейтинга ('CM42_score', затем рекорд) |
+| Игрок | 'nickname' | А→Я |
+| Рейтинг | 'CM42_score' | по убыванию |
+| Рекорд | 'bestScore' | по убыванию |
+| Дата рекорда | 'bestScoreDate' | новые даты выше ('compareLeaderboardRecordDates' в 'leaderboardDate.ts') |
+
+Повторный клик по той же колонке переключает 'asc' / 'desc'. Номер в колонке **#** пересчитывается после сортировки (1…N).
+
+---
+
+## 6. SSR
+
+Если лидерборд должен быть в HTML первого запроса, **'initLeaderboardPage'** в 'routes.tsx' уже указан как **'fetchData'** для пути '/leaderboard' — достаточно, чтобы thunk использовал на сервере те же cookie, что пришли в 'req' (при необходимости — серверный fetch с пробросом 'Cookie'; иначе данные подтянутся на клиенте при первом монтировании).
+
+---
+
+## 7. Чеклист
+
+- [ ] Согласовано уникальное имя 'ratingFieldName' с ментором.
+- [ ] Реализованы POST '/leaderboard' и '/leaderboard/all'.
+- [ ] Страница лидерборда читает данные из Redux.
 - [ ] После игры уходит запись результата; отображаются ошибки сети/401.
+- [ ] В 'initLeaderboardPage' вызывается 'fetchFriendsThunk'.
+- [ ] Фильтр «Друзья» сопоставляет 'friends[].name' и 'entry.nickname'.
+- [ ] Сортировка по всем колонкам таблицы работает в UI.

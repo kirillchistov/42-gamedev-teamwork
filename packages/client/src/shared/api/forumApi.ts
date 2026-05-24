@@ -1,4 +1,4 @@
-import { SERVER_HOST } from '../../constants'
+import { getServerHost } from '../../constants'
 import type {
   ForumComment,
   ForumReactionAgg,
@@ -16,10 +16,8 @@ export class ForumApiError extends Error {
 }
 
 function forumUrl(path: string): string {
-  const base = SERVER_HOST.replace(/\/+$/, '')
-  const p = path.startsWith('/')
-    ? path
-    : `/${path}`
+  const base = getServerHost().replace(/\/+$/, '')
+  const p = path.startsWith('/') ? path : `/${path}`
   return `${base}${p}`
 }
 
@@ -27,15 +25,11 @@ export async function forumRequest<T>(
   path: string,
   init?: RequestInit
 ): Promise<T> {
-  const hasJsonBody =
-    typeof init?.body === 'string' &&
-    init.body.length > 0
+  const hasJsonBody = typeof init?.body === 'string' && init.body.length > 0
 
   const headers: HeadersInit = {
     ...(init?.headers ?? {}),
-    ...(hasJsonBody
-      ? { 'Content-Type': 'application/json' }
-      : {}),
+    ...(hasJsonBody ? { 'Content-Type': 'application/json' } : {}),
   }
 
   const res = await fetch(forumUrl(path), {
@@ -64,8 +58,7 @@ export async function forumRequest<T>(
       typeof body === 'object' &&
       body !== null &&
       'reason' in body &&
-      typeof (body as { reason: unknown })
-        .reason === 'string'
+      typeof (body as { reason: unknown }).reason === 'string'
         ? (body as { reason: string }).reason
         : res.statusText || 'Ошибка запроса'
     throw new ForumApiError(reason, res.status)
@@ -74,20 +67,12 @@ export async function forumRequest<T>(
   return body as T
 }
 
-export async function forumGetTopics(): Promise<
-  ForumTopic[]
-> {
-  return forumRequest<ForumTopic[]>(
-    '/api/forum/topics'
-  )
+export async function forumGetTopics(): Promise<ForumTopic[]> {
+  return forumRequest<ForumTopic[]>('/api/forum/topics')
 }
 
-export async function forumGetTopic(
-  topicId: number
-): Promise<ForumTopic> {
-  return forumRequest<ForumTopic>(
-    `/api/forum/topics/${topicId}`
-  )
+export async function forumGetTopic(topicId: number): Promise<ForumTopic> {
+  return forumRequest<ForumTopic>(`/api/forum/topics/${topicId}`)
 }
 
 export type ForumCommentsPage = {
@@ -104,15 +89,11 @@ export async function forumGetAllComments(
   const all: ForumComment[] = []
   let offset = 0
   for (;;) {
-    const page =
-      await forumRequest<ForumCommentsPage>(
-        `/api/forum/topics/${topicId}/comments?limit=${limit}&offset=${offset}`
-      )
+    const page = await forumRequest<ForumCommentsPage>(
+      `/api/forum/topics/${topicId}/comments?limit=${limit}&offset=${offset}`
+    )
     all.push(...page.items)
-    if (
-      page.items.length < limit ||
-      all.length >= page.total
-    ) {
+    if (page.items.length < limit || all.length >= page.total) {
       break
     }
     offset += limit
@@ -124,13 +105,10 @@ export async function forumCreateTopic(body: {
   title: string
   content: string
 }): Promise<ForumTopic> {
-  return forumRequest<ForumTopic>(
-    '/api/forum/topics',
-    {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }
-  )
+  return forumRequest<ForumTopic>('/api/forum/topics', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
 }
 
 export async function forumCreateComment(
@@ -140,13 +118,10 @@ export async function forumCreateComment(
     parentCommentId: number | null
   }
 ): Promise<ForumComment> {
-  return forumRequest<ForumComment>(
-    `/api/forum/topics/${topicId}/comments`,
-    {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }
-  )
+  return forumRequest<ForumComment>(`/api/forum/topics/${topicId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
 }
 
 export type ForumReactionsResponse = {
@@ -162,19 +137,41 @@ export async function forumGetCommentReactions(
   )
 }
 
+type ForumReactionsMapResponse = {
+  byCommentId: Record<number, { items: ForumReactionAgg[] }>
+}
+
 export async function forumFetchReactionsMap(
   topicId: number,
   comments: ForumComment[]
 ): Promise<Record<number, ForumReactionAgg[]>> {
-  const map: Record<number, ForumReactionAgg[]> =
-    {}
+  const map: Record<number, ForumReactionAgg[]> = {}
+  for (const c of comments) {
+    map[c.id] = []
+  }
+  if (comments.length === 0) {
+    return map
+  }
+
+  try {
+    const bulk = await forumRequest<ForumReactionsMapResponse>(
+      `/api/forum/topics/${topicId}/reactions-map`
+    )
+    for (const [idStr, payload] of Object.entries(bulk.byCommentId ?? {})) {
+      const id = Number(idStr)
+      if (Number.isFinite(id)) {
+        map[id] = payload.items ?? []
+      }
+    }
+    return map
+  } catch {
+    /* fallback для старого API */
+  }
+
   await Promise.all(
     comments.map(async c => {
       try {
-        const r = await forumGetCommentReactions(
-          topicId,
-          c.id
-        )
+        const r = await forumGetCommentReactions(topicId, c.id)
         map[c.id] = r.items
       } catch {
         map[c.id] = []
@@ -188,13 +185,10 @@ export async function forumPostCommentReaction(
   commentId: number,
   emoji: string
 ): Promise<unknown> {
-  return forumRequest(
-    `/api/forum/comments/${commentId}/reactions`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ emoji }),
-    }
-  )
+  return forumRequest(`/api/forum/comments/${commentId}/reactions`, {
+    method: 'POST',
+    body: JSON.stringify({ emoji }),
+  })
 }
 
 export async function forumDeleteCommentReaction(
@@ -212,42 +206,30 @@ export async function forumPatchTopic(
   topicId: number,
   body: { title?: string; content?: string }
 ): Promise<ForumTopic> {
-  return forumRequest<ForumTopic>(
-    `/api/forum/topics/${topicId}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify(body),
-    }
-  )
+  return forumRequest<ForumTopic>(`/api/forum/topics/${topicId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
 }
 
-export async function forumDeleteTopic(
-  topicId: number
-): Promise<void> {
-  return forumRequest<void>(
-    `/api/forum/topics/${topicId}`,
-    { method: 'DELETE' }
-  )
+export async function forumDeleteTopic(topicId: number): Promise<void> {
+  return forumRequest<void>(`/api/forum/topics/${topicId}`, {
+    method: 'DELETE',
+  })
 }
 
 export async function forumPatchComment(
   commentId: number,
   body: { content: string }
 ): Promise<ForumComment> {
-  return forumRequest<ForumComment>(
-    `/api/forum/comments/${commentId}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify(body),
-    }
-  )
+  return forumRequest<ForumComment>(`/api/forum/comments/${commentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
 }
 
-export async function forumDeleteComment(
-  commentId: number
-): Promise<void> {
-  return forumRequest<void>(
-    `/api/forum/comments/${commentId}`,
-    { method: 'DELETE' }
-  )
+export async function forumDeleteComment(commentId: number): Promise<void> {
+  return forumRequest<void>(`/api/forum/comments/${commentId}`, {
+    method: 'DELETE',
+  })
 }

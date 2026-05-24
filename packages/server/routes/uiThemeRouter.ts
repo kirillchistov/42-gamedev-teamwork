@@ -14,7 +14,10 @@ router.get('/', async (req, res) => {
   } catch {
     res
       .status(500)
-      .json({ reason: 'Internal error' })
+      .json({
+        reason:
+          'Internal error / Внутренняя ошибка сервера',
+      })
   }
 })
 
@@ -27,7 +30,10 @@ router.put('/', async (req, res) => {
     ) {
       res
         .status(400)
-        .json({ reason: 'Invalid body' })
+        .json({
+          reason:
+            'Invalid body / Неверное тело запроса',
+        })
       return
     }
     const theme = (body as { theme?: unknown })
@@ -35,7 +41,9 @@ router.put('/', async (req, res) => {
     if (!isLandingThemeId(theme)) {
       res
         .status(400)
-        .json({ reason: 'Invalid theme' })
+        .json({
+          reason: 'Invalid theme / Неверная тема',
+        })
       return
     }
 
@@ -48,7 +56,10 @@ router.put('/', async (req, res) => {
   } catch {
     res
       .status(500)
-      .json({ reason: 'Internal error' })
+      .json({
+        reason:
+          'Internal error / Внутренняя ошибка сервера',
+      })
   }
 })
 

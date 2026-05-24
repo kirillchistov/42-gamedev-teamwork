@@ -162,6 +162,13 @@ describe('userSlice', () => {
 
     it('shows friendly message when signin ok but /auth/user returns 401', async () => {
       const fetchMock = jest.fn() as jest.Mock
+      // POST /auth/logout (before signin)
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({}),
+        } as Response)
+      )
       // POST /auth/signin -> ok
       fetchMock.mockImplementationOnce(() =>
         Promise.resolve({
@@ -169,8 +176,8 @@ describe('userSlice', () => {
           json: async () => ({}),
         } as Response)
       )
-      // GET /auth/user -> 401
-      fetchMock.mockImplementationOnce(() =>
+      // GET /auth/user -> 401 (all retries)
+      fetchMock.mockImplementation(() =>
         Promise.resolve({
           ok: false,
           status: 401,
@@ -201,15 +208,79 @@ describe('userSlice', () => {
         loginThunk.rejected.match(action)
       ).toBe(true)
       expect(action.payload).toBe(
-        'Вход выполнен, но сессия не подтвердилась. Попробуйте войти еще раз.'
+        'Вход выполнен, но сессия не подтвердилась. Обновите страницу (жёстко), очистите данные сайта или откройте в приватной вкладке и войдите снова.'
       )
       expect(store.getState().user.error).toBe(
-        'Вход выполнен, но сессия не подтвердилась. Попробуйте войти еще раз.'
+        'Вход выполнен, но сессия не подтвердилась. Обновите страницу (жёстко), очистите данные сайта или откройте в приватной вкладке и войдите снова.'
       )
     })
 
+    it('succeeds when /auth/user works on retry after signin', async () => {
+      const fetchMock = jest.fn() as jest.Mock
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({}),
+        } as Response)
+      )
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({}),
+        } as Response)
+      )
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: false,
+          status: 401,
+          json: async () => ({}),
+        } as Response)
+      )
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({
+            id: 1,
+            login: 'u',
+            first_name: 'A',
+            second_name: 'B',
+          }),
+        } as Response)
+      )
+
+      Object.defineProperty(global, 'fetch', {
+        value: fetchMock,
+        configurable: true,
+        writable: true,
+      })
+
+      const store = configureStore({
+        reducer: { user: userReducer },
+      })
+
+      const action = await store.dispatch(
+        loginThunk({
+          login: 'testuser',
+          password: 'password123',
+        })
+      )
+
+      expect(
+        loginThunk.fulfilled.match(action)
+      ).toBe(true)
+      expect(
+        store.getState().user.data?.login
+      ).toBe('u')
+    }, 10_000)
+
     it('shows conflict message when signin returns already in system and /auth/user returns 401', async () => {
       const fetchMock = jest.fn() as jest.Mock
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({}),
+        } as Response)
+      )
       // POST /auth/signin -> "already in system"
       fetchMock.mockImplementationOnce(() =>
         Promise.resolve({
@@ -220,8 +291,7 @@ describe('userSlice', () => {
           }),
         } as Response)
       )
-      // GET /auth/user -> 401
-      fetchMock.mockImplementationOnce(() =>
+      fetchMock.mockImplementation(() =>
         Promise.resolve({
           ok: false,
           status: 401,

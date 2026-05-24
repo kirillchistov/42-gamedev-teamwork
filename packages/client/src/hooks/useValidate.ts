@@ -6,7 +6,8 @@
  * Убран стартовый doValidate для паролей из useEffect.
  *
  * syncValidationFromValues — полная проверка без режима submit (для данных с сервера и live-сводки).
- * Ошибки полей показываются только после blur поля или после submit (getFieldError).
+ * Ошибки полей показываются только после blur поля или после submit (getFieldError);
+ * handleFieldChange снимает ошибку, когда ввод снова валиден (после blur/submit).
  **/
 import {
   useCallback,
@@ -190,12 +191,24 @@ export const useValidate = () => {
     [validateField]
   )
 
+  /** Снимает/обновляет ошибку поля при вводе (после blur или submit ошибка видна через getFieldError). */
+  const handleFieldChange = useCallback(
+    (
+      field: keyof SignupFormValues,
+      value: unknown
+    ) => {
+      validateField(field, value)
+    },
+    [validateField]
+  )
+
   const getFieldError = useCallback(
     (field: keyof SignupFormValues) => {
       if (!touched[field] && !isSubmitted) {
         return undefined
       }
-      return errors[field]
+      const message = errors[field]
+      return message || undefined
     },
     [errors, touched, isSubmitted]
   )
@@ -213,6 +226,7 @@ export const useValidate = () => {
     validateField,
     handleFieldFocus,
     handleFieldBlur,
+    handleFieldChange,
     getFieldError,
     isValidateError,
     resetValidation,

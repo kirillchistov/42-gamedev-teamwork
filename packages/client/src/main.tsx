@@ -2,10 +2,7 @@
 // темы, глобальные стили, ErrorBoundary / AppErrorFallback, оборачивание в 'withAuthGuard'.
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from 'react-router-dom'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { ThemeProvider } from '@gravity-ui/uikit'
 import { store } from './store'
@@ -46,9 +43,7 @@ const routerBasename = (() => {
 
 const router = createBrowserRouter(
   routes.map(route => {
-    const commonErrorElement = (
-      <AppErrorFallback />
-    )
+    const commonErrorElement = <AppErrorFallback />
 
     if (isPublicRoutePath(route.path))
       return {
@@ -56,22 +51,17 @@ const router = createBrowserRouter(
         errorElement: commonErrorElement,
       }
     const { Component, ...rest } = route
-    const GuardedComponent =
-      withAuthGuard(Component)
+    const GuardedComponent = withAuthGuard(Component)
     return {
       ...rest,
       element: <GuardedComponent />,
       errorElement: commonErrorElement,
     }
   }),
-  routerBasename
-    ? { basename: routerBasename }
-    : {}
+  routerBasename ? { basename: routerBasename } : {}
 )
 
-const rootElement = document.getElementById(
-  'root'
-) as HTMLElement
+const rootElement = document.getElementById('root') as HTMLElement
 
 const app = (
   <Provider store={store}>
@@ -87,11 +77,12 @@ const app = (
 )
 
 /** Статический деплой (GitHub Pages): в `#root` нет HTML от `renderToString`, только плейсхолдер SSR. */
-const canHydrate =
-  rootElement.firstElementChild != null
+const canHydrate = rootElement.firstElementChild != null
+
+const root = <React.StrictMode>{app}</React.StrictMode>
 
 if (canHydrate) {
-  ReactDOM.hydrateRoot(rootElement, app)
+  ReactDOM.hydrateRoot(rootElement, root)
 } else {
-  ReactDOM.createRoot(rootElement).render(app)
+  ReactDOM.createRoot(rootElement).render(root)
 }

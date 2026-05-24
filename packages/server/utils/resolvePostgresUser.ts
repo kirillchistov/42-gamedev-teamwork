@@ -1,6 +1,6 @@
 /**
- * Имя пользователя БД для Sequelize в рантайме (попадает в dist для Docker).
- * Для sequelize-cli по-прежнему используется config/resolvePostgresUser.cjs.
+ * Единая логика имени пользователя БД (дублирует config/resolvePostgresUser.cjs).
+ * См. .env.sample — POSTGRES_USE_OS_USER для Homebrew на macOS.
  */
 export function resolvePostgresUser(): string {
   const fromEnv = process.env.POSTGRES_USER

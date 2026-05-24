@@ -1,4 +1,4 @@
-import { SERVER_HOST } from '../../constants'
+import { getServerHost } from '../../constants'
 import type { LandingTheme } from '../landingTheme'
 
 export class ThemeApiError extends Error {
@@ -12,29 +12,20 @@ export class ThemeApiError extends Error {
 }
 
 function themeUrl(path: string): string {
-  const base = SERVER_HOST.replace(/\/+$/, '')
-  const p = path.startsWith('/')
-    ? path
-    : `/${path}`
+  const base = getServerHost().replace(/\/+$/, '')
+  const p = path.startsWith('/') ? path : `/${path}`
   return `${base}${p}`
 }
 
-async function themeRequest<T>(
-  path: string,
-  init?: RequestInit
-): Promise<T> {
-  const hasJsonBody =
-    typeof init?.body === 'string' &&
-    init.body.length > 0
+async function themeRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const hasJsonBody = typeof init?.body === 'string' && init.body.length > 0
 
   const res = await fetch(themeUrl(path), {
     ...init,
     credentials: 'include',
     headers: {
       ...(init?.headers ?? {}),
-      ...(hasJsonBody
-        ? { 'Content-Type': 'application/json' }
-        : {}),
+      ...(hasJsonBody ? { 'Content-Type': 'application/json' } : {}),
     },
   })
 
@@ -54,8 +45,7 @@ async function themeRequest<T>(
       typeof body === 'object' &&
       body !== null &&
       'reason' in body &&
-      typeof (body as { reason: unknown })
-        .reason === 'string'
+      typeof (body as { reason: unknown }).reason === 'string'
         ? (body as { reason: string }).reason
         : res.statusText || 'Ошибка запроса'
     throw new ThemeApiError(reason, res.status)
@@ -69,19 +59,12 @@ export type ThemeResponse = {
 }
 
 export async function themeGet(): Promise<ThemeResponse> {
-  return themeRequest<ThemeResponse>(
-    '/api/ui/theme'
-  )
+  return themeRequest<ThemeResponse>('/api/ui/theme')
 }
 
-export async function themePut(
-  theme: LandingTheme
-): Promise<ThemeResponse> {
-  return themeRequest<ThemeResponse>(
-    '/api/ui/theme',
-    {
-      method: 'PUT',
-      body: JSON.stringify({ theme }),
-    }
-  )
+export async function themePut(theme: LandingTheme): Promise<ThemeResponse> {
+  return themeRequest<ThemeResponse>('/api/ui/theme', {
+    method: 'PUT',
+    body: JSON.stringify({ theme }),
+  })
 }

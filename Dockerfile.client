@@ -12,6 +12,9 @@ RUN yarn install --frozen-lockfile --network-timeout 600000
 COPY . .
 
 RUN yarn lerna bootstrap
+# Браузерный бандл: same-origin (/api/v2, /api/forum), не URL с машины сборки.
+ENV VITE_APP_API_URL=
+ENV PRAKTIKUM_API_URL=
 RUN rm -rf /app/packages/client/dist/ && yarn build --scope=client
 
 FROM node:${NODE_VERSION}-bookworm-slim AS production

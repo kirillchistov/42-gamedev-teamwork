@@ -1,14 +1,78 @@
-// 7.5 chores: Performance API — безопасные mark/measure; try/catch observe;
-// сброс счётчиков longtask на новый observer; heap только при наличии performance.
+// 7.5 chores: Performance API — mark/measure, longtask observer с cleanup;
+// агрегированный отчёт вместо warn на каждую задачу; пауза при overlay/вкладке.
+
+const PERF_PREFIX = '[Performance]'
 
 const marks = {
   gameStart: 'match3:session:start',
   gameEnd: 'match3:session:end',
 } as const
 
-// Хранилище для метрик (опционально)
+/** Событие из Match3Screen: игра на паузе — не считаем long tasks. */
+export const MATCH3_PERF_PAUSE_EVENT =
+  'match3:performance-pause'
+
+export type Match3PerfPauseDetail = {
+  paused: boolean
+}
+
+export type PerformanceSessionSummary = {
+  longTasksCount: number
+  maxLongTaskMs: number
+  heapMb: number | null
+}
+
+export type PerformanceMonitoringHandle = {
+  stop: () => void
+  setPaused: (paused: boolean) => void
+  getSummary: () => PerformanceSessionSummary
+  flushSummary: () => void
+}
+
+const LONG_TASK_THRESHOLD_MS = 50
+/** После снятия паузы / возврата на вкладку — не шумим N мс (React, canvas, DevTools). */
+const RESUME_GRACE_MS = 2500
+const HEAP_LOG_INTERVAL_MS = 30_000
+
 let longTasksCount = 0
 let maxLongTaskDuration = 0
+
+function isPerfVerbose(): boolean {
+  return (
+    typeof import.meta !== 'undefined' &&
+    import.meta.env?.DEV === true &&
+    import.meta.env?.VITE_PERF_VERBOSE === '1'
+  )
+}
+
+function logDev(message: string): void {
+  if (
+    typeof import.meta !== 'undefined' &&
+    import.meta.env?.DEV
+  ) {
+    console.log(`${PERF_PREFIX} ${message}`)
+  }
+}
+
+function formatSummary(
+  count: number,
+  maxMs: number,
+  heapMb: number | null
+): string {
+  const safeCount = Number.isFinite(count)
+    ? count
+    : 0
+  const safeMax = Number.isFinite(maxMs)
+    ? maxMs
+    : 0
+  const heapPart =
+    heapMb !== null && Number.isFinite(heapMb)
+      ? `, heap ${heapMb.toFixed(2)} MB`
+      : ''
+  return `long tasks: ${safeCount} (max ${safeMax.toFixed(
+    2
+  )} ms${heapPart})`
+}
 
 /**
  * Отметить начало игровой сессии
@@ -21,9 +85,7 @@ export function markGameStart(): void {
     return
   }
   performance.mark(marks.gameStart)
-  console.log(
-    '[Performance] Game session started'
-  )
+  logDev('Game session started')
 }
 
 /**
@@ -54,15 +116,14 @@ export function markGameEndAndMeasure():
     )
     const last = list[list.length - 1]
 
-    // Очищаем метки, чтобы не накапливались
     performance.clearMarks(marks.gameStart)
     performance.clearMarks(marks.gameEnd)
     performance.clearMeasures('match3-session')
 
     const duration = last?.duration ?? null
     if (duration !== null) {
-      console.log(
-        `[Performance] Game session duration: ${duration.toFixed(
+      logDev(
+        `Game session duration: ${duration.toFixed(
           2
         )}ms`
       )
@@ -71,18 +132,15 @@ export function markGameEndAndMeasure():
     return duration
   } catch (e) {
     console.warn(
-      '[Performance] markGameEndAndMeasure failed (missing marks or measure error)',
+      `${PERF_PREFIX} markGameEndAndMeasure failed`,
       e
     )
     try {
       performance.clearMarks(marks.gameStart)
       performance.clearMarks(marks.gameEnd)
       performance.clearMeasures('match3-session')
-    } catch (clearErr) {
-      console.warn(
-        '[Performance] clearMarks/clearMeasures after failed measure',
-        clearErr
-      )
+    } catch {
+      /* noop */
     }
     return null
   }
@@ -90,21 +148,24 @@ export function markGameEndAndMeasure():
 
 /**
  * Наблюдать за Long Tasks (>50ms)
- * @param onLongTask колбэк, вызываемый при обнаружении долгой задачи
  * @returns функция для отписки
  */
 export function observeLongTasks(
-  onLongTask: (duration: number) => void
+  onLongTask: (duration: number) => void,
+  options?: {
+    /** Игнорировать задачи до этого timestamp (мс). */
+    ignoreUntilMs?: () => number
+    isPaused?: () => boolean
+  }
 ): () => void {
   if (
     typeof PerformanceObserver === 'undefined'
   ) {
     console.warn(
-      '[Performance] PerformanceObserver not supported'
+      `${PERF_PREFIX} PerformanceObserver not supported`
     )
-    // Исправлено: добавлена заглушка вместо пустой стрелочной функции
     return () => {
-      // noop
+      /* noop */
     }
   }
 
@@ -112,55 +173,68 @@ export function observeLongTasks(
   maxLongTaskDuration = 0
 
   const obs = new PerformanceObserver(list => {
+    if (options?.isPaused?.()) {
+      return
+    }
+    const ignoreUntil =
+      options?.ignoreUntilMs?.() ?? 0
+    const now = performance.now()
+
     for (const entry of list.getEntries()) {
-      if (entry.duration > 50) {
-        onLongTask(entry.duration)
-        longTasksCount++
-        maxLongTaskDuration = Math.max(
-          maxLongTaskDuration,
-          entry.duration
-        )
+      if (
+        entry.duration <= LONG_TASK_THRESHOLD_MS
+      ) {
+        continue
       }
+      if (now < ignoreUntil) {
+        continue
+      }
+      onLongTask(entry.duration)
+      longTasksCount++
+      maxLongTaskDuration = Math.max(
+        maxLongTaskDuration,
+        entry.duration
+      )
     }
   })
 
   try {
     obs.observe({
       type: 'longtask',
-      buffered: true,
+      // buffered: true отдаёт все long tasks с загрузки страницы — ложный «шторм» в консоли.
+      buffered: false,
     })
   } catch (e) {
     console.warn(
-      '[Performance] longtask observe failed or unsupported',
+      `${PERF_PREFIX} longtask observe failed or unsupported`,
       e
     )
     return () => {
-      // noop
+      /* noop */
     }
   }
-  console.log(
-    '[Performance] Long tasks observer started'
-  )
+
+  logDev('Long tasks observer started')
 
   return () => {
     obs.disconnect()
-    console.log(
-      `[Performance] Long tasks observer stopped. Total: ${longTasksCount}, Max: ${maxLongTaskDuration.toFixed(
-        2
-      )}ms`
+    logDev(
+      `Long tasks observer stopped. ${formatSummary(
+        longTasksCount,
+        maxLongTaskDuration,
+        null
+      )}`
     )
   }
 }
 
 /**
  * Получить текущий heap size (только в Chrome)
- * @returns used JS heap size в байтах или null
  */
 export function getHeapSize(): number | null {
   if (typeof performance === 'undefined') {
     return null
   }
-  // Исправлено: убраны any, добавлено правильное приведение типа
   const memory = (
     performance as unknown as {
       memory?: { usedJSHeapSize: number }
@@ -172,63 +246,158 @@ export function getHeapSize(): number | null {
   return null
 }
 
+export function getHeapSizeMb(): number | null {
+  const heap = getHeapSize()
+  return heap !== null ? heap / 1024 / 1024 : null
+}
+
 /**
  * Логировать heap size в консоль (для отладки)
  */
 export function logHeapSize(): void {
-  const heap = getHeapSize()
-  if (heap !== null) {
-    console.log(
-      `[Performance] Used JS heap size: ${(
-        heap /
-        1024 /
-        1024
-      ).toFixed(2)} MB`
+  const mb = getHeapSizeMb()
+  if (mb !== null) {
+    logDev(
+      `Used JS heap size: ${mb.toFixed(2)} MB`
     )
-  } else {
-    console.log(
-      '[Performance] Heap size not available (non-Chrome browser)'
+  } else if (isPerfVerbose()) {
+    logDev(
+      'Heap size not available (non-Chrome browser)'
     )
   }
 }
 
 /**
  * Запустить мониторинг heap (выводит в консоль каждые 30 секунд)
- * @returns функция для остановки
  */
 export function startHeapMonitoring(
-  intervalMs = 30000
+  intervalMs = HEAP_LOG_INTERVAL_MS,
+  isPaused?: () => boolean
 ): () => void {
-  const intervalId = setInterval(() => {
+  const intervalId = window.setInterval(() => {
+    if (isPaused?.()) {
+      return
+    }
     logHeapSize()
   }, intervalMs)
 
   return () => {
-    clearInterval(intervalId)
-    console.log(
-      '[Performance] Heap monitoring stopped'
-    )
+    window.clearInterval(intervalId)
+    logDev('Heap monitoring stopped')
+  }
+}
+
+function buildSummary(): PerformanceSessionSummary {
+  return {
+    longTasksCount,
+    maxLongTaskMs: maxLongTaskDuration,
+    heapMb: getHeapSizeMb(),
   }
 }
 
 /**
- * Запустить полный мониторинг производительности для игровой сессии
- * @returns объект с функциями для остановки
+ * Полный мониторинг игровой сессии: long tasks (агрегация) + heap.
+ * В консоли — сводка при stop/flush, не warn на каждую задачу.
+ * Стек installHook.js в DevTools — инструментирование React DevTools, не баг приложения.
  */
-export function startPerformanceMonitoring() {
-  const heapStop = startHeapMonitoring(30000)
-  const longTasksStop = observeLongTasks(
-    duration => {
-      console.warn(
-        `[Performance] ⚠️ Long task detected: ${duration.toFixed(
+export function startPerformanceMonitoring(): PerformanceMonitoringHandle {
+  let paused = false
+  let ignoreUntilMs = 0
+
+  const bumpResumeGrace = () => {
+    ignoreUntilMs =
+      performance.now() + RESUME_GRACE_MS
+  }
+
+  const isPaused = () => paused
+
+  const onLongTask = (duration: number) => {
+    if (isPerfVerbose()) {
+      console.debug(
+        `${PERF_PREFIX} Long task ${duration.toFixed(
           2
-        )}ms`
+        )} ms`
       )
+    }
+  }
+
+  const heapStop = startHeapMonitoring(
+    HEAP_LOG_INTERVAL_MS,
+    isPaused
+  )
+  const longTasksStop = observeLongTasks(
+    onLongTask,
+    {
+      isPaused,
+      ignoreUntilMs: () => ignoreUntilMs,
     }
   )
 
+  const onVisibility = () => {
+    if (document.visibilityState === 'hidden') {
+      paused = true
+      return
+    }
+    paused = false
+    bumpResumeGrace()
+  }
+
+  const onMatch3Pause = (event: Event) => {
+    const detail = (
+      event as CustomEvent<Match3PerfPauseDetail>
+    ).detail
+    if (detail?.paused) {
+      paused = true
+      return
+    }
+    paused = false
+    bumpResumeGrace()
+  }
+
+  document.addEventListener(
+    'visibilitychange',
+    onVisibility
+  )
+  window.addEventListener(
+    MATCH3_PERF_PAUSE_EVENT,
+    onMatch3Pause
+  )
+
   return {
-    stop: () => {
+    setPaused(next: boolean) {
+      if (next) {
+        paused = true
+        return
+      }
+      paused = false
+      bumpResumeGrace()
+    },
+    getSummary: buildSummary,
+    flushSummary() {
+      const s = buildSummary()
+      if (
+        s.longTasksCount === 0 &&
+        s.heapMb === null
+      ) {
+        return
+      }
+      console.info(
+        `${PERF_PREFIX} Session summary — ${formatSummary(
+          s.longTasksCount,
+          s.maxLongTaskMs,
+          s.heapMb
+        )}`
+      )
+    },
+    stop() {
+      document.removeEventListener(
+        'visibilitychange',
+        onVisibility
+      )
+      window.removeEventListener(
+        MATCH3_PERF_PAUSE_EVENT,
+        onMatch3Pause
+      )
       heapStop()
       longTasksStop()
     },

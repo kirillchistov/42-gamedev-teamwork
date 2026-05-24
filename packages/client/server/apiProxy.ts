@@ -3,18 +3,12 @@
  * SSR-сервер пробрасывает их в ya-praktikum.tech и packages/server.
  */
 import type { Express } from 'express'
-import {
-  createProxyMiddleware,
-  type Options,
-} from 'http-proxy-middleware'
+import { createProxyMiddleware, type Options } from 'http-proxy-middleware'
 
-const DEFAULT_PRAKTIKUM_ORIGIN =
-  'https://ya-praktikum.tech'
+const DEFAULT_PRAKTIKUM_ORIGIN = 'https://ya-praktikum.tech'
 const DEFAULT_NODE_API = 'http://localhost:3000'
 
-function trimTrailingSlash(
-  value: string
-): string {
+function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '')
 }
 
@@ -62,9 +56,7 @@ function readNodeApiTarget(): string {
 
 const sharedProxyOptions: Pick<
   Options,
-  | 'changeOrigin'
-  | 'cookieDomainRewrite'
-  | 'cookiePathRewrite'
+  'changeOrigin' | 'cookieDomainRewrite' | 'cookiePathRewrite'
 > = {
   changeOrigin: true,
   cookieDomainRewrite: {
@@ -73,13 +65,11 @@ const sharedProxyOptions: Pick<
   },
   cookiePathRewrite: {
     '/api/v2': '/api/v2',
+    '/': '/',
   },
 }
 
-function nodeProxy(
-  nodeApiTarget: string,
-  mountPath: string
-) {
+function nodeProxy(nodeApiTarget: string, mountPath: string) {
   const base = trimTrailingSlash(nodeApiTarget)
   const prefix = mountPath.startsWith('/')
     ? mountPath
@@ -93,9 +83,7 @@ function nodeProxy(
   })
 }
 
-export function registerApiProxy(
-  app: Express
-): void {
+export function registerApiProxy(app: Express): void {
   const praktikumOrigin = readPraktikumOrigin()
   const nodeApiTarget = readNodeApiTarget()
   if (process.env.NODE_ENV === 'development') {
@@ -113,20 +101,8 @@ export function registerApiProxy(
     })
   )
 
-  app.use(
-    '/api/forum',
-    nodeProxy(nodeApiTarget, '/api/forum')
-  )
-  app.use(
-    '/api/ui',
-    nodeProxy(nodeApiTarget, '/api/ui')
-  )
-  app.use(
-    '/friends',
-    nodeProxy(nodeApiTarget, '/friends')
-  )
-  app.use(
-    '/user',
-    nodeProxy(nodeApiTarget, '/user')
-  )
+  app.use('/api/forum', nodeProxy(nodeApiTarget, '/api/forum'))
+  app.use('/api/ui', nodeProxy(nodeApiTarget, '/api/ui'))
+  app.use('/friends', nodeProxy(nodeApiTarget, '/friends'))
+  app.use('/user', nodeProxy(nodeApiTarget, '/user'))
 }

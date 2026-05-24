@@ -8,12 +8,10 @@ type AppErrorFallbackProps = {
   description?: string
 }
 
-export const AppErrorFallback: React.FC<
-  AppErrorFallbackProps
-> = ({
+export function AppErrorFallback({
   title = 'Ошибка 500 — Cosmic Match',
   description = 'Внутренняя ошибка сервера',
-}) => {
+}: AppErrorFallbackProps) {
   return (
     <CosmicErrorLayout
       title={title}
@@ -29,17 +27,13 @@ export const AppErrorFallback: React.FC<
         Космическая турбулентность
       </h2>
       <p className="section-subtitle error-message cosmic-error-page__text">
-        На борту сервера что-то перегрелось -
-        сигнал оборвался посреди гиперпрыжка.
+        На борту сервера что-то перегрелось - сигнал оборвался посреди
+        гиперпрыжка.
       </p>
       <p className="section-subtitle error-message cosmic-error-page__text">
-        Мы уже чиним ретранслятор. Загляните чуть
-        позже или вернитесь на базу.
+        Мы уже чиним ретранслятор. Загляните чуть позже или вернитесь на базу.
       </p>
-      <LinkButton
-        type="button"
-        variant="primary"
-        to="/">
+      <LinkButton type="button" variant="primary" to="/">
         На главную
       </LinkButton>
     </CosmicErrorLayout>

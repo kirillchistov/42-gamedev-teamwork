@@ -43,31 +43,21 @@ const sprintUpdates = [
   },
 ]
 
-export const Blog: React.FC = () => {
-  const [visibleCount, setVisibleCount] =
-    useState(6)
-  const visibleItems = sprintUpdates.slice(
-    0,
-    visibleCount
-  )
-  const hasMore =
-    visibleCount < sprintUpdates.length
+export function Blog() {
+  const [visibleCount, setVisibleCount] = useState(6)
+  const visibleItems = sprintUpdates.slice(0, visibleCount)
+  const hasMore = visibleCount < sprintUpdates.length
 
   return (
     <section className="section" id="blog">
       <h2>Блог разработки</h2>
       <p className="section-subtitle">
-        Коротко о последних заметных изменениях в
-        спринтах 5 и 6.
+        Коротко о последних заметных изменениях в спринтах 5 и 6.
       </p>
       <div className="blog-grid">
         {visibleItems.map(item => (
-          <article
-            key={`${item.sprint}-${item.title}`}
-            className="blog-card">
-            <div className="blog-card__sprint">
-              {item.sprint}
-            </div>
+          <article key={`${item.sprint}-${item.title}`} className="blog-card">
+            <div className="blog-card__sprint">{item.sprint}</div>
             <h3>{item.title}</h3>
             <p>{item.text}</p>
           </article>
@@ -79,12 +69,7 @@ export const Blog: React.FC = () => {
             type="button"
             className="btn btn--outline"
             onClick={() =>
-              setVisibleCount(prev =>
-                Math.min(
-                  prev + 4,
-                  sprintUpdates.length
-                )
-              )
+              setVisibleCount(prev => Math.min(prev + 4, sprintUpdates.length))
             }>
             Еще...
           </button>

@@ -1,17 +1,17 @@
 /** Изменения и починка Sprint6 Chores
- * GitHub Pages: https://kirillchistov.github.io/42-gamedev-teamwork/
+ * GH Pages: https://kirillchistov.github.io/42-gamedev-teamwork/
  **/
 
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import dotenv from 'dotenv'
 import path from 'path'
-dotenv.config()
+import { loadMonorepoEnvFromDir } from './server/loadEnv'
+
+loadMonorepoEnvFromDir(__dirname)
 
 function viteBaseFromEnv(): string {
-  const raw =
-    process.env.GITHUB_PAGES_BASE_URL?.trim()
+  const raw = process.env.GITHUB_PAGES_BASE_URL?.trim()
   if (!raw || raw === '/') return '/'
   return raw.endsWith('/') ? raw : `${raw}/`
 }
@@ -21,26 +21,22 @@ const viteBase = viteBaseFromEnv()
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '')
-  const viteAppApiUrl =
-    env.VITE_APP_API_URL ??
-    process.env.VITE_APP_API_URL ??
-    ''
+  const viteStaticDeploy =
+    env.VITE_STATIC_DEPLOY ?? process.env.VITE_STATIC_DEPLOY ?? ''
 
   return {
     base: viteBase,
     server: {
-      port:
-        Number(process.env.CLIENT_PORT) || 3000,
+      port: Number(process.env.CLIENT_PORT) || 9000,
     },
     define: {
-      __EXTERNAL_SERVER_URL__: JSON.stringify(
-        process.env.EXTERNAL_SERVER_URL
-      ),
-      __INTERNAL_SERVER_URL__: JSON.stringify(
-        process.env.INTERNAL_SERVER_URL
-      ),
-      'process.env.VITE_APP_API_URL':
-        JSON.stringify(viteAppApiUrl),
+      __APP_BASE_URL__: JSON.stringify(viteBase),
+      __EXTERNAL_SERVER_URL__: JSON.stringify(process.env.EXTERNAL_SERVER_URL),
+      __INTERNAL_SERVER_URL__: JSON.stringify(process.env.INTERNAL_SERVER_URL),
+      // Не define process.env.VITE_APP_API_URL — иначе URL с машины сборки
+      // попадает в браузерный бандл (см. constants.tsx nodeEnv()).
+      'process.env.VITE_STATIC_DEPLOY': JSON.stringify(viteStaticDeploy),
+      __GH_PAGES_API_PROXY__: JSON.stringify(viteStaticDeploy === 'gh-pages'),
     },
     build: {
       outDir: path.join(__dirname, 'dist/client'),
@@ -52,17 +48,14 @@ export default defineConfig(({ mode }) => {
       {
         name: 'html-public-links-for-subpath',
         transformIndexHtml(html) {
-          if (viteBase === '/' || viteBase === '')
-            return html
-          const prefix = viteBase.replace(
-            /\/+$/,
-            ''
-          )
-          return html
-            .replace(
-              /href="\/vite\.svg"/g,
-              `href="${prefix}/vite.svg"`
-            )
+          const baseScript = `<script>globalThis.__APP_BASE_URL__=${JSON.stringify(
+            viteBase
+          )};</script>`
+          const out = html.replace(/<head>/i, `<head>\n    ${baseScript}`)
+          if (viteBase === '/' || viteBase === '') return out
+          const prefix = viteBase.replace(/\/+$/, '')
+          return out
+            .replace(/href="\/vite\.svg"/g, `href="${prefix}/vite.svg"`)
             .replace(
               /href="\/manifest\.json"/g,
               `href="${prefix}/manifest.json"`
@@ -76,12 +69,9 @@ export default defineConfig(({ mode }) => {
         filename: 'sw.ts',
         manifest: false,
         injectManifest: {
-          globPatterns: [
-            '**/*.{js,css,html,png,svg,ico,json}',
-          ],
+          globPatterns: ['**/*.{js,css,html,png,svg,ico,json}'],
           globIgnores: ['iconset/**/*'],
-          maximumFileSizeToCacheInBytes:
-            5 * 1024 * 1024,
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
         devOptions: {
           enabled: false,

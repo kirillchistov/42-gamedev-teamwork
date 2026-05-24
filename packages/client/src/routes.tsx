@@ -176,11 +176,6 @@ export const routes: AppRoute[] = [
     fetchData: initForumPage,
   },
   {
-    path: '/forum-topic',
-    Component: ForumTopicPage,
-    fetchData: initForumTopicPage,
-  },
-  {
     path: '/forum/:topicId',
     Component: ForumTopicPage,
     fetchData: initForumTopicPage,

@@ -2,22 +2,13 @@
 import React from 'react'
 import clsx from 'clsx'
 
-type TextAreaProps =
-  React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-    fullWidth?: boolean
-  }
+type TextAreaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  fullWidth?: boolean
+}
 
-export const TextArea: React.FC<
-  TextAreaProps
-> = ({ className, fullWidth, ...rest }) => {
+export function TextArea({ className, fullWidth, ...rest }: TextAreaProps) {
   return (
-    <textarea
-      className={clsx(
-        className,
-        fullWidth && 'w-full'
-      )}
-      {...rest}
-    />
+    <textarea className={clsx(className, fullWidth && 'w-full')} {...rest} />
   )
 }
 

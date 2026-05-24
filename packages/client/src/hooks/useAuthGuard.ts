@@ -31,10 +31,12 @@ export const useAuthGuard =
     )
 
     useEffect(() => {
-      if (!isAuthChecked && !isLoading) {
+      const needsSessionCheck =
+        !isAuthChecked || (!user && !isLoading)
+      if (needsSessionCheck) {
         void dispatch(fetchUserThunk())
       }
-    }, [dispatch, isAuthChecked, isLoading])
+    }, [dispatch, isAuthChecked, isLoading, user])
 
     if (!isAuthChecked || isLoading) {
       return 'loading'

@@ -212,6 +212,8 @@ export function createMatch3Game(
   }
   const ctx: CanvasRenderingContext2D = ctxMaybe
 
+  let isDestroyed = false
+
   let matchFx: MatchFxApi | null = null
   let fxRafId: number | null = null
   let fxLastTs = 0
@@ -865,7 +867,7 @@ export function createMatch3Game(
   }
 
   async function resolveBoard(): Promise<void> {
-    if (isResolving) return
+    if (isDestroyed || isResolving) return
     isResolving = true
     let chain = 1
     let maxChain = 0
@@ -875,6 +877,9 @@ export function createMatch3Game(
       let pass = 0
 
       while (pass < maxPasses) {
+        if (isDestroyed) {
+          return
+        }
         pass += 1
         const { matched, nextChain, questDelta } =
           await runOneResolvePass({
@@ -965,6 +970,9 @@ export function createMatch3Game(
         return
       }
 
+      if (isDestroyed) {
+        return
+      }
       drawBoard()
       emitHud()
       scheduleHint()
@@ -1271,6 +1279,7 @@ export function createMatch3Game(
 
     rebuildBoard()
     void resolveBoard().then(() => {
+      if (isDestroyed) return
       emitHud()
       scheduleHint()
     })
@@ -1284,7 +1293,10 @@ export function createMatch3Game(
     goalLayout = []
     if (phase === 'playing') {
       rebuildBoard()
-      void resolveBoard().then(() => emitHud())
+      void resolveBoard().then(() => {
+        if (isDestroyed) return
+        emitHud()
+      })
     } else {
       rebuildBoard()
       drawBoard()
@@ -1336,7 +1348,7 @@ export function createMatch3Game(
     gameIconTheme = iconTheme
     drawBoard()
     void preloadIconTheme(iconTheme).then(() => {
-      if (phase === 'ended') return
+      if (isDestroyed || phase === 'ended') return
       drawBoard()
     })
   }
@@ -1366,7 +1378,10 @@ export function createMatch3Game(
 
     if (phase === 'playing') {
       rebuildBoard()
-      void resolveBoard().then(() => emitHud())
+      void resolveBoard().then(() => {
+        if (isDestroyed) return
+        emitHud()
+      })
       return
     }
 
@@ -1415,7 +1430,10 @@ export function createMatch3Game(
     debugBoostersMode = Boolean(enabled)
     if (phase === 'playing') {
       rebuildBoard()
-      void resolveBoard().then(() => emitHud())
+      void resolveBoard().then(() => {
+        if (isDestroyed) return
+        emitHud()
+      })
       return
     }
     rebuildBoard()
@@ -1441,6 +1459,7 @@ export function createMatch3Game(
   }
 
   const destroy = () => {
+    isDestroyed = true
     canvas.removeEventListener(
       'pointerdown',
       match3Input.onPointerDown

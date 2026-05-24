@@ -1,81 +1,96 @@
 # Утечки памяти и подписки в проекте
+Актульность:  **19.05.2026**
+Про риски утечек памяти в проекте, статус и план устранения.
 
-Документ про текущие риски утечек памяти в проекте (на момент 28.04.2026), статус по ним и план устранения.
-
-Формат: проблема -> место в коде -> гипотеза -> действие -> как проверяем.
+Формат: проблема → в коде → гипотеза → действие → проверка.
 
 ## 1. Что считаем утечкой в приложении
 
-- Подписки на **'window'** / **'document'** без cleanup.
-- **'setInterval' / 'setTimeout'** без явной очистки.
-- Observer API (**'PerformanceObserver'**, **'MutationObserver'**, **'ResizeObserver'**) без 'disconnect()'.
+- Подписки на 'window' / 'document' без cleanup.
+- 'setInterval' / 'setTimeout' без явной очистки.
+- Observer API ('PerformanceObserver', 'MutationObserver', 'ResizeObserver') без 'disconnect()'.
 - Незавершаемые async-цепочки, которые продолжают держать ссылки после unmount/destroy.
 - Неконтролируемый рост коллекций в памяти/'localStorage', которые затем постоянно читаются в UI.
 
 ---
 
-## 2. Реальные риски в текущей ветке
+## 2. Реальные риски, найденные в проекте
 
-Ниже - найденные проблемные места в проекте.
+### 2.1. 'logoutThunk': таймер из 'Promise.race' не очищался
 
-### 2.1. 'logoutThunk': таймер из 'Promise.race' не очищается (P1)
+**Проблема:** на каждый logout создавался 'setTimeout' без 'clearTimeout', даже если 'userApi.logout()' завершался раньше.
 
-```215:222:packages/client/src/slices/userSlice.ts
-      await Promise.race([
-        userApi.logout(),
-        new Promise<never>((_, reject) => {
-          window.setTimeout(() => {
-            reject(new Error('timeout'))
-          }, AUTH_REQUEST_TIMEOUT_MS)
-        }),
-      ])
+**Как решили:** локальная утилита 'withTimeout' в 'userSlice.ts' снимает таймер в 'finally' (аналогично 'fetchWithTimeout').
+
+```50:69:packages/client/src/slices/userSlice.ts
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number
+): Promise<T> {
+  let timeoutId: number | null = null
+  const timeoutPromise = new Promise<never>(
+    (_, reject) => {
+      timeoutId = window.setTimeout(() => {
+        reject(new Error('timeout'))
+      }, ms)
+    }
+  )
+  return Promise.race([
+    promise,
+    timeoutPromise,
+  ]).finally(() => {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId)
+    }
+  }) as Promise<T>
+}
 ```
 
-Почему риск:
-- На каждый logout создается новый 'setTimeout', но id не сохраняется и не очищается.
-- Даже если 'userApi.logout()' завершился быстро, timeout доживает до конца и удерживает замыкание.
-- При частых logout/login это "тихая" утечка таймеров и лишняя нагрузка на event loop.
+Статус: **[x] исправлено в ['feature/7.4-leaderboard-api'  #61](https://github.com/kirillchistov/42-gamedev-teamwork/issues/61)**.
 
-Что сделать:
-- Вынести в утилиту 'withTimeout' с 'clearTimeout' в 'finally' (как уже сделано в 'fetchWithTimeout').
+### 2.2. Безлимитный рост hero-chat в 'GamePage' + постоянная сериализация
 
-Статус:
-[x] Исправлено в [feature/7.4-liderboard-api](https://github.com/kirillchistov/42-gamedev-teamwork/issues/61)
+**Проблема:** массив сообщений рос без лимита; каждый апдейт сериализовал весь массив в 'localStorage'.
 
-### 2.2. Безлимитный рост hero-chat в 'GamePage' + постоянная сериализация (P1)
+**Как решили:** константа 'HERO_CHAT_MAX_MESSAGES = 100', обрезка при записи и чтении ('slice(-HERO_CHAT_MAX_MESSAGES)').
 
-Почему риск:
-- Массив 'heroChatMessages' растет без лимита.
-- Любое обновление сериализует весь массив в 'localStorage', что увеличивает пиковое потребление памяти и GC-pressure.
-- На долгих игровых сессиях и активном чате это превращается в деградацию UI и рост heap.
+Статус: **[x] исправлено в [#61](https://github.com/kirillchistov/42-gamedev-teamwork/issues/61)**.
 
-Что сделать:
-- Ограничить размер истории (например, последние 100 сообщений).
-- Делать "санитизацию" при чтении из 'localStorage' (обрезка старого хвоста).
+### 2.3. Async-хвосты движка после 'destroy()' без guard-флага
 
-Статус:
-[x] Исправлено в рамках [feature/7.4-liderboard-api](https://github.com/kirillchistov/42-gamedev-teamwork/issues/61)
+**Проблема:** после 'destroy()' цепочки 'resolveBoard().then(...)' могли ещё вызывать 'emitHud' / 'drawBoard'.
 
-### 2.3. Async-хвосты движка после 'destroy()' без guard-флага (P2)
+**Как решили:** флаг 'isDestroyed' в 'bootstrap.ts' — выставляется в 'destroy()', проверка в 'resolveBoard' и во всех '.then' после resolve.
 
-Почему риск:
-- После 'destroy()' часть Promise-цепочек может завершиться позже и выполнить callback.
-- Сейчас нет единого 'isDestroyed'-флага для раннего выхода из таких callback.
-- Это не всегда "критическая" утечка, но создает риск висящих ссылок и фоновой работы на уже демонтированном экране.
+Статус: **[x] исправлено (19.05.2026)**
 
-Что сделать:
-- Добавить 'let isDestroyed = false', выставлять 'true' в 'destroy()'.
-- В '.then(...)' и async-ветках делать ранний 'if (isDestroyed) return'.
+### 2.4. Performance API: массив long task в консоли после паузы
+
+**Симптом:** после снятия паузы — несколько '[Performance] ⚠️ Long task detected', в стеке 'installHook.js' (React DevTools).
+
+**Причина (не утечка памяти):**
+
+- 'buffered: true' у 'PerformanceObserver' отдавал long tasks с момента загрузки страницы при старте observer.
+- После паузы — тяжёлый кадр React + canvas; DevTools перехватывает 'console' ('installHook.js').
+- Порог long task в браузере — **>50 ms**; 54–106 ms после resume часто нормальны для match-3.
+
+**Как решили ('performanceMetrics.ts'):**
+
+- 'buffered: false'; игнор long tasks на паузе (overlay + 'visibilitychange' + событие 'match3:performance-pause').
+- Grace **2.5 s** после resume — не логируем всплеск.
+- Вместо 'console.warn' на каждую задачу — сводка 'Session summary' при unmount; детали только при 'VITE_PERF_VERBOSE=1' в dev.
+
+Статус: **[x] исправлено (19.05.2026)**
 
 ---
 
-## 3. Что уже скорректировано в репозитории
+## 3. Что уже исправлено
 
-Компоненты и страницы корректно снимают слушатели/таймеры - почти эталон для новых задач.
+Компоненты и страницы корректно снимают слушатели/таймеры — эталон для новых задач.
 
 ### 3.1. 'GamePage' — клавиша полноэкранного режима
 
-```packages/client/src/pages/GamePage.tsx (261:263)
+```261:263:packages/client/src/pages/GamePage.tsx
     window.addEventListener('keydown', onKey)
     return () =>
       window.removeEventListener('keydown', onKey)
@@ -83,7 +98,7 @@
 
 ### 3.2. 'GamePage' — кастомное событие смены фона арены
 
-```packages/client/src/pages/GamePage.tsx (332:342)
+```332:342:packages/client/src/pages/GamePage.tsx
   useEffect(() => {
     const on = () => bumpFinishArenaBg()
     window.addEventListener(
@@ -100,7 +115,7 @@
 
 ### 3.3. 'withAuthGuard' — 'storage' и арена
 
-```packages/client/src/hoc/withAuthGuard.tsx (41:70)
+```41:70:packages/client/src/hoc/withAuthGuard.tsx
     useEffect(() => {
       const bump = () =>
         setArenaBgTick(n => n + 1)
@@ -136,7 +151,7 @@
 
 ### 3.4. Fullscreen — обёртка с симметричным снятием
 
-```packages/client/src/utils/fullscreen.ts (89:106)
+```89:106:packages/client/src/utils/fullscreen.ts
 export function addFullscreenChangeListener(
   listener: () => void
 ): () => void {
@@ -161,41 +176,53 @@ export function addFullscreenChangeListener(
 }
 ```
 
+### 3.5. 'performanceMetrics' — observer, пауза, сводка сессии
+
+'startPerformanceMonitoring' — 'disconnect' при stop, пауза при overlay форума/вкладке, 'flushSummary' при unmount 'GamePage'.
+
+Подробнее про long tasks и DevTools — **§2.4**.
+
 ---
 
 ## 4. Краткий roadmap улучшений
 
-### Этап 1 (быстрые фиксы, 1 спринт)
-- [x] Закрыть P1: очистка timeout в 'logoutThunk'. 
-- [x] Ограничить историю hero-chat (state + 'localStorage') и добавить обрезку на чтении.
-- Добавить строки в журнал находок (раздел 6) после мержа.
+### Этап 1 (быстрые фиксы, спринт 7)
+
+- [x] Закрыть P1: очистка timeout в 'logoutThunk'.
+- [x] Ограничить историю hero-chat (state + 'localStorage') и обрезку на чтении.
+- [x] Записи в журнал находок (раздел 5) обновлены по факту мержа.
 
 ### Этап 2 (стабилизация движка)
-- Ввести 'isDestroyed' guard в 'match3/engine/bootstrap.ts'.
-- Проверить все '.then(...)'/async-хвосты после 'destroy()' и 'resetIdle()'.
-- Зафиксировать минимальный набор smoke-тестов: 30+ переходов '/game/start -> /game/play -> /game/finish'.
+
+- [x] Ввести 'isDestroyed' guard в 'match3/engine/bootstrap.ts'.
+- [x] Проверить '.then(...)' после 'resolveBoard' на 'destroy()'.
+- [ ] Smoke: Много (30+) переходов по цепочке '/game/start' → '/game/play' → '/game/finish' без роста listeners/heap.
 
 ### Этап 3 (контроль через Performance API)
-- Подключить lightweight-метрики (см. раздел 5).
-- Включить long-task мониторинг в dev-сборке.
-- Раз в релиз сверять baseline: heap-trend, число listeners, количество long tasks.
+
+- [x] Long-task observer с cleanup ('performanceMetrics.ts').
+- [x] Агрегированная сводка вместо warn на каждую задачу; пауза overlay; grace после resume.
+- [ ] Раз в релиз сверять baseline: heap-trend, 'Session summary' (long tasks max/count) на '/game/play'.
+- [ ] Писать дополнительно сводку в 'sessionStorage' для сравнения билдов.
 
 ---
 
-## 5. Журнал находок (будет заполняться в следующих спринтах)
+## 5. Журнал находок
 
-Дата -> Файл (Модуль) -> Симптом -> Причина -> Исправление -> Статус
-|------|----------------|---------|---------|--------------|
-- 29.04.2026 ->'userSlice.ts' ('logoutThunk') -> Лишние таймеры после logout -> 'Promise.race' с 'setTimeout' без 'clearTimeout' -> Вынести 'withTimeout' + очистка таймера в 'finally' -> in review
-- 29.04.2026 -> 'GamePage.tsx' (hero chat) -> Рост heap и размер 'localStorage' при длительной игре -> Неограниченный массив сообщений + полная сериализация на каждый апдейт -> Лимит истории (например 100) + обрезка на чтении -> in review
-- 29.04.2026 -> 'bootstrap.ts' (async callbacks) -> Возможные поздние callback после 'destroy' -> Нет guard-флага для асинхронных цепочек -> 'isDestroyed' + early return во всех '.then/await' хвостах -> open
+| Дата | Файл (модуль) | Симптом | Причина | Исправление | Статус |
+| --- | --- | --- | --- | --- | --- |
+| 29.04.2026 | 'userSlice.ts' ('logoutThunk') | Лишние таймеры после logout | 'Promise.race' + 'setTimeout' без 'clearTimeout' | 'withTimeout' + очистка в 'finally' | **fixed** |
+| 29.04.2026 | 'GamePage.tsx' (hero chat) | Рост heap и 'localStorage' | Неограниченный массив + полная сериализация | 'HERO_CHAT_MAX_MESSAGES = 100', 'slice' на записи/чтении | **fixed** |
+| 29.04.2026 | 'bootstrap.ts' (async callbacks) | Поздние callback после 'destroy' | Нет guard-флага | 'isDestroyed' + early return | **fixed** |
+| 19.05.2026 | 'performanceMetrics.ts' | — | — | 'PerformanceObserver.disconnect' в cleanup | **fixed** (7.5) |
+| 19.05.2026 | 'performanceMetrics.ts' + DevTools | Много warn long task после паузы; installHook.js в стеке | buffered + resume spike + React DevTools | buffered:false, пауза, grace, summary; verbose через VITE_PERF_VERBOSE | **fixed** |
 
 ---
 
-## 6. "Хозяйке на заметку" или "checklist для code review"
+## 6. Проверять на каждом ревью
 
 - [ ] Любой 'addEventListener' имеет 'removeEventListener' в том же жизненном цикле.
-- [ ] Любой 'setTimeout/setInterval' хранит id и очищается в cleanup/'finally'.
+- [ ] Любой 'setTimeout'/'setInterval' хранит id и очищается в cleanup/'finally'.
 - [ ] Для async-цепочек после unmount есть guard ('aborted' / 'isDestroyed' / 'AbortController').
 - [ ] Observer API всегда отключается ('disconnect') в cleanup.
-- [ ] Для "длинных" игровых сценариев есть замер через 'Performance API' и запись результата в журнал (раздел 6).
+- [ ] Для длинных игровых сценариев смотреть 'Session summary' в консоли или журнал (раздел 5); не считать единичные long task >50 ms после паузы багом без роста heap.

@@ -1,24 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet'
-import {
-  Link,
-  useNavigate,
-  useParams,
-} from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import clsx from 'clsx'
 
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
-import {
-  useSelector,
-  useDispatch,
-} from '../store'
+import { useSelector, useDispatch } from '../store'
 import { usePage } from '../hooks/usePage'
-import {
-  Button,
-  Input,
-  TextArea,
-} from '../shared/ui'
+import { Button, Input, TextArea } from '../shared/ui'
 import {
   fetchTopicByIdThunk,
   createCommentThunk,
@@ -42,7 +31,7 @@ import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { FORUM_REACTION_EMOJIS } from '../constants/forumEmojis'
 import { ForumCommentReactions } from '../components/forum/ForumCommentReactions'
 
-export const ForumTopicPage: React.FC = () => {
+export function ForumTopicPage() {
   const { theme } = useLandingTheme()
   const { topicId } = useParams<{
     topicId: string
@@ -51,38 +40,21 @@ export const ForumTopicPage: React.FC = () => {
   const navigate = useNavigate()
   const topic = useSelector(selectCurrentTopic)
   const comments = useSelector(selectComments)
-  const reactionsByCommentId = useSelector(
-    selectForumReactionsByCommentId
-  )
+  const reactionsByCommentId = useSelector(selectForumReactionsByCommentId)
   const user = useSelector(selectUser)
-  const isLoading = useSelector(
-    selectIsLoadingForum
-  )
-  const shouldRedirectToLogin = useSelector(
-    selectForumShouldRedirectToLogin
-  )
+  const isLoading = useSelector(selectIsLoadingForum)
+  const shouldRedirectToLogin = useSelector(selectForumShouldRedirectToLogin)
 
   const [newComment, setNewComment] = useState('')
-  const [replyTo, setReplyTo] = useState<
-    number | null
-  >(null)
-  const [pageError, setPageError] = useState<
-    string | null
-  >(null)
+  const [replyTo, setReplyTo] = useState<number | null>(null)
+  const [pageError, setPageError] = useState<string | null>(null)
 
-  const [topicEditOpen, setTopicEditOpen] =
-    useState(false)
-  const [topicDraftTitle, setTopicDraftTitle] =
-    useState('')
-  const [
-    topicDraftContent,
-    setTopicDraftContent,
-  ] = useState('')
+  const [topicEditOpen, setTopicEditOpen] = useState(false)
+  const [topicDraftTitle, setTopicDraftTitle] = useState('')
+  const [topicDraftContent, setTopicDraftContent] = useState('')
 
-  const [editingCommentId, setEditingCommentId] =
-    useState<number | null>(null)
-  const [commentDraft, setCommentDraft] =
-    useState('')
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
+  const [commentDraft, setCommentDraft] = useState('')
 
   usePage({ initPage: initForumTopicPage })
 
@@ -104,9 +76,7 @@ export const ForumTopicPage: React.FC = () => {
     }
     void (async () => {
       try {
-        await dispatch(
-          fetchTopicByIdThunk(Number(topicId))
-        ).unwrap()
+        await dispatch(fetchTopicByIdThunk(Number(topicId))).unwrap()
       } catch {
         /* 403 — редирект; 404 — пустой топик в state */
       }
@@ -118,11 +88,8 @@ export const ForumTopicPage: React.FC = () => {
     topic != null &&
     user.id === topic.authorPraktikumId
 
-  const viewerIsModerator = Boolean(
-    topic?.viewerIsModerator
-  )
-  const canEditTopic =
-    isTopicAuthor || viewerIsModerator
+  const viewerIsModerator = Boolean(topic?.viewerIsModerator)
+  const canEditTopic = isTopicAuthor || viewerIsModerator
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !topicId) return
@@ -140,10 +107,7 @@ export const ForumTopicPage: React.FC = () => {
     } catch (e) {
       const p = e as ForumRejectPayload
       if (p?.status !== 403) {
-        setPageError(
-          p?.message ||
-            'Не удалось отправить комментарий'
-        )
+        setPageError(p?.message || 'Не удалось отправить комментарий')
       }
     }
   }
@@ -152,10 +116,7 @@ export const ForumTopicPage: React.FC = () => {
     setNewComment(prev => prev + emoji)
   }
 
-  const handleToggleReaction = async (
-    commentId: number,
-    emoji: string
-  ) => {
+  const handleToggleReaction = async (commentId: number, emoji: string) => {
     if (!topicId) return
     setPageError(null)
     try {
@@ -169,10 +130,7 @@ export const ForumTopicPage: React.FC = () => {
     } catch (e) {
       const p = e as ForumRejectPayload
       if (p?.status !== 403) {
-        setPageError(
-          p?.message ||
-            'Не удалось изменить реакцию'
-        )
+        setPageError(p?.message || 'Не удалось изменить реакцию')
       }
     }
   }
@@ -185,8 +143,7 @@ export const ForumTopicPage: React.FC = () => {
   }
 
   const handleSaveTopic = async () => {
-    if (!topicId || !topicDraftTitle.trim())
-      return
+    if (!topicId || !topicDraftTitle.trim()) return
     setPageError(null)
     try {
       await dispatch(
@@ -200,42 +157,29 @@ export const ForumTopicPage: React.FC = () => {
     } catch (e) {
       const p = e as ForumRejectPayload
       if (p?.status !== 403) {
-        setPageError(
-          p?.message ||
-            'Не удалось сохранить тему'
-        )
+        setPageError(p?.message || 'Не удалось сохранить тему')
       }
     }
   }
 
   const handleDeleteTopic = async () => {
     if (!topicId) return
-    if (
-      !window.confirm(
-        'Удалить тему и все комментарии?'
-      )
-    ) {
+    if (!window.confirm('Удалить тему и все комментарии?')) {
       return
     }
     setPageError(null)
     try {
-      await dispatch(
-        deleteTopicThunk(Number(topicId))
-      ).unwrap()
+      await dispatch(deleteTopicThunk(Number(topicId))).unwrap()
       navigate('/forum')
     } catch (e) {
       const p = e as ForumRejectPayload
       if (p?.status !== 403) {
-        setPageError(
-          p?.message || 'Не удалось удалить тему'
-        )
+        setPageError(p?.message || 'Не удалось удалить тему')
       }
     }
   }
 
-  const handleSaveComment = async (
-    commentId: number
-  ) => {
+  const handleSaveComment = async (commentId: number) => {
     if (!commentDraft.trim()) return
     setPageError(null)
     try {
@@ -250,17 +194,12 @@ export const ForumTopicPage: React.FC = () => {
     } catch (e) {
       const p = e as ForumRejectPayload
       if (p?.status !== 403) {
-        setPageError(
-          p?.message ||
-            'Не удалось сохранить комментарий'
-        )
+        setPageError(p?.message || 'Не удалось сохранить комментарий')
       }
     }
   }
 
-  const handleDeleteComment = async (
-    commentId: number
-  ) => {
+  const handleDeleteComment = async (commentId: number) => {
     if (!topicId) return
     if (!window.confirm('Удалить комментарий?')) {
       return
@@ -282,10 +221,7 @@ export const ForumTopicPage: React.FC = () => {
     } catch (e) {
       const p = e as ForumRejectPayload
       if (p?.status !== 403) {
-        setPageError(
-          p?.message ||
-            'Не удалось удалить комментарий'
-        )
+        setPageError(p?.message || 'Не удалось удалить комментарий')
       }
     }
   }
@@ -295,14 +231,11 @@ export const ForumTopicPage: React.FC = () => {
     parentId: number | null = null,
     depth = 0
   ): React.ReactNode => {
-    const filtered = allComments.filter(
-      c => c.parentCommentId === parentId
-    )
+    const filtered = allComments.filter(c => c.parentCommentId === parentId)
     if (filtered.length === 0) return null
 
     return filtered.map(comment => {
-      const rows =
-        reactionsByCommentId[comment.id] ?? []
+      const rows = reactionsByCommentId[comment.id] ?? []
       const isCommentAuthor =
         user != null &&
         user.id === comment.authorPraktikumId
@@ -316,13 +249,9 @@ export const ForumTopicPage: React.FC = () => {
               'forum-comment--nested': depth > 0,
             })}>
             <div className="forum-comment__header">
-              <span className="forum-comment__author">
-                {comment.author}
-              </span>
+              <span className="forum-comment__author">{comment.author}</span>
               <span className="forum-comment__date">
-                {new Date(
-                  comment.createdAt
-                ).toLocaleString('ru-RU', {
+                {new Date(comment.createdAt).toLocaleString('ru-RU', {
                   day: 'numeric',
                   month: 'short',
                   hour: '2-digit',
@@ -334,21 +263,13 @@ export const ForumTopicPage: React.FC = () => {
               <div className="forum-comment__edit">
                 <TextArea
                   value={commentDraft}
-                  onChange={e =>
-                    setCommentDraft(
-                      e.target.value
-                    )
-                  }
+                  onChange={e => setCommentDraft(e.target.value)}
                   rows={3}
                 />
                 <div className="forum-form__actions">
                   <Button
                     variant="primary"
-                    onClick={() =>
-                      void handleSaveComment(
-                        comment.id
-                      )
-                    }>
+                    onClick={() => void handleSaveComment(comment.id)}>
                     Сохранить
                   </Button>
                   <Button
@@ -362,9 +283,7 @@ export const ForumTopicPage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="forum-comment__text">
-                {comment.content}
-              </div>
+              <div className="forum-comment__text">{comment.content}</div>
             )}
 
             <ForumCommentReactions
@@ -378,9 +297,7 @@ export const ForumTopicPage: React.FC = () => {
               <button
                 type="button"
                 className="forum-comment__reply-btn"
-                onClick={() =>
-                  setReplyTo(comment.id)
-                }>
+                onClick={() => setReplyTo(comment.id)}>
                 Ответить
               </button>
               {canEditComment &&
@@ -414,91 +331,60 @@ export const ForumTopicPage: React.FC = () => {
                 )}
             </ForumCommentReactions>
           </div>
-          {renderComments(
-            allComments,
-            comment.id,
-            depth + 1
-          )}
+          {renderComments(allComments, comment.id, depth + 1)}
         </React.Fragment>
       )
     })
   }
 
-  const replyComment = replyTo
-    ? comments.find(c => c.id === replyTo)
-    : null
+  const replyComment = replyTo ? comments.find(c => c.id === replyTo) : null
 
   return (
-    <div
-      className={clsx(
-        'landing',
-        `landing--${theme}`,
-        'AuthPage'
-      )}>
+    <div className={clsx('landing', `landing--${theme}`, 'AuthPage')}>
       <Helmet>
         <meta charSet="utf-8" />
         <title>
-          {topic
-            ? `${topic.title} — Форум`
-            : 'Топик форума'}{' '}
-          — Cosmic Match
+          {topic ? `${topic.title} — Форум` : 'Топик форума'} — Cosmic Match
         </title>
-        <meta
-          name="description"
-          content="Обсуждение на форуме Cosmic Match"
-        />
+        <meta name="description" content="Обсуждение на форуме Cosmic Match" />
       </Helmet>
 
       <Header />
 
       <main className="auth-main">
         <div className="auth-card auth-card--wide">
-          <Link
-            to="/forum"
-            className="forum-back">
+          <Link to="/forum" className="forum-back">
             ← К форуму
           </Link>
 
           {pageError ? (
             <div className="auth-page__toast-wrap">
-              <div className="auth-page__toast">
-                {pageError}
-              </div>
+              <div className="auth-page__toast">{pageError}</div>
             </div>
           ) : null}
 
           {isLoading && !topic ? (
             <p>Загрузка...</p>
           ) : !topic ? (
-            <div className="forum-empty">
-              Тема не найдена
-            </div>
+            <div className="forum-empty">Тема не найдена</div>
           ) : (
             <>
               <div className="forum-topic__header">
                 <h1>{topic.title}</h1>
                 <p className="forum-topic__meta">
                   {topic.author} ·{' '}
-                  {new Date(
-                    topic.createdAt
-                  ).toLocaleDateString('ru-RU')}
+                  {new Date(topic.createdAt).toLocaleDateString('ru-RU')}
                 </p>
                 {canEditTopic ? (
                   <div className="forum-form__actions forum-topic__actions">
                     {!topicEditOpen ? (
                       <>
-                        <Button
-                          variant="outline"
-                          onClick={
-                            handleOpenTopicEdit
-                          }>
+                        <Button variant="outline" onClick={handleOpenTopicEdit}>
                           Редактировать тему
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() =>
-                            void handleDeleteTopic()
-                          }>
+                          onClick={() => void handleDeleteTopic()}>
                           Удалить тему
                         </Button>
                       </>
@@ -506,18 +392,12 @@ export const ForumTopicPage: React.FC = () => {
                       <>
                         <Button
                           variant="primary"
-                          onClick={() =>
-                            void handleSaveTopic()
-                          }>
+                          onClick={() => void handleSaveTopic()}>
                           Сохранить
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() =>
-                            setTopicEditOpen(
-                              false
-                            )
-                          }>
+                          onClick={() => setTopicEditOpen(false)}>
                           Отмена
                         </Button>
                       </>
@@ -532,30 +412,20 @@ export const ForumTopicPage: React.FC = () => {
                     <label>Заголовок</label>
                     <Input
                       value={topicDraftTitle}
-                      onChange={e =>
-                        setTopicDraftTitle(
-                          e.target.value
-                        )
-                      }
+                      onChange={e => setTopicDraftTitle(e.target.value)}
                     />
                   </div>
                   <div className="forum-form__field">
                     <label>Текст</label>
                     <TextArea
                       value={topicDraftContent}
-                      onChange={e =>
-                        setTopicDraftContent(
-                          e.target.value
-                        )
-                      }
+                      onChange={e => setTopicDraftContent(e.target.value)}
                       rows={6}
                     />
                   </div>
                 </div>
               ) : (
-                <div className="forum-topic__content">
-                  {topic.content}
-                </div>
+                <div className="forum-topic__content">{topic.content}</div>
               )}
 
               <h2 className="forum-comments__title">
@@ -565,8 +435,7 @@ export const ForumTopicPage: React.FC = () => {
               <div className="forum-comments">
                 {comments.length === 0 ? (
                   <div className="forum-empty">
-                    Комментариев пока нет.
-                    Напишите первый!
+                    Комментариев пока нет. Напишите первый!
                   </div>
                 ) : (
                   renderComments(comments)
@@ -579,46 +448,31 @@ export const ForumTopicPage: React.FC = () => {
 
                   {replyComment && (
                     <div className="forum-reply-indicator">
-                      <span>
-                        Ответ для{' '}
-                        {replyComment.author}
-                      </span>
+                      <span>Ответ для {replyComment.author}</span>
                       <button
                         type="button"
                         className="forum-reply-indicator__cancel"
-                        onClick={() =>
-                          setReplyTo(null)
-                        }>
+                        onClick={() => setReplyTo(null)}>
                         ✕
                       </button>
                     </div>
                   )}
 
                   <div className="forum-emoji-bar">
-                    {FORUM_REACTION_EMOJIS.map(
-                      emoji => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          className="forum-emoji-bar__btn"
-                          onClick={() =>
-                            handleEmojiClick(
-                              emoji
-                            )
-                          }>
-                          {emoji}
-                        </button>
-                      )
-                    )}
+                    {FORUM_REACTION_EMOJIS.map(emoji => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className="forum-emoji-bar__btn"
+                        onClick={() => handleEmojiClick(emoji)}>
+                        {emoji}
+                      </button>
+                    ))}
                   </div>
 
                   <TextArea
                     value={newComment}
-                    onChange={e =>
-                      setNewComment(
-                        e.target.value
-                      )
-                    }
+                    onChange={e => setNewComment(e.target.value)}
                     rows={3}
                     placeholder="Ваш комментарий..."
                   />
@@ -626,9 +480,7 @@ export const ForumTopicPage: React.FC = () => {
                   <div className="forum-form__actions">
                     <Button
                       variant="primary"
-                      onClick={() =>
-                        void handleAddComment()
-                      }>
+                      onClick={() => void handleAddComment()}>
                       Отправить
                     </Button>
                   </div>
@@ -644,5 +496,4 @@ export const ForumTopicPage: React.FC = () => {
   )
 }
 
-export const initForumTopicPage = () =>
-  Promise.resolve()
+export const initForumTopicPage = () => Promise.resolve()

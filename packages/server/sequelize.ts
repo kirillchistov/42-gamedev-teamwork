@@ -73,6 +73,13 @@ export const sequelize = new Sequelize({
   port,
   dialect: 'postgres',
   logging: false,
+  dialectOptions: {
+    connectTimeout: 10_000,
+  },
+  pool: {
+    max: 5,
+    acquire: 10_000,
+  },
   define: {
     underscored: true,
     timestamps: true,

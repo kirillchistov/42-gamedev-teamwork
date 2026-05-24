@@ -547,7 +547,10 @@ export const forumSlice = createSlice({
         isForumRejectedWithValue,
         (state, action) => {
           state.isLoading = false
-          if (action.payload.status === 403) {
+          if (
+            action.payload.status === 403 &&
+            typeof window !== 'undefined'
+          ) {
             state.shouldRedirectToLogin = true
           }
         }
