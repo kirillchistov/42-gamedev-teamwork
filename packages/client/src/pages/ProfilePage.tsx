@@ -34,6 +34,13 @@ import {
   updateUserAvatar,
   fetchUserThunk,
 } from '../slices/userSlice'
+import {
+  getTimezoneRegion,
+  isGeolocationSupported,
+  readStoredCoarseRegion,
+  resolveCoarseRegion,
+  type CoarseRegion,
+} from '../utils/geolocation'
 
 function profilesEqual(a: ProfileData, b: ProfileData): boolean {
   return (
@@ -71,6 +78,11 @@ export function ProfilePage() {
   const [showPasswordPanel, setShowPasswordPanel] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [savedProfile, setSavedProfile] = useState<ProfileData | null>(null)
+  const [coarseRegion, setCoarseRegion] = useState<CoarseRegion | null>(() =>
+    readStoredCoarseRegion()
+  )
+  const [regionLoading, setRegionLoading] = useState(false)
+  const [regionError, setRegionError] = useState('')
   const [pwdFieldBlurred, setPwdFieldBlurred] = useState({
     oldPassword: false,
     newPassword: false,
@@ -296,6 +308,26 @@ export function ProfilePage() {
     }
   }
 
+  const handleDetectTimezone = () => {
+    const region = getTimezoneRegion()
+    setCoarseRegion(region)
+    setRegionError('')
+    notifyProfileSuccess('Часовой пояс сохранён')
+  }
+
+  const handleDetectGeolocation = async () => {
+    setRegionLoading(true)
+    setRegionError('')
+    const result = await resolveCoarseRegion({ useGeolocation: true })
+    setRegionLoading(false)
+    if (result.ok) {
+      setCoarseRegion(result.region)
+      notifyProfileSuccess('Регион обновлён')
+      return
+    }
+    setRegionError(result.reason)
+  }
+
   const handleAvatarDelete = async () => {
     try {
       await userApi.deleteAvatar()
@@ -341,6 +373,49 @@ export function ProfilePage() {
             handleAvatarChange={handleAvatarChange}
             handleAvatarDelete={handleAvatarDelete}
           />
+
+          <div className="auth-form auth-form--region">
+            <h2 className="auth-form__section-title">
+              Регион (приблизительно)
+            </h2>
+            <p className="auth-form__hint">
+              Для демо Web API: часовой пояс без разрешения или координаты с
+              округлением после вашего согласия. Точный адрес не сохраняем.
+            </p>
+            {coarseRegion ? (
+              <p className="auth-form__region-label">
+                <strong>{coarseRegion.label}</strong>
+                {coarseRegion.source === 'geolocation'
+                  ? ' · по геолокации'
+                  : ' · по часовому поясу'}
+              </p>
+            ) : (
+              <p className="auth-form__hint">Регион ещё не определён.</p>
+            )}
+            {regionError ? (
+              <p className="auth-form__hint auth-form__hint--error">
+                {regionError}
+              </p>
+            ) : null}
+            <div className="auth-form__region-actions">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={regionLoading}
+                onClick={handleDetectTimezone}>
+                Часовой пояс
+              </Button>
+              {isGeolocationSupported() ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={regionLoading}
+                  onClick={() => void handleDetectGeolocation()}>
+                  {regionLoading ? 'Определяем…' : 'С геолокацией'}
+                </Button>
+              ) : null}
+            </div>
+          </div>
 
           {/* Форма профиля */}
           <form
