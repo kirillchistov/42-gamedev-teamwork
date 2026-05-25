@@ -20,10 +20,12 @@
 - ['game-engine.md'](./game-engine.md) - устройство игрового движка и runtime API.
 - ['project-structure.md'](./project-structure.md) - структура монорепозитория, HTTP-слои, middleware; SVG: [`http-apis-overview.svg`](http-apis-overview.svg), [`client-api-sources.svg`](client-api-sources.svg), [`auth-flow.svg`](auth-flow.svg), [`forum-flow.svg`](forum-flow.svg).
 - ['project-redux-router-ssr.md'](./project-redux-router-ssr.md) - текущая реализация SSR + Redux + data router; план/чеклист спринта — ['redux-router-ssr.md'](./redux-router-ssr.md).
-- ['project-web-api.md'](./project-web-api.md) - **браузерные** Web API (Fullscreen, Storage и т.д.); не про сетевой бэкенд — см. `project-structure.md`.
+- ['project-web-api.md'](./project-web-api.md) - **браузерные** Web API (Fullscreen, Storage и т.д.).
+- ['nginx-config.md'](./nginx-config.md) - nginx, SSL, HTTP/2.
+- ['autodeploy-action.md'](./autodeploy-action.md) - GitHub Actions, автодеплой.
+- ['yacloud-deploy.md'](./yacloud-deploy.md) - Яндекс.Облако, A-запись, OAuth.
 - ['game-visuals.md'](./game-visuals.md) - визуальный слой, Canvas API, иконки, VFX и оптимизация.
-- ['project-roadmap.md'](./project-roadmap.md) - дорожная карта работ с учетом S7.
+- ['project-roadmap.md'](./project-roadmap.md) - дорожная карта работ по визуалу.
 
 ## Связанные материалы
-- ['game-improvements-s7.md'](./game-improvements-s7.md) - требования и приоритеты ближайших улучшений.
 - ['game-backlog.md'](https://github.com/users/kirillchistov/projects/5) - backlog / kanban проекта.

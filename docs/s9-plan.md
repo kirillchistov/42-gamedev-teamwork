@@ -15,9 +15,9 @@
 | 9.2 | nginx HTTP/2 + SSL | Сергей | L4 | Конфиг reverse-proxy перед Node |
 | 9.3 | Ещё одно Web API | Антон | L2 | **Page Visibility** — пауза match-3 при скрытой вкладке; см. [add-web-api.md](add-web-api.md) |
 | 9.4 | Защита от XSS | Кирилл | L2 | Plain-text валидация, безопасный вывод; см. [xss.md](xss.md) |
-| 9.5 | GitHub Action автодеплоя | Артур | L4 | CI/CD на сервер или статику |
-| 9.6 | Деплой в Яндекс.Облако | Анна | L4 | ВМ/контейнер, env, миграции |
-| 9.7 | A-запись домена | Кирилл | L2 | DNS на IP облака |
+| 9.5 | GitHub Action автодеплоя | Артур | L4 | [autodeploy-action.md](autodeploy-action.md) — GHCR + опционально SSH deploy |
+| 9.6 | Деплой в Яндекс.Облако | Анна | L4 | [yacloud-deploy.md](yacloud-deploy.md) — ВМ, Compose, nginx |
+| 9.7 | A-запись домена | Кирилл | L2 | [yacloud-deploy.md](yacloud-deploy.md) § A-запись, OAuth redirect |
 | 9.8 | Финальное демо | Все | L0 | Полный сценарий: auth, игра, форум, прод |
 
 ## Рекомендуемый порядок
@@ -56,12 +56,9 @@
 - Заголовок `X-XSS-Protection` на SSR вместе с CSP ([csp.md](csp.md)).
 - Реакции форума — белый список эмодзи (спринт 8).
 
-## 9.2 nginx (черновик)
+## 9.2 nginx
 
-- `client` → Node SSR :9000
-- `server` → API :3000
-- SSL-сертификат (Let's Encrypt или облако)
-- Проброс заголовков CSP с upstream или дублирование политики на edge (согласовать с 9.1)
+См. [nginx-config.md](nginx-config.md) (HTTP/2, SSL, прокси, сопоставление с [NginX-courseware.txt](NginX-courseware.txt)).
 
 ## 9.8 — чеклист демо
 
@@ -76,6 +73,11 @@
 ## Ссылки
 
 - [csp.md](csp.md) — политика 9.1
+- [nginx-config.md](nginx-config.md) — 9.2
+- [add-web-api.md](add-web-api.md), [project-web-api.md](project-web-api.md) — 9.3
 - [xss.md](xss.md) — защита 9.4
+- [autodeploy-action.md](autodeploy-action.md) — 9.5
+- [yacloud-deploy.md](yacloud-deploy.md) — 9.6, 9.7 (облако, DNS, OAuth на прод)
 - [forum-server-infra.md](forum-server-infra.md) — Docker и API
+- [project-yandex-oauth.md](project-yandex-oauth.md) — OAuth (спринт 7)
 - [auth-middleware-backend.md](auth-middleware-backend.md) — авторизация на бэкенде
