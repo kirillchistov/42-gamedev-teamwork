@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react'
+import { validateForumContent } from '../shared/security/plainTextContent'
+import { ForumPlainText } from './forum/ForumPlainText'
 
 type HeroChatMessage = {
   id: string
@@ -13,35 +15,28 @@ type HeroChatPanelProps = {
   onSend: (text: string) => void
 }
 
-const EMOJIS = [
-  '😀',
-  '👍',
-  '🔥',
-  '🚀',
-  '💡',
-  '🤝',
-]
+const EMOJIS = ['😀', '👍', '🔥', '🚀', '💡', '🤝']
 
-export const HeroChatPanel: React.FC<
-  HeroChatPanelProps
-> = ({
+export function HeroChatPanel({
   title = 'Чат героев',
   messages,
   onSend,
-}) => {
+}: HeroChatPanelProps) {
   const [draft, setDraft] = useState('')
+  const [sendError, setSendError] = useState<string | null>(null)
   const sorted = useMemo(
-    () =>
-      [...messages].sort((a, b) =>
-        a.createdAt.localeCompare(b.createdAt)
-      ),
+    () => [...messages].sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
     [messages]
   )
 
   const submit = () => {
-    const text = draft.trim()
-    if (!text) return
-    onSend(text)
+    setSendError(null)
+    const check = validateForumContent(draft)
+    if (!check.ok) {
+      setSendError(check.reason)
+      return
+    }
+    onSend(check.value)
     setDraft('')
   }
 
@@ -50,15 +45,11 @@ export const HeroChatPanel: React.FC<
       <h3>{title}</h3>
       <div className="match3-hero-chat__list">
         {sorted.map(message => (
-          <article
-            key={message.id}
-            className="match3-hero-chat__item">
+          <article key={message.id} className="match3-hero-chat__item">
             <header>
               <strong>{message.author}</strong>
               <span>
-                {new Date(
-                  message.createdAt
-                ).toLocaleString('ru-RU', {
+                {new Date(message.createdAt).toLocaleString('ru-RU', {
                   day: 'numeric',
                   month: 'short',
                   hour: '2-digit',
@@ -66,7 +57,9 @@ export const HeroChatPanel: React.FC<
                 })}
               </span>
             </header>
-            <p>{message.text}</p>
+            <p>
+              <ForumPlainText text={message.text} />
+            </p>
           </article>
         ))}
       </div>
@@ -76,24 +69,25 @@ export const HeroChatPanel: React.FC<
             key={emoji}
             type="button"
             className="match3-hero-chat__emoji-btn"
-            onClick={() =>
-              setDraft(prev => prev + emoji)
-            }>
+            onClick={() => setDraft(prev => prev + emoji)}>
             {emoji}
           </button>
         ))}
       </div>
+      {sendError ? (
+        <p className="match3-hero-chat__error">{sendError}</p>
+      ) : null}
       <textarea
         value={draft}
-        onChange={e => setDraft(e.target.value)}
+        onChange={e => {
+          setSendError(null)
+          setDraft(e.target.value)
+        }}
         rows={3}
         placeholder="Сообщение в чат героев..."
       />
       <div className="match3-hero-chat__actions">
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={submit}>
+        <button type="button" className="btn btn--primary" onClick={submit}>
           Отправить
         </button>
       </div>

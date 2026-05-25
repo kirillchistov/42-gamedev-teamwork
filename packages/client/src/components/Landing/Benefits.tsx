@@ -1,7 +1,7 @@
 // Блок "О проекте" на лендинге с описанием преимуществ игры
 import React, { useMemo, useState } from 'react'
 
-export const Benefits: React.FC = () => {
+export function Benefits() {
   const items = useMemo(
     () => [
       {
@@ -43,9 +43,7 @@ export const Benefits: React.FC = () => {
   const active = items[current]
 
   const goPrev = () => {
-    setCurrent(prev =>
-      prev === 0 ? items.length - 1 : prev - 1
-    )
+    setCurrent(prev => (prev === 0 ? items.length - 1 : prev - 1))
   }
 
   const goNext = () => {
@@ -56,10 +54,8 @@ export const Benefits: React.FC = () => {
     <section className="section" id="benefits">
       <h2>Преимущества Cosmic Match</h2>
       <p className="section-subtitle">
-        Проект развивается как игровая платформа:
-        быстрый вход, понятная прогрессия и
-        расширяемая архитектура под новые
-        механики.
+        Проект развивается как игровая платформа: быстрый вход, понятная
+        прогрессия и расширяемая архитектура под новые механики.
       </p>
       <div className="benefits__inner">
         <div className="benefits__content">
@@ -80,17 +76,10 @@ export const Benefits: React.FC = () => {
                   key={item.title}
                   type="button"
                   className={
-                    'benefits__dot' +
-                    (index === current
-                      ? ' is-active'
-                      : '')
+                    'benefits__dot' + (index === current ? ' is-active' : '')
                   }
-                  aria-label={`Преимущество ${
-                    index + 1
-                  }`}
-                  onClick={() =>
-                    setCurrent(index)
-                  }
+                  aria-label={`Преимущество ${index + 1}`}
+                  onClick={() => setCurrent(index)}
                 />
               ))}
             </div>

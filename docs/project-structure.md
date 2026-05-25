@@ -17,11 +17,11 @@
 
 ## Архитектура HTTP: два «бэкенда» и внешнее API
 
-Коллегам важно разделять **три разных HTTP-роли** (в dev это часто **два разных origin** — порт клиента и порт API):
+Коллегам важно разделять **три разных HTTP-роли**:
 
-1. **SSR + статика** — Express из [`packages/client/server`](../packages/client/server/index.js): отдаёт HTML, в проде — собранный клиент; **не** является прокси к `packages/server` для данных форума/друзей (браузер ходит на Node API **напрямую** по `VITE_APP_API_URL`).
-2. **Наш Node API** — Express из [`packages/server`](../packages/server): [`createApp.ts`](../packages/server/createApp.ts) монтирует **`/api/forum`**, **`/friends`**, **`/user`** и т.д.; перед защищёнными ручками стоит **один и тот же** [`requirePraktikumAuth`](../packages/server/middleware/requirePraktikumAuth.ts).
-3. **API Практикума** — внешний хост **`https://ya-praktikum.tech/api/v2`** (константа **`BASE_URL`** в [`constants.tsx`](../packages/client/src/constants.tsx)): логин, регистрация, профиль, OAuth, лидерборд, ресурсы аватаров.
+1. **SSR + same-origin прокси** — Express из [`packages/client/server`](../packages/client/server/index.js): HTML, статика, [**`apiProxy.ts`**](../packages/client/server/apiProxy.ts) пробрасывает **`/api/v2`** → Практикум и **`/api/forum`**, **`/friends`**, **`/user`** → `packages/server`. Браузер шлёт `fetch` на **тот же origin**, что и страница (порт клиента, по умолчанию **9000**), с `credentials: 'include'`.
+2. **Наш Node API** — Express из [`packages/server`](../packages/server): [`createApp.ts`](../packages/server/createApp.ts), **`/api/forum`**, **`/friends`**, **`/user`**; перед защищёнными ручками — [`requirePraktikumAuth`](../packages/server/middleware/requirePraktikumAuth.ts).
+3. **API Практикума** — **`https://ya-praktikum.tech/api/v2`**: логин, профиль, OAuth, лидерборд. В браузере на SSR это путь **`/api/v2`** (через прокси); на **GitHub Pages** — прямой origin (см. [`constants.tsx`](../packages/client/src/constants.tsx), `IS_STATIC_GH_PAGES_DEPLOY`).
 
 ### Сводная диаграмма (картинка)
 
@@ -35,7 +35,15 @@
 
 ![Клиент — BASE_URL и SERVER_HOST](client-api-sources.svg)
 
-- Прямая ссылка на файл: [`docs/client-api-sources.svg`](client-api-sources.svg)
+- Прямая ссылка: [`client-api-sources.svg`](client-api-sources.svg)
+- В браузере **`SERVER_HOST`** пустой → URL вида `/api/forum/...`; **`BASE_URL`** = `/api/v2`. Оба идут через **`apiProxy`** на SSR-сервере.
+
+### Форум: поток запросов
+
+![Forum flow](forum-flow.svg)
+
+- Прямая ссылка: [`forum-flow.svg`](forum-flow.svg)
+- UI → **`forumSlice`** → **`forumApi`** → same-origin **`/api/forum`** → **`requirePraktikumAuth`** → **`forumRouter`** → Postgres. При **403** — редирект на `/login` ([`forumAuthRedirect.ts`](../packages/client/src/shared/forumAuthRedirect.ts)).
 
 ### Цепочка middleware на `packages/server` (сессия)
 
@@ -61,11 +69,11 @@ flowchart TB
 
 | Процесс | Типичный порт | Переменная |
 | --- | --- | --- |
-| Vite / SSR Express (клиент) | 3000, 5173, … | `CLIENT_PORT`, `PORT` (см. [`packages/client/server`](../packages/client/server/index.js)) |
+| SSR Express (клиент) | **9000** (fallback 8080) | `CLIENT_PORT`, `PORT` |
 | Node API (`packages/server`) | **3000** | `SERVER_PORT` |
-| PostgreSQL | 5432 | `POSTGRES_*` |
+| PostgreSQL (host) | **5433** (если 5432 занят) | `POSTGRES_PORT` |
 
-В [`.env.sample`](../.env.sample) **`VITE_APP_API_URL=http://localhost:3000`** — браузер и SSR знают URL **нашего** API. Если SSR и API оба хотят 3000, в скриптах dev обычно разводят порты (см. комментарии в `.env.sample` и корневые `yarn dev`).
+В [`.env.sample`](../.env.sample) **`VITE_APP_API_URL=http://localhost:3000`** — для **SSR prefetch** (прямой вызов Node с сервера). Браузер на dev ходит на **`http://localhost:9000/api/...`** через прокси.
 
 ### Переменные окружения (связка клиент ↔ сервер)
 
@@ -90,7 +98,7 @@ flowchart TB
 
 ### SSR и отдача клиента (`packages/client`)
 
-- [`packages/client/server/index.js`](../packages/client/server/index.js) — Express для SSR: в dev — **Vite** в `middlewareMode`, в prod — статика `dist/client` и серверный бандл; cookie, сериализация начального Redux в HTML (`APP_INITIAL_STATE`).
+- [`packages/client/server/index.js`](../packages/client/server/index.js) — Express для SSR: Vite middleware, **`registerApiProxy`**, **CSP** ([`server/csp.ts`](../packages/client/server/csp.ts), см. [`csp.md`](./csp.md)), cookie, `APP_INITIAL_STATE`.
 - [`packages/client/src/entry-server.tsx`](../packages/client/src/entry-server.tsx) — серверный вход React: рендер маршрута, `initialState`, Helmet, стили.
 - [`packages/client/src/main.tsx`](../packages/client/src/main.tsx) — клиент: `ReactDOM.createRoot`, **Provider**, **RouterProvider** (React Router v6), темы, **ErrorBoundary** / **AppErrorFallback**, обёртки **`withAuthGuard`**.
 
@@ -211,7 +219,9 @@ flowchart TB
 
 ### Авторизация
 
-![Authentication flow](./auth-flow.svg)
+![Authentication flow](auth-flow.svg)
+
+- Прямая ссылка: [`auth-flow.svg`](auth-flow.svg)
 
 ### Валидация данных
 
@@ -223,13 +233,17 @@ flowchart TB
 
 ### Meta-схема проекта
 
-![Project meta flow](./project-meta-flow.svg)
+![Project meta flow](project-meta-flow.svg)
+
+### Форум (блок-схема)
+
+![Forum flow](forum-flow.svg)
 
 ---
 
 ## Документация (`docs`)
 
-Требования к игре, бэклог, roadmap, движок, **архитектура HTTP** (этот файл + `http-apis-overview.svg`, `client-api-sources.svg`), спека форума — в этой папке.
+Требования к игре, бэклог, roadmap, движок, **архитектура HTTP** (этот файл, `http-apis-overview.svg`, `client-api-sources.svg`, `auth-flow.svg`, `forum-flow.svg`), спека форума — в этой папке.
 
 ---
 

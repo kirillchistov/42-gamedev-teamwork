@@ -1,162 +1,136 @@
-# Дополнительный Web API (кроме Fullscreen)
+# Дополнительный Web API
 
-> **Термины:** здесь **Web API** = **браузерные** интерфейсы (Fullscreen, Performance, Geolocation…). Это **не** описание HTTP-ручек `packages/server` и **не** замена проверки сессии на Node. Как устроены **cookie**, **`requirePraktikumAuth`** и защищённые маршруты — см. **[`auth-middleware-backend.md`](./auth-middleware-backend.md)** и **[`project-structure.md`](./project-structure.md)**. Расширенный обзор браузерных API — **[`project-web-api.md`](./project-web-api.md)**.
+> **Web API** здесь — браузерные API (Fullscreen, Performance, Page Visibility…), не HTTP-ручки `packages/server`. Cookie и `requirePraktikumAuth` — в [auth-middleware-backend.md](./auth-middleware-backend.md). Обзор по проекту — [project-web-api.md](./project-web-api.md).
 
 ```mermaid
 flowchart TB
-  A["① Браузер: Web API\n(Fullscreen + задание)"]
-  B["② Отправка на сервер\nfetch + Cookie"]
-  C["③ requirePraktikumAuth"]
-  D["④ JSON-ручки"]
+  A["Браузер: Web API"]
+  B["fetch + Cookie на server"]
+  C["requirePraktikumAuth"]
+  D["JSON-ручки"]
   A -.->|только если шлёте метрики| B
   B --> C --> D
 ```
 
-**Смысл:** шаг **①** — локально во вкладке, без Node. Цепочка **②→③→④** нужна лишь если метрики или иные данные уходят на **`packages/server`**; тогда см. чеклист в [`auth-middleware-backend.md`](./auth-middleware-backend.md).
+Шаг в браузере не требует Node. Цепочка справа нужна только если данные уходят на наш API.
 
 ---
 
-В проекте **Fullscreen API** уже обёрнут и используется:
+## Уже сделано (не повторять в 9.3)
 
-- [`packages/client/src/utils/fullscreen.ts`](../packages/client/src/utils/fullscreen.ts) — `enterFullscreen`, `exitFullscreen`, `toggleFullscreen`, `addFullscreenChangeListener` (с учётом Safari `webkit*`).
-- [`packages/client/src/components/Header/index.tsx`](../packages/client/src/components/Header/index.tsx) — кнопка полноэкранного режима на игре, подписка на `fullscreenchange` с очисткой в `useEffect`.
+| Спринт | API | Где |
+|--------|-----|-----|
+| 6.6 | **Fullscreen** | [fullscreen.ts](../packages/client/src/utils/fullscreen.ts), [Header](../packages/client/src/components/Header/index.tsx), `GamePage` (клавиша F) |
+| 7.5 | **Performance** (`mark` / `measure`, `PerformanceObserver` longtask) | [performanceMetrics.ts](../packages/client/src/utils/performanceMetrics.ts), [GamePage.tsx](../packages/client/src/pages/GamePage.tsx), [Match3Screen.tsx](../packages/client/src/game/match3/Match3Screen.tsx) |
+| — | **localStorage / sessionStorage** | настройки, результат партии, темы, форум-редирект |
+| — | **Speech Synthesis** (озвучка иероглифов) | [HieroglyphCardOverlay.tsx](../packages/client/src/game/match3/HieroglyphCardOverlay.tsx) — отдельное задание не закрывало; для 9.3 лучше не брать |
 
-Задание: добавить **ещё один** API из списка. Ниже — рекомендация **Performance API** (измерение длительности кадров / навигации), с конкретными врезками под match-3.
-
-Альтернативы из списка задания:
-
-| API | Идея в Cosmic Match |
-|-----|---------------------|
-| **Geolocation** | Мало для core-loop; регион в профиле / пасхалка (нужен явный запрос). |
-| **Notifications** | Конец таймера при свёрнутой вкладке (`Notification.requestPermission()`). |
-| **Performance** | FPS, длительность партии, `longtask` — отчёт и отладка. |
-
-Документация MDN: [Performance API](https://developer.mozilla.org/en-US/docs/Web/API/Performance).
+`visibilitychange` уже слушает **только** мониторинг Performance (пауза longtask), **не** останавливает таймер партии. Это не засчитывается как фича Page Visibility для игрока.
 
 ---
 
-## 1. Врезка: утилита замеров
+## Задача 9.3 (спринт 9): что делать
 
-Новый файл `packages/client/src/utils/performanceMetrics.ts`:
+**Рекомендация: [Page Visibility API](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API)**
 
-```ts
-const marks = {
-  match3SessionStart: 'match3:session:start',
-  match3SessionEnd: 'match3:session:end',
-} as const
+Почему сейчас:
 
-export function markMatch3SessionStart() {
-  if (
-    typeof performance === 'undefined' ||
-    typeof performance.mark !== 'function'
-  ) {
-    return
-  }
-  try {
-    performance.mark(marks.match3SessionStart)
-  } catch {
-    /* ignore */
-  }
-}
+- Прямая польза в match-3: честная пауза, когда вкладка в фоне.
+- Ложится на уже есть overlay «Пауза» в `Match3Screen`.
+- Не дублирует Fullscreen (6.6) и Performance (7.5).
+- Мало правок, заметно на демо.
 
-export function measureMatch3SessionEnd(): number | null {
-  if (
-    typeof performance === 'undefined' ||
-    typeof performance.mark !== 'function' ||
-    typeof performance.measure !== 'function'
-  ) {
-    return null
-  }
-  try {
-    performance.mark(marks.match3SessionEnd)
-    performance.measure(
-      'match3-session',
-      marks.match3SessionStart,
-      marks.match3SessionEnd
-    )
-    const entries =
-      performance.getEntriesByName('match3-session')
-    const last = entries[entries.length - 1]
-    performance.clearMarks(marks.match3SessionStart)
-    performance.clearMarks(marks.match3SessionEnd)
-    performance.clearMeasures('match3-session')
-    return last?.duration ?? null
-  } catch {
-    return null
-  }
-}
-```
+**Запасные варианты** (если Visibility не зайдёт):
+
+| API | Сценарий | Сложность |
+|-----|----------|-----------|
+| **Notification** | Напоминание «вернись в игру» после opt-in; только при `granted` | средняя, нужен toggle в UI |
+| **Vibration** | Короткий отклик на крупный комбо / победу; toggle «вибрация» | низкая, только mobile |
+| **Clipboard** | «Скопировать счёт» на экране финиша | низкая |
+| **Geolocation** | Регион в профиле | высокая, privacy, для нас слабый приоритет |
+
+**Не брать для 9.3:** Performance (7.5), Fullscreen (6.6), снова только `console.log` без UI.
 
 ---
 
-## 2. Врезка: вызов из игры
+## План: Page Visibility (9.3)
 
-В **`packages/client/src/pages/GamePage.tsx`** (или в `Match3Screen.tsx`, где стартует партия):
+### 1. Утилита
 
-1. При входе на игровой экран / старте сессии — **`markMatch3SessionStart()`**.
-2. В обработчике завершения партии (рядом с `LAST_RESULT_KEY` и навигацией) — **`measureMatch3SessionEnd()`**; при желании записать длительность в `sessionStorage` или в поле `data` лидерборда.
+Файл `packages/client/src/utils/pageVisibility.ts`:
 
-Пример (псевдокод места):
+- `subscribePageVisibility(onChange: (hidden: boolean) => void): () => void`
+- guards: `typeof document === 'undefined'`, нет API → no-op unsubscribe
+- слушатель: `document.visibilityState` / `visibilitychange`
+- при подписке сразу вызвать `onChange(document.visibilityState === 'hidden')`
 
-```ts
-import {
-  markMatch3SessionStart,
-  measureMatch3SessionEnd,
-} from '../utils/performanceMetrics'
+### 2. Игра
 
-markMatch3SessionStart()
+В [Match3Screen.tsx](../packages/client/src/game/match3/Match3Screen.tsx) (или тонкий хук `usePageVisibilityPause`):
 
-const sessionMs = measureMatch3SessionEnd()
-if (sessionMs != null) {
-  console.debug(
-    '[Performance] match3 session ms:',
-    sessionMs
-  )
-}
-```
+1. При `hidden === true` и фаза `playing` — открыть тот же пауза-overlay, что по кнопке (или отдельный текст: «Вкладка в фоне — игра на паузе»).
+2. При возврате на вкладку — **не** снимать паузу автоматически (игрок сам жмёт «Продолжить»), либо снять только если пауза была из-за visibility — зафиксировать в PR.
+3. Диспатчить существующий `MATCH3_PERF_PAUSE_EVENT` с `{ paused: true }`, чтобы 7.5 не считал long tasks в фоне (уже согласовано с [performanceMetrics.ts](../packages/client/src/utils/performanceMetrics.ts)).
 
-Точное место — по **`onGameEnd`** в `GamePage.tsx` / `Match3Screen.tsx`.
+### 3. UI
 
-Если позже **отправляете** метрики на **`packages/server`**, заведите отдельную ручку и **обязательно** повесьте на неё **`requirePraktikumAuth`** (см. [`auth-middleware-backend.md`](./auth-middleware-backend.md)).
+- Бейдж или строка в overlay паузы при `document.hidden`.
+- Опционально: пункт в настройках игры «Пауза при сворачивании вкладки» (localStorage, по умолчанию `true`).
 
----
+### 4. Тесты
 
-## 3. Опционально: PerformanceObserver (long tasks)
+- Unit: mock `document.visibilityState`, проверить вызов callback и `removeEventListener` после unsubscribe.
+- Ручная проверка: `/game/play` → старт → свернуть вкладку → таймер/ходы не идут → вернуться → overlay виден.
 
-```ts
-export function observeLongTasks(
-  onLong: (duration: number) => void
-) {
-  if (
-    typeof PerformanceObserver === 'undefined'
-  ) {
-    return () => {}
-  }
-  try {
-    const obs = new PerformanceObserver(list => {
-      for (const e of list.getEntries()) {
-        if (e.duration > 50)
-          onLong(e.duration)
-      }
-    })
-    obs.observe({
-      type: 'longtask',
-      buffered: true,
-    })
-    return () => obs.disconnect()
-  } catch {
-    return () => {}
-  }
-}
-```
+### 5. Критерий готовности (9.3)
 
-В `GamePage` — `useEffect` с отпиской **`disconnect`** при размонтировании (см. `MEMORYLEAKS.md`).
+- [ ] Отдельный util + подписка с cleanup в `useEffect`
+- [ ] Поведение видно игроку (не только консоль)
+- [ ] Fallback, если API нет
+- [ ] Строка в PR / комментарий: зачем API
+- [ ] Обновить [s9-plan.md](./s9-plan.md) или README: 9.3 → Page Visibility
 
 ---
 
-## 4. Критерий готовности
+## Альтернатива: Notification API
 
-- Пользовательски заметная фича на базе выбранного API (не только `console.log`).
-- Нет утечек: слушатели / observer отключаются при размонтировании.
-- Краткий комментарий в коде или в PR: зачем API и где смотреть результат.
-- Понимание границы: **Web API в браузере** ≠ **авторизация на бэкенде**; при появлении своих HTTP-ручек — см. [`auth-middleware-backend.md`](./auth-middleware-backend.md).
+Если команда выберет уведомления вместо Visibility.
+
+1. Toggle в профиле или на `/game`: «Напоминания».
+2. `Notification.requestPermission()` только по клику.
+3. При `granted` — один сценарий, например после ухода со страницы игры: `setTimeout` + проверка `document.hidden`, затем `new Notification('Cosmic Match', { body: '…', tag: 'match3-remind' })`.
+4. Флаг opt-in: `localStorage` `match3:notifications-opt-in`.
+5. Не дублировать без разрешения; не слать в SSR.
+
+MDN: [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API).
+
+---
+
+## Справка: Performance (7.5, уже в коде)
+
+Реализовано в [performanceMetrics.ts](../packages/client/src/utils/performanceMetrics.ts):
+
+- `markMatch3SessionStart` / `measureMatch3SessionEnd`
+- `startPerformanceMonitoring` + longtask observer + итог в консоль
+- пауза observer при overlay и при `visibilitychange` (внутренне для метрик)
+
+Новый код 9.3 **может** вызывать `MATCH3_PERF_PAUSE_EVENT`, но не должен копировать логику замеров.
+
+---
+
+## Отправка метрик на server (опционально)
+
+Если позже метрики уйдут на `packages/server`:
+
+- отдельная ручка POST;
+- обязательно `requirePraktikumAuth` — см. [auth-middleware-backend.md](./auth-middleware-backend.md).
+
+Для зачёта 9.3 сервер не обязателен.
+
+---
+
+## Ссылки
+
+- [s9-plan.md](./s9-plan.md) — задача 9.3
+- [project-web-api.md](./project-web-api.md) — полный обзор и порядок API
+- [MEMORYLEAKS.md](./MEMORYLEAKS.md) — cleanup слушателей и observers

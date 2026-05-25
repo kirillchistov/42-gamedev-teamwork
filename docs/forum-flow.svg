@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 640" role="img" aria-labelledby="title desc">
+  <title id="title">Forum flow</title>
+  <desc id="desc">Forum pages, Redux forumSlice, forumApi through SSR apiProxy, requirePraktikumAuth and forumRouter on server.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .box { fill:#334155; stroke:#94a3b8; stroke-width:1.5; rx:8; animation:glow 8s ease-in-out infinite; }
+      .lbl { fill:#f1f5f9; font:600 13px system-ui,sans-serif; text-anchor:middle; }
+      .sub { fill:#cbd5e1; font:10px ui-monospace,monospace; text-anchor:middle; }
+      .arr { stroke:#475569; stroke-width:2; fill:none; marker-end:url(#m); animation:line 8s ease-in-out infinite; }
+      .redirect { stroke:#f59e0b; stroke-width:2; fill:none; stroke-dasharray:6 4; marker-end:url(#mo); }
+      .sep { stroke:#475569; stroke-width:1; opacity:0.45; }
+      @keyframes glow { 0%,1.5%{stroke:#38bdf8;stroke-width:2.5;fill:#1e3a5f;filter:url(#glow)} 3%,100%{stroke:#94a3b8;stroke-width:1.5;fill:#334155;filter:none} }
+      @keyframes line { 0%,1.5%{stroke:#38bdf8;stroke-width:2.5} 3%,100%{stroke:#475569;stroke-width:2} }
+      #b1,#l1{animation-delay:0s} #b2,#l2{animation-delay:1s} #b3,#l3{animation-delay:2s} #b4,#l4{animation-delay:3s}
+      #b5,#l5{animation-delay:4s} #b6,#l6{animation-delay:5s} #b7,#l7{animation-delay:6s} #b8,#l8{animation-delay:7s}
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <polygon points="0 0, 8 4, 0 8" fill="#64748b"/>
+    </marker>
+    <marker id="mo" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <polygon points="0 0, 8 4, 0 8" fill="#f59e0b"/>
+    </marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <text x="470" y="34" class="lbl" font-size="16">Forum flow (client + server)</text>
+  <text x="470" y="52" class="sub">withAuthGuard on /forum routes; 403 redirects to /login</text>
+  <text x="470" y="66" class="sub">Spec: forum-api-spec.md, client: forum-api-client.md</text>
+
+  <text x="80" y="92" class="sub" text-anchor="start">Client (packages/client)</text>
+
+  <rect id="b1" x="48" y="108" width="220" height="66" class="box"/>
+  <text x="158" y="134" class="lbl">Forum UI</text>
+  <text x="158" y="148" class="sub">ForumPage, ForumTopicPage</text>
+  <text x="158" y="162" class="sub">withAuthGuard</text>
+
+  <rect id="b2" x="48" y="208" width="220" height="66" class="box"/>
+  <text x="158" y="234" class="lbl">init + thunks</text>
+  <text x="158" y="248" class="sub">fetchTopicsThunk</text>
+  <text x="158" y="262" class="sub">createTopic, comments</text>
+
+  <rect id="b3" x="48" y="308" width="220" height="66" class="box"/>
+  <text x="158" y="334" class="lbl">forumSlice</text>
+  <text x="158" y="348" class="sub">Redux state</text>
+  <text x="158" y="362" class="sub">forumSlice.ts</text>
+
+  <rect id="b4" x="48" y="408" width="220" height="66" class="box"/>
+  <text x="158" y="434" class="lbl">forumApi.ts</text>
+  <text x="158" y="448" class="sub">credentials: include</text>
+  <text x="158" y="462" class="sub">/api/forum/*</text>
+
+  <path id="l1" class="arr" d="M 158 174 L 158 208"/>
+  <path id="l2" class="arr" d="M 158 274 L 158 308"/>
+  <path id="l3" class="arr" d="M 158 374 L 158 408"/>
+  <path id="l4" class="arr" d="M 268 441 L 312 441 L 312 185 L 372 185"/>
+
+  <line class="sep" x1="300" y1="88" x2="300" y2="500"/>
+  <text x="470" y="92" class="sub">SSR proxy + Node API</text>
+
+  <rect id="b5" x="372" y="152" width="200" height="66" class="box"/>
+  <text x="472" y="178" class="lbl">apiProxy</text>
+  <text x="472" y="192" class="sub">same-origin :9000</text>
+  <text x="472" y="206" class="sub">apiProxy.ts</text>
+
+  <rect id="b6" x="372" y="264" width="240" height="66" class="box"/>
+  <text x="492" y="290" class="lbl">requirePraktikumAuth</text>
+  <text x="492" y="304" class="sub">Cookie to /auth/user</text>
+  <text x="492" y="318" class="sub">403 if no session</text>
+
+  <rect id="b7" x="372" y="376" width="220" height="66" class="box"/>
+  <text x="482" y="402" class="lbl">forumRouter</text>
+  <text x="482" y="416" class="sub">topics, comments</text>
+  <text x="482" y="430" class="sub">forumRouter.ts</text>
+
+  <rect id="b8" x="372" y="488" width="200" height="58" class="box"/>
+  <text x="472" y="512" class="lbl">PostgreSQL</text>
+  <text x="472" y="526" class="sub">Sequelize models</text>
+  <text x="472" y="538" class="sub">Topic, Comment</text>
+
+  <path id="l5" class="arr" d="M 472 218 L 472 264"/>
+  <path id="l6" class="arr" d="M 492 330 L 492 376"/>
+  <path id="l7" class="arr" d="M 482 442 L 482 488"/>
+
+  <path id="l8" class="redirect" d="M 372 297 L 352 297 L 352 141 L 268 141"/>
+
+  <rect x="648" y="248" width="244" height="100" class="box" style="fill:#1e293b;stroke:#64748b"/>
+  <text x="770" y="278" class="lbl">403 handling</text>
+  <text x="770" y="294" class="sub">forumAuthRedirect</text>
+  <text x="770" y="308" class="sub">navigate /login</text>
+  <text x="770" y="324" class="sub">no logout loop</text>
+
+  <text x="470" y="598" class="sub">SSR prefetch: initForumPage uses VITE_APP_API_URL (direct to :3000). Browser uses relative /api/forum via proxy.</text>
+  <text x="470" y="616" class="sub">GH Pages: forum disabled (StaticHostingForumNotice); no Node API.</text>
+</svg>

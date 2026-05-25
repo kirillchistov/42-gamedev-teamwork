@@ -22,10 +22,7 @@
 
 import type { Board } from './core/grid'
 import type { CellRC } from './core/match'
-import {
-  getLineOrientation,
-  getSpecialType,
-} from './core/cell'
+import { getLineOrientation, getSpecialType } from './core/cell'
 import {
   TILE_COLORS_BY_THEME,
   type BoardFieldThemeOption,
@@ -35,6 +32,7 @@ import {
 import {
   MATCH3_COSMIC_ICON_URLS,
   MATCH3_FOOD_ICON_URLS,
+  MATCH3_STELLAR_ICON_URLS,
   MATCH3_TECH_ICON_URLS,
 } from './match3IconUrls'
 import { getHieroglyphForKind } from '../hieroglyphData'
@@ -68,28 +66,24 @@ export type RenderOpts = {
  */
 export const MATCH3_BOARD_LOGICAL_PX = 480
 
-const COSMIC_ICON_PATHS = [
-  ...MATCH3_COSMIC_ICON_URLS,
-]
+const COSMIC_ICON_PATHS = [...MATCH3_COSMIC_ICON_URLS]
 
 const FOOD_ICON_PATHS = [...MATCH3_FOOD_ICON_URLS]
 const TECH_ICON_PATHS = [...MATCH3_TECH_ICON_URLS]
+const STELLAR_ICON_PATHS = [...MATCH3_STELLAR_ICON_URLS]
 
-const iconCache: Partial<
-  Record<GameIconThemeOption, HTMLImageElement[]>
-> = {}
+const iconCache: Partial<Record<GameIconThemeOption, HTMLImageElement[]>> = {}
 
 /** roundRect есть в современных DOM typings; в старых — только в рантайме */
-type Canvas2DWithRoundRect =
-  CanvasRenderingContext2D & {
-    roundRect?: (
-      x: number,
-      y: number,
-      w: number,
-      h: number,
-      radii: number
-    ) => void
-  }
+type Canvas2DWithRoundRect = CanvasRenderingContext2D & {
+  roundRect?: (
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    radii: number
+  ) => void
+}
 
 function pathRoundRect(
   ctx: CanvasRenderingContext2D,
@@ -109,8 +103,7 @@ function pathRoundRect(
 
 function dims(board: Board) {
   const rows = board.length
-  const cols =
-    rows > 0 ? board[0]?.length ?? 0 : 0
+  const cols = rows > 0 ? board[0]?.length ?? 0 : 0
   return { rows, cols }
 }
 
@@ -128,18 +121,9 @@ export function boardLayout(
 } | null {
   const { rows, cols } = dims(board)
   if (rows === 0 || cols === 0) return null
-  const cell = Math.floor(
-    Math.min(
-      canvasWidth / cols,
-      canvasHeight / rows
-    )
-  )
-  const ox = Math.floor(
-    (canvasWidth - cols * cell) / 2
-  )
-  const oy = Math.floor(
-    (canvasHeight - rows * cell) / 2
-  )
+  const cell = Math.floor(Math.min(canvasWidth / cols, canvasHeight / rows))
+  const ox = Math.floor((canvasWidth - cols * cell) / 2)
+  const oy = Math.floor((canvasHeight - rows * cell) / 2)
   return { rows, cols, cell, ox, oy }
 }
 
@@ -166,16 +150,12 @@ function colorForKind(
   kind: number,
   theme: GameThemeOption = 'standard'
 ): string {
-  const colors =
-    TILE_COLORS_BY_THEME[theme] ??
-    TILE_COLORS_BY_THEME.standard
+  const colors = TILE_COLORS_BY_THEME[theme] ?? TILE_COLORS_BY_THEME.standard
   const idx = Math.abs(kind) % colors.length
   return colors[idx] ?? '#888'
 }
 
-function loadIcons(
-  paths: string[]
-): HTMLImageElement[] {
+function loadIcons(paths: string[]): HTMLImageElement[] {
   return paths.map(path => {
     const img = new Image()
     img.src = path
@@ -183,15 +163,11 @@ function loadIcons(
   })
 }
 
-function iconsForTheme(
-  theme: GameIconThemeOption
-): HTMLImageElement[] | null {
+function iconsForTheme(theme: GameIconThemeOption): HTMLImageElement[] | null {
   if (theme === 'standard') return null
   const cached = iconCache[theme]
   if (cached?.length) {
-    const allFailed = cached.every(
-      im => im.complete && im.naturalWidth <= 0
-    )
+    const allFailed = cached.every(im => im.complete && im.naturalWidth <= 0)
     if (!allFailed) return cached
     delete iconCache[theme]
   }
@@ -200,15 +176,15 @@ function iconsForTheme(
       ? COSMIC_ICON_PATHS
       : theme === 'food'
       ? FOOD_ICON_PATHS
+      : theme === 'stellar'
+      ? STELLAR_ICON_PATHS
       : TECH_ICON_PATHS
   const icons = loadIcons(paths)
   iconCache[theme] = icons
   return icons
 }
 
-function waitForImage(
-  img: HTMLImageElement
-): Promise<void> {
+function waitForImage(img: HTMLImageElement): Promise<void> {
   if (img.complete && img.naturalWidth > 0) {
     return Promise.resolve()
   }
@@ -227,16 +203,12 @@ function waitForImage(
   })
 }
 
-export function preloadIconTheme(
-  theme: GameIconThemeOption
-): Promise<void> {
+export function preloadIconTheme(theme: GameIconThemeOption): Promise<void> {
   const icons = iconsForTheme(theme)
   if (!icons || icons.length === 0) {
     return Promise.resolve()
   }
-  return Promise.all(
-    icons.map(waitForImage)
-  ).then(() => undefined)
+  return Promise.all(icons.map(waitForImage)).then(() => undefined)
 }
 
 function drawShape(
@@ -253,15 +225,9 @@ function drawShape(
 
   ctx.save()
   ctx.shadowColor = color
-  ctx.shadowBlur = Math.max(
-    8,
-    Math.floor(cell * 0.16)
-  )
+  ctx.shadowBlur = Math.max(8, Math.floor(cell * 0.16))
   ctx.strokeStyle = '#f3fbff'
-  ctx.lineWidth = Math.max(
-    1.5,
-    Math.floor(cell * 0.06)
-  )
+  ctx.lineWidth = Math.max(1.5, Math.floor(cell * 0.06))
   ctx.fillStyle = color
 
   switch (idx % 8) {
@@ -286,27 +252,13 @@ function drawShape(
       break
     case 2: // Овал с точками
       ctx.beginPath()
-      ctx.ellipse(
-        cx,
-        cy,
-        s * 1.05,
-        s * 0.7,
-        0,
-        0,
-        Math.PI * 2
-      )
+      ctx.ellipse(cx, cy, s * 1.05, s * 0.7, 0, 0, Math.PI * 2)
       ctx.fill()
       ctx.stroke()
       ctx.fillStyle = 'rgba(7, 18, 36, 0.8)'
       for (let i = -1; i <= 1; i += 1) {
         ctx.beginPath()
-        ctx.arc(
-          cx + i * s * 0.38,
-          cy,
-          Math.max(1.5, s * 0.12),
-          0,
-          Math.PI * 2
-        )
+        ctx.arc(cx + i * s * 0.38, cy, Math.max(1.5, s * 0.12), 0, Math.PI * 2)
         ctx.fill()
       }
       break
@@ -331,11 +283,7 @@ function drawShape(
       break
     case 4: // спираль
       ctx.beginPath()
-      for (
-        let t = 0;
-        t <= Math.PI * 4;
-        t += 0.15
-      ) {
+      for (let t = 0; t <= Math.PI * 4; t += 0.15) {
         const r = (s * t) / (Math.PI * 4)
         const px = cx + Math.cos(t) * r
         const py = cy + Math.sin(t) * r
@@ -346,17 +294,10 @@ function drawShape(
       break
     case 5: // знак бесконечности
       ctx.beginPath()
-      for (
-        let t = 0;
-        t <= Math.PI * 2;
-        t += 0.03
-      ) {
-        const denom =
-          1 + Math.sin(t) * Math.sin(t)
+      for (let t = 0; t <= Math.PI * 2; t += 0.03) {
+        const denom = 1 + Math.sin(t) * Math.sin(t)
         const px = cx + (s * Math.cos(t)) / denom
-        const py =
-          cy +
-          (s * Math.sin(t) * Math.cos(t)) / denom
+        const py = cy + (s * Math.sin(t) * Math.cos(t)) / denom
         if (t === 0) ctx.moveTo(px, py)
         else ctx.lineTo(px, py)
       }
@@ -369,37 +310,13 @@ function drawShape(
       ctx.stroke()
       ctx.fillStyle = '#f3fbff'
       ctx.beginPath()
-      ctx.arc(
-        cx - s * 0.28,
-        cy - s * 0.1,
-        s * 0.16,
-        0,
-        Math.PI * 2
-      )
-      ctx.arc(
-        cx + s * 0.28,
-        cy - s * 0.1,
-        s * 0.16,
-        0,
-        Math.PI * 2
-      )
+      ctx.arc(cx - s * 0.28, cy - s * 0.1, s * 0.16, 0, Math.PI * 2)
+      ctx.arc(cx + s * 0.28, cy - s * 0.1, s * 0.16, 0, Math.PI * 2)
       ctx.fill()
       ctx.fillStyle = '#0c1f3c'
       ctx.beginPath()
-      ctx.arc(
-        cx - s * 0.28,
-        cy - s * 0.08,
-        s * 0.08,
-        0,
-        Math.PI * 2
-      )
-      ctx.arc(
-        cx + s * 0.28,
-        cy - s * 0.08,
-        s * 0.08,
-        0,
-        Math.PI * 2
-      )
+      ctx.arc(cx - s * 0.28, cy - s * 0.08, s * 0.08, 0, Math.PI * 2)
+      ctx.arc(cx + s * 0.28, cy - s * 0.08, s * 0.08, 0, Math.PI * 2)
       ctx.fill()
       break
     default: // шестиугольник
@@ -432,50 +349,26 @@ function drawSpecialMarker(
     if (orientation === 'row' || !orientation) {
       const h = Math.max(5, cell * 0.18)
       ctx.beginPath()
-      pathRoundRect(
-        ctx,
-        x + cell * 0.14,
-        cy - h / 2,
-        cell * 0.72,
-        h,
-        h / 2
-      )
+      pathRoundRect(ctx, x + cell * 0.14, cy - h / 2, cell * 0.72, h, h / 2)
       ctx.fill()
       ctx.stroke()
       ctx.fillStyle = 'rgba(224, 242, 254, 0.95)'
       const stripeH = Math.max(1, cell * 0.045)
       for (let i = 0; i < 3; i += 1) {
         const sy = cy - h * 0.24 + i * (h * 0.24)
-        ctx.fillRect(
-          x + cell * 0.2,
-          sy,
-          cell * 0.6,
-          stripeH
-        )
+        ctx.fillRect(x + cell * 0.2, sy, cell * 0.6, stripeH)
       }
     } else {
       const w = Math.max(5, cell * 0.18)
       ctx.beginPath()
-      pathRoundRect(
-        ctx,
-        cx - w / 2,
-        y + cell * 0.14,
-        w,
-        cell * 0.72,
-        w / 2
-      )
+      pathRoundRect(ctx, cx - w / 2, y + cell * 0.14, w, cell * 0.72, w / 2)
       ctx.fill()
       ctx.stroke()
       ctx.fillStyle = 'rgba(224, 242, 254, 0.95)'
       const stripeW = Math.max(1, cell * 0.045)
       for (let i = 0; i < 3; i += 1) {
         const sx = cx - w * 0.24 + i * (w * 0.24)
-        ctx.fillRect(
-          sx,
-          y + cell * 0.2,
-          stripeW,
-          cell * 0.6
-        )
+        ctx.fillRect(sx, y + cell * 0.2, stripeW, cell * 0.6)
       }
     }
   } else {
@@ -489,18 +382,10 @@ function drawSpecialMarker(
     ctx.fillStyle = 'rgba(254, 242, 242, 0.92)'
     for (let i = 0; i < 8; i += 1) {
       const a = (Math.PI * 2 * i) / 8
-      const sx =
-        cx + Math.cos(a) * (radius * 1.15)
-      const sy =
-        cy + Math.sin(a) * (radius * 1.15)
+      const sx = cx + Math.cos(a) * (radius * 1.15)
+      const sy = cy + Math.sin(a) * (radius * 1.15)
       ctx.beginPath()
-      ctx.arc(
-        sx,
-        sy,
-        Math.max(1, radius * 0.14),
-        0,
-        Math.PI * 2
-      )
+      ctx.arc(sx, sy, Math.max(1, radius * 0.14), 0, Math.PI * 2)
       ctx.fill()
     }
     ctx.beginPath()
@@ -521,27 +406,12 @@ function drawIceOverlay(
   cell: number,
   hp: number
 ) {
-  const alpha =
-    hp >= 3 ? 0.58 : hp === 2 ? 0.46 : 0.34
+  const alpha = hp >= 3 ? 0.58 : hp === 2 ? 0.46 : 0.34
   ctx.save()
-  const iceG = ctx.createLinearGradient(
-    x,
-    y,
-    x + cell,
-    y + cell
-  )
-  iceG.addColorStop(
-    0,
-    `rgba(186, 230, 253, ${alpha + 0.08})`
-  )
-  iceG.addColorStop(
-    0.55,
-    `rgba(125, 211, 252, ${alpha})`
-  )
-  iceG.addColorStop(
-    1,
-    `rgba(56, 189, 248, ${alpha - 0.06})`
-  )
+  const iceG = ctx.createLinearGradient(x, y, x + cell, y + cell)
+  iceG.addColorStop(0, `rgba(186, 230, 253, ${alpha + 0.08})`)
+  iceG.addColorStop(0.55, `rgba(125, 211, 252, ${alpha})`)
+  iceG.addColorStop(1, `rgba(56, 189, 248, ${alpha - 0.06})`)
   ctx.fillStyle = iceG
   ctx.strokeStyle = 'rgba(224, 242, 254, 0.95)'
   ctx.lineWidth = Math.max(1, cell * 0.04)
@@ -590,8 +460,54 @@ function drawIceOverlay(
   ctx.restore()
 }
 
-/** Доля площади клетки под SVG-иконку еды (остальное — поле и рамка). */
-const FOOD_ICON_AREA_RATIO = 0.98
+/** Доля площади клетки под иконку (contain внутри квадрата areaRatio×cell²). */
+const FOOD_ICON_AREA_RATIO = 0.88
+const STELLAR_ICON_AREA_RATIO = 0.82
+
+function snapCanvasDim(value: number): number {
+  return Math.round(value * 2) / 2
+}
+
+/**
+ * Рисует PNG/SVG в клетку без растягивания (как object-fit: contain).
+ * Старые stellar-ассеты 240×120 в квадрат давали «вытянутость» и размытие.
+ */
+function drawTileIconContained(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  cellX: number,
+  cellY: number,
+  cell: number,
+  areaRatio: number,
+  dropShadow?: { color: string; blur: number }
+): void {
+  const nw = img.naturalWidth
+  const nh = img.naturalHeight
+  if (nw <= 0 || nh <= 0) {
+    return
+  }
+
+  const box = cell * Math.sqrt(areaRatio)
+  const scale = Math.min(box / nw, box / nh)
+  const dw = nw * scale
+  const dh = nh * scale
+  const dx = cellX + (cell - dw) / 2
+  const dy = cellY + (cell - dh) / 2
+
+  ctx.save()
+  if (dropShadow) {
+    ctx.shadowColor = dropShadow.color
+    ctx.shadowBlur = dropShadow.blur
+  }
+  ctx.drawImage(
+    img,
+    snapCanvasDim(dx),
+    snapCanvasDim(dy),
+    snapCanvasDim(dw),
+    snapCanvasDim(dh)
+  )
+  ctx.restore()
+}
 
 /**
  * Толщина градиентной рамки клетки — одна для «Космос», «Еда», «Кодер».
@@ -601,28 +517,22 @@ const MATCH3_CELL_BORDER_LINE_WIDTH = 2.5
 /**
  * Доминирующий акцент рамки по типу фишки (10 шагов по радуге), одинаковая логика для всех тем поля.
  */
-const TILE_KIND_RAINBOW_ACCENTS: readonly string[] =
-  [
-    '#ef4444',
-    '#f97316',
-    '#eab308',
-    '#84cc16',
-    '#22c55e',
-    '#14b8a6',
-    '#3b82f6',
-    '#6366f1',
-    '#a855f7',
-    '#ec4899',
-  ]
+const TILE_KIND_RAINBOW_ACCENTS: readonly string[] = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#84cc16',
+  '#22c55e',
+  '#14b8a6',
+  '#3b82f6',
+  '#6366f1',
+  '#a855f7',
+  '#ec4899',
+]
 
 function kindRainbowAccent(kind: number): string {
-  const idx =
-    Math.abs(kind) %
-    TILE_KIND_RAINBOW_ACCENTS.length
-  return (
-    TILE_KIND_RAINBOW_ACCENTS[idx] ??
-    TILE_KIND_RAINBOW_ACCENTS[0]
-  )
+  const idx = Math.abs(kind) % TILE_KIND_RAINBOW_ACCENTS.length
+  return TILE_KIND_RAINBOW_ACCENTS[idx] ?? TILE_KIND_RAINBOW_ACCENTS[0]
 }
 
 function kindDominantHue(kind: number): number {
@@ -642,12 +552,7 @@ function tileFillByThemeAndKind(
   }
 ) {
   const { kindOrNull, boardField } = opts
-  const g = ctx.createLinearGradient(
-    x,
-    y,
-    x + cell,
-    y + cell
-  )
+  const g = ctx.createLinearGradient(x, y, x + cell, y + cell)
   if (kindOrNull === null) {
     if (boardField === 'food') {
       g.addColorStop(0, '#453727')
@@ -658,6 +563,9 @@ function tileFillByThemeAndKind(
     } else if (boardField === 'hieroglyph') {
       g.addColorStop(0, '#4a3c2c')
       g.addColorStop(1, '#2f251b')
+    } else if (boardField === 'stellar') {
+      g.addColorStop(0, '#1a1028')
+      g.addColorStop(1, '#0a0612')
     } else {
       g.addColorStop(0, '#1f2d4e')
       g.addColorStop(1, '#121d35')
@@ -678,6 +586,10 @@ function tileFillByThemeAndKind(
     g.addColorStop(0, `hsl(${hue} 42% 46%)`)
     g.addColorStop(0.52, `hsl(${hue} 36% 31%)`)
     g.addColorStop(1, '#2b1f16')
+  } else if (boardField === 'stellar') {
+    g.addColorStop(0, `hsl(${hue} 55% 38%)`)
+    g.addColorStop(0.45, `hsl(${hue} 48% 22%)`)
+    g.addColorStop(1, '#0c0814')
   } else {
     g.addColorStop(0, `hsl(${hue} 74% 44%)`)
     g.addColorStop(0.48, `hsl(${hue} 70% 28%)`)
@@ -686,26 +598,17 @@ function tileFillByThemeAndKind(
   return g
 }
 
-function tileWobbleRadians(
-  r: number,
-  c: number,
-  nowMs: number
-): number {
+function tileWobbleRadians(r: number, c: number, nowMs: number): number {
   const periodMs = 10000
   const burstMs = 1250
-  const t =
-    ((nowMs % periodMs) + periodMs) % periodMs
+  const t = ((nowMs % periodMs) + periodMs) % periodMs
   if (t > burstMs) return 0
   const p = t / burstMs
   const swings = 5
   const envelope = Math.sin(Math.PI * p)
   const degBase = 5 + ((r * 17 + c * 31) % 3)
   const radAmp = (degBase * Math.PI) / 180
-  return (
-    Math.sin(2 * Math.PI * swings * p) *
-    radAmp *
-    envelope
-  )
+  return Math.sin(2 * Math.PI * swings * p) * radAmp * envelope
 }
 
 function strokeHieroglyphCellBorderByKind(
@@ -717,33 +620,17 @@ function strokeHieroglyphCellBorderByKind(
 ) {
   const lw = MATCH3_CELL_BORDER_LINE_WIDTH
   const inset = lw / 2
-  const accent =
-    kindOrNull === null
-      ? '#8b7355'
-      : kindRainbowAccent(kindOrNull)
+  const accent = kindOrNull === null ? '#8b7355' : kindRainbowAccent(kindOrNull)
 
   ctx.save()
-  const g = ctx.createLinearGradient(
-    x,
-    y,
-    x + cell,
-    y + cell
-  )
+  const g = ctx.createLinearGradient(x, y, x + cell, y + cell)
   g.addColorStop(0, 'rgba(255, 250, 235, 0.55)')
-  g.addColorStop(
-    0.35,
-    'rgba(200, 175, 130, 0.85)'
-  )
+  g.addColorStop(0.35, 'rgba(200, 175, 130, 0.85)')
   g.addColorStop(0.55, accent)
   g.addColorStop(1, 'rgba(62, 48, 36, 0.95)')
   ctx.strokeStyle = g
   ctx.lineWidth = lw
-  ctx.strokeRect(
-    x + inset,
-    y + inset,
-    cell - lw,
-    cell - lw
-  )
+  ctx.strokeRect(x + inset, y + inset, cell - lw, cell - lw)
   ctx.lineWidth = 1
   ctx.strokeStyle = 'rgba(255, 252, 245, 0.12)'
   ctx.strokeRect(
@@ -778,12 +665,7 @@ function drawHieroglyphBoneTile(
   ctx.shadowBlur = Math.max(3, cell * 0.08)
   ctx.shadowOffsetY = Math.max(1, cell * 0.02)
 
-  const body = ctx.createLinearGradient(
-    bx,
-    by,
-    bx + w,
-    by + h
-  )
+  const body = ctx.createLinearGradient(bx, by, bx + w, by + h)
   body.addColorStop(0, '#fffef6')
   body.addColorStop(0.45, '#f3ead8')
   body.addColorStop(0.72, '#e4d6c2')
@@ -819,12 +701,7 @@ function drawHieroglyphBoneTile(
   const sealR = Math.max(3, cell * 0.07)
   ctx.fillStyle = 'rgba(185, 28, 28, 0.22)'
   ctx.beginPath()
-  ctx.rect(
-    bx + w - sealR * 2.2,
-    by + h * 0.08,
-    sealR * 1.6,
-    sealR * 1.6
-  )
+  ctx.rect(bx + w - sealR * 2.2, by + h * 0.08, sealR * 1.6, sealR * 1.6)
   ctx.fill()
 
   const fontPx = Math.floor(Math.min(w, h) * 0.8)
@@ -832,11 +709,7 @@ function drawHieroglyphBoneTile(
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.font = `700 ${fontPx}px "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",serif`
-  ctx.fillText(
-    hanzi,
-    bx + w / 2,
-    by + h / 2 + h * 0.02
-  )
+  ctx.fillText(hanzi, bx + w / 2, by + h / 2 + h * 0.02)
 
   ctx.restore()
 }
@@ -851,18 +724,10 @@ function strokeFoodCellBorderByKind(
 ) {
   const lw = MATCH3_CELL_BORDER_LINE_WIDTH
   const inset = lw / 2
-  const accent =
-    kindOrNull === null
-      ? '#6b5344'
-      : kindRainbowAccent(kindOrNull)
+  const accent = kindOrNull === null ? '#6b5344' : kindRainbowAccent(kindOrNull)
 
   ctx.save()
-  const g = ctx.createLinearGradient(
-    x,
-    y,
-    x + cell,
-    y + cell
-  )
+  const g = ctx.createLinearGradient(x, y, x + cell, y + cell)
   g.addColorStop(0, 'rgba(255, 246, 210, 0.5)')
   g.addColorStop(0.28, 'rgba(200, 155, 88, 0.78)')
   g.addColorStop(0.52, 'rgba(110, 72, 44, 0.9)')
@@ -870,14 +735,44 @@ function strokeFoodCellBorderByKind(
   g.addColorStop(1, 'rgba(36, 22, 14, 0.96)')
   ctx.strokeStyle = g
   ctx.lineWidth = lw
-  ctx.strokeRect(
-    x + inset,
-    y + inset,
-    cell - lw,
-    cell - lw
-  )
+  ctx.strokeRect(x + inset, y + inset, cell - lw, cell - lw)
   ctx.lineWidth = 1
   ctx.strokeStyle = 'rgba(255, 248, 220, 0.1)'
+  ctx.strokeRect(
+    x + inset + 0.6,
+    y + inset + 0.6,
+    cell - lw - 1.2,
+    cell - lw - 1.2
+  )
+  ctx.restore()
+}
+
+/** Рамка клетки Stellar Burger: тёмная панель + неоновый акцент. */
+function strokeStellarCellBorderByKind(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number,
+  kindOrNull: number | null
+) {
+  const lw = MATCH3_CELL_BORDER_LINE_WIDTH
+  const inset = lw / 2
+  const accent =
+    kindOrNull === null
+      ? 'rgba(168, 85, 247, 0.45)'
+      : kindRainbowAccent(kindOrNull)
+
+  ctx.save()
+  const g = ctx.createLinearGradient(x, y, x + cell, y + cell)
+  g.addColorStop(0, 'rgba(244, 114, 182, 0.55)')
+  g.addColorStop(0.32, 'rgba(124, 58, 237, 0.75)')
+  g.addColorStop(0.58, accent)
+  g.addColorStop(1, 'rgba(12, 6, 20, 0.98)')
+  ctx.strokeStyle = g
+  ctx.lineWidth = lw
+  ctx.strokeRect(x + inset, y + inset, cell - lw, cell - lw)
+  ctx.lineWidth = 1
+  ctx.strokeStyle = 'rgba(34, 211, 238, 0.12)'
   ctx.strokeRect(
     x + inset + 0.6,
     y + inset + 0.6,
@@ -903,24 +798,14 @@ function strokeSpaceCellBorderByKind(
       : kindRainbowAccent(kindOrNull)
 
   ctx.save()
-  const g = ctx.createLinearGradient(
-    x,
-    y,
-    x + cell,
-    y + cell
-  )
+  const g = ctx.createLinearGradient(x, y, x + cell, y + cell)
   g.addColorStop(0, 'rgba(148, 190, 255, 0.48)')
   g.addColorStop(0.35, 'rgba(38, 58, 102, 0.92)')
   g.addColorStop(0.72, accent)
   g.addColorStop(1, 'rgba(8, 14, 32, 0.97)')
   ctx.strokeStyle = g
   ctx.lineWidth = lw
-  ctx.strokeRect(
-    x + inset,
-    y + inset,
-    cell - lw,
-    cell - lw
-  )
+  ctx.strokeRect(x + inset, y + inset, cell - lw, cell - lw)
   ctx.lineWidth = 1
   ctx.strokeStyle = 'rgba(186, 230, 253, 0.08)'
   ctx.strokeRect(
@@ -942,30 +827,17 @@ function strokeCoderCellBorderByKind(
 ) {
   const lw = MATCH3_CELL_BORDER_LINE_WIDTH
   const inset = lw / 2
-  const accent =
-    kindOrNull === null
-      ? '#475569'
-      : kindRainbowAccent(kindOrNull)
+  const accent = kindOrNull === null ? '#475569' : kindRainbowAccent(kindOrNull)
 
   ctx.save()
-  const g = ctx.createLinearGradient(
-    x,
-    y,
-    x + cell,
-    y + cell
-  )
+  const g = ctx.createLinearGradient(x, y, x + cell, y + cell)
   g.addColorStop(0, 'rgba(148, 163, 184, 0.55)')
   g.addColorStop(0.35, 'rgba(51, 65, 85, 0.9)')
   g.addColorStop(0.72, accent)
   g.addColorStop(1, 'rgba(15, 23, 42, 0.95)')
   ctx.strokeStyle = g
   ctx.lineWidth = lw
-  ctx.strokeRect(
-    x + inset,
-    y + inset,
-    cell - lw,
-    cell - lw
-  )
+  ctx.strokeRect(x + inset, y + inset, cell - lw, cell - lw)
   ctx.lineWidth = 1
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)'
   ctx.strokeRect(
@@ -991,12 +863,7 @@ function drawMutedGoldSelection(
   const lineW = pulse ? 3.8 : 3.2
   const r = Math.max(4, cell * 0.15)
   ctx.save()
-  const g = ctx.createLinearGradient(
-    x,
-    y,
-    x + cell,
-    y + cell
-  )
+  const g = ctx.createLinearGradient(x, y, x + cell, y + cell)
   g.addColorStop(0, 'rgba(255, 236, 176, 0.9)')
   g.addColorStop(0.45, 'rgba(212, 169, 85, 0.86)')
   g.addColorStop(1, 'rgba(144, 107, 44, 0.82)')
@@ -1019,9 +886,7 @@ function drawMutedGoldSelection(
   ctx.restore()
 }
 
-function hintBurstIntensity(
-  phaseRaw: number
-): number {
+function hintBurstIntensity(phaseRaw: number): number {
   const phase = ((phaseRaw % 1) + 1) % 1
   const centers = [1 / 6, 0.5, 5 / 6] as const
   let out = 0
@@ -1076,31 +941,17 @@ function drawGoalOverlay(
   ctx.stroke()
 
   ctx.beginPath()
-  ctx.arc(
-    cx,
-    cy - bodyH * 0.08,
-    shackleR,
-    Math.PI,
-    Math.PI * 2
-  )
+  ctx.arc(cx, cy - bodyH * 0.08, shackleR, Math.PI, Math.PI * 2)
   ctx.stroke()
 
   ctx.fillStyle = 'rgba(248, 250, 252, 0.95)'
   ctx.beginPath()
-  ctx.arc(
-    cx,
-    cy + bodyH * 0.18,
-    Math.max(1.2, cell * 0.045),
-    0,
-    Math.PI * 2
-  )
+  ctx.arc(cx, cy + bodyH * 0.18, Math.max(1.2, cell * 0.045), 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
 }
 
-function getClientXY(
-  ev: MouseEvent | PointerEvent | TouchEvent
-): {
+function getClientXY(ev: MouseEvent | PointerEvent | TouchEvent): {
   x: number
   y: number
 } {
@@ -1109,9 +960,7 @@ function getClientXY(
   }
   const te = ev as TouchEvent
   const t = te.changedTouches?.[0]
-  return t
-    ? { x: t.clientX, y: t.clientY }
-    : { x: 0, y: 0 }
+  return t ? { x: t.clientX, y: t.clientY } : { x: 0, y: 0 }
 }
 
 /** Тест канваса */
@@ -1125,12 +974,8 @@ export function pickCellAt(
 
   const rect = canvas.getBoundingClientRect()
   const { x: cx, y: cy } = getClientXY(ev)
-  const px =
-    (cx - rect.left) *
-    (MATCH3_BOARD_LOGICAL_PX / rect.width)
-  const py =
-    (cy - rect.top) *
-    (MATCH3_BOARD_LOGICAL_PX / rect.height)
+  const px = (cx - rect.left) * (MATCH3_BOARD_LOGICAL_PX / rect.width)
+  const py = (cy - rect.top) * (MATCH3_BOARD_LOGICAL_PX / rect.height)
 
   const W = MATCH3_BOARD_LOGICAL_PX
   const H = MATCH3_BOARD_LOGICAL_PX
@@ -1140,8 +985,7 @@ export function pickCellAt(
 
   const c = Math.floor((px - ox) / cell)
   const r = Math.floor((py - oy) / cell)
-  if (r >= 0 && r < rows && c >= 0 && c < cols)
-    return { r, c }
+  if (r >= 0 && r < rows && c >= 0 && c < cols) return { r, c }
   return null
 }
 
@@ -1153,12 +997,11 @@ export function renderBoard(
   const theme = opts?.theme ?? 'standard'
   const iconTheme = opts?.iconTheme ?? 'cosmic'
   const themeIcons = iconsForTheme(iconTheme)
-  const boardField: BoardFieldThemeOption =
-    opts?.boardField ?? 'space'
+  const boardField: BoardFieldThemeOption = opts?.boardField ?? 'space'
   const isFoodField = boardField === 'food'
   const isCoderField = boardField === 'coder'
-  const isHieroglyphField =
-    boardField === 'hieroglyph'
+  const isStellarField = boardField === 'stellar'
+  const isHieroglyphField = boardField === 'hieroglyph'
 
   const { rows, cols } = dims(board)
   const W = MATCH3_BOARD_LOGICAL_PX
@@ -1171,14 +1014,8 @@ export function renderBoard(
   if (!layout) return
   const { cell, ox, oy } = layout
   const nowMs = performance.now()
-  const motionProgress = Math.max(
-    0,
-    Math.min(1, opts?.motionProgress ?? 1)
-  )
-  const motionByDest = new Map<
-    string,
-    { from: CellRC; to: CellRC }
-  >()
+  const motionProgress = Math.max(0, Math.min(1, opts?.motionProgress ?? 1))
+  const motionByDest = new Map<string, { from: CellRC; to: CellRC }>()
   for (const m of opts?.tileMotions ?? []) {
     if (!m) continue
     motionByDest.set(`${m.to.r},${m.to.c}`, m)
@@ -1205,12 +1042,7 @@ export function renderBoard(
     ctx.shadowBlur = 18
     ctx.strokeStyle = 'rgba(254, 243, 199, 0.88)'
     ctx.lineWidth = 2
-    ctx.strokeRect(
-      ox - 6,
-      oy - 6,
-      cols * cell + 12,
-      rows * cell + 12
-    )
+    ctx.strokeRect(ox - 6, oy - 6, cols * cell + 12, rows * cell + 12)
   } else if (isHieroglyphField) {
     const pad = 10
     const fw = cols * cell + pad * 2
@@ -1230,12 +1062,7 @@ export function renderBoard(
     ctx.shadowBlur = 16
     ctx.strokeStyle = 'rgba(254, 243, 199, 0.72)'
     ctx.lineWidth = 2
-    ctx.strokeRect(
-      ox - 6,
-      oy - 6,
-      cols * cell + 12,
-      rows * cell + 12
-    )
+    ctx.strokeRect(ox - 6, oy - 6, cols * cell + 12, rows * cell + 12)
   } else if (isCoderField) {
     const pad = 10
     const fw = cols * cell + pad * 2
@@ -1255,30 +1082,35 @@ export function renderBoard(
     ctx.shadowBlur = 18
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)'
     ctx.lineWidth = 2
-    ctx.strokeRect(
-      ox - 6,
-      oy - 6,
-      cols * cell + 12,
-      rows * cell + 12
+    ctx.strokeRect(ox - 6, oy - 6, cols * cell + 12, rows * cell + 12)
+  } else if (isStellarField) {
+    const pad = 10
+    const fw = cols * cell + pad * 2
+    const fh = rows * cell + pad * 2
+    const gx = ctx.createLinearGradient(
+      ox - pad,
+      oy - pad,
+      ox - pad + fw,
+      oy - pad + fh
     )
+    gx.addColorStop(0, '#2a1440')
+    gx.addColorStop(0.4, '#140a20')
+    gx.addColorStop(1, '#050308')
+    ctx.fillStyle = gx
+    ctx.fillRect(ox - pad, oy - pad, fw, fh)
+    ctx.shadowColor = 'rgba(236, 72, 153, 0.35)'
+    ctx.shadowBlur = 22
+    ctx.strokeStyle = 'rgba(192, 132, 252, 0.65)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(ox - 6, oy - 6, cols * cell + 12, rows * cell + 12)
   } else {
     ctx.fillStyle = 'rgba(5, 12, 28, 0.95)'
-    ctx.fillRect(
-      ox - 10,
-      oy - 10,
-      cols * cell + 20,
-      rows * cell + 20
-    )
+    ctx.fillRect(ox - 10, oy - 10, cols * cell + 20, rows * cell + 20)
     ctx.shadowColor = 'rgba(90, 219, 255, 0.75)'
     ctx.shadowBlur = 20
     ctx.strokeStyle = 'rgba(97, 222, 255, 0.9)'
     ctx.lineWidth = 2
-    ctx.strokeRect(
-      ox - 6,
-      oy - 6,
-      cols * cell + 12,
-      rows * cell + 12
-    )
+    ctx.strokeRect(ox - 6, oy - 6, cols * cell + 12, rows * cell + 12)
   }
   ctx.restore()
 
@@ -1290,111 +1122,62 @@ export function renderBoard(
       const y = oy + r * cell
 
       const v = row[c]
-      const hasTile =
-        typeof v === 'number' && v >= 0
+      const hasTile = typeof v === 'number' && v >= 0
 
       // base
       if (isFoodField) {
-        ctx.fillStyle = tileFillByThemeAndKind(
-          ctx,
-          x,
-          y,
-          cell,
-          {
-            kindOrNull: hasTile ? v : null,
-            boardField: 'food',
-          }
-        )
+        ctx.fillStyle = tileFillByThemeAndKind(ctx, x, y, cell, {
+          kindOrNull: hasTile ? v : null,
+          boardField: 'food',
+        })
         ctx.fillRect(x, y, cell, cell)
-        strokeFoodCellBorderByKind(
-          ctx,
-          x,
-          y,
-          cell,
-          hasTile ? v : null
-        )
+        strokeFoodCellBorderByKind(ctx, x, y, cell, hasTile ? v : null)
       } else if (isHieroglyphField) {
-        ctx.fillStyle = tileFillByThemeAndKind(
-          ctx,
-          x,
-          y,
-          cell,
-          {
-            kindOrNull: hasTile ? v : null,
-            boardField: 'hieroglyph',
-          }
-        )
+        ctx.fillStyle = tileFillByThemeAndKind(ctx, x, y, cell, {
+          kindOrNull: hasTile ? v : null,
+          boardField: 'hieroglyph',
+        })
         ctx.fillRect(x, y, cell, cell)
-        strokeHieroglyphCellBorderByKind(
-          ctx,
-          x,
-          y,
-          cell,
-          hasTile ? v : null
-        )
+        strokeHieroglyphCellBorderByKind(ctx, x, y, cell, hasTile ? v : null)
       } else if (isCoderField) {
-        ctx.fillStyle = tileFillByThemeAndKind(
-          ctx,
-          x,
-          y,
-          cell,
-          {
-            kindOrNull: hasTile ? v : null,
-            boardField: 'coder',
-          }
-        )
+        ctx.fillStyle = tileFillByThemeAndKind(ctx, x, y, cell, {
+          kindOrNull: hasTile ? v : null,
+          boardField: 'coder',
+        })
         ctx.fillRect(x, y, cell, cell)
-        strokeCoderCellBorderByKind(
-          ctx,
-          x,
-          y,
-          cell,
-          hasTile ? v : null
-        )
+        strokeCoderCellBorderByKind(ctx, x, y, cell, hasTile ? v : null)
+      } else if (isStellarField) {
+        ctx.fillStyle = tileFillByThemeAndKind(ctx, x, y, cell, {
+          kindOrNull: hasTile ? v : null,
+          boardField: 'stellar',
+        })
+        ctx.fillRect(x, y, cell, cell)
+        strokeStellarCellBorderByKind(ctx, x, y, cell, hasTile ? v : null)
       } else {
-        ctx.fillStyle = tileFillByThemeAndKind(
-          ctx,
-          x,
-          y,
-          cell,
-          {
-            kindOrNull: hasTile ? v : null,
-            boardField: 'space',
-          }
-        )
+        ctx.fillStyle = tileFillByThemeAndKind(ctx, x, y, cell, {
+          kindOrNull: hasTile ? v : null,
+          boardField: 'space',
+        })
         ctx.fillRect(x, y, cell, cell)
-        strokeSpaceCellBorderByKind(
-          ctx,
-          x,
-          y,
-          cell,
-          hasTile ? v : null
-        )
+        strokeSpaceCellBorderByKind(ctx, x, y, cell, hasTile ? v : null)
       }
 
       if (!hasTile) continue
       const motion = motionByDest.get(`${r},${c}`)
       const drawX = motion
         ? ox +
-          (motion.from.c +
-            (motion.to.c - motion.from.c) *
-              motionProgress) *
+          (motion.from.c + (motion.to.c - motion.from.c) * motionProgress) *
             cell
         : x
       const drawY = motion
         ? oy +
-          (motion.from.r +
-            (motion.to.r - motion.from.r) *
-              motionProgress) *
+          (motion.from.r + (motion.to.r - motion.from.r) * motionProgress) *
             cell
         : y
       const iceHp = opts?.iceGrid?.[r]?.[c] ?? 0
-      const hasGoal =
-        (opts?.goalGrid?.[r]?.[c] ?? 0) > 0
+      const hasGoal = (opts?.goalGrid?.[r]?.[c] ?? 0) > 0
       const blockedTile = iceHp > 0 || hasGoal
-      const wobbleRad = blockedTile
-        ? 0
-        : tileWobbleRadians(r, c, nowMs)
+      const wobbleRad = blockedTile ? 0 : tileWobbleRadians(r, c, nowMs)
       if (wobbleRad !== 0) {
         const px = drawX + cell / 2
         const py = drawY + cell / 2
@@ -1405,88 +1188,54 @@ export function renderBoard(
       }
 
       if (isHieroglyphField) {
-        drawHieroglyphBoneTile(
-          ctx,
-          drawX,
-          drawY,
-          cell,
-          v
-        )
+        drawHieroglyphBoneTile(ctx, drawX, drawY, cell, v)
       }
 
-      const icon =
-        themeIcons?.[
-          Math.abs(v) % themeIcons.length
-        ]
+      const icon = themeIcons?.[Math.abs(v) % themeIcons.length]
       if (
         !isHieroglyphField &&
         icon &&
         typeof icon.naturalWidth === 'number' &&
         icon.naturalWidth > 0
       ) {
-        ctx.save()
-        ctx.shadowColor = isFoodField
-          ? 'rgba(62, 39, 24, 0.28)'
-          : isCoderField
-          ? 'rgba(15, 23, 42, 0.55)'
-          : 'rgba(148, 163, 184, 0.45)'
-        ctx.shadowBlur = Math.max(
-          4,
-          Math.floor(cell * 0.12)
-        )
-        if (isFoodField) {
-          const side =
-            cell * Math.sqrt(FOOD_ICON_AREA_RATIO)
-          const inset = (cell - side) / 2
-          const dx = drawX + inset
-          const dy = drawY + inset
-          const s = Math.round(side * 2) / 2
-          const ix = Math.round(dx * 2) / 2
-          const iy = Math.round(dy * 2) / 2
-          ctx.drawImage(icon, ix, iy, s, s)
-        } else {
-          const pad = Math.max(
-            4,
-            Math.floor(cell * 0.14)
-          )
-          ctx.drawImage(
+        if (isFoodField || isStellarField) {
+          const ratio = isStellarField
+            ? STELLAR_ICON_AREA_RATIO
+            : FOOD_ICON_AREA_RATIO
+          drawTileIconContained(
+            ctx,
             icon,
-            drawX + pad,
-            drawY + pad,
-            cell - pad * 2,
-            cell - pad * 2
+            drawX,
+            drawY,
+            cell,
+            ratio,
+            isStellarField
+              ? undefined
+              : {
+                  color: 'rgba(62, 39, 24, 0.22)',
+                  blur: Math.max(2, Math.floor(cell * 0.06)),
+                }
           )
+        } else {
+          ctx.save()
+          ctx.shadowColor = isCoderField
+            ? 'rgba(15, 23, 42, 0.55)'
+            : 'rgba(148, 163, 184, 0.45)'
+          ctx.shadowBlur = Math.max(4, Math.floor(cell * 0.12))
+          const pad = Math.max(4, Math.floor(cell * 0.14))
+          drawTileIconContained(ctx, icon, drawX, drawY, cell, 0.76)
+          ctx.restore()
         }
-        ctx.restore()
       } else if (!isHieroglyphField) {
         const color = colorForKind(v, theme)
-        drawShape(
-          ctx,
-          v,
-          drawX,
-          drawY,
-          cell,
-          color
-        )
+        drawShape(ctx, v, drawX, drawY, cell, color)
       }
-      drawSpecialMarker(
-        ctx,
-        v,
-        drawX,
-        drawY,
-        cell
-      )
+      drawSpecialMarker(ctx, v, drawX, drawY, cell)
       if (wobbleRad !== 0) {
         ctx.restore()
       }
       if (iceHp > 0) {
-        drawIceOverlay(
-          ctx,
-          drawX,
-          drawY,
-          cell,
-          iceHp
-        )
+        drawIceOverlay(ctx, drawX, drawY, cell, iceHp)
       }
       if (hasGoal) {
         drawGoalOverlay(ctx, drawX, drawY, cell)
@@ -1495,14 +1244,9 @@ export function renderBoard(
   }
 
   // подсветка комбинаций
-  if (
-    opts?.highlight &&
-    opts.highlight.length > 0
-  ) {
+  if (opts?.highlight && opts.highlight.length > 0) {
     const alpha =
-      typeof opts.alpha === 'number'
-        ? Math.max(0, Math.min(1, opts.alpha))
-        : 1
+      typeof opts.alpha === 'number' ? Math.max(0, Math.min(1, opts.alpha)) : 1
     ctx.save()
     const prev = ctx.globalAlpha
     ctx.globalAlpha = alpha
@@ -1511,21 +1255,10 @@ export function renderBoard(
 
     for (const h of opts.highlight) {
       if (!h) continue
-      if (
-        h.r < 0 ||
-        h.c < 0 ||
-        h.r >= rows ||
-        h.c >= cols
-      )
-        continue
+      if (h.r < 0 || h.c < 0 || h.r >= rows || h.c >= cols) continue
       const x = ox + h.c * cell
       const y = oy + h.r * cell
-      ctx.strokeRect(
-        x + 1,
-        y + 1,
-        cell - 2,
-        cell - 2
-      )
+      ctx.strokeRect(x + 1, y + 1, cell - 2, cell - 2)
     }
 
     ctx.globalAlpha = prev
@@ -1575,46 +1308,25 @@ export function renderBoard(
     const a = opts.hintFrom
     const b = opts.hintTo
     const inBounds = (p: CellRC) =>
-      p.r >= 0 &&
-      p.c >= 0 &&
-      p.r < rows &&
-      p.c < cols
+      p.r >= 0 && p.c >= 0 && p.r < rows && p.c < cols
     if (inBounds(a) && inBounds(b)) {
-      const burst = hintBurstIntensity(
-        opts?.hintPulsePhase ?? 0
-      )
+      const burst = hintBurstIntensity(opts?.hintPulsePhase ?? 0)
       const drawHintCell = (p: CellRC) => {
         const x = ox + p.c * cell
         const y = oy + p.r * cell
-        const ringInset = Math.max(
-          0.8,
-          cell * 0.03
-        )
+        const ringInset = Math.max(0.8, cell * 0.03)
         const ringSize = cell - ringInset * 2
         ctx.save()
         const alpha = 0.2 + burst * 0.7
         const glowBlur = 4 + burst * 14
         const lineW = 1.6 + burst * 2.2
         const radius = Math.max(4, cell * 0.16)
-        const core = ctx.createLinearGradient(
-          x,
-          y,
-          x + cell,
-          y + cell
-        )
-        core.addColorStop(
-          0,
-          `rgba(255, 243, 176, ${alpha})`
-        )
-        core.addColorStop(
-          1,
-          `rgba(227, 163, 61, ${alpha})`
-        )
+        const core = ctx.createLinearGradient(x, y, x + cell, y + cell)
+        core.addColorStop(0, `rgba(255, 243, 176, ${alpha})`)
+        core.addColorStop(1, `rgba(227, 163, 61, ${alpha})`)
         ctx.strokeStyle = core
         ctx.lineWidth = lineW
-        ctx.shadowColor = `rgba(251, 191, 36, ${
-          0.35 + burst * 0.55
-        })`
+        ctx.shadowColor = `rgba(251, 191, 36, ${0.35 + burst * 0.55})`
         ctx.shadowBlur = glowBlur
         ctx.beginPath()
         pathRoundRect(

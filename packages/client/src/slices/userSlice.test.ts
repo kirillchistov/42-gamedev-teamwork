@@ -1,10 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  jest,
-  afterEach,
-} from '@jest/globals'
+import { describe, it, expect, jest, afterEach } from '@jest/globals'
 import { configureStore } from '@reduxjs/toolkit'
 import userReducer, {
   setUser,
@@ -36,10 +30,7 @@ describe('userSlice', () => {
 
   describe('sync reducers', () => {
     it('setUser should set user data', () => {
-      const state = userReducer(
-        undefined,
-        setUser(mockUser)
-      )
+      const state = userReducer(undefined, setUser(mockUser))
       expect(state.data).toEqual(mockUser)
       expect(state.error).toBeNull()
     })
@@ -51,10 +42,7 @@ describe('userSlice', () => {
         isAuthChecked: true,
         error: null,
       }
-      const state = userReducer(
-        initialState,
-        setUser(null)
-      )
+      const state = userReducer(initialState, setUser(null))
       expect(state.data).toBeNull()
       expect(state.isAuthChecked).toBe(true)
     })
@@ -66,10 +54,7 @@ describe('userSlice', () => {
         isAuthChecked: true,
         error: 'some error',
       }
-      const state = userReducer(
-        initialState,
-        clearUser()
-      )
+      const state = userReducer(initialState, clearUser())
       expect(state.data).toBeNull()
       expect(state.error).toBeNull()
       expect(state.isLoading).toBe(false)
@@ -89,12 +74,8 @@ describe('userSlice', () => {
           email: 'new@example.com',
         })
       )
-      expect(state.data?.first_name).toBe(
-        'Updated'
-      )
-      expect(state.data?.email).toBe(
-        'new@example.com'
-      )
+      expect(state.data?.first_name).toBe('Updated')
+      expect(state.data?.email).toBe('new@example.com')
       expect(state.data?.id).toBe(1)
     })
 
@@ -109,9 +90,7 @@ describe('userSlice', () => {
         initialState,
         updateUserAvatar('/new/avatar.jpg')
       )
-      expect(state.data?.avatar).toBe(
-        '/new/avatar.jpg'
-      )
+      expect(state.data?.avatar).toBe('/new/avatar.jpg')
       expect(state.data?.first_name).toBe('Test')
     })
   })
@@ -145,10 +124,7 @@ describe('userSlice', () => {
       const action = {
         type: logoutThunk.fulfilled.type,
       }
-      const state = userReducer(
-        initialState,
-        action
-      )
+      const state = userReducer(initialState, action)
       expect(state.data).toBeNull()
       expect(state.isLoading).toBe(false)
       expect(state.isAuthChecked).toBe(true)
@@ -162,6 +138,13 @@ describe('userSlice', () => {
 
     it('shows friendly message when signin ok but /auth/user returns 401', async () => {
       const fetchMock = jest.fn() as jest.Mock
+      // POST /auth/logout (before signin)
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({}),
+        } as Response)
+      )
       // POST /auth/signin -> ok
       fetchMock.mockImplementationOnce(() =>
         Promise.resolve({
@@ -169,8 +152,8 @@ describe('userSlice', () => {
           json: async () => ({}),
         } as Response)
       )
-      // GET /auth/user -> 401
-      fetchMock.mockImplementationOnce(() =>
+      // GET /auth/user -> 401 (all retries)
+      fetchMock.mockImplementation(() =>
         Promise.resolve({
           ok: false,
           status: 401,
@@ -197,19 +180,77 @@ describe('userSlice', () => {
         })
       )
 
-      expect(
-        loginThunk.rejected.match(action)
-      ).toBe(true)
+      expect(loginThunk.rejected.match(action)).toBe(true)
       expect(action.payload).toBe(
-        'Вход выполнен, но сессия не подтвердилась. Попробуйте войти еще раз.'
+        'Вход выполнен, но сессия не подтвердилась. Обновите страницу (жёстко), очистите данные сайта или откройте в приватной вкладке и войдите снова.'
       )
       expect(store.getState().user.error).toBe(
-        'Вход выполнен, но сессия не подтвердилась. Попробуйте войти еще раз.'
+        'Вход выполнен, но сессия не подтвердилась. Обновите страницу (жёстко), очистите данные сайта или откройте в приватной вкладке и войдите снова.'
       )
     })
 
+    it('succeeds when /auth/user works on retry after signin', async () => {
+      const fetchMock = jest.fn() as jest.Mock
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({}),
+        } as Response)
+      )
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({}),
+        } as Response)
+      )
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: false,
+          status: 401,
+          json: async () => ({}),
+        } as Response)
+      )
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({
+            id: 1,
+            login: 'u',
+            first_name: 'A',
+            second_name: 'B',
+          }),
+        } as Response)
+      )
+
+      Object.defineProperty(global, 'fetch', {
+        value: fetchMock,
+        configurable: true,
+        writable: true,
+      })
+
+      const store = configureStore({
+        reducer: { user: userReducer },
+      })
+
+      const action = await store.dispatch(
+        loginThunk({
+          login: 'testuser',
+          password: 'password123',
+        })
+      )
+
+      expect(loginThunk.fulfilled.match(action)).toBe(true)
+      expect(store.getState().user.data?.login).toBe('u')
+    }, 10_000)
+
     it('shows conflict message when signin returns already in system and /auth/user returns 401', async () => {
       const fetchMock = jest.fn() as jest.Mock
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({}),
+        } as Response)
+      )
       // POST /auth/signin -> "already in system"
       fetchMock.mockImplementationOnce(() =>
         Promise.resolve({
@@ -220,8 +261,7 @@ describe('userSlice', () => {
           }),
         } as Response)
       )
-      // GET /auth/user -> 401
-      fetchMock.mockImplementationOnce(() =>
+      fetchMock.mockImplementation(() =>
         Promise.resolve({
           ok: false,
           status: 401,
@@ -248,9 +288,7 @@ describe('userSlice', () => {
         })
       )
 
-      expect(
-        loginThunk.rejected.match(action)
-      ).toBe(true)
+      expect(loginThunk.rejected.match(action)).toBe(true)
       expect(action.payload).toBe(
         'Аккаунт уже активен на другом устройстве. Выйдите из аккаунта там и повторите вход.'
       )
@@ -272,15 +310,11 @@ describe('userSlice', () => {
     } as unknown as RootState
 
     it('selectUser should return user data', () => {
-      expect(selectUser(mockRootState)).toEqual(
-        mockUser
-      )
+      expect(selectUser(mockRootState)).toEqual(mockUser)
     })
 
     it('selectIsAuthenticated should return true when user exists', () => {
-      expect(
-        selectIsAuthenticated(mockRootState)
-      ).toBe(true)
+      expect(selectIsAuthenticated(mockRootState)).toBe(true)
     })
 
     it('selectIsAuthenticated should return false when user is null', () => {
@@ -292,15 +326,11 @@ describe('userSlice', () => {
           error: null,
         },
       } as unknown as RootState
-      expect(
-        selectIsAuthenticated(emptyRootState)
-      ).toBe(false)
+      expect(selectIsAuthenticated(emptyRootState)).toBe(false)
     })
 
     it('selectUserIsLoading should return loading state', () => {
-      expect(
-        selectUserIsLoading(mockRootState)
-      ).toBe(false)
+      expect(selectUserIsLoading(mockRootState)).toBe(false)
     })
 
     it('selectUserError should return error', () => {
@@ -310,9 +340,7 @@ describe('userSlice', () => {
           error: 'Something went wrong',
         },
       } as unknown as RootState
-      expect(
-        selectUserError(errorRootState)
-      ).toBe('Something went wrong')
+      expect(selectUserError(errorRootState)).toBe('Something went wrong')
     })
   })
 })

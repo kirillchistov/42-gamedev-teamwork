@@ -166,14 +166,15 @@ VITE_APP_API_URL=http://localhost:3000
 
 Workflow: [`.github/workflows/gh-pages.yml`](../.github/workflows/gh-pages.yml). Собирается **только Vite-клиент** (`yarn build`), **без** Express SSR и **без** `apiProxy`.
 
-**Почему ломался login:** запросы шли на `https://…github.io/api/v2/…` — у Pages нет прокси → **404/405**. Service Worker дополнительно перехватывал `/api/*`.
+**Почему ломался login (старый вариант):** запросы шли на `https://…github.io/api/v2/…` без бэкенда → **404/405**, либо прямой CORS на `ya-praktikum.tech` → cookie сессии **не сохранялись** (особенно Safari на телефоне).
 
-**Что сделано в коде (ветка `feature/8.10-demo`):**
+**Что сделано в коде:**
 
-- `VITE_STATIC_DEPLOY=gh-pages` → в браузере `BASE_URL = https://ya-praktikum.tech/api/v2` (прямой CORS).
+- `VITE_STATIC_DEPLOY=gh-pages` → `BASE_URL` = **same-origin** `/имя-репо/api/v2` (как при SSR-прокси).
+- **Service Worker** на Pages перехватывает `/api/v2/*`, проксирует на `https://ya-praktikum.tech/api/v2` и переписывает `Set-Cookie` под `github.io` (first-party cookie).
 - `VITE_YANDEX_OAUTH_REDIRECT_URI` с путём репозитория: `https://<user>.github.io/<repo>`.
 - `buildYandexRedirectUri()` учитывает `import.meta.env.BASE_URL` (подпапка репозитория).
-- SW не перехватывает пути `/api/*`.
+- После деплоя: жёсткое обновление страницы (новый SW), при необходимости — очистить данные сайта.
 
 **Ограничения Pages:** форум (`/api/forum`), темы на Node (`PUT /api/ui/theme`), friends — **нужен живой server**; на Pages работают в основном **вход по логину/паролю, лидерборд, игра** через API Практикума.
 

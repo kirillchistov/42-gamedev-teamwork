@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 640" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" role="img" aria-labelledby="title desc">
   <title id="title">Authentication flow</title>
-  <desc id="desc">Client guard chain for login and UI routes, plus Node middleware requirePraktikumAuth for own API cookie session.</desc>
+  <desc id="desc">Login chain on the client and requirePraktikumAuth on packages/server for own API routes.</desc>
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0f172a"/>
@@ -12,127 +12,112 @@
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <style>
-      .box { fill:#334155; stroke:#94a3b8; stroke-width:1.5; rx:8; animation: glow 8s ease-in-out infinite; }
-      .lbl { fill:#f1f5f9; font:600 13px system-ui, sans-serif; }
-      .sub { fill:#cbd5e1; font:10px ui-monospace, monospace; }
-      .arr { stroke:#475569; stroke-width:2; fill:none; marker-end:url(#m); animation: line 8s ease-in-out infinite; }
-      .redirect { stroke:#f59e0b; stroke-dasharray:6 4; }
+      .box { fill:#334155; stroke:#94a3b8; stroke-width:1.5; rx:8; animation:glow 8s ease-in-out infinite; }
+      .lbl { fill:#f1f5f9; font:600 13px system-ui,sans-serif; text-anchor:middle; }
+      .sub { fill:#cbd5e1; font:10px ui-monospace,monospace; text-anchor:middle; }
+      .arr { stroke:#475569; stroke-width:2; fill:none; marker-end:url(#m); animation:line 8s ease-in-out infinite; }
+      .redirect { stroke:#f59e0b; stroke-width:2; fill:none; stroke-dasharray:6 4; marker-end:url(#mo); }
       .sep { stroke:#475569; stroke-width:1; opacity:0.45; }
+      .cap { fill:#94a3b8; font:600 10px system-ui,sans-serif; }
       @keyframes glow { 0%,1.5%{stroke:#38bdf8;stroke-width:2.5;fill:#1e3a5f;filter:url(#glow)} 3%,100%{stroke:#94a3b8;stroke-width:1.5;fill:#334155;filter:none} }
       @keyframes line { 0%,1.5%{stroke:#38bdf8;stroke-width:2.5} 3%,100%{stroke:#475569;stroke-width:2} }
       #b1,#l1{animation-delay:0s} #b2,#l2{animation-delay:1s} #b3,#l3{animation-delay:2s} #b4,#l4{animation-delay:3s}
-      #b5,#l5{animation-delay:4s} #b6,#l6{animation-delay:5s} #b7,#l7{animation-delay:6s} #b8,#l8{animation-delay:7s} #b9,#l9{animation-delay:7.5s}
-      #b10,#la1{animation-delay:0s} #b11,#la2{animation-delay:1s} #b12{animation-delay:2s}
+      #b5,#l5{animation-delay:4s} #b6,#l6{animation-delay:5s} #b7,#l7{animation-delay:6s} #b8,#l8{animation-delay:7s}
+      #b9,#l9{animation-delay:7.5s} #b10,#la1{animation-delay:0s} #b11,#la2{animation-delay:1s} #b12,#la3{animation-delay:2s}
     </style>
-    <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+    <marker id="m" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
       <polygon points="0 0, 8 4, 0 8" fill="#64748b"/>
+    </marker>
+    <marker id="mo" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <polygon points="0 0, 8 4, 0 8" fill="#f59e0b"/>
     </marker>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
-  <text x="460" y="34" text-anchor="middle" class="lbl" font-size="16">Authentication flow (React + Redux)</text>
-  <text x="460" y="52" text-anchor="middle" class="sub">Client: useAuthCheck -&gt; withAuthGuard -&gt; useAuthGuard -&gt; ProtectedRoute</text>
-  <text x="460" y="66" text-anchor="middle" class="sub">Server: requirePraktikumAuth on /api/forum, /friends, /user (403 without session)</text>
+  <text x="500" y="34" class="lbl" font-size="16">Authentication flow (React + Redux)</text>
+  <text x="500" y="52" class="sub">Client: useAuthCheck, withAuthGuard, useAuthGuard, ProtectedRoute</text>
+  <text x="500" y="66" class="sub">Server: requirePraktikumAuth on /api/forum, /friends, /user</text>
 
-  <rect id="b1" x="40" y="88" width="168" height="58" class="box"/>
-  <g id="t1" transform="translate(124 0)">
-    <text y="112" text-anchor="middle" class="lbl">Login page</text>
-    <text y="126" text-anchor="middle" class="sub">/login or /sign-in</text>
-    <text y="138" text-anchor="middle" class="sub">LoginPage.tsx</text>
-  </g>
-  <path id="l1" class="arr" d="M 208 117 L 260 117"/>
+  <!-- Login row -->
+  <rect id="b1" x="40" y="96" width="168" height="66" class="box"/>
+  <text x="124" y="122" class="lbl">Login page</text>
+  <text x="124" y="136" class="sub">/login, /sign-in</text>
+  <text x="124" y="150" class="sub">LoginPage.tsx</text>
 
-  <rect id="b2" x="260" y="88" width="194" height="58" class="box"/>
-  <g id="t2" transform="translate(357 0)">
-    <text y="112" text-anchor="middle" class="lbl">Form validation</text>
-    <text y="126" text-anchor="middle" class="sub">useValidate + authValidation</text>
-    <text y="138" text-anchor="middle" class="sub">hooks + validation</text>
-  </g>
-  <path id="l2" class="arr" d="M 454 117 L 512 117"/>
+  <rect id="b2" x="248" y="96" width="194" height="66" class="box"/>
+  <text x="345" y="122" class="lbl">Form validation</text>
+  <text x="345" y="136" class="sub">useValidate</text>
+  <text x="345" y="150" class="sub">authValidation.ts</text>
 
-  <rect id="b3" x="512" y="88" width="176" height="58" class="box"/>
-  <g id="t3" transform="translate(600 0)">
-    <text y="112" text-anchor="middle" class="lbl">submitLoginThunk</text>
-    <text y="126" text-anchor="middle" class="sub">userSlice.ts</text>
-    <text y="138" text-anchor="middle" class="sub">Redux thunk</text>
-  </g>
-  <path id="l3" class="arr" d="M 600 146 L 600 180"/>
+  <rect id="b3" x="482" y="96" width="176" height="66" class="box"/>
+  <text x="570" y="122" class="lbl">submitLoginThunk</text>
+  <text x="570" y="136" class="sub">userSlice.ts</text>
+  <text x="570" y="150" class="sub">Redux thunk</text>
 
-  <rect id="b4" x="456" y="180" width="288" height="62" class="box"/>
-  <g id="t4" transform="translate(600 0)">
-    <text y="204" text-anchor="middle" class="lbl">Praktikum auth API</text>
-    <text y="218" text-anchor="middle" class="sub">userApi.ts sign-in /auth/user</text>
-    <text y="230" text-anchor="middle" class="sub">credentials include</text>
-  </g>
-  <path id="l4" class="arr" d="M 600 242 L 600 276"/>
+  <path id="l1" class="arr" d="M 208 129 L 248 129"/>
+  <path id="l2" class="arr" d="M 442 129 L 482 129"/>
+  <path id="l3" class="arr" d="M 570 162 L 570 198"/>
 
-  <rect id="b5" x="456" y="276" width="288" height="58" class="box"/>
-  <g id="t5" transform="translate(600 0)">
-    <text y="300" text-anchor="middle" class="lbl">Redux update</text>
-    <text y="314" text-anchor="middle" class="sub">store.user authenticated</text>
-    <text y="326" text-anchor="middle" class="sub">store.ts</text>
-  </g>
-  <path id="l5" class="arr" d="M 456 305 L 252 305"/>
+  <rect id="b4" x="430" y="198" width="280" height="68" class="box"/>
+  <text x="570" y="224" class="lbl">Praktikum auth API</text>
+  <text x="570" y="238" class="sub">userApi sign-in, /auth/user</text>
+  <text x="570" y="252" class="sub">BASE_URL /api/v2 (proxy)</text>
 
-  <rect id="b6" x="56" y="276" width="196" height="58" class="box"/>
-  <g id="t6" transform="translate(154 0)">
-    <text y="300" text-anchor="middle" class="lbl">useAuthCheck</text>
-    <text y="314" text-anchor="middle" class="sub">sync session state</text>
-    <text y="326" text-anchor="middle" class="sub">useAuthCheck.ts</text>
-  </g>
+  <path id="l4" class="arr" d="M 570 266 L 570 302"/>
 
-  <rect id="b7" x="270" y="352" width="196" height="58" class="box"/>
-  <g id="t7" transform="translate(368 0)">
-    <text y="376" text-anchor="middle" class="lbl">withAuthGuard (HOC)</text>
-    <text y="390" text-anchor="middle" class="sub">wrap route elements</text>
-    <text y="402" text-anchor="middle" class="sub">withAuthGuard.tsx</text>
-  </g>
-  <path id="l7" class="arr" d="M 154 334 L 154 381 L 270 381"/>
+  <rect id="b5" x="430" y="302" width="280" height="66" class="box"/>
+  <text x="570" y="328" class="lbl">Redux user state</text>
+  <text x="570" y="342" class="sub">authenticated in store</text>
+  <text x="570" y="356" class="sub">store.ts</text>
 
-  <rect id="b8" x="152" y="180" width="232" height="62" class="box"/>
-  <g id="t8" transform="translate(268 0)">
-    <text y="204" text-anchor="middle" class="lbl">ProtectedRoute</text>
-    <text y="218" text-anchor="middle" class="sub">allow or redirect /login</text>
-    <text y="230" text-anchor="middle" class="sub">ProtectedRoute/index.tsx</text>
-  </g>
-  <path id="l8" class="arr" d="M 698 381 L 698 438 L 44 438 L 44 211 L 152 211"/>
+  <path id="l5" class="arr" d="M 430 335 L 224 335"/>
 
-  <rect id="b9" x="502" y="352" width="196" height="58" class="box"/>
-  <g id="t9" transform="translate(600 0)">
-    <text y="376" text-anchor="middle" class="lbl">useAuthGuard</text>
-    <text y="390" text-anchor="middle" class="sub">route access decision</text>
-    <text y="402" text-anchor="middle" class="sub">useAuthGuard.ts</text>
-  </g>
-  <path id="l9" class="arr" d="M 466 381 L 502 381"/>
-  <path id="l10" class="arr redirect" d="M 152 211 L 124 211 L 124 146"/>
+  <rect id="b6" x="64" y="302" width="160" height="66" class="box"/>
+  <text x="144" y="328" class="lbl">useAuthCheck</text>
+  <text x="144" y="342" class="sub">sync session</text>
+  <text x="144" y="356" class="sub">useAuthCheck.ts</text>
 
-  <line class="sep" x1="32" y1="432" x2="888" y2="432"/>
-  <text x="460" y="452" text-anchor="middle" class="lbl" font-size="13">Own Node API (packages/server)</text>
-  <text x="460" y="468" text-anchor="middle" class="sub">Separate from Redux login; access decided on server (see docs/auth-middleware-backend.md)</text>
+  <path id="l6" class="arr" d="M 144 368 L 144 418 L 268 418 L 268 448"/>
 
-  <rect id="b10" x="40" y="482" width="188" height="56" class="box"/>
-  <g transform="translate(134 0)">
-    <text y="506" text-anchor="middle" class="lbl">fetch own API</text>
-    <text y="520" text-anchor="middle" class="sub">forumApi.ts etc.</text>
-    <text y="532" text-anchor="middle" class="sub">Cookie forwarded</text>
-  </g>
-  <path id="la1" class="arr" d="M 228 510 L 256 510"/>
+  <rect id="b7" x="168" y="448" width="200" height="66" class="box"/>
+  <text x="268" y="474" class="lbl">ProtectedRoute</text>
+  <text x="268" y="488" class="sub">allow or redirect</text>
+  <text x="268" y="502" class="sub">ProtectedRoute/</text>
 
-  <rect id="b11" x="256" y="482" width="232" height="56" class="box"/>
-  <g transform="translate(372 0)">
-    <text y="506" text-anchor="middle" class="lbl">requirePraktikumAuth</text>
-    <text y="520" text-anchor="middle" class="sub">middleware</text>
-    <text y="532" text-anchor="middle" class="sub">requirePraktikumAuth.ts</text>
-  </g>
-  <path id="la2" class="arr" d="M 488 510 L 520 510"/>
+  <rect id="b8" x="408" y="448" width="200" height="66" class="box"/>
+  <text x="508" y="474" class="lbl">withAuthGuard</text>
+  <text x="508" y="488" class="sub">HOC on routes</text>
+  <text x="508" y="502" class="sub">withAuthGuard.tsx</text>
 
-  <rect id="b12" x="520" y="482" width="360" height="56" class="box"/>
-  <g transform="translate(700 0)">
-    <text y="506" text-anchor="middle" class="lbl">Praktikum GET /auth/user</text>
-    <text y="520" text-anchor="middle" class="sub">then next() or 403 / 502</text>
-    <text y="532" text-anchor="middle" class="sub">req.praktikumUser on success</text>
-  </g>
+  <rect id="b9" x="648" y="448" width="200" height="66" class="box"/>
+  <text x="748" y="474" class="lbl">useAuthGuard</text>
+  <text x="748" y="488" class="sub">access decision</text>
+  <text x="748" y="502" class="sub">useAuthGuard.ts</text>
 
-  <text x="40" y="586" class="sub">Client UX: useAuthCheck syncs session; withAuthGuard + useAuthGuard + ProtectedRoute gate routes (not a substitute for server checks).</text>
-  <text x="40" y="604" class="sub">Client files: useAuthCheck.ts, withAuthGuard.tsx, ProtectedRoute/index.tsx, userSlice.ts, userApi.ts, LoginPage.tsx</text>
-  <text x="40" y="622" class="sub">Node: createApp.ts, middleware/requirePraktikumAuth.ts, middleware/praktikumUser.ts</text>
+  <path id="l7" class="arr" d="M 368 481 L 408 481"/>
+  <path id="l8" class="arr" d="M 608 481 L 648 481"/>
+  <path id="l9" class="redirect" d="M 168 481 L 20 481 L 20 286 L 124 286 L 124 162"/>
+
+  <line class="sep" x1="32" y1="538" x2="968" y2="538"/>
+  <text x="500" y="558" class="lbl" font-size="13">Own Node API (packages/server)</text>
+  <text x="500" y="574" class="sub">Cookie session checked on server; see auth-middleware-backend.md</text>
+
+  <rect id="b10" x="48" y="592" width="188" height="60" class="box"/>
+  <text x="142" y="616" class="lbl">fetch own API</text>
+  <text x="142" y="630" class="sub">forumApi, friends</text>
+  <text x="142" y="644" class="sub">same-origin /api/*</text>
+
+  <rect id="b11" x="268" y="592" width="232" height="60" class="box"/>
+  <text x="384" y="616" class="lbl">requirePraktikumAuth</text>
+  <text x="384" y="630" class="sub">middleware</text>
+  <text x="384" y="644" class="sub">requirePraktikumAuth.ts</text>
+
+  <rect id="b12" x="532" y="592" width="360" height="60" class="box"/>
+  <text x="712" y="616" class="lbl">GET Praktikum /auth/user</text>
+  <text x="712" y="630" class="sub">req.praktikumUser or 403</text>
+  <text x="712" y="644" class="sub">createApp.ts</text>
+
+  <path id="la1" class="arr" d="M 236 622 L 268 622"/>
+  <path id="la2" class="arr" d="M 500 622 L 532 622"/>
+
+  <text x="500" y="678" class="sub">Client UX gates routes; server must still return 403 without a valid session.</text>
 </svg>

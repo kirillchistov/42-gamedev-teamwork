@@ -1,19 +1,12 @@
 // Блок "Контакты" на лендинге с формой обратной связи
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  useDispatch,
-  useSelector,
-} from '../../store'
+import { useDispatch, useSelector } from '../../store'
 import { selectUser } from '../../slices/userSlice'
 import { createTopicThunk } from '../../slices/forumSlice'
-import {
-  Button,
-  Input,
-  TextArea,
-} from '../../shared/ui'
+import { Button, Input, TextArea } from '../../shared/ui'
 
-export const Contact: React.FC = () => {
+export function Contact() {
   const dispatch = useDispatch()
   const user = useSelector(selectUser)
   const isAuthorized = Boolean(user)
@@ -40,13 +33,10 @@ export const Contact: React.FC = () => {
             <div id="forum" />
             <h2>Форум</h2>
             <p className="section-subtitle">
-              Обсуждайте идеи, баги и стратегии с
-              командой и игроками.
+              Обсуждайте идеи, баги и стратегии с командой и игроками.
             </p>
             <p className="contact__forum-link">
-              <Link
-                to="/forum"
-                className="btn btn--flat">
+              <Link to="/forum" className="btn btn--flat">
                 Перейти в форум
               </Link>
             </p>
@@ -56,9 +46,7 @@ export const Contact: React.FC = () => {
                 Заголовок
                 <Input
                   value={title}
-                  onChange={e =>
-                    setTitle(e.target.value)
-                  }
+                  onChange={e => setTitle(e.target.value)}
                   placeholder="Например: Идеи для новых бустеров"
                 />
               </label>
@@ -66,9 +54,7 @@ export const Contact: React.FC = () => {
                 Сообщение
                 <TextArea
                   value={content}
-                  onChange={e =>
-                    setContent(e.target.value)
-                  }
+                  onChange={e => setContent(e.target.value)}
                   rows={4}
                   placeholder="Опишите идею, вопрос или проблему"
                 />
@@ -87,27 +73,18 @@ export const Contact: React.FC = () => {
           <>
             <h2>Обратная связь</h2>
             <p className="section-subtitle">
-              Напишите, если хотите обсудить
-              реализацию, механику уровней или
+              Напишите, если хотите обсудить реализацию, механику уровней или
               совместную работу.
             </p>
-            <form
-              className="contact-form"
-              id="contact-form">
+            <form className="contact-form" id="contact-form">
               <div className="contact-form__row">
                 <label>
                   Имя
-                  <input
-                    type="text"
-                    id="cf-name"
-                  />
+                  <input type="text" id="cf-name" />
                 </label>
                 <label>
                   Email
-                  <input
-                    type="email"
-                    id="cf-email"
-                  />
+                  <input type="email" id="cf-email" />
                 </label>
               </div>
               <label>
@@ -120,15 +97,10 @@ export const Contact: React.FC = () => {
               </label>
               <label>
                 Сообщение
-                <textarea
-                  id="cf-message"
-                  rows={4}
-                />
+                <textarea id="cf-message" rows={4} />
               </label>
               <div className="contact-form__actions">
-                <button
-                  type="submit"
-                  className="btn btn--primary">
+                <button type="submit" className="btn btn--primary">
                   Отправить
                 </button>
               </div>

@@ -15,6 +15,10 @@
   "include": [
     "server/index.ts",
     "server/apiProxy.ts",
+    "server/loadEnv.ts",
+    "server/ssrErrorPage.ts",
+    "server/csp.ts",
+    "server/cspPolicy.ts",
     "server/static-page.tsx",
     "server/**/*.d.ts"
   ]

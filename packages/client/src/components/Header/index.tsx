@@ -12,11 +12,7 @@
  * Кнопка полноэкранного режима + SVG иконки; синхронизация состояния через addFullscreenChangeListener
  * (на остальных страницах — как раньше - трио: light-flat / light-3d / dark-neon).
  **/
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-} from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   type LandingTheme,
@@ -64,26 +60,22 @@ function IconFullscreenExit() {
   )
 }
 
-export const Header: React.FC<HeaderProps> = ({
+export function Header({
   variant = 'default',
   fullscreenTargetRef,
-}) => {
-  const { theme, setTheme, toggleColorMode } =
-    useLandingTheme()
+}: HeaderProps) {
+  const { theme, setTheme, toggleColorMode } = useLandingTheme()
   const user = useSelector(selectUser)
-  const [mobileOpen, setMobileOpen] =
-    useState(false)
-  const [gameNavPath, setGameNavPath] = useState<
-    '/game' | '/game/start'
-  >('/game')
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [gameNavPath, setGameNavPath] = useState<'/game' | '/game/start'>(
+    '/game'
+  )
 
   const closeMobile = useCallback(() => {
     setMobileOpen(false)
   }, [])
 
-  const handleThemeClick = (
-    value: LandingTheme
-  ) => {
+  const handleThemeClick = (value: LandingTheme) => {
     setTheme(value)
     // Закрываем выезжающее меню при переключении темы
     if (mobileOpen) closeMobile()
@@ -95,8 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
       if (e.key === 'Escape') closeMobile()
     }
     window.addEventListener('keydown', onKey)
-    return () =>
-      window.removeEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [mobileOpen, closeMobile])
 
   const isGameVariant = variant === 'game'
@@ -107,14 +98,11 @@ export const Header: React.FC<HeaderProps> = ({
   }, [])
 
   useEffect(() => {
-    if (!isGameVariant || !fullscreenTargetRef)
-      return undefined
+    if (!isGameVariant || !fullscreenTargetRef) return undefined
     const sync = () => {
       const shell = fullscreenTargetRef.current
       const active = getFullscreenElement()
-      setPageFs(
-        Boolean(shell && active === shell)
-      )
+      setPageFs(Boolean(shell && active === shell))
     }
     sync()
     return addFullscreenChangeListener(sync)
@@ -122,16 +110,12 @@ export const Header: React.FC<HeaderProps> = ({
 
   const onFullscreenClick = useCallback(() => {
     if (!fullscreenTargetRef?.current) return
-    void toggleFullscreen(
-      fullscreenTargetRef.current
-    )
+    void toggleFullscreen(fullscreenTargetRef.current)
   }, [fullscreenTargetRef])
 
   const headerClass =
     'landing-header' +
-    (isGameVariant
-      ? ' landing-header--game'
-      : '') +
+    (isGameVariant ? ' landing-header--game' : '') +
     (isGameVariant && pageFs ? ' is-fs' : '')
 
   return (
@@ -139,50 +123,33 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="landing-header__inner">
         <div className="landing-header__left">
           <div className="landing-logo">
-            <Link
-              className="btn btn--flat"
-              to="/"
-              onClick={closeMobile}>
+            <Link className="btn btn--flat" to="/" onClick={closeMobile}>
               <span className="landing-logo__icon" />
-              <span className="landing-logo__text">
-                Cosmic Match
-              </span>
+              <span className="landing-logo__text">Cosmic Match</span>
             </Link>
           </div>
         </div>
 
         {/* Desktop nav */}
         <nav className="landing-nav landing-nav--desktop">
-          <Link
-            className="btn btn--flat"
-            to={gameNavPath}>
+          <Link className="btn btn--flat" to={gameNavPath}>
             Игра
           </Link>
-          <Link
-            className="btn btn--flat"
-            to="/profile">
+          <Link className="btn btn--flat" to="/profile">
             Профиль
           </Link>
-          <Link
-            className="btn btn--flat"
-            to="/leaderboard">
+          <Link className="btn btn--flat" to="/leaderboard">
             Лидеры
           </Link>
-          <Link
-            className="btn btn--flat"
-            to="/forum">
+          <Link className="btn btn--flat" to="/forum">
             Форум
           </Link>
           {user ? (
-            <Link
-              className="btn btn--flat"
-              to="/logout">
+            <Link className="btn btn--flat" to="/logout">
               Выход
             </Link>
           ) : (
-            <Link
-              className="btn btn--flat"
-              to="/login">
+            <Link className="btn btn--flat" to="/login">
               Вход
             </Link>
           )}
@@ -209,15 +176,11 @@ export const Header: React.FC<HeaderProps> = ({
                   if (mobileOpen) closeMobile()
                 }}>
                 {theme === 'dark-neon' ? (
-                  <span
-                    className="landing-theme-toggle__glyph"
-                    aria-hidden>
+                  <span className="landing-theme-toggle__glyph" aria-hidden>
                     ☀
                   </span>
                 ) : (
-                  <span
-                    className="landing-theme-toggle__glyph"
-                    aria-hidden>
+                  <span className="landing-theme-toggle__glyph" aria-hidden>
                     🌙
                   </span>
                 )}
@@ -238,11 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
                   }
                   aria-pressed={pageFs}
                   onClick={onFullscreenClick}>
-                  {pageFs ? (
-                    <IconFullscreenExit />
-                  ) : (
-                    <IconFullscreenEnter />
-                  )}
+                  {pageFs ? <IconFullscreenExit /> : <IconFullscreenEnter />}
                 </button>
               ) : null}
             </>
@@ -252,45 +211,33 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 className={
                   'landing-theme-switch__btn' +
-                  (theme === 'light-flat'
-                    ? ' is-active'
-                    : '')
+                  (theme === 'light-flat' ? ' is-active' : '')
                 }
                 data-theme="light-flat"
                 title="Светлая минималистичная"
-                onClick={() =>
-                  handleThemeClick('light-flat')
-                }>
+                onClick={() => handleThemeClick('light-flat')}>
                 ☀
               </button>
               <button
                 type="button"
                 className={
                   'landing-theme-switch__btn' +
-                  (theme === 'light-3d'
-                    ? ' is-active'
-                    : '')
+                  (theme === 'light-3d' ? ' is-active' : '')
                 }
                 data-theme="light-3d"
                 title="Светлая 3D"
-                onClick={() =>
-                  handleThemeClick('light-3d')
-                }>
+                onClick={() => handleThemeClick('light-3d')}>
                 ✨
               </button>
               <button
                 type="button"
                 className={
                   'landing-theme-switch__btn' +
-                  (theme === 'dark-neon'
-                    ? ' is-active'
-                    : '')
+                  (theme === 'dark-neon' ? ' is-active' : '')
                 }
                 data-theme="dark-neon"
                 title="Тёмная неоновая"
-                onClick={() =>
-                  handleThemeClick('dark-neon')
-                }>
+                onClick={() => handleThemeClick('dark-neon')}>
                 🌙
               </button>
             </div>
@@ -299,19 +246,11 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Burger */}
           <button
             type="button"
-            className={`landing-burger ${
-              mobileOpen ? 'is-open' : ''
-            }`}
+            className={`landing-burger ${mobileOpen ? 'is-open' : ''}`}
             id="burger"
-            aria-label={
-              mobileOpen
-                ? 'Закрыть меню'
-                : 'Открыть меню'
-            }
+            aria-label={mobileOpen ? 'Закрыть меню' : 'Открыть меню'}
             aria-expanded={mobileOpen}
-            onClick={() =>
-              setMobileOpen(v => !v)
-            }>
+            onClick={() => setMobileOpen(v => !v)}>
             <span />
             <span />
             <span />
@@ -333,16 +272,11 @@ export const Header: React.FC<HeaderProps> = ({
       <nav
         className={
           'landing-nav landing-nav--mobile' +
-          (mobileOpen
-            ? ' landing-nav--mobile-open'
-            : '')
+          (mobileOpen ? ' landing-nav--mobile-open' : '')
         }
         id="mobile-nav"
         aria-hidden={!mobileOpen}>
-        <Link
-          className="btn btn--outline"
-          to="/"
-          onClick={closeMobile}>
+        <Link className="btn btn--outline" to="/" onClick={closeMobile}>
           Лендинг
         </Link>
         <Link
@@ -351,10 +285,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={closeMobile}>
           Игра
         </Link>
-        <Link
-          className="btn btn--outline"
-          to="/profile"
-          onClick={closeMobile}>
+        <Link className="btn btn--outline" to="/profile" onClick={closeMobile}>
           Профиль
         </Link>
         <Link
@@ -363,17 +294,11 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={closeMobile}>
           Лидеры
         </Link>
-        <Link
-          className="btn btn--outline"
-          to="/forum"
-          onClick={closeMobile}>
+        <Link className="btn btn--outline" to="/forum" onClick={closeMobile}>
           Форум
         </Link>
         {user ? (
-          <Link
-            className="btn btn--outline"
-            to="/logout"
-            onClick={closeMobile}>
+          <Link className="btn btn--outline" to="/logout" onClick={closeMobile}>
             Выход
           </Link>
         ) : (

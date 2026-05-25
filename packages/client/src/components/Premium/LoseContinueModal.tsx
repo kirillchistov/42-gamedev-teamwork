@@ -35,34 +35,23 @@ const continueOffers = [
   },
 ]
 
-export const LoseContinueModal: React.FC = () => {
+export function LoseContinueModal() {
   return (
     <section className="premium-card premium-modal-stub">
       <div className="premium-card__header">
-        <h2>
-          Мини-спас при поражении (заготовка)
-        </h2>
-        <span className="premium-chip">
-          UI-заготовка
-        </span>
+        <h2>Мини-спас при поражении (заготовка)</h2>
+        <span className="premium-chip">UI-заготовка</span>
       </div>
       <p className="premium-muted">
-        Вы проиграли. Выберите вариант продолжения
-        (без реальной логики).
+        Вы проиграли. Выберите вариант продолжения (без реальной логики).
       </p>
       <div className="premium-meta-row">
-        <span className="premium-soft-note">
-          Серия поражений: 1
-        </span>
-        <span className="premium-soft-note">
-          До авто-ресета цены: 07:12
-        </span>
+        <span className="premium-soft-note">Серия поражений: 1</span>
+        <span className="premium-soft-note">До авто-ресета цены: 07:12</span>
       </div>
       <div className="premium-grid premium-grid--3">
         {continueOffers.map(offer => (
-          <article
-            key={offer.id}
-            className="premium-offer-card">
+          <article key={offer.id} className="premium-offer-card">
             <div className="premium-offer-card__top">
               <h3>{offer.title}</h3>
               <span
@@ -70,23 +59,16 @@ export const LoseContinueModal: React.FC = () => {
                 {offer.badge}
               </span>
             </div>
-            <p className="premium-muted">
-              {offer.subtitle}
-            </p>
-            <p className="premium-offer-price">
-              {offer.price}
-            </p>
-            <Button variant={offer.variant}>
-              {offer.cta}
-            </Button>
+            <p className="premium-muted">{offer.subtitle}</p>
+            <p className="premium-offer-price">{offer.price}</p>
+            <Button variant={offer.variant}>{offer.cta}</Button>
           </article>
         ))}
       </div>
       <div className="premium-stack premium-stack--row">
         <Button variant="outline">Выйти</Button>
         <span className="premium-soft-note">
-          Модалка-демо: таймер и обработка не
-          подключены
+          Модалка-демо: таймер и обработка не подключены
         </span>
       </div>
     </section>

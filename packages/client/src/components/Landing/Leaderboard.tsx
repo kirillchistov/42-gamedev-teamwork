@@ -1,7 +1,7 @@
 // Блок "Лидеры" на лендинге с описанием преимуществ и навигацией по ним
 import React from 'react'
 
-export const Leaderboard: React.FC = () => {
+export function Leaderboard() {
   return (
     <section className="section" id="leaderboard">
       <h2>Лидеры Cosmic Match</h2>
@@ -9,9 +9,8 @@ export const Leaderboard: React.FC = () => {
         Лучшие игроки по результатам соревнований.
       </p>
       <p className="auth-note">
-        Сейчас таблица рекордов статична. Данные
-        друзей подгружаются так же, как на
-        FriendsPage.
+        Сейчас таблица рекордов статична. Данные друзей подгружаются так же, как
+        на FriendsPage.
       </p>
 
       <div className="extra-card extra-card--mb16">

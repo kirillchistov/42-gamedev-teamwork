@@ -42,7 +42,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
-    command: ["yarn", "workspace", "server", "db:migrate"]
+    command: ["/app/packages/server/scripts/docker-migrate.sh"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,6 +98,8 @@ services:
       PORT: "80"
       INTERNAL_SERVER_URL: http://server:${SERVER_PORT:-3000}
       PRAKTIKUM_API_URL: ${PRAKTIKUM_API_URL:-https://ya-praktikum.tech}
+      # SSR в контейнере: entry-server ходит на server:PORT, не на localhost:3000
+      EXTERNAL_SERVER_URL: http://server:${SERVER_PORT:-3000}
     depends_on:
       server:
         condition: service_healthy

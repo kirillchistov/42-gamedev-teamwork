@@ -4,25 +4,14 @@
  */
 import React, { FormEvent, useState } from 'react'
 import { Helmet } from 'react-helmet'
-import {
-  Link,
-  useNavigate,
-  Navigate,
-} from 'react-router-dom'
+import { Link, useNavigate, Navigate } from 'react-router-dom'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
-import {
-  Button,
-  Input,
-  FieldError,
-} from '../shared/ui'
+import { Button, Input, FieldError } from '../shared/ui'
 import { useValidate } from '../hooks/useValidate'
 import type { SignupFormValues } from '../shared/validation/authValidation'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
-import {
-  useDispatch,
-  useSelector,
-} from '../store'
+import { useDispatch, useSelector } from '../store'
 import {
   fetchUserThunk,
   logoutThunk,
@@ -44,10 +33,7 @@ import {
   YANDEX_OAUTH_STATE_KEY,
 } from '../shared/api/oauthApi'
 
-export const initSignupPage = ({
-  dispatch,
-  getState,
-}: PageInitArgs) => {
+export const initSignupPage = ({ dispatch, getState }: PageInitArgs) => {
   const ensureGuest = async () => {
     if (!selectUserIsAuthChecked(getState())) {
       await dispatch(fetchUserThunk())
@@ -67,51 +53,38 @@ export const initSignupPage = ({
   return ensureGuest()
 }
 
-export const SignupPage: React.FC = () => {
+export function SignupPage() {
   usePage({ initPage: initSignupPage })
   const { theme } = useLandingTheme()
 
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector(selectUser)
-  const isAuthChecked = useSelector(
-    selectUserIsAuthChecked
-  )
-  const isLoading = useSelector(
-    selectUserIsLoading
-  )
+  const isAuthChecked = useSelector(selectUserIsAuthChecked)
+  const isLoading = useSelector(selectUserIsLoading)
   const error = useSelector(selectUserError)
 
-  const [isOAuthLoading, setIsOAuthLoading] =
-    useState(false)
-  const [oauthError, setOauthError] = useState<
-    string | null
-  >(null)
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false)
+  const [oauthError, setOauthError] = useState<string | null>(null)
 
   const signupValidate = useValidate()
-  const [form, setForm] =
-    useState<SignupFormValues>({
-      first_name: '',
-      second_name: '',
-      display_name: '',
-      email: '',
-      phone: '',
-      login: '',
-      password: '',
-    })
+  const [form, setForm] = useState<SignupFormValues>({
+    first_name: '',
+    second_name: '',
+    display_name: '',
+    email: '',
+    phone: '',
+    login: '',
+    password: '',
+  })
 
-  const handleChange: React.ChangeEventHandler<
-    HTMLInputElement
-  > = e => {
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = e => {
     const { name, value } = e.target
     setForm(prev => ({
       ...prev,
       [name]: value,
     }))
-    signupValidate.handleFieldChange(
-      name as keyof SignupFormValues,
-      value
-    )
+    signupValidate.handleFieldChange(name as keyof SignupFormValues, value)
   }
 
   const handleYandexOAuth = async () => {
@@ -121,24 +94,14 @@ export const SignupPage: React.FC = () => {
     try {
       const redirectUri = buildYandexRedirectUri()
       const state =
-        typeof crypto !== 'undefined' &&
-        'randomUUID' in crypto
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
           ? crypto.randomUUID()
           : Math.random().toString(36).slice(2)
 
-      window.sessionStorage.setItem(
-        YANDEX_OAUTH_STATE_KEY,
-        state
-      )
+      window.sessionStorage.setItem(YANDEX_OAUTH_STATE_KEY, state)
 
-      const serviceId = await getYandexServiceId(
-        redirectUri
-      )
-      const url = buildYandexAuthorizeUrl(
-        serviceId,
-        redirectUri,
-        state
-      )
+      const serviceId = await getYandexServiceId(redirectUri)
+      const url = buildYandexAuthorizeUrl(serviceId, redirectUri, state)
 
       window.location.assign(url)
     } catch (e) {
@@ -171,8 +134,7 @@ export const SignupPage: React.FC = () => {
           first_name: form.first_name ?? '',
           second_name: form.second_name ?? '',
           display_name:
-            form.display_name ??
-            `${form.first_name} ${form.second_name}`,
+            form.display_name ?? `${form.first_name} ${form.second_name}`,
           email: form.email ?? '',
           phone: form.phone ?? '',
           login: form.login ?? '',
@@ -217,16 +179,11 @@ export const SignupPage: React.FC = () => {
                   value={form.first_name ?? ''}
                   onChange={handleChange}
                   onBlur={e =>
-                    signupValidate.handleFieldBlur(
-                      'first_name',
-                      e.target.value
-                    )
+                    signupValidate.handleFieldBlur('first_name', e.target.value)
                   }
                 />
                 <FieldError
-                  message={signupValidate.getFieldError(
-                    'first_name'
-                  )}
+                  message={signupValidate.getFieldError('first_name')}
                 />
               </label>
               <label>
@@ -245,9 +202,7 @@ export const SignupPage: React.FC = () => {
                   }
                 />
                 <FieldError
-                  message={signupValidate.getFieldError(
-                    'second_name'
-                  )}
+                  message={signupValidate.getFieldError('second_name')}
                 />
               </label>
               <label>
@@ -266,9 +221,7 @@ export const SignupPage: React.FC = () => {
                   }
                 />
                 <FieldError
-                  message={signupValidate.getFieldError(
-                    'display_name'
-                  )}
+                  message={signupValidate.getFieldError('display_name')}
                 />
               </label>
               <label>
@@ -280,17 +233,10 @@ export const SignupPage: React.FC = () => {
                   value={form.email ?? ''}
                   onChange={handleChange}
                   onBlur={e =>
-                    signupValidate.handleFieldBlur(
-                      'email',
-                      e.target.value
-                    )
+                    signupValidate.handleFieldBlur('email', e.target.value)
                   }
                 />
-                <FieldError
-                  message={signupValidate.getFieldError(
-                    'email'
-                  )}
-                />
+                <FieldError message={signupValidate.getFieldError('email')} />
               </label>
               <label>
                 Телефон
@@ -301,17 +247,10 @@ export const SignupPage: React.FC = () => {
                   value={form.phone ?? ''}
                   onChange={handleChange}
                   onBlur={e =>
-                    signupValidate.handleFieldBlur(
-                      'phone',
-                      e.target.value
-                    )
+                    signupValidate.handleFieldBlur('phone', e.target.value)
                   }
                 />
-                <FieldError
-                  message={signupValidate.getFieldError(
-                    'phone'
-                  )}
-                />
+                <FieldError message={signupValidate.getFieldError('phone')} />
               </label>
               <label>
                 Логин
@@ -322,18 +261,11 @@ export const SignupPage: React.FC = () => {
                   value={form.login ?? ''}
                   onChange={handleChange}
                   onBlur={e =>
-                    signupValidate.handleFieldBlur(
-                      'login',
-                      e.target.value
-                    )
+                    signupValidate.handleFieldBlur('login', e.target.value)
                   }
                   autoComplete="username"
                 />
-                <FieldError
-                  message={signupValidate.getFieldError(
-                    'login'
-                  )}
-                />
+                <FieldError message={signupValidate.getFieldError('login')} />
               </label>
               <label>
                 Пароль
@@ -344,56 +276,34 @@ export const SignupPage: React.FC = () => {
                   value={form.password ?? ''}
                   onChange={handleChange}
                   onBlur={e =>
-                    signupValidate.handleFieldBlur(
-                      'password',
-                      e.target.value
-                    )
+                    signupValidate.handleFieldBlur('password', e.target.value)
                   }
                   autoComplete="new-password"
                 />
                 <FieldError
-                  message={signupValidate.getFieldError(
-                    'password'
-                  )}
+                  message={signupValidate.getFieldError('password')}
                 />
               </label>
 
-              {error && (
-                <p className="auth-form__error">
-                  {error}
-                </p>
-              )}
-              {oauthError && (
-                <p className="auth-form__error">
-                  {oauthError}
-                </p>
-              )}
+              {error && <p className="auth-form__error">{error}</p>}
+              {oauthError && <p className="auth-form__error">{oauthError}</p>}
 
               <div className="auth-form__actions">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={isLoading}>
-                  {isLoading
-                    ? 'Регистрируем...'
-                    : 'Зарегистрироваться'}
+                <Button type="submit" variant="primary" disabled={isLoading}>
+                  {isLoading ? 'Регистрируем...' : 'Зарегистрироваться'}
                 </Button>
                 {!IS_STATIC_GH_PAGES_DEPLOY ? (
                   <Button
                     type="button"
                     variant="outline"
                     className="auth-oauth-btn"
-                    disabled={
-                      isOAuthLoading || isLoading
-                    }
+                    disabled={isOAuthLoading || isLoading}
                     onClick={handleYandexOAuth}>
                     {isOAuthLoading ? (
                       'Переход к OAuth...'
                     ) : (
                       <>
-                        <span>
-                          Зарегистрироваться через
-                        </span>
+                        <span>Зарегистрироваться через</span>
                         <span
                           className="auth-oauth-btn__logo"
                           aria-hidden="true">
@@ -408,9 +318,7 @@ export const SignupPage: React.FC = () => {
 
             <p className="auth-switch">
               Есть аккаунт?{' '}
-              <Link
-                to="/login"
-                className="auth-link">
+              <Link to="/login" className="auth-link">
                 Войдите
               </Link>
             </p>

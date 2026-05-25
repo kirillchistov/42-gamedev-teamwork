@@ -17,23 +17,16 @@ export const TILE_COLORS: string[] = [
 ]
 
 // Количество разных типов фишек
-export const COUNT_OF_TILE_TYPES =
-  TILE_COLORS.length
+export const COUNT_OF_TILE_TYPES = TILE_COLORS.length
 
 // Размер поля (по умолчанию 8x8)
 export const BOARD_SIZE = 8
 
-export const BOARD_SIZE_OPTIONS = [
-  8, 12, 16,
-] as const
-export type BoardSizeOption =
-  typeof BOARD_SIZE_OPTIONS[number]
+export const BOARD_SIZE_OPTIONS = [8, 12, 16] as const
+export type BoardSizeOption = typeof BOARD_SIZE_OPTIONS[number]
 
 // 8x8 стандарт. Если доска больше, вариантов фишек тоже будет больше
-export const TILE_KINDS_BY_BOARD_SIZE: Record<
-  BoardSizeOption,
-  number
-> = {
+export const TILE_KINDS_BY_BOARD_SIZE: Record<BoardSizeOption, number> = {
   8: COUNT_OF_TILE_TYPES,
   12: COUNT_OF_TILE_TYPES + 1,
   16: COUNT_OF_TILE_TYPES + 1,
@@ -42,38 +35,25 @@ export const TILE_KINDS_BY_BOARD_SIZE: Record<
 export const GAME_DURATION_SEC = 3 * 60
 export const PRESTART_COUNTDOWN_SEC = 5
 
-export const GAME_DURATION_OPTIONS = [
-  3 * 60,
-  5 * 60,
-  10 * 60,
-] as const
-export type GameDurationOption =
-  typeof GAME_DURATION_OPTIONS[number]
+export const GAME_DURATION_OPTIONS = [3 * 60, 5 * 60, 10 * 60] as const
+export type GameDurationOption = typeof GAME_DURATION_OPTIONS[number]
 
-export const MOVE_LIMIT_OPTIONS = [
-  50, 75, 100,
-] as const
-export type MoveLimitOption =
-  typeof MOVE_LIMIT_OPTIONS[number]
+export const MOVE_LIMIT_OPTIONS = [50, 75, 100] as const
+export type MoveLimitOption = typeof MOVE_LIMIT_OPTIONS[number]
 
 export type GameLimitMode = 'time' | 'moves'
 
-export const GAME_THEME_OPTIONS = [
-  'standard',
-  'space',
-  'math',
-] as const
-export type GameThemeOption =
-  typeof GAME_THEME_OPTIONS[number]
+export const GAME_THEME_OPTIONS = ['standard', 'space', 'math'] as const
+export type GameThemeOption = typeof GAME_THEME_OPTIONS[number]
 
 export const GAME_ICON_THEME_OPTIONS = [
   'standard',
   'cosmic',
   'food',
   'coder',
+  'stellar',
 ] as const
-export type GameIconThemeOption =
-  typeof GAME_ICON_THEME_OPTIONS[number]
+export type GameIconThemeOption = typeof GAME_ICON_THEME_OPTIONS[number]
 
 /** Визуал рамки и клеток поля (космос / тёплая «кухня» под еду). */
 export const BOARD_FIELD_THEME_OPTIONS = [
@@ -81,22 +61,23 @@ export const BOARD_FIELD_THEME_OPTIONS = [
   'food',
   'coder',
   'hieroglyph',
+  'stellar',
 ] as const
-export type BoardFieldThemeOption =
-  typeof BOARD_FIELD_THEME_OPTIONS[number]
+export type BoardFieldThemeOption = typeof BOARD_FIELD_THEME_OPTIONS[number]
+
+export const BOARD_FIELD_THEME_LABELS: Record<BoardFieldThemeOption, string> = {
+  space: 'Космос',
+  food: 'Еда',
+  coder: 'Кодер',
+  hieroglyph: 'Иероглиф',
+  stellar: 'Stellar Burger',
+}
 
 /** Полный VFX (частицы, вспышка, тряска) или упрощённый (только подсветка на поле). */
-export const GAME_VFX_QUALITY_OPTIONS = [
-  'full',
-  'simple',
-] as const
-export type GameVfxQualityOption =
-  typeof GAME_VFX_QUALITY_OPTIONS[number]
+export const GAME_VFX_QUALITY_OPTIONS = ['full', 'simple'] as const
+export type GameVfxQualityOption = typeof GAME_VFX_QUALITY_OPTIONS[number]
 
-export const TILE_COLORS_BY_THEME: Record<
-  GameThemeOption,
-  string[]
-> = {
+export const TILE_COLORS_BY_THEME: Record<GameThemeOption, string[]> = {
   standard: [
     '#ff4d6d',
     '#ffd166',
@@ -135,13 +116,8 @@ export const TILE_COLORS_BY_THEME: Record<
  */
 export const MATCH3_ANIM_TIME_MULT = 1.1
 
-export function match3AnimMs(
-  baseMs: number
-): number {
-  return Math.max(
-    1,
-    Math.round(baseMs * MATCH3_ANIM_TIME_MULT)
-  )
+export function match3AnimMs(baseMs: number): number {
+  return Math.max(1, Math.round(baseMs * MATCH3_ANIM_TIME_MULT))
 }
 
 // Другие настройки:

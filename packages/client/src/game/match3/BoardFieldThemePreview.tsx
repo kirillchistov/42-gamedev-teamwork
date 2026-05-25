@@ -1,6 +1,8 @@
 import React from 'react'
+import clsx from 'clsx'
 import type { BoardFieldThemeOption } from './engine/config'
 import { MATCH3_FOOD_ICON_URLS } from './engine/match3FoodIconUrls'
+import { MATCH3_STELLAR_ICON_URLS } from './engine/match3StellarIconUrls'
 import { MATCH3_TECH_ICON_URLS } from './engine/match3TechIconUrls'
 import { HIEROGLYPH_DECK } from './hieroglyphData'
 
@@ -14,9 +16,7 @@ type BoardFieldThemePreviewProps = {
 /**
  * Мини-сетка в настройках: для «Еды» показываем те же иконки, что на поле.
  */
-export const BoardFieldThemePreview: React.FC<
-  BoardFieldThemePreviewProps
-> = ({ theme }) => {
+export function BoardFieldThemePreview({ theme }: BoardFieldThemePreviewProps) {
   if (theme === 'space') return null
   const n = PREVIEW_ROWS * PREVIEW_COLS
   if (theme === 'hieroglyph') {
@@ -31,11 +31,7 @@ export const BoardFieldThemePreview: React.FC<
               key={i}
               className="match3-page__field-preview-cell match3-page__field-preview-cell--hiero">
               <span className="match3-page__field-preview-hanzi">
-                {
-                  HIEROGLYPH_DECK[
-                    i % HIEROGLYPH_DECK.length
-                  ]?.hanzi
-                }
+                {HIEROGLYPH_DECK[i % HIEROGLYPH_DECK.length]?.hanzi}
               </span>
             </div>
           ))}
@@ -46,26 +42,27 @@ export const BoardFieldThemePreview: React.FC<
   const icons =
     theme === 'food'
       ? MATCH3_FOOD_ICON_URLS
+      : theme === 'stellar'
+      ? MATCH3_STELLAR_ICON_URLS
       : MATCH3_TECH_ICON_URLS
   const previewTitle =
     theme === 'food'
       ? 'Предпросмотр поля в теме «Еда»'
+      : theme === 'stellar'
+      ? 'Предпросмотр поля Stellar Burger'
       : 'Предпросмотр поля в теме «Кодер»'
   return (
     <div className="match3-page__field-preview-wrap">
       <div
-        className="match3-page__field-preview"
+        className={clsx(
+          'match3-page__field-preview',
+          theme === 'stellar' && 'match3-page__field-preview--stellar'
+        )}
         role="img"
         aria-label={previewTitle}>
         {Array.from({ length: n }, (_, i) => (
-          <div
-            key={i}
-            className="match3-page__field-preview-cell">
-            <img
-              src={icons[i % icons.length]}
-              alt=""
-              draggable={false}
-            />
+          <div key={i} className="match3-page__field-preview-cell">
+            <img src={icons[i % icons.length]} alt="" draggable={false} />
           </div>
         ))}
       </div>

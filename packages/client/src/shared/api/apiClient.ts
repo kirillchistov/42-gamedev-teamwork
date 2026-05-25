@@ -1,7 +1,7 @@
 /** Изменения и починка Sprint6 Chores
  * 1. Поддержка POST без обязательного JSON в ответе (POST /auth/logout)
  **/
-import { BASE_URL } from '../../constants'
+import { getBaseUrl } from '../../constants'
 
 export interface ApiResponse<T = unknown> {
   data: T
@@ -10,17 +10,15 @@ export interface ApiResponse<T = unknown> {
 }
 
 class ApiClient {
-  private baseUrl: string
-
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl
+  private resolveBaseUrl(): string {
+    return getBaseUrl()
   }
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`
+    const url = `${this.resolveBaseUrl()}${endpoint}`
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -36,9 +34,7 @@ class ApiClient {
     const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(
-        data.reason || 'Ошибка запроса'
-      )
+      throw new Error(data.reason || 'Ошибка запроса')
     }
 
     return data as T
@@ -46,7 +42,7 @@ class ApiClient {
 
   // POST без обязательного JSON в ответе (напр, /auth/logout)
   postEmpty(endpoint: string): Promise<void> {
-    const url = `${this.baseUrl}${endpoint}`
+    const url = `${this.resolveBaseUrl()}${endpoint}`
     return fetch(url, {
       method: 'POST',
       credentials: 'include',
@@ -98,11 +94,8 @@ class ApiClient {
     })
   }
 
-  upload<T>(
-    endpoint: string,
-    formData: FormData
-  ) {
-    return fetch(`${this.baseUrl}${endpoint}`, {
+  upload<T>(endpoint: string, formData: FormData) {
+    return fetch(`${this.resolveBaseUrl()}${endpoint}`, {
       method: 'PUT',
       body: formData,
       credentials: 'include',
@@ -114,4 +107,4 @@ class ApiClient {
   }
 }
 
-export const apiClient = new ApiClient(BASE_URL)
+export const apiClient = new ApiClient()

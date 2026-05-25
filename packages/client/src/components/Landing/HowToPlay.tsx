@@ -1,7 +1,7 @@
 // Блок "Как играть" для лендинга, с кратким описанием механики и советами для новичков
 import React from 'react'
 
-export const HowToPlay: React.FC = () => {
+export function HowToPlay() {
   const cards = [
     {
       title: 'Создание комбинации',
@@ -33,18 +33,13 @@ export const HowToPlay: React.FC = () => {
     <section className="section" id="how-to-play">
       <h2>Как играть</h2>
       <p className="section-subtitle">
-        Короткий визуальный гайд по основным
-        игровым ситуациям.
+        Короткий визуальный гайд по основным игровым ситуациям.
       </p>
       <div className="how-to-grid">
         {cards.map(card => (
-          <article
-            key={card.title}
-            className="how-to-card">
+          <article key={card.title} className="how-to-card">
             <div className="how-to-card__screen">
-              <span className="how-to-card__badge">
-                {card.badge}
-              </span>
+              <span className="how-to-card__badge">{card.badge}</span>
               <p>{card.screenText}</p>
             </div>
             <h3>{card.title}</h3>
