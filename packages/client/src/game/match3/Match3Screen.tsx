@@ -8,10 +8,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import './match3.pcss'
+import { usePageVisibilityPause } from '../../hooks/usePageVisibilityPause'
 import {
   MATCH3_PERF_PAUSE_EVENT,
   type Match3PerfPauseDetail,
 } from '../../utils/performanceMetrics'
+import { vibrateComboFeedback } from '../../utils/vibration'
 import {
   createMatch3Game,
   type GameEndPayload,
@@ -138,6 +140,10 @@ type Match3ScreenProps = {
   /** Оформление клеток и рамки: космос или светлое поле под еду. */
   boardFieldTheme?: BoardFieldThemeOption
   soundEnabled?: boolean
+  /** Вибрация на крупное комбо (Vibration API, мобильные браузеры). */
+  vibrationEnabled?: boolean
+  /** Пауза при скрытии вкладки (Page Visibility API). */
+  pauseOnTabHidden?: boolean
   /** Полный VFX или упрощённый (без частиц, тряски и «петард» по контуру). */
   vfxQuality?: GameVfxQualityOption
   debugBoostersMode?: boolean
@@ -161,6 +167,8 @@ export function Match3Screen({
   iconThemeOption = 'cosmic',
   boardFieldTheme = 'space',
   soundEnabled = true,
+  vibrationEnabled = false,
+  pauseOnTabHidden = true,
   vfxQuality = 'full',
   debugBoostersMode = false,
   quests = [],
@@ -233,17 +241,30 @@ export function Match3Screen({
   const prevCompletedQuestIdsRef = useRef<Set<string>>(new Set())
   const questToastTimerRef = useRef<number | null>(null)
 
-  const onComboShake = useCallback((chain: number) => {
-    if (chain < 3) return
-    if (shakeResetRef.current !== null) {
-      window.clearTimeout(shakeResetRef.current)
-    }
-    setBoardShakeLevel(chain >= 5 ? 'strong' : 'light')
-    shakeResetRef.current = window.setTimeout(() => {
-      setBoardShakeLevel('off')
-      shakeResetRef.current = null
-    }, 480)
-  }, [])
+  const onComboShake = useCallback(
+    (chain: number) => {
+      if (chain < 3) return
+      if (vibrationEnabled && chain >= 4) {
+        vibrateComboFeedback()
+      }
+      if (shakeResetRef.current !== null) {
+        window.clearTimeout(shakeResetRef.current)
+      }
+      setBoardShakeLevel(chain >= 5 ? 'strong' : 'light')
+      shakeResetRef.current = window.setTimeout(() => {
+        setBoardShakeLevel('off')
+        shakeResetRef.current = null
+      }, 480)
+    },
+    [vibrationEnabled]
+  )
+
+  const pausedByVisibility = usePageVisibilityPause({
+    uiPhase,
+    isPauseOpen,
+    setIsPauseOpen,
+    pauseOnTabHidden,
+  })
 
   const onPremiumMatchBorder = useCallback((shape: 'line4plus' | 'tOrL') => {
     if (sparkResetRef.current !== null) {
@@ -1014,7 +1035,11 @@ export function Match3Screen({
 
               {uiPhase === 'playing' && isPauseOpen && (
                 <div className="match3__overlay match3__overlay--pause">
-                  <p className="match3__pause-title">Игра на паузе</p>
+                  <p className="match3__pause-title">
+                    {pausedByVisibility
+                      ? 'Вкладка в фоне — игра на паузе'
+                      : 'Игра на паузе'}
+                  </p>
                   <button
                     type="button"
                     className="btn btn--primary match3__play-btn"
