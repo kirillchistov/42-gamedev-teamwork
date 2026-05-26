@@ -6,6 +6,7 @@ on:
       - dev
       - main
       - sprint_9
+      - feature/9.8-final-demo
 
 jobs:
   build-and-push:

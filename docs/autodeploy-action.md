@@ -21,10 +21,12 @@
 
 | Workflow | Файл | Триггер | Назначение |
 |----------|------|---------|------------|
-| **Lint** | ['.github/workflows/checks.yml'](../.github/workflows/checks.yml) | PR, push в 'main' / 'dev' | eslint, typecheck, server build, client/server tests, smoke-сборка GH Pages |
-| **GitHub Pages** | ['.github/workflows/gh-pages.yml'](../.github/workflows/gh-pages.yml) | push в 'main', 'dev', 'sprint_*' | Статика на Pages (без SSR, без форума на Node) |
+| **Lint** | [`.github/workflows/checks.yml`](../.github/workflows/checks.yml) | PR, push в `main` / `dev` | eslint, typecheck, tests |
+| **GitHub Pages** | [`.github/workflows/gh-pages.yml`](../.github/workflows/gh-pages.yml) | push в `main`, `dev`, `sprint_*` | статика на Pages |
+| **Build** | [`.github/workflows/build_and_push.yaml`](../.github/workflows/build_and_push.yaml) | push `main`, `dev`, `sprint_9` | образы client/server → GHCR |
+| **Deploy** | [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) | после успешного build на `main`, `workflow_dispatch` | SSH → ВМ, `docker compose` prod |
 
-Это **CI** (проверки). Для **CD** добавляется отдельный workflow — ниже.
+**CI** — checks + Pages. **CD** — build + deploy.
 
 ---
 
@@ -110,33 +112,35 @@ jobs:
 
 ---
 
-## Workflow 2 (опционально): автодеплой на ВМ
+## Workflow 2: автодеплой на ВМ
 
-Отдельный job или workflow 'deploy.yml', триггер — успешный 'build_and_push' или 'workflow_dispatch'.
+Файл: [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)
 
-**Секреты репозитория** (Settings → Secrets):
+**Когда запускается**
 
-| Secret | Содержимое |
-|--------|------------|
-| 'YC_VM_HOST' | Публичный IP ВМ (статический) |
-| 'YC_VM_USER' | Пользователь SSH (например 'ubuntu' / 'yc-user') |
-| 'YC_VM_SSH_KEY' | Приватный ключ (публичный — на ВМ при создании) |
-| 'GHCR_TOKEN' | PAT с 'read:packages', если образы приватные |
+- автоматически после успешного **Build and push** на ветке `main`;
+- вручную: Actions → **Deploy to Yandex Cloud VM** → Run workflow (опционально указать `image_tag`).
 
-**Шаги на ВМ** (скрипт по SSH):
+**Секреты** (Settings → Secrets → Actions):
 
-```bash
-cd /opt/cosmic-match   # каталог с docker-compose.prod.yml
-export CLIENT_IMAGE=ghcr.io/<owner>/<repo>/client:<sha>
-export SERVER_IMAGE=ghcr.io/<owner>/<repo>/server:<sha>
-docker compose -f docker-compose.prod.yml pull
-docker compose -f docker-compose.prod.yml up -d
-docker image prune -f
-```
+| Secret | Обязательно | Содержимое |
+|--------|-------------|------------|
+| `YC_VM_HOST` | да | публичный IP ВМ |
+| `YC_VM_USER` | да | SSH-пользователь |
+| `YC_VM_SSH_KEY` | да | приватный ключ PEM |
+| `YC_DEPLOY_PATH` | нет | каталог на ВМ (по умолчанию `/opt/cosmic-match`) |
+| `GHCR_TOKEN` | нет | PAT `read:packages`, если пакеты приватные |
+| `GHCR_USER` | нет | GitHub username для `docker login` |
 
-На ВМ лежит 'docker-compose.prod.yml' с полями 'image:' вместо 'build:' (см. [yacloud-deploy.md](yacloud-deploy.md)).
+**Файлы в репозитории**
 
-Инструменты: ['appleboy/ssh-action'](https://github.com/appleboy/ssh-action) или 'scp' + 'ssh' в bash.
+| Файл | Назначение |
+|------|------------|
+| [`docker-compose.prod.yml`](../docker-compose.prod.yml) | стек только из образов GHCR |
+| [`scripts/deploy-on-vm.sh`](../scripts/deploy-on-vm.sh) | pull + up на сервере |
+| [`deploy/vm/README.md`](../deploy/vm/README.md) | первичная настройка ВМ |
+
+Первичная настройка сервера: [deploy/vm/README.md](../deploy/vm/README.md), облако: [yacloud-deploy.md](yacloud-deploy.md).
 
 ---
 
@@ -165,11 +169,11 @@ docker image prune -f
 
 ## Проверка готовности (9.5)
 
-- [ ] 'checks.yml' зелёный на PR.
-- [ ] 'build_and_push.yaml' публикует два образа в GHCR.
-- [ ] На ВМ после push (или ручного pull) поднимаются 'client', 'server', 'postgres', 'migrate'.
-- [ ] Сайт открывается по 'https://<домен>/' (через nginx, [nginx-config.md](nginx-config.md)).
-- [ ] В README или этом файле указаны ветка-триггер и список secrets.
+- [x] `build_and_push.yaml` — образы в GHCR.
+- [x] `deploy.yml` — SSH-деплой + `docker-compose.prod.yml`.
+- [ ] Секреты `YC_VM_*` заданы в GitHub.
+- [ ] На ВМ: `.env`, сертификаты nginx, первый `workflow_dispatch` успешен.
+- [ ] Сайт по `https://<домен>/` (см. [nginx-config.md](nginx-config.md)).
 
 ---
 

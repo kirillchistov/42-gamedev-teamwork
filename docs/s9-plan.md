@@ -15,7 +15,7 @@
 | 9.2 | nginx HTTP/2 + SSL | Сергей | L4 | Конфиг reverse-proxy перед Node |
 | 9.3 | Ещё одно Web API | Антон | L2 | **Page Visibility** — пауза match-3 при скрытой вкладке; см. [add-web-api.md](add-web-api.md) |
 | 9.4 | Защита от XSS | Кирилл | L2 | Plain-text валидация, безопасный вывод; см. [xss.md](xss.md) |
-| 9.5 | GitHub Action автодеплоя | Артур | L4 | [autodeploy-action.md](autodeploy-action.md) — GHCR + опционально SSH deploy |
+| 9.5 | GitHub Action автодеплоя | Артур | L4 | [autodeploy-action.md](autodeploy-action.md) — `build_and_push.yaml` + `deploy.yml` |
 | 9.6 | Деплой в Яндекс.Облако | Анна | L4 | [yacloud-deploy.md](yacloud-deploy.md) — ВМ, Compose, nginx |
 | 9.7 | A-запись домена | Кирилл | L2 | [yacloud-deploy.md](yacloud-deploy.md) § A-запись, OAuth redirect |
 | 9.8 | Финальное демо | Все | L0 | Полный сценарий: auth, игра, форум, прод |
@@ -35,7 +35,7 @@
 - Форум и темы — Node API; на GitHub Pages только статика (см. [sprint-7-8-demo-script.md](sprint-7-8-demo-script.md)).
 - OAuth Яндекс — только на SSR/Docker; на Pages скрыты кнопки OAuth.
 
-## 9.1 CSP (текущий фокус)
+## 9.1 CSP
 
 Требования и реализация: [csp.md](csp.md).
 
