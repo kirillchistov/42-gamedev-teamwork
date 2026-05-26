@@ -22,14 +22,14 @@ else
 fi
 
 echo "==> 2. Docker Compose: postgres → migrate → server → client → nginx"
-docker compose -f docker-compose.yml -f docker-compose.nginx.yml up -d postgres migrate server client nginx
+docker compose up -d postgres migrate server client nginx
 
 echo "==> 3. Синтаксис конфига (nginx -t в сети compose, резолв client)"
-docker compose -f docker-compose.yml -f docker-compose.nginx.yml exec -T nginx nginx -t
+docker compose exec -T nginx nginx -t
 
 echo "==> 4. Ожидание healthy client / nginx"
 sleep 12
-docker compose -f docker-compose.yml -f docker-compose.nginx.yml ps
+docker compose ps
 
 echo "==> 5. HTTP → HTTPS редирект"
 curl -sI "http://127.0.0.1:${HTTP_PORT}/" | head -5

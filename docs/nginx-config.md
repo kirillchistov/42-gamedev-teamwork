@@ -51,7 +51,7 @@ Reverse-proxy перед нашим приложением с **HTTPS** и **HTT
 
 | Компонент | Роль |
 |-----------|------|
-| ['docker-compose.yml'](../docker-compose.yml) | 'client' (SSR), 'server' (API), 'postgres' — **без** nginx |
+| ['docker-compose.yml'](../docker-compose.yml) | 'client', 'server', 'postgres', **'nginx'** (HTTPS + HTTP/2) |
 | ['Dockerfile.client'](../Dockerfile.client) | Node SSR |
 | ['packages/client/server/index.ts'](../packages/client/server/index.ts) | Express + Vite (dev) + CSP ([csp.md](csp.md)) |
 | GitHub Pages | Статика + SW; nginx там **не** используется |
@@ -231,25 +231,27 @@ add_header Referrer-Policy strict-origin-when-cross-origin always;
 
 ---
 
-## Вариант: nginx в Docker Compose
+## nginx в Docker Compose
 
-Отдельный сервис в ['docker-compose.yml'](../docker-compose.yml) (как идея):
+Сервис **`nginx`** уже в [`docker-compose.yml`](../docker-compose.yml):
 
-```yaml
-  nginx:
-    image: nginx:1.27-alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./deploy/nginx/cosmic-match.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      client:
-        condition: service_started
+- снаружи: `${NGINX_HTTP_PORT:-18080}` (редирект) и `${NGINX_HTTPS_PORT:-18443}` (HTTPS + HTTP/2);
+- внутри: `proxy_pass` → `http://client:80`;
+- конфиг: [`deploy/nginx/cosmic-match.docker.conf`](../deploy/nginx/cosmic-match.docker.conf);
+- сертификаты: [`deploy/nginx/certs/`](../deploy/nginx/certs/README.md) (локально самоподписанные).
+
+```bash
+# один раз — сертификат
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout deploy/nginx/certs/privkey.pem \
+  -out deploy/nginx/certs/fullchain.pem \
+  -subj "/CN=localhost"
+
+docker compose up -d
+# https://localhost:18443/
 ```
 
-В 'proxy_pass' тогда: 'http://client:80' (внутренняя сеть Compose), а порты 9000 на хост можно не публиковать.
+Прямой доступ к SSR без TLS (отладка): `http://localhost:${CLIENT_PORT:-9000}`.
 
 ---
 
@@ -260,7 +262,7 @@ add_header Referrer-Policy strict-origin-when-cross-origin always;
 | [`deploy/nginx/cosmic-match.conf`](../deploy/nginx/cosmic-match.conf) | Прод на ВМ: `listen 443 ssl http2`, Let's Encrypt, `proxy_pass` → `:9000` |
 | [`deploy/nginx/cosmic-match.docker.conf`](../deploy/nginx/cosmic-match.docker.conf) | Локальная проверка в Docker → `client:80` |
 | [`deploy/nginx/docker/nginx.conf`](../deploy/nginx/docker/nginx.conf) | `http` + `map` для WebSocket upgrade |
-| [`docker-compose.nginx.yml`](../docker-compose.nginx.yml) | Сервис `nginx` поверх основного compose |
+| [`docker-compose.yml`](../docker-compose.yml) | Сервис `nginx` в общем стеке |
 | [`scripts/verify-nginx-local.sh`](../scripts/verify-nginx-local.sh) | Сертификат, `nginx -t`, curl HTTP/2 |
 
 ### Локальная проверка (macOS / Linux)
@@ -289,7 +291,7 @@ docker run --rm \
 ## Пошаговый чеклист внедрения
 
 1. Поднять стек: `docker compose up` — client и server healthy.
-2. Установить nginx на ВМ (или `docker compose -f docker-compose.yml -f docker-compose.nginx.yml up -d`).
+2. Локально: `docker compose up -d` (включая nginx); на ВМ — nginx на хосте или тот же образ.
 3. Получить сертификат (certbot `--nginx` или DNS challenge); на ВМ — [`deploy/nginx/cosmic-match.conf`](../deploy/nginx/cosmic-match.conf).
 4. Положить конфиг, `nginx -t`, `systemctl reload nginx`.
 5. Открыть 'https://домен/' — лендинг, логин, игра.
@@ -324,6 +326,6 @@ docker run --rm \
 ## Критерий готовности задачи 9.2
 
 - [x] Конфиг в репозитории: `deploy/nginx/cosmic-match.conf` (**SSL** + **HTTP/2**).
-- [x] Локальная проверка: `scripts/verify-nginx-local.sh` + `docker-compose.nginx.yml`.
+- [x] nginx в `docker-compose.yml`; проверка: `scripts/verify-nginx-local.sh`.
 - [ ] На прод-ВМ: только **443** снаружи (80 → редирект), certbot/Let's Encrypt.
 - [ ] Запросы через **proxy** на SSR-клиент проверены на реальном домене (OAuth, форум).

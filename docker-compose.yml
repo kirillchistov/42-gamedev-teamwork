@@ -1,5 +1,7 @@
-# Клиент (SSR), сервер Node и PostgreSQL в одной сети Docker.
-# Сделал .env, надо проверить порты/пароли.
+# Клиент (SSR), API, PostgreSQL и nginx (HTTPS + HTTP/2) в одной сети Docker.
+# Точка входа снаружи: https://localhost:${NGINX_HTTPS_PORT:-18443} (нужны сертификаты в deploy/nginx/certs/).
+# Прямой SSR без nginx: http://localhost:${CLIENT_PORT:-9000}
+# Первый запуск nginx: ./scripts/verify-nginx-local.sh (шаг 1) или см. deploy/nginx/certs/README.md
 
 services:
   postgres:
@@ -103,6 +105,31 @@ services:
     depends_on:
       server:
         condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cosmic-match-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-18080}:80"
+      - "${NGINX_HTTPS_PORT:-18443}:443"
+    volumes:
+      - ./deploy/nginx/docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/cosmic-match.docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx/certs:/etc/nginx/ssl:ro
+    depends_on:
+      client:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://127.0.0.1/ping || exit 1",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
 volumes:
   pgdata:
