@@ -149,8 +149,9 @@ server {
 
 # Основной HTTPS + HTTP/2
 server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
     server_name match.example.com;
 
     # TLS (Let's Encrypt)
@@ -252,12 +253,45 @@ add_header Referrer-Policy strict-origin-when-cross-origin always;
 
 ---
 
+## Файлы в репозитории
+
+| Файл | Назначение |
+|------|------------|
+| [`deploy/nginx/cosmic-match.conf`](../deploy/nginx/cosmic-match.conf) | Прод на ВМ: `listen 443 ssl http2`, Let's Encrypt, `proxy_pass` → `:9000` |
+| [`deploy/nginx/cosmic-match.docker.conf`](../deploy/nginx/cosmic-match.docker.conf) | Локальная проверка в Docker → `client:80` |
+| [`deploy/nginx/docker/nginx.conf`](../deploy/nginx/docker/nginx.conf) | `http` + `map` для WebSocket upgrade |
+| [`docker-compose.nginx.yml`](../docker-compose.nginx.yml) | Сервис `nginx` поверх основного compose |
+| [`scripts/verify-nginx-local.sh`](../scripts/verify-nginx-local.sh) | Сертификат, `nginx -t`, curl HTTP/2 |
+
+### Локальная проверка (macOS / Linux)
+
+```bash
+chmod +x scripts/verify-nginx-local.sh
+./scripts/verify-nginx-local.sh
+```
+
+Порты по умолчанию: **18080** → редирект на **18443** (HTTPS; не 8080 — часто занят другим nginx на macOS). В DevTools на `https://localhost:18443` колонка Protocol должна быть **h2**.
+
+Только синтаксис без поднятия стека:
+
+```bash
+./scripts/verify-nginx-local.sh   # шаги 1–2
+# или вручную:
+docker run --rm \
+  -v "$PWD/deploy/nginx/docker/nginx.conf:/etc/nginx/nginx.conf:ro" \
+  -v "$PWD/deploy/nginx/cosmic-match.docker.conf:/etc/nginx/conf.d/default.conf:ro" \
+  -v "$PWD/deploy/nginx/certs:/etc/nginx/ssl:ro" \
+  nginx:1.27-alpine nginx -t
+```
+
+---
+
 ## Пошаговый чеклист внедрения
 
-1. Поднять стек: 'docker compose up' — client и server healthy.
-2. Установить nginx на ВМ (или добавить сервис в Compose).
-3. Получить сертификат (certbot '--nginx' или DNS challenge).
-4. Положить конфиг, 'nginx -t', 'systemctl reload nginx'.
+1. Поднять стек: `docker compose up` — client и server healthy.
+2. Установить nginx на ВМ (или `docker compose -f docker-compose.yml -f docker-compose.nginx.yml up -d`).
+3. Получить сертификат (certbot `--nginx` или DNS challenge); на ВМ — [`deploy/nginx/cosmic-match.conf`](../deploy/nginx/cosmic-match.conf).
+4. Положить конфиг, `nginx -t`, `systemctl reload nginx`.
 5. Открыть 'https://домен/' — лендинг, логин, игра.
 6. Проверить форум и OAuth (cookie, 'X-Forwarded-Proto https').
 7. DevTools: Protocol 'h2', CSP без лишних ошибок ([csp.md](csp.md) § Проверка).
@@ -289,7 +323,7 @@ add_header Referrer-Policy strict-origin-when-cross-origin always;
 
 ## Критерий готовности задачи 9.2
 
-- [ ] Описан и (по возможности) применён конфиг с **SSL** и **HTTP/2**.
-- [ ] Снаружи доступен только **443** (80 → редирект на HTTPS).
-- [ ] Запросы к приложению идут через **proxy** на SSR-клиент проекта.
-- [ ] В README или demo-скрипте есть ссылка на этот файл и команда проверки.
+- [x] Конфиг в репозитории: `deploy/nginx/cosmic-match.conf` (**SSL** + **HTTP/2**).
+- [x] Локальная проверка: `scripts/verify-nginx-local.sh` + `docker-compose.nginx.yml`.
+- [ ] На прод-ВМ: только **443** снаружи (80 → редирект), certbot/Let's Encrypt.
+- [ ] Запросы через **proxy** на SSR-клиент проверены на реальном домене (OAuth, форум).
