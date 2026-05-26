@@ -1,0 +1,19 @@
+# Локальная проверка задачи 9.2: nginx (SSL + HTTP/2) перед client.
+# Запуск: docker compose -f docker-compose.yml -f docker-compose.nginx.yml up -d
+# Проверка: ./scripts/verify-nginx-local.sh
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cosmic-match-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-18080}:80"
+      - "${NGINX_HTTPS_PORT:-18443}:443"
+    volumes:
+      - ./deploy/nginx/docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/cosmic-match.docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx/certs:/etc/nginx/ssl:ro
+    depends_on:
+      client:
+        condition: service_started
