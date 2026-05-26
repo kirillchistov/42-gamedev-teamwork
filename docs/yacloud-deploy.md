@@ -7,8 +7,6 @@
 
 Связанные документы: [autodeploy-action.md](autodeploy-action.md), [nginx-config.md](nginx-config.md), [forum-server-infra.md](forum-server-infra.md), [project-yandex-oauth.md](project-yandex-oauth.md).
 
-Материалы курса: «Инструкция по деплою в Облако» в [NginX-courseware.txt](NginX-courseware.txt).
-
 Официальная документация OAuth ЯП: [OpenAPI — OAuth](https://ya-praktikum.tech/api/v2/openapi/oauth).
 
 ---

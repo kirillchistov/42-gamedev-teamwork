@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - dev
+      - main
+      - sprint_9
 
 jobs:
   build-and-push:

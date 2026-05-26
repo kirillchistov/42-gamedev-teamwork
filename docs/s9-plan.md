@@ -58,7 +58,7 @@
 
 ## 9.2 nginx
 
-См. [nginx-config.md](nginx-config.md) (HTTP/2, SSL, прокси, сопоставление с [NginX-courseware.txt](NginX-courseware.txt)).
+См. [nginx-config.md](nginx-config.md) (HTTP/2, SSL, прокси).
 
 ## 9.8 — чеклист демо
 
