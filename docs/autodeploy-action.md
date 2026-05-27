@@ -118,8 +118,18 @@ jobs:
 
 **Когда запускается**
 
-- автоматически после успешного **Build and push** на ветке `main`;
-- вручную: Actions → **Deploy to Yandex Cloud VM** → Run workflow (опционально указать `image_tag`).
+- автоматически после успешного **Build and push**, если сборка была с ветки **`DEPLOY_BRANCH`** (см. ниже);
+- вручную: Actions → **Deploy to Yandex Cloud VM** → Run workflow (`image_tag`, опционально `deploy_branch` для лога).
+
+**Ветка автодеплоя** (вместо захардкода в YAML):
+
+| Способ | Значение |
+|--------|----------|
+| Repository **Variable** `DEPLOY_BRANCH` | Settings → Secrets and variables → Actions → **Variables** → `DEPLOY_BRANCH` = `feature/9.8-final-demo` (или `main`) |
+| По умолчанию | `main`, если переменная не задана |
+
+Автодеплой сработает только если `workflow_run.head_branch` совпадает с `DEPLOY_BRANCH`.  
+Ветка должна быть и в `build_and_push.yaml` (`on.push.branches`), иначе образ для неё не соберётся.
 
 **Секреты** (Settings → Secrets → Actions):
 
@@ -146,10 +156,11 @@ jobs:
 
 ## Ветки и окружения
 
-| Ветка | CI (checks) | CD (образы) | Куда деплоится |
-|-------|-------------|-------------|----------------|
-| 'dev' | да | опционально только build без deploy | — |
-| 'main' | да | build + push; deploy — по решению команды | прод / демо ВМ |
+| Ветка | CI (checks) | CD (образы) | Автодеплой на ВМ |
+|-------|-------------|-------------|------------------|
+| `dev` | да | build (если в `build_and_push`) | нет, если `DEPLOY_BRANCH` ≠ dev |
+| `main` | да | build | да, если `DEPLOY_BRANCH` = main (default) |
+| feature/* | да | build (если добавлена в `build_and_push`) | да, если `DEPLOY_BRANCH` совпадает |
 
 Не смешивать с **gh-pages**: статика на Pages остаётся отдельным workflow, полный стек — только Docker + облако.
 

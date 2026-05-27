@@ -1,4 +1,6 @@
-# CD: деплой на ВМ в Яндекс.Облако после успешной сборки образов (main).
+# CD: деплой на ВМ в Яндекс.Облако после успешной сборки образов.
+# Ветка автодеплоя: Variables → DEPLOY_BRANCH (или main по умолчанию).
+# Ручной запуск: input deploy_branch переопределяет проверку ветки (только workflow_dispatch).
 # Секреты: YC_VM_HOST, YC_VM_USER, YC_VM_SSH_KEY; опционально GHCR_TOKEN, GHCR_USER.
 # См. docs/autodeploy-action.md
 
@@ -8,13 +10,20 @@ on:
   workflow_run:
     workflows: ['Build and push Docker images']
     types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
+      deploy_branch:
+        description: 'Ветка для проверки (пусто — Variables DEPLOY_BRANCH или main). Только при ручном запуске не блокирует деплой.'
+        required: false
+        type: string
+        default: ''
       image_tag:
         description: 'Git SHA для тега образов (по умолчанию — текущий commit)'
         required: false
         type: string
+
+env:
+  DEPLOY_BRANCH: ${{ vars.DEPLOY_BRANCH || 'main' }}
 
 concurrency:
   group: deploy-production
@@ -25,13 +34,23 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
+       github.event.workflow_run.head_branch == env.DEPLOY_BRANCH)
     runs-on: ubuntu-latest
     environment: production
 
     steps:
       - name: Checkout (скрипт деплоя)
         uses: actions/checkout@v4
+
+      - name: Resolve deploy branch (log)
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.deploy_branch }}" ]; then
+            echo "Manual deploy_branch input: ${{ inputs.deploy_branch }}"
+          fi
+          echo "Configured DEPLOY_BRANCH (Variables or default): ${{ env.DEPLOY_BRANCH }}"
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            echo "Triggered by build on branch: ${{ github.event.workflow_run.head_branch }}"
+          fi
 
       - name: Lowercase owner for GHCR
         run: echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
