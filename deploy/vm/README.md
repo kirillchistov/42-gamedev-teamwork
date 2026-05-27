@@ -14,15 +14,26 @@
 
 ### Проверка с локальной машины (Yandex CLI)
 
-```bash
-# Практикум
-yc compute ssh --id epdu7isvccu4ktfvinpq --login yc-user -- bash -s < scripts/verify-vm-setup.sh
+Скрипт **не лежит на ВМ** — запускайте из **корня репозитория на Mac**, stdin передаётся на сервер:
 
-# Личная ВМ
-yc compute ssh --id fv4cbmmef94okseq8t9l --login yc-user -- bash -s < scripts/verify-vm-setup.sh
+```bash
+cd /path/to/42-gamedev-teamwork
+
+# Практикум (158.160.85.253)
+yc compute ssh --id epdu7isvccu4ktfvinpq --login yc-user --identity-file ~/.ssh/id_ed25519 -- bash -s < scripts/verify-vm-setup.sh
+
+# Личная ВМ (158.160.241.203)
+yc compute ssh --id fv4cbmmef94okseq8t9l --login yc-user --identity-file ~/.ssh/id_ed25519 -- bash -s < scripts/verify-vm-setup.sh
 ```
 
-Или по SSH вручную на ВМ: `bash scripts/verify-vm-setup.sh` (после копирования скрипта).
+Обычный SSH (если уже в сессии на ВМ — сначала скопируйте файл):
+
+```bash
+scp -i ~/.ssh/id_ed25519 scripts/verify-vm-setup.sh yc-user@158.160.241.203:/tmp/
+ssh -i ~/.ssh/id_ed25519 yc-user@158.160.241.203 'bash /tmp/verify-vm-setup.sh'
+```
+
+На ВМ команда `bash scripts/verify-vm-setup.sh` сработает только если каталог репозитория уже есть на сервере.
 
 ## 1. Каталог проекта
 
