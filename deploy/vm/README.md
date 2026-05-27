@@ -2,6 +2,28 @@
 
 Выполните **один раз** на сервере в Яндекс.Облаке (по SSH).
 
+## Две ВМ в проекте (пример)
+
+| ВМ | IP | Назначение |
+|----|-----|------------|
+| `team-42-cosmic-vm-3` (каталог Практикума) | `158.160.85.253` | учебная / командная |
+| `team-42-cosmic-vm-kir` (личный каталог) | `158.160.241.203` | личные эксперименты |
+
+В **GitHub Secrets** указывается **одна** целевая ВМ (`YC_VM_HOST` = её публичный IP).  
+Пустой `sudo docker ps` на свежей ВМ — **нормально**: Docker установлен, стек Cosmic Match ещё не поднимали.
+
+### Проверка с локальной машины (Yandex CLI)
+
+```bash
+# Практикум
+yc compute ssh --id epdu7isvccu4ktfvinpq --login yc-user -- bash -s < scripts/verify-vm-setup.sh
+
+# Личная ВМ
+yc compute ssh --id fv4cbmmef94okseq8t9l --login yc-user -- bash -s < scripts/verify-vm-setup.sh
+```
+
+Или по SSH вручную на ВМ: `bash scripts/verify-vm-setup.sh` (после копирования скрипта).
+
 ## 1. Каталог проекта
 
 ```bash
