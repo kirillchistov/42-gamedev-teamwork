@@ -3,6 +3,8 @@
 export const CSP_ORIGINS = {
   praktikumApi: 'https://ya-praktikum.tech',
   yandexOAuth: 'https://oauth.yandex.ru',
+  googleFontsCss: 'https://fonts.googleapis.com',
+  googleFontsStatic: 'https://fonts.gstatic.com',
 } as const
 
 function isDevEnv(): boolean {
@@ -34,7 +36,9 @@ export function buildSsrCspDirectives(nonce: string): Record<string, string[]> {
     CSP_ORIGINS.praktikumApi,
     CSP_ORIGINS.yandexOAuth,
   ]
-  const styleSrc = ["'self'", "'unsafe-inline'"]
+  const styleSrc = ["'self'", "'unsafe-inline'", CSP_ORIGINS.googleFontsCss]
+  const styleSrcElem = ["'self'", "'unsafe-inline'", CSP_ORIGINS.googleFontsCss]
+  const fontSrc = ["'self'", 'data:', CSP_ORIGINS.googleFontsStatic]
 
   if (isDevEnv()) {
     scriptSrc.push("'unsafe-eval'")
@@ -46,8 +50,9 @@ export function buildSsrCspDirectives(nonce: string): Record<string, string[]> {
     'base-uri': ["'self'"],
     'script-src': scriptSrc,
     'style-src': styleSrc,
+    'style-src-elem': styleSrcElem,
     'img-src': ["'self'", 'data:', 'blob:', 'https:'],
-    'font-src': ["'self'", 'data:'],
+    'font-src': fontSrc,
     'connect-src': connectSrc,
     'frame-src': [CSP_ORIGINS.yandexOAuth],
     'form-action': ["'self'", CSP_ORIGINS.yandexOAuth],

@@ -12,3 +12,8 @@ export declare function setSecurityHeaders(
 ): void
 export declare function registerCspMiddleware(app: Express): void
 export declare function getCspNonce(res: Response): string
+/** Nonce на все <script> из Vite index.html (module entry и т.д.), кроме уже помеченных. */
+export declare function injectHtmlScriptNonces(
+  html: string,
+  nonce: string
+): string

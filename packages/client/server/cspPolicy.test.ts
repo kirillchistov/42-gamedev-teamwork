@@ -29,6 +29,8 @@ describe('cspPolicy', () => {
       expect.arrayContaining(["'self'", "'nonce-test-nonce'"])
     )
     expect(directives['connect-src']).toContain(CSP_ORIGINS.praktikumApi)
+    expect(directives['style-src-elem']).toContain(CSP_ORIGINS.googleFontsCss)
+    expect(directives['font-src']).toContain(CSP_ORIGINS.googleFontsStatic)
     expect(buildSsrCspHeader('abc')).toContain("'nonce-abc'")
   })
 

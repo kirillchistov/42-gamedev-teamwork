@@ -175,13 +175,14 @@ async function createServer() {
             // Получаю HTML-строку из JSX
             const { html: appHtml, initialState, helmet, styleTags, } = await render(req);
             // Заменяю комментарий на сгенерированную HTML-строку
-            const html = template
+            const nonce = (0, csp_1.getCspNonce)(res);
+            const html = (0, csp_1.injectHtmlScriptNonces)(template
                 .replace('<!--ssr-styles-->', styleTags)
                 .replace(`<!--ssr-helmet-->`, `${helmet.meta.toString()} ${helmet.title.toString()} ${helmet.link.toString()}`)
                 .replace(`<!--ssr-outlet-->`, appHtml)
-                .replace(`<!--ssr-initial-state-->`, `<script nonce="${(0, csp_1.getCspNonce)(res)}">window.APP_INITIAL_STATE = ${(0, serialize_javascript_1.default)(initialState, {
+                .replace(`<!--ssr-initial-state-->`, `<script nonce="${nonce}">window.APP_INITIAL_STATE = ${(0, serialize_javascript_1.default)(initialState, {
                 isJSON: true,
-            })}</script>`);
+            })}</script>`), nonce);
             // Завершаю запрос и отдаю HTML-страницу
             res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
         }

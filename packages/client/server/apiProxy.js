@@ -26,8 +26,7 @@ function readNodeApiTarget() {
         ((_b = process.env.VITE_APP_API_URL) === null || _b === void 0 ? void 0 : _b.trim());
     const internal = (_c = process.env.INTERNAL_SERVER_URL) === null || _c === void 0 ? void 0 : _c.trim();
     // В dev на хосте INTERNAL_SERVER_URL=http://server:… из docker-compose не резолвится.
-    const internalIsDockerOnly = internal != null &&
-        /:\/\/server(?::|\/|$)/.test(internal);
+    const internalIsDockerOnly = internal != null && /:\/\/server(?::|\/|$)/.test(internal);
     if (process.env.NODE_ENV === 'development' &&
         internalIsDockerOnly &&
         external) {
@@ -54,9 +53,7 @@ const sharedProxyOptions = {
 };
 function nodeProxy(nodeApiTarget, mountPath) {
     const base = trimTrailingSlash(nodeApiTarget);
-    const prefix = mountPath.startsWith('/')
-        ? mountPath
-        : `/${mountPath}`;
+    const prefix = mountPath.startsWith('/') ? mountPath : `/${mountPath}`;
     return (0, http_proxy_middleware_1.createProxyMiddleware)({
         // http-proxy-middleware v3: target должен включать тот же base path, что и app.use(path).
         target: `${base}${prefix}`,

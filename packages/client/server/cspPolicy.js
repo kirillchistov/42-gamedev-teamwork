@@ -11,6 +11,8 @@ exports.shouldInjectGhPagesCspMeta = shouldInjectGhPagesCspMeta;
 exports.CSP_ORIGINS = {
     praktikumApi: 'https://ya-praktikum.tech',
     yandexOAuth: 'https://oauth.yandex.ru',
+    googleFontsCss: 'https://fonts.googleapis.com',
+    googleFontsStatic: 'https://fonts.gstatic.com',
 };
 function isDevEnv() {
     return process.env.NODE_ENV === 'development';
@@ -38,7 +40,17 @@ function buildSsrCspDirectives(nonce) {
         exports.CSP_ORIGINS.praktikumApi,
         exports.CSP_ORIGINS.yandexOAuth,
     ];
-    const styleSrc = ["'self'", "'unsafe-inline'"];
+    const styleSrc = [
+        "'self'",
+        "'unsafe-inline'",
+        exports.CSP_ORIGINS.googleFontsCss,
+    ];
+    const styleSrcElem = [
+        "'self'",
+        "'unsafe-inline'",
+        exports.CSP_ORIGINS.googleFontsCss,
+    ];
+    const fontSrc = ["'self'", 'data:', exports.CSP_ORIGINS.googleFontsStatic];
     if (isDevEnv()) {
         scriptSrc.push("'unsafe-eval'");
         connectSrc.push('ws:', 'wss:', 'http://localhost:*', 'http://127.0.0.1:*');
@@ -48,19 +60,12 @@ function buildSsrCspDirectives(nonce) {
         'base-uri': ["'self'"],
         'script-src': scriptSrc,
         'style-src': styleSrc,
-        'img-src': [
-            "'self'",
-            'data:',
-            'blob:',
-            'https:',
-        ],
-        'font-src': ["'self'", 'data:'],
+        'style-src-elem': styleSrcElem,
+        'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+        'font-src': fontSrc,
         'connect-src': connectSrc,
         'frame-src': [exports.CSP_ORIGINS.yandexOAuth],
-        'form-action': [
-            "'self'",
-            exports.CSP_ORIGINS.yandexOAuth,
-        ],
+        'form-action': ["'self'", exports.CSP_ORIGINS.yandexOAuth],
         'manifest-src': ["'self'"],
         'worker-src': ["'self'"],
         'object-src': ["'none'"],
@@ -80,17 +85,9 @@ function buildGhPagesCspDirectives() {
         'base-uri': ["'self'"],
         'script-src': ["'self'"],
         'style-src': ["'self'", "'unsafe-inline'"],
-        'img-src': [
-            "'self'",
-            'data:',
-            'blob:',
-            'https:',
-        ],
+        'img-src': ["'self'", 'data:', 'blob:', 'https:'],
         'font-src': ["'self'", 'data:'],
-        'connect-src': [
-            "'self'",
-            exports.CSP_ORIGINS.praktikumApi,
-        ],
+        'connect-src': ["'self'", exports.CSP_ORIGINS.praktikumApi],
         'form-action': ["'self'"],
         'manifest-src': ["'self'"],
         'worker-src': ["'self'"],

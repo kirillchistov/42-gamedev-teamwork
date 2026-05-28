@@ -41,3 +41,12 @@ export function registerCspMiddleware(app: Express): void {
 export function getCspNonce(res: Response): string {
   return String(res.locals[CSP_NONCE_LOCAL] ?? '')
 }
+
+/** Nonce на все <script> из Vite index.html (module entry и т.д.), кроме уже помеченных. */
+export function injectHtmlScriptNonces(html: string, nonce: string): string {
+  if (!nonce) return html
+  return html.replace(
+    /<script(?![^>]*\snonce=)(?=[\s>])/gi,
+    `<script nonce="${nonce}"`
+  )
+}
