@@ -89,6 +89,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: "80"
+      # CSP upgrade-insecure-requests — только с валидным HTTPS (домен + Let's Encrypt)
+      # CSP_UPGRADE_INSECURE: "1"
       INTERNAL_SERVER_URL: http://server:${SERVER_PORT:-3000}
       PRAKTIKUM_API_URL: ${PRAKTIKUM_API_URL:-https://ya-praktikum.tech}
       EXTERNAL_SERVER_URL: http://server:${SERVER_PORT:-3000}

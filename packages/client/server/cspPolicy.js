@@ -21,6 +21,10 @@ function isGhPagesStaticBuild() {
     const flag = process.env.VITE_STATIC_DEPLOY;
     return flag === 'gh-pages';
 }
+/** Только для прода с валидным TLS (Let's Encrypt). На IP + :9000 ломает загрузку ассетов. */
+function shouldUpgradeInsecureRequests() {
+    return process.env.CSP_UPGRADE_INSECURE === '1';
+}
 // Сериализация директив в значение заголовка / meta
 function formatCspHeader(directives) {
     return Object.entries(directives)
@@ -40,16 +44,8 @@ function buildSsrCspDirectives(nonce) {
         exports.CSP_ORIGINS.praktikumApi,
         exports.CSP_ORIGINS.yandexOAuth,
     ];
-    const styleSrc = [
-        "'self'",
-        "'unsafe-inline'",
-        exports.CSP_ORIGINS.googleFontsCss,
-    ];
-    const styleSrcElem = [
-        "'self'",
-        "'unsafe-inline'",
-        exports.CSP_ORIGINS.googleFontsCss,
-    ];
+    const styleSrc = ["'self'", "'unsafe-inline'", exports.CSP_ORIGINS.googleFontsCss];
+    const styleSrcElem = ["'self'", "'unsafe-inline'", exports.CSP_ORIGINS.googleFontsCss];
     const fontSrc = ["'self'", 'data:', exports.CSP_ORIGINS.googleFontsStatic];
     if (isDevEnv()) {
         scriptSrc.push("'unsafe-eval'");
@@ -70,7 +66,7 @@ function buildSsrCspDirectives(nonce) {
         'worker-src': ["'self'"],
         'object-src': ["'none'"],
     };
-    if (!isDevEnv()) {
+    if (!isDevEnv() && shouldUpgradeInsecureRequests()) {
         directives['upgrade-insecure-requests'] = [];
     }
     return directives;

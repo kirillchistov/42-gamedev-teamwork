@@ -76,6 +76,8 @@ export default defineConfig(({ mode }) => {
       },
       react(),
       VitePWA({
+        // SW на IP с самоподписанным TLS не регистрируется; включить: VITE_ENABLE_SW=1 при сборке
+        injectRegister: process.env.VITE_ENABLE_SW === '1' ? 'auto' : false,
         strategies: 'injectManifest',
         srcDir: 'src',
         filename: 'sw.ts',

@@ -24,6 +24,7 @@ describe('cspPolicy', () => {
 
   it('SSR policy includes nonce and Praktikum API', () => {
     process.env.NODE_ENV = 'production'
+    delete process.env.CSP_UPGRADE_INSECURE
     const directives = buildSsrCspDirectives('test-nonce')
     expect(directives['script-src']).toEqual(
       expect.arrayContaining(["'self'", "'nonce-test-nonce'"])
@@ -32,6 +33,15 @@ describe('cspPolicy', () => {
     expect(directives['style-src-elem']).toContain(CSP_ORIGINS.googleFontsCss)
     expect(directives['font-src']).toContain(CSP_ORIGINS.googleFontsStatic)
     expect(buildSsrCspHeader('abc')).toContain("'nonce-abc'")
+    expect(directives['upgrade-insecure-requests']).toBeUndefined()
+  })
+
+  it('SSR adds upgrade-insecure-requests when CSP_UPGRADE_INSECURE=1', () => {
+    process.env.NODE_ENV = 'production'
+    process.env.CSP_UPGRADE_INSECURE = '1'
+    const directives = buildSsrCspDirectives('n')
+    expect(directives['upgrade-insecure-requests']).toEqual([])
+    delete process.env.CSP_UPGRADE_INSECURE
   })
 
   it('dev SSR allows Vite HMR', () => {

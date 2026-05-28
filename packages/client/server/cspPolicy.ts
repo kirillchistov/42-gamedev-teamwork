@@ -16,6 +16,11 @@ function isGhPagesStaticBuild(): boolean {
   return flag === 'gh-pages'
 }
 
+/** Только для прода с валидным TLS (Let's Encrypt). На IP + :9000 ломает загрузку ассетов. */
+function shouldUpgradeInsecureRequests(): boolean {
+  return process.env.CSP_UPGRADE_INSECURE === '1'
+}
+
 // Сериализация директив в значение заголовка / meta
 export function formatCspHeader(directives: Record<string, string[]>): string {
   return Object.entries(directives)
@@ -61,7 +66,7 @@ export function buildSsrCspDirectives(nonce: string): Record<string, string[]> {
     'object-src': ["'none'"],
   }
 
-  if (!isDevEnv()) {
+  if (!isDevEnv() && shouldUpgradeInsecureRequests()) {
     directives['upgrade-insecure-requests'] = []
   }
 

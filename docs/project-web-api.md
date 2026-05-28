@@ -1,209 +1,148 @@
-# Project Web API (Current State + Next Steps)
+# Project Web API
 
-> **Не путать с сетевой архитектурой:** здесь речь про **браузерные** Web API (Fullscreen, Storage, Performance и т.д.). Как устроены запросы к **Практикуму** vs **`packages/server`**, SSR, cookie и `VITE_APP_API_URL` — см. **[`project-structure.md`](./project-structure.md)**.
+> Браузерные Web API (Fullscreen, Storage, Performance, Notifications и т.д.).  
+> Сетевой API (`packages/server`, OAuth) — в [project-structure.md](./project-structure.md).
 
-Здесь расскажем:
-1. как сейчас в проекте подключены и используются Web API ('Fullscreen API', 'localStorage/sessionStorage');
-2. как полезно добавить один из API из задания ('Geolocation', 'Performance', 'Notification');
-3. какие дополнительные Web API логично внедрять дальше.
+Подробные шаги, **врезки кода** и cherry-pick с ветки `feature/9.3-add-webapi` — [add-web-api.md](./add-web-api.md).
 
 ---
 
-## 1) Текущее использование Web API
+## Статус по веткам (актуально)
 
-### 1.1 Fullscreen API
+| Ветка | 6.6 Fullscreen | 7.5 Performance | 9.3 (4 API) |
+|-------|----------------|-----------------|-------------|
+| `main` / `feature/9.8-final-demo` | да | да | **нет в коде** |
+| `feature/9.3-add-webapi` | да | да | **да** |
 
-Реализация уже есть и обернута в отдельный util:
-
-- 'packages/client/src/utils/fullscreen.ts'
-
-Что сделано:
-
-- единая обертка для:
-  - 'enterFullscreen()'
-  - 'exitFullscreen()'
-  - 'toggleFullscreen()'
-  - 'addFullscreenChangeListener()'
-- учтен Safari-префикс:
-  - 'webkitRequestFullscreen'
-  - 'webkitExitFullscreen'
-  - 'webkitfullscreenchange'
-- fallback и безопасные 'try/catch'.
-
-Где используется:
-
-- 'GamePage.tsx' - горячая клавиша 'F' для toggle full screen;
-- 'Header' - кнопка в UI + реакция на 'fullscreenchange'.
-
-Итог: Fullscreen уже интегрирован правильно, кросс-браузерно и с cleanup подписок.
+На **`feature/9.8-final-demo`** задача 9.3 описана в docs, но файлов `notifications.ts`, `pageVisibility.ts`, `vibration.ts`, хуков и правок в `GamePage` / `Match3Screen` / `ProfilePage` **нет**. Решение целиком лежит в **`feature/9.3-add-webapi`** — см. [add-web-api.md](./add-web-api.md), раздел «Статус в ветках».
 
 ---
+
+## 1) Уже в проекте (все ветки)
+
+### 1.1 Fullscreen API (6.6)
+
+- `packages/client/src/utils/fullscreen.ts`
+- `GamePage.tsx` (F), `Header`
 
 ### 1.2 localStorage / sessionStorage
 
-Использование сейчас широкое и практичное: настройки, прогресс, результаты, косметика.
+Настройки игры, прогресс, форум, темы (`GamePage`, `gameCompanions`, `records` и др.).
 
-Основные точки:
+### 1.3 Performance API (7.5)
 
-- 'GamePage.tsx'
-  - 'match3:last-result'
-  - 'match3:result-history'
-  - 'match3:hero-chat:<companionId>'
-  - 'match3:first-start-countdown-done'
-  - 'match3:player-hints-mode'
-- 'gameCompanions.ts'
-  - активный герой
-  - 'winsTotal'
-  - 'lastShownBeatIndex'
-- 'match3ArenaBackground.ts'
-  - индекс фона
-  - пользовательский URL фона
-- 'systems/records.ts'
-  - player daily records
-- 'gameLandingGate.ts'
-  - 'sessionStorage' для one-time показа '/game' после логина.
+- `packages/client/src/utils/performanceMetrics.ts`
+- Замеры сессии, longtask observer, `match3:perf-history`
+- `visibilitychange` в этом модуле — **только для метрик**, не пауза для игрока
 
-Хорошие текущие практики:
+### 1.4 Speech Synthesis
 
-- все обращения завернуты в 'try/catch';
-- есть guards на 'typeof window === 'undefined'';
-- есть валидация URL/данных перед сохранением;
-- отдельно хранятся state по сущностям (фон, чат, прогресс, рекорды).
+- `HieroglyphCardOverlay.tsx` — отдельно от 9.3
 
 ---
 
-## 2) Что добавить из задания (рекомендации)
+## 2) Задача 9.3 — реализация (ветка `feature/9.3-add-webapi`)
 
-Ниже - три варианта. Наиболее полезный для текущего этапа: **Performance API**.
+Порядок: **Notification → Geolocation → Page Visibility → Vibration**.
 
-### 2.1 Performance API (рекомендовано первым)
+| API | Модуль | UI | localStorage / ключи |
+|-----|--------|-----|----------------------|
+| **Notifications** | `utils/notifications.ts`, `hooks/useGameReturnNotification.ts` | `GamePage` (настройки + `/game*`) | `match3:notifications-opt-in` |
+| **Geolocation** | `utils/geolocation.ts` | `ProfilePage` | `profile:coarse-region` |
+| **Page Visibility** | `utils/pageVisibility.ts`, `hooks/usePageVisibilityPause.ts` | `Match3Screen`, `GamePage` | `match3:pause-on-tab-hidden` |
+| **Vibration** | `utils/vibration.ts` | `Match3Screen`, `GamePage` | `match3:vibration-enabled` |
 
-Зачем:
+Ниже — сжатые врезки; полные файлы и diff — в [add-web-api.md](./add-web-api.md).
 
-- match-3 уже насыщен визуальными эффектами;
-- есть мобильный UX и fullscreen;
-- нужны метрики до подключения backend-аналитики.
+### 2.1 Notification API
 
-Минимальная полезная реализация:
+```typescript
+// utils/notifications.ts — показ после opt-in + granted
+export function showGameReturnNotification(): boolean {
+  if (Notification.permission !== 'granted') return false
+  new Notification('Cosmic Match', {
+    body: 'Партия ждёт — вернитесь в игру, когда будет удобно.',
+    tag: 'cosmic-match-return',
+  })
+  return true
+}
 
-1. Добавить util (например, 'utils/perf.ts') с:
-   - 'performance.mark(...)'
-   - 'performance.measure(...)'
-   - 'PerformanceObserver' для 'longtask' (опционально).
-2. Замерять:
-   - время партии ('startPlay -> gameEnd');
-   - средний frame-time в 'play' фазе;
-   - число long tasks > 50ms.
-3. Сохранять в localStorage последние 20 замеров:
-   - 'match3:perf-history'.
-4. Показать мини-блок в debug/настройках:
-   - "avg frame ms", "long tasks", "session ms".
+// hooks/useGameReturnNotification.ts — таймер 120 с при document.hidden
+useGameReturnNotification(isOnGameSection && notificationsOptIn)
+```
 
-Польза:
+### 2.2 Geolocation API
 
-- видно, где лаги;
-- можно сравнивать эффекты 'full' vs 'simple' VFX;
-- дает аргументы для оптимизации.
+```typescript
+// Без разрешения — только Intl (часовой пояс)
+export function getTimezoneRegion(): CoarseRegion { /* … */ }
 
----
+// С разрешением — getCurrentPosition, координаты ±0.1°
+export function resolveCoarseRegion({ useGeolocation: true })
 
-### 2.2 Notification API
+// server/csp.ts
+'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)'
+```
 
-Зачем:
+### 2.3 Page Visibility API
 
-- повышает ретеншн (мягкие напоминания);
-- подходит под daily loops и "вернись в игру".
+```typescript
+// utils/pageVisibility.ts
+export function subscribePageVisibility(onChange: (hidden: boolean) => void): () => void
 
-Минимальная реализация (без backend):
+// hooks/usePageVisibilityPause.ts — при hidden + uiPhase === 'playing'
+setIsPauseOpen(true)  // → overlay «Вкладка в фоне — игра на паузе»
+// MATCH3_PERF_PAUSE_EVENT уходит через существующий useEffect(isPauseOpen)
+```
 
-1. Отдельный переключатель в настройках:
-   - "Разрешить уведомления".
-2. При включении:
-   - 'Notification.requestPermission()'.
-3. Для 'granted':
-   - локальный сценарий "напомнить через N часов" (когда вкладка неактивна и игрок ушел).
-4. Тексты:
-   - "Новая глава Истории героя готова";
-   - "Дейли-квест обновлен";
-   - "В клане ждут новые задания" (когда появится клановая механика).
+### 2.4 Vibration API
 
-Важно:
+```typescript
+// utils/vibration.ts
+navigator.vibrate([40, 30, 60])   // комбо chain >= 4
+navigator.vibrate([80, 50, 80, 50, 120])  // победа
 
-- не спамить;
-- явно дать пользователю toggle в UI;
-- хранить opt-in флаг в localStorage.
+// Match3Screen — в onComboShake; GamePage — vibrateWinFeedback() при goalReached
+```
 
----
+### 2.5 Тесты (unit)
 
-### 2.3 Geolocation API
+| Файл |
+|------|
+| `packages/client/src/utils/notifications.test.ts` |
+| `packages/client/src/utils/geolocation.test.ts` |
+| `packages/client/src/utils/pageVisibility.test.ts` |
 
-Зачем:
-
-- прямого влияния на core-loop нет, но можно добавить value в мета-слой.
-
-Практичные сценарии:
-
-- региональный бейдж в профиле/лидерборде (страна/часовой пояс);
-- локальные события ("Ночной челлендж вашего региона");
-- отображение "гео-кластера" игроков в клановом UI.
-
-Ограничения:
-
-- чувствительные данные;
-- нужна максимально деликатная коммуникация и opt-in;
-- не использовать точные координаты без явной необходимости.
-
-На текущем этапе лучше отложить или сделать "coarse-only" (страна/таймзона).
+```bash
+yarn workspace client test src/utils/notifications.test.ts src/utils/geolocation.test.ts src/utils/pageVisibility.test.ts
+```
 
 ---
 
-## 3) Дополнительные Web API, которые стоит рассмотреть
+## 3) API вне 9.3 (на будущее)
 
-### 3.1 Page Visibility API
-
-Польза:
-
-- корректно ставить игру на паузу, если вкладка скрыта;
-- не тратить таймер/эффекты в фоне;
-- база для честной time-mode логики.
-
-### 3.2 Network Information API (best-effort)
-
-Польза:
-
-- на медленной сети понижать качество ассетов/эффектов;
-- подсказывать "облегченный режим".
-
-### 3.3 Vibration API (mobile, optional)
-
-Польза:
-
-- легкий haptic feedback для важных событий (win, combo);
-- включать только через toggle.
-
-### 3.4 Clipboard API
-
-Польза:
-
-- удобный share результата;
-- copy invite-code клана.
+| API | Польза |
+|-----|--------|
+| Network Information | Облегчённый режим на медленной сети |
+| Clipboard | Копирование счёта |
+| Push API | Нужен backend |
 
 ---
 
-## 4) Рекомендуемый порядок внедрения
+## 4) Definition of Done (9.3)
 
-1. **Performance API** (сразу дает инженерную пользу и метрики).
-2. **Notification API** (retention + UX, если настроен opt-in).
-3. **Page Visibility API** (техническая стабильность таймеров/паузы).
-4. Geolocation - позже, после появления backend-аналитики и кланов.
+- [ ] Код в целевой ветке (`feature/9.8-final-demo` или `main`) — cherry-pick с `feature/9.3-add-webapi`
+- [x] Отдельный util/хук на API (в ветке `9.3`)
+- [x] Graceful fallback
+- [x] Cleanup слушателей
+- [x] Toggle / opt-in
+- [x] Unit-тесты (в ветке `9.3`)
+- [x] Документация с врезками кода — этот файл и [add-web-api.md](./add-web-api.md)
 
 ---
 
-## 5) Definition of Done для блока Web API
+## Ссылки
 
-- есть отдельный util/модуль API;
-- есть graceful fallback, если API не поддерживается;
-- есть cleanup listeners/observers;
-- есть пользовательский toggle, если API влияет на приватность/уведомления;
-- изменения покрыты минимальными тестами и описаны в docs.
-
+- [add-web-api.md](./add-web-api.md) — итерации, полные врезки, cherry-pick
+- [s9-plan.md](./s9-plan.md)
+- [csp.md](./csp.md)
