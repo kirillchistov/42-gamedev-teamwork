@@ -28,7 +28,8 @@
     "pg": "^8.21.0",
     "pg-hstore": "^2.3.4",
     "prettier": "^2.7.1",
-    "sequelize": "^6.37.8"
+    "sequelize": "^6.37.8",
+    "sequelize-cli": "^6.6.2"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
