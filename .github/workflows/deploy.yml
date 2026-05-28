@@ -134,8 +134,4 @@ jobs:
           script_stop: true
           script: |
             chmod +x "$DEPLOY_PATH/scripts/deploy-on-vm.sh"
-<<<<<<< HEAD
             bash "$DEPLOY_PATH/scripts/deploy-on-vm.sh"
-=======
-            bash "$DEPLOY_PATH/scripts/deploy-on-vm.sh"
->>>>>>> da017a0 (fix/ci: use vars in deploy)
