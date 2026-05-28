@@ -31,10 +31,11 @@ concurrency:
 
 jobs:
   deploy:
+    # В job.if нельзя использовать env — только vars / github / inputs
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == env.DEPLOY_BRANCH)
+       github.event.workflow_run.head_branch == (vars.DEPLOY_BRANCH || 'main'))
     runs-on: ubuntu-latest
     environment: production
 
@@ -133,4 +134,8 @@ jobs:
           script_stop: true
           script: |
             chmod +x "$DEPLOY_PATH/scripts/deploy-on-vm.sh"
+<<<<<<< HEAD
             bash "$DEPLOY_PATH/scripts/deploy-on-vm.sh"
+=======
+            bash "$DEPLOY_PATH/scripts/deploy-on-vm.sh"
+>>>>>>> da017a0 (fix/ci: use vars in deploy)
