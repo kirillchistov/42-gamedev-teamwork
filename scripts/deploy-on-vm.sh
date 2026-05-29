@@ -24,6 +24,21 @@ export CLIENT_IMAGE SERVER_IMAGE
 echo "==> Pull images"
 docker compose -f "$COMPOSE_FILE" pull
 
+echo "==> Ensure postgres is up"
+docker compose -f "$COMPOSE_FILE" up -d postgres
+for _ in $(seq 1 30); do
+  if docker inspect cosmic-match-postgres --format '{{.State.Health.Status}}' 2>/dev/null | grep -q healthy; then
+    break
+  fi
+  sleep 2
+done
+
+if [ -f "$DEPLOY_PATH/scripts/sync-postgres-password.sh" ]; then
+  bash "$DEPLOY_PATH/scripts/sync-postgres-password.sh"
+elif [ -f "$(dirname "$0")/sync-postgres-password.sh" ]; then
+  bash "$(dirname "$0")/sync-postgres-password.sh"
+fi
+
 echo "==> Up stack"
 docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 

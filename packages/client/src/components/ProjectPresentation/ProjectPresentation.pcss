@@ -1,0 +1,104 @@
+.match3-presentation__dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.match3-presentation__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  background: rgba(148, 163, 184, 0.45);
+  cursor: pointer;
+}
+
+.match3-presentation__dot--active {
+  background: #38bdf8;
+  transform: scale(1.15);
+}
+
+.match3-presentation-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 24px clamp(16px, 4vw, 48px);
+  box-sizing: border-box;
+  background: radial-gradient(
+    ellipse at 50% 20%,
+    #1e293b 0%,
+    #020617 72%
+  );
+  color: #e2e8f0;
+}
+
+.match3-presentation-fullscreen__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.match3-presentation-fullscreen__content {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 0 12px;
+}
+
+.match3-presentation-fullscreen__counter {
+  display: inline-block;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+}
+
+.match3-presentation-fullscreen__content h2 {
+  margin: 0 0 16px;
+  font-size: clamp(22px, 4vw, 32px);
+  color: #f8fafc;
+}
+
+.match3-presentation-fullscreen__content p {
+  margin: 0 0 20px;
+  font-size: clamp(15px, 2.2vw, 18px);
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.match3-presentation-fullscreen__dots {
+  margin-top: 8px;
+}
+
+.match3-presentation-fullscreen__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.8);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.match3-presentation-fullscreen__nav:hover {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}

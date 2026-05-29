@@ -23,7 +23,11 @@ const getGemColorClass = (row: number, col: number) => {
   return GEM_COLORS[idx]
 }
 
-export function Hero() {
+type HeroProps = {
+  onOpenPresentation?: () => void
+}
+
+export function Hero({ onOpenPresentation }: HeroProps) {
   const user = useSelector(selectUser)
   const ctaLink = user ? '/profile' : '/signup'
   const ctaText = user ? 'Профиль' : 'Зарегистрироваться'
@@ -48,7 +52,11 @@ export function Hero() {
       </div>
 
       <div className="hero__visual">
-        <div className="hero-board">
+        <button
+          type="button"
+          className="hero-board hero-board--presentation"
+          onClick={onOpenPresentation}
+          aria-label="Открыть презентацию проекта, около 7 минут">
           {Array.from({ length: BOARD_ROWS }).map((_, row) => (
             <div className="hero-board__row" key={row}>
               {Array.from({
@@ -84,7 +92,10 @@ export function Hero() {
           <div className="hero-board__combo-line hero-board__combo-line--v" />
           <div className="hero-board__combo-tag">MEGA COMBO x8</div>
           <div className="hero-board__effect" />
-        </div>
+          <span className="hero-board__presentation-hint">
+            Презентация проекта
+          </span>
+        </button>
       </div>
     </section>
   )

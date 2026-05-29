@@ -49,7 +49,7 @@ cd /opt/cosmic-match
 
 Дополнительно создайте на ВМ `.env` (не в git), по образцу [`.env.sample`](../../.env.sample):
 
-- `POSTGRES_PASSWORD` — надёжный пароль
+- `POSTGRES_PASSWORD` — надёжный пароль (**не меняйте** после первого `docker compose up`, иначе migrate падает с `password authentication failed`; деплой синхронизирует пароль в БД с `.env` автоматически)
 - `SERVER_PORT`, `CLIENT_PORT`
 - `NGINX_HTTP_PORT=80`, `NGINX_HTTPS_PORT=443`
 - `VITE_YANDEX_OAUTH_REDIRECT_URI=https://<ваш-домен>` — после согласования с ментором
