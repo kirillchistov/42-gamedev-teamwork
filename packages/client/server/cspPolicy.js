@@ -13,6 +13,8 @@ exports.CSP_ORIGINS = {
     yandexOAuth: 'https://oauth.yandex.ru',
     googleFontsCss: 'https://fonts.googleapis.com',
     googleFontsStatic: 'https://fonts.gstatic.com',
+    /** Обратное геокодирование для демо региона в профиле (без ключа). */
+    bigDataCloud: 'https://api.bigdatacloud.net',
 };
 function isDevEnv() {
     return process.env.NODE_ENV === 'development';
@@ -43,6 +45,7 @@ function buildSsrCspDirectives(nonce) {
         "'self'",
         exports.CSP_ORIGINS.praktikumApi,
         exports.CSP_ORIGINS.yandexOAuth,
+        exports.CSP_ORIGINS.bigDataCloud,
     ];
     const styleSrc = ["'self'", "'unsafe-inline'", exports.CSP_ORIGINS.googleFontsCss];
     const styleSrcElem = ["'self'", "'unsafe-inline'", exports.CSP_ORIGINS.googleFontsCss];

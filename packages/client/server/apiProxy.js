@@ -20,6 +20,15 @@ function readPraktikumOrigin() {
     }
     return normalized;
 }
+function readDevNodeApiTarget() {
+    var _a, _b;
+    const explicit = (_a = process.env.DEV_NODE_API_URL) === null || _a === void 0 ? void 0 : _a.trim();
+    if (explicit) {
+        return trimTrailingSlash(explicit);
+    }
+    const port = ((_b = process.env.SERVER_PORT) === null || _b === void 0 ? void 0 : _b.trim()) || '3000';
+    return `http://localhost:${port}`;
+}
 function readNodeApiTarget() {
     var _a, _b, _c;
     const external = ((_a = process.env.EXTERNAL_SERVER_URL) === null || _a === void 0 ? void 0 : _a.trim()) ||
@@ -27,6 +36,15 @@ function readNodeApiTarget() {
     const internal = (_c = process.env.INTERNAL_SERVER_URL) === null || _c === void 0 ? void 0 : _c.trim();
     // В dev на хосте INTERNAL_SERVER_URL=http://server:… из docker-compose не резолвится.
     const internalIsDockerOnly = internal != null && /:\/\/server(?::|\/|$)/.test(internal);
+    if (process.env.NODE_ENV === 'development') {
+        if (internalIsDockerOnly) {
+            return readDevNodeApiTarget();
+        }
+        // .env с SERVER_PORT=3001 для ВМ/Docker — локальный yarn dev:server слушает 3000.
+        if (external && /:\/\/(localhost|127\.0\.0\.1):3001\b/.test(external)) {
+            return readDevNodeApiTarget();
+        }
+    }
     if (process.env.NODE_ENV === 'development' &&
         internalIsDockerOnly &&
         external) {

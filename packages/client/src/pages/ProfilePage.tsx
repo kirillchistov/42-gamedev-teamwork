@@ -3,13 +3,14 @@
  * - профиль обновляется через updateProfileThunk
  * - аватар обновляется через updateAvatarThunk
  **/
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { useDispatch, useSelector } from 'react-redux'
 import { Helmet } from 'react-helmet'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { Avatar } from '../components/Avatar'
+import { ProfileGeoLine } from '../components/ProfileGeoLine/ProfileGeoLine'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
 import { Button, Input, FieldError } from '../shared/ui'
@@ -35,10 +36,12 @@ import {
   fetchUserThunk,
 } from '../slices/userSlice'
 import {
+  formatCoarseRegionLine,
   getTimezoneRegion,
   isGeolocationSupported,
   readStoredCoarseRegion,
   resolveCoarseRegion,
+  writeStoredCoarseRegion,
   type CoarseRegion,
 } from '../utils/geolocation'
 
@@ -81,8 +84,12 @@ export function ProfilePage() {
   const [coarseRegion, setCoarseRegion] = useState<CoarseRegion | null>(() =>
     readStoredCoarseRegion()
   )
+  const [geoEnabled, setGeoEnabled] = useState(
+    () => readStoredCoarseRegion()?.source === 'geolocation'
+  )
   const [regionLoading, setRegionLoading] = useState(false)
   const [regionError, setRegionError] = useState('')
+  const [clockTick, setClockTick] = useState(0)
   const [pwdFieldBlurred, setPwdFieldBlurred] = useState({
     oldPassword: false,
     newPassword: false,
@@ -106,6 +113,28 @@ export function ProfilePage() {
     }, 2800)
     return () => window.clearTimeout(id)
   }, [toastMessage])
+
+  useEffect(() => {
+    if (coarseRegion) return
+    const region = getTimezoneRegion()
+    writeStoredCoarseRegion(region)
+    setCoarseRegion(region)
+  }, [coarseRegion])
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setClockTick(t => t + 1)
+    }, 60_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  const geoLine = useMemo(() => {
+    if (!coarseRegion) {
+      return 'Регион не определён'
+    }
+    void clockTick
+    return formatCoarseRegionLine(coarseRegion)
+  }, [coarseRegion, clockTick])
 
   const passwordsValidate = useValidate()
 
@@ -308,21 +337,15 @@ export function ProfilePage() {
     }
   }
 
-  const handleDetectTimezone = () => {
-    const region = getTimezoneRegion()
-    setCoarseRegion(region)
-    setRegionError('')
-    notifyProfileSuccess('Часовой пояс сохранён')
-  }
-
-  const handleDetectGeolocation = async () => {
+  const handleToggleGeo = async () => {
+    const next = !geoEnabled
     setRegionLoading(true)
     setRegionError('')
-    const result = await resolveCoarseRegion({ useGeolocation: true })
+    const result = await resolveCoarseRegion({ useGeolocation: next })
     setRegionLoading(false)
     if (result.ok) {
       setCoarseRegion(result.region)
-      notifyProfileSuccess('Регион обновлён')
+      setGeoEnabled(next)
       return
     }
     setRegionError(result.reason)
@@ -374,48 +397,14 @@ export function ProfilePage() {
             handleAvatarDelete={handleAvatarDelete}
           />
 
-          <div className="auth-form auth-form--region">
-            <h2 className="auth-form__section-title">
-              Регион (приблизительно)
-            </h2>
-            <p className="auth-form__hint">
-              Для демо Web API: часовой пояс без разрешения или координаты с
-              округлением после вашего согласия. Точный адрес не сохраняем.
-            </p>
-            {coarseRegion ? (
-              <p className="auth-form__region-label">
-                <strong>{coarseRegion.label}</strong>
-                {coarseRegion.source === 'geolocation'
-                  ? ' · по геолокации'
-                  : ' · по часовому поясу'}
-              </p>
-            ) : (
-              <p className="auth-form__hint">Регион ещё не определён.</p>
-            )}
-            {regionError ? (
-              <p className="auth-form__hint auth-form__hint--error">
-                {regionError}
-              </p>
-            ) : null}
-            <div className="auth-form__region-actions">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={regionLoading}
-                onClick={handleDetectTimezone}>
-                Часовой пояс
-              </Button>
-              {isGeolocationSupported() ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={regionLoading}
-                  onClick={() => void handleDetectGeolocation()}>
-                  {regionLoading ? 'Определяем…' : 'С геолокацией'}
-                </Button>
-              ) : null}
-            </div>
-          </div>
+          <ProfileGeoLine
+            line={geoLine}
+            loading={regionLoading}
+            geoEnabled={geoEnabled}
+            geoSupported={isGeolocationSupported()}
+            error={regionError || undefined}
+            onToggleGeo={() => void handleToggleGeo()}
+          />
 
           {/* Форма профиля */}
           <form

@@ -1,11 +1,5 @@
 import React from 'react'
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ProfilePage } from './ProfilePage'
 
 const mockDispatch = jest.fn()
@@ -28,23 +22,19 @@ const mockUserState = {
 jest.mock('react-redux', () => ({
   ...jest.requireActual('react-redux'),
   useDispatch: () => mockDispatch,
-  useSelector: (
-    selector: (state: unknown) => unknown
-  ) => mockUseSelector(selector),
+  useSelector: (selector: (state: unknown) => unknown) =>
+    mockUseSelector(selector),
 }))
 
 jest.mock('../hooks/usePage', () => ({
   usePage: jest.fn(),
 }))
 
-jest.mock(
-  '../contexts/LandingThemeContext',
-  () => ({
-    useLandingTheme: () => ({
-      theme: 'light-flat',
-    }),
-  })
-)
+jest.mock('../contexts/LandingThemeContext', () => ({
+  useLandingTheme: () => ({
+    theme: 'light-flat',
+  }),
+}))
 
 jest.mock('../components/Header', () => ({
   Header: () => <div data-testid="header" />,
@@ -58,22 +48,24 @@ jest.mock('../components/Avatar', () => ({
   Avatar: () => <div data-testid="avatar" />,
 }))
 
+jest.mock('../components/ProfileGeoLine/ProfileGeoLine', () => ({
+  ProfileGeoLine: () => <div data-testid="profile-geo" />,
+}))
+
 describe('ProfilePage blur validation regression', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockUseSelector.mockImplementation(
-      (selector: (state: unknown) => unknown) =>
-        selector(mockUserState)
+      (selector: (state: unknown) => unknown) => selector(mockUserState)
     )
   })
 
   test('clears email error after valid value on blur', async () => {
     render(<ProfilePage />)
 
-    const emailInput =
-      screen.getByPlaceholderText(
-        'user@example.com'
-      ) as HTMLInputElement
+    const emailInput = screen.getByPlaceholderText(
+      'user@example.com'
+    ) as HTMLInputElement
 
     act(() => {
       fireEvent.change(emailInput, {
@@ -82,11 +74,7 @@ describe('ProfilePage blur validation regression', () => {
       fireEvent.blur(emailInput)
     })
 
-    expect(
-      await screen.findByText(
-        'Неверный формат почты'
-      )
-    ).toBeInTheDocument()
+    expect(await screen.findByText('Неверный формат почты')).toBeInTheDocument()
 
     act(() => {
       fireEvent.change(emailInput, {
@@ -97,9 +85,7 @@ describe('ProfilePage blur validation regression', () => {
 
     await waitFor(() => {
       expect(
-        screen.queryByText(
-          'Неверный формат почты'
-        )
+        screen.queryByText('Неверный формат почты')
       ).not.toBeInTheDocument()
     })
   })

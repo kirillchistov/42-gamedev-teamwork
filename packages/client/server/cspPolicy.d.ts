@@ -3,6 +3,8 @@ export declare const CSP_ORIGINS: {
   readonly yandexOAuth: 'https://oauth.yandex.ru'
   readonly googleFontsCss: 'https://fonts.googleapis.com'
   readonly googleFontsStatic: 'https://fonts.gstatic.com'
+  /** Обратное геокодирование для демо региона в профиле (без ключа). */
+  readonly bigDataCloud: 'https://api.bigdatacloud.net'
 }
 export declare function formatCspHeader(
   directives: Record<string, string[]>

@@ -70,6 +70,15 @@
 
 ## Ой, ничего не работает :(
 
+**Локальный dev (`yarn dev` / `yarn dev:client` + `yarn dev:server`):**
+
+- UI: **http://localhost:9000** (не 5173 — старый порт из `.env`).
+- API: **http://localhost:3000** (`yarn dev:server` всегда 3000, даже если в `.env` указан `3001` для Docker/ВМ).
+- `EADDRINUSE :3001` — остановите `docker compose stop server` или процесс на 3001.
+- `503` / `sw.js Failed to fetch` на `/login` — зарегистрирован старый Service Worker; откройте **9000** после `yarn dev:client` (в dev SW снимается автоматически) или в DevTools → Application → Service Workers → Unregister.
+
+**Docker UI без строки геолокации в профиле:** пересоберите клиент после pull: `docker compose build client && docker compose up -d client`.
+
 Откройте issue, я приду :)
 
 ## Автодеплой статики на vercel

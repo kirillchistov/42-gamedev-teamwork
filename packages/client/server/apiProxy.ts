@@ -26,6 +26,15 @@ function readPraktikumOrigin(): string {
   return normalized
 }
 
+function readDevNodeApiTarget(): string {
+  const explicit = process.env.DEV_NODE_API_URL?.trim()
+  if (explicit) {
+    return trimTrailingSlash(explicit)
+  }
+  const port = process.env.SERVER_PORT?.trim() || '3000'
+  return `http://localhost:${port}`
+}
+
 function readNodeApiTarget(): string {
   const external =
     process.env.EXTERNAL_SERVER_URL?.trim() ||
@@ -35,6 +44,16 @@ function readNodeApiTarget(): string {
   // В dev на хосте INTERNAL_SERVER_URL=http://server:… из docker-compose не резолвится.
   const internalIsDockerOnly =
     internal != null && /:\/\/server(?::|\/|$)/.test(internal)
+
+  if (process.env.NODE_ENV === 'development') {
+    if (internalIsDockerOnly) {
+      return readDevNodeApiTarget()
+    }
+    // .env с SERVER_PORT=3001 для ВМ/Docker — локальный yarn dev:server слушает 3000.
+    if (external && /:\/\/(localhost|127\.0\.0\.1):3001\b/.test(external)) {
+      return readDevNodeApiTarget()
+    }
+  }
 
   if (
     process.env.NODE_ENV === 'development' &&

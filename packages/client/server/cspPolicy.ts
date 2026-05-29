@@ -5,6 +5,8 @@ export const CSP_ORIGINS = {
   yandexOAuth: 'https://oauth.yandex.ru',
   googleFontsCss: 'https://fonts.googleapis.com',
   googleFontsStatic: 'https://fonts.gstatic.com',
+  /** Обратное геокодирование для демо региона в профиле (без ключа). */
+  bigDataCloud: 'https://api.bigdatacloud.net',
 } as const
 
 function isDevEnv(): boolean {
@@ -40,6 +42,7 @@ export function buildSsrCspDirectives(nonce: string): Record<string, string[]> {
     "'self'",
     CSP_ORIGINS.praktikumApi,
     CSP_ORIGINS.yandexOAuth,
+    CSP_ORIGINS.bigDataCloud,
   ]
   const styleSrc = ["'self'", "'unsafe-inline'", CSP_ORIGINS.googleFontsCss]
   const styleSrcElem = ["'self'", "'unsafe-inline'", CSP_ORIGINS.googleFontsCss]
