@@ -180,6 +180,7 @@ function registerErrorHandler(app: express.Express) {
 
 async function createServer() {
   const app = express()
+  app.set('trust proxy', true)
   const portCandidates = resolvePortCandidates()
 
   registerCspMiddleware(app)

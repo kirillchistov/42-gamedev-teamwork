@@ -58,7 +58,10 @@ export function ProfileGeoLine({
 }: ProfileGeoLineProps) {
   return (
     <div className="profile-geo">
-      <p className="profile-geo__line" aria-live="polite">
+      <p
+        className="profile-geo__line"
+        aria-live="polite"
+        suppressHydrationWarning>
         {loading ? 'Определяем регион…' : line}
       </p>
       {geoSupported ? (

@@ -151,6 +151,7 @@ function registerErrorHandler(app) {
 }
 async function createServer() {
     const app = (0, express_1.default)();
+    app.set('trust proxy', true);
     const portCandidates = resolvePortCandidates();
     (0, csp_1.registerCspMiddleware)(app);
     app.use((0, cookie_parser_1.default)());

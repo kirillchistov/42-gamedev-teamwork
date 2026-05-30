@@ -29,9 +29,9 @@ import '@gravity-ui/uikit/styles/styles.css'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppErrorFallback } from './components/AppErrorFallback'
 import { isPublicRoutePath } from './router/publicRoutePaths'
-import { unregisterDevServiceWorkers } from './utils/unregisterDevServiceWorker'
+import { unregisterStaleServiceWorkers } from './utils/unregisterStaleServiceWorker'
 
-void unregisterDevServiceWorkers()
+void unregisterStaleServiceWorkers()
 
 const routerBasename = (() => {
   const base = import.meta.env.BASE_URL || '/'

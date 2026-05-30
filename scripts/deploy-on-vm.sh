@@ -42,6 +42,9 @@ fi
 echo "==> Up stack"
 docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 
+echo "==> Recreate server (POSTGRES_* из .env после sync-postgres-password)"
+docker compose -f "$COMPOSE_FILE" up -d --force-recreate server
+
 echo "==> Prune old images"
 docker image prune -f
 
