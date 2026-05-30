@@ -45,6 +45,12 @@ docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 echo "==> Recreate server (POSTGRES_* из .env после sync-postgres-password)"
 docker compose -f "$COMPOSE_FILE" up -d --force-recreate server
 
+if [ -f "$DEPLOY_PATH/scripts/verify-server-db.sh" ]; then
+  bash "$DEPLOY_PATH/scripts/verify-server-db.sh"
+elif [ -f "$(dirname "$0")/verify-server-db.sh" ]; then
+  bash "$(dirname "$0")/verify-server-db.sh"
+fi
+
 echo "==> Prune old images"
 docker image prune -f
 

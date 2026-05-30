@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Синхронизирует пароль роли postgres в volume с POSTGRES_PASSWORD из .env на ВМ.
-# Нужно, если .env меняли после первого docker compose up (иначе migrate exit 1).
+# Синхронизирует пароль роли postgres в volume с POSTGRES_PASSWORD,
+# который docker compose подставит в server/migrate (не «меняли .env» — volume
+# сам пароль не обновляет после первого docker compose up).
 set -euo pipefail
 
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/cosmic-match}"
@@ -9,31 +10,42 @@ POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-cosmic-match-postgres}"
 
 cd "$DEPLOY_PATH"
 
-if [ ! -f .env ]; then
-  echo "sync-postgres-password: no .env in $DEPLOY_PATH, skip"
-  exit 0
-fi
-
-set -a
-# shellcheck disable=SC1091
-source .env
-set +a
-
-if [ -z "${POSTGRES_PASSWORD:-}" ]; then
-  echo "sync-postgres-password: POSTGRES_PASSWORD empty, skip"
-  exit 0
-fi
-
 if ! docker inspect "$POSTGRES_CONTAINER" >/dev/null 2>&1; then
   echo "sync-postgres-password: container $POSTGRES_CONTAINER not found, skip"
   exit 0
 fi
 
-role="${POSTGRES_USER:-postgres}"
-escaped_pwd=$(printf '%s' "$POSTGRES_PASSWORD" | sed "s/'/''/g")
+# Тот же пароль, что у server/migrate после `docker compose up` (не только source .env).
+if [ -z "${CLIENT_IMAGE:-}" ] && docker inspect cosmic-match-client >/dev/null 2>&1; then
+  CLIENT_IMAGE=$(docker inspect cosmic-match-client --format '{{.Config.Image}}')
+fi
+if [ -z "${SERVER_IMAGE:-}" ] && docker inspect cosmic-match-server >/dev/null 2>&1; then
+  SERVER_IMAGE=$(docker inspect cosmic-match-server --format '{{.Config.Image}}')
+fi
 
-echo "==> Sync postgres role password with .env (volume unchanged)"
-docker exec "$POSTGRES_CONTAINER" psql -U "$role" -d "${POSTGRES_DB:-postgres}" -v ON_ERROR_STOP=1 \
+compose_pw=""
+if [ -n "${CLIENT_IMAGE:-}" ] && [ -n "${SERVER_IMAGE:-}" ]; then
+  compose_pw=$(
+    docker compose -f "$COMPOSE_FILE" config 2>/dev/null \
+      | awk -F': ' '/POSTGRES_PASSWORD:/ { gsub(/"/, "", $2); print $2; exit }'
+  )
+fi
+
+if [ -z "$compose_pw" ] && [ -f .env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+  compose_pw=${POSTGRES_PASSWORD:-postgres}
+fi
+
+compose_pw=${compose_pw:-postgres}
+role=${POSTGRES_USER:-postgres}
+db=${POSTGRES_DB:-postgres}
+escaped_pwd=$(printf '%s' "$compose_pw" | sed "s/'/''/g")
+
+echo "==> Sync postgres role password with compose (volume unchanged)"
+docker exec "$POSTGRES_CONTAINER" psql -U "$role" -d "$db" -v ON_ERROR_STOP=1 \
   -c "ALTER ROLE \"${role}\" PASSWORD '${escaped_pwd}';"
 
 echo "==> Postgres password synced"

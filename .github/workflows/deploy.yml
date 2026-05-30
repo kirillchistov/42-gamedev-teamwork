@@ -114,7 +114,7 @@ jobs:
           host: ${{ secrets.YC_VM_HOST }}
           username: ${{ secrets.YC_VM_USER }}
           key: ${{ secrets.YC_VM_SSH_KEY }}
-          source: 'docker-compose.prod.yml,scripts/deploy-on-vm.sh,scripts/sync-postgres-password.sh,deploy/nginx'
+          source: 'docker-compose.prod.yml,scripts/deploy-on-vm.sh,scripts/sync-postgres-password.sh,scripts/verify-server-db.sh,deploy/nginx'
           target: ${{ env.DEPLOY_PATH }}
           strip_components: 0
 

@@ -5,6 +5,7 @@ import { attachPraktikumUser } from './middleware/attachPraktikumUser'
 import { requirePraktikumAuth } from './middleware/requirePraktikumAuth'
 import { forumRouter } from './routes/forumRouter'
 import { uiThemeRouter } from './routes/uiThemeRouter'
+import { sequelize } from './sequelize'
 
 /**
  * HTTP-приложение без listen — для supertest и e2e.
@@ -27,11 +28,7 @@ export function createApp(): express.Express {
   app.use(cookieParser())
   app.use(express.json())
 
-  app.use(
-    '/api/ui/theme',
-    attachPraktikumUser,
-    uiThemeRouter
-  )
+  app.use('/api/ui/theme', attachPraktikumUser, uiThemeRouter)
 
   // 8.10 demo MCR (sprint_8 — forum на app, не на protectedRouter):
   // app.use(
@@ -70,8 +67,13 @@ export function createApp(): express.Express {
     })
   })
 
-  app.get('/health', (_req, res) => {
-    res.status(200).json({ ok: true })
+  app.get('/health', async (_req, res) => {
+    try {
+      await sequelize.authenticate()
+      res.status(200).json({ ok: true, db: true })
+    } catch {
+      res.status(503).json({ ok: false, db: false })
+    }
   })
 
   app.use(protectedRouter)

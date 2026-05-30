@@ -6,17 +6,12 @@ import {
 } from '../middleware/localPraktikumAuthBypass'
 
 describe('localPraktikumAuthBypass helpers', () => {
-  const store: Record<
-    string,
-    string | undefined
-  > = {}
+  const store: Record<string, string | undefined> = {}
 
   beforeEach(() => {
     store.NODE_ENV = process.env.NODE_ENV
-    store.LOCAL_PRAKTIKUM_AUTH_BYPASS =
-      process.env.LOCAL_PRAKTIKUM_AUTH_BYPASS
-    store.LOCAL_PRAKTIKUM_USER_ID =
-      process.env.LOCAL_PRAKTIKUM_USER_ID
+    store.LOCAL_PRAKTIKUM_AUTH_BYPASS = process.env.LOCAL_PRAKTIKUM_AUTH_BYPASS
+    store.LOCAL_PRAKTIKUM_USER_ID = process.env.LOCAL_PRAKTIKUM_USER_ID
     store.LOCAL_PRAKTIKUM_USER_DISPLAY =
       process.env.LOCAL_PRAKTIKUM_USER_DISPLAY
   })
@@ -35,43 +30,32 @@ describe('localPraktikumAuthBypass helpers', () => {
   it('is false in production even if flag is set', () => {
     process.env.NODE_ENV = 'production'
     process.env.LOCAL_PRAKTIKUM_AUTH_BYPASS = '1'
-    expect(
-      isLocalPraktikumAuthBypassEnabled()
-    ).toBe(false)
+    expect(isLocalPraktikumAuthBypassEnabled()).toBe(false)
   })
 
   it('is true in test when LOCAL_PRAKTIKUM_AUTH_BYPASS=1', () => {
     process.env.NODE_ENV = 'test'
     process.env.LOCAL_PRAKTIKUM_AUTH_BYPASS = '1'
-    expect(
-      isLocalPraktikumAuthBypassEnabled()
-    ).toBe(true)
+    expect(isLocalPraktikumAuthBypassEnabled()).toBe(true)
   })
 
   it('getLocalBypassPraktikumUser respects env overrides', () => {
     process.env.NODE_ENV = 'development'
     process.env.LOCAL_PRAKTIKUM_USER_ID = '42'
-    process.env.LOCAL_PRAKTIKUM_USER_DISPLAY =
-      'test-display'
-    expect(getLocalBypassPraktikumUser()).toEqual(
-      {
-        id: 42,
-        displayLabel: 'test-display',
-      }
-    )
+    process.env.LOCAL_PRAKTIKUM_USER_DISPLAY = 'test-display'
+    expect(getLocalBypassPraktikumUser()).toEqual({
+      id: 42,
+      displayLabel: 'test-display',
+    })
   })
 })
 
 describe('LOCAL_PRAKTIKUM_AUTH_BYPASS (HTTP)', () => {
-  const store: Record<
-    string,
-    string | undefined
-  > = {}
+  const store: Record<string, string | undefined> = {}
 
   beforeEach(() => {
     store.NODE_ENV = process.env.NODE_ENV
-    store.LOCAL_PRAKTIKUM_AUTH_BYPASS =
-      process.env.LOCAL_PRAKTIKUM_AUTH_BYPASS
+    store.LOCAL_PRAKTIKUM_AUTH_BYPASS = process.env.LOCAL_PRAKTIKUM_AUTH_BYPASS
   })
 
   afterEach(() => {
@@ -117,10 +101,7 @@ describe('LOCAL_PRAKTIKUM_AUTH_BYPASS (HTTP)', () => {
 
 /** ТЗ 8.4: без сессии — 403 Forbidden на всех защищённых ручках (не 401). */
 describe('requirePraktikumAuth — 403 без cookie (аудит ручек)', () => {
-  const envStore: Record<
-    string,
-    string | undefined
-  > = {}
+  const envStore: Record<string, string | undefined> = {}
 
   beforeEach(() => {
     envStore.NODE_ENV = process.env.NODE_ENV
@@ -183,17 +164,18 @@ describe('requirePraktikumAuth — 403 без cookie (аудит ручек)', (
 
 describe('public routes without requirePraktikumAuth', () => {
   it('GET /health → 200 without cookie', async () => {
+    const { sequelize } = await import('../sequelize')
+    jest.spyOn(sequelize, 'authenticate').mockResolvedValue(undefined as never)
     const app = createApp()
     const res = await request(app).get('/health')
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ ok: true })
+    expect(res.body).toEqual({ ok: true, db: true })
+    jest.restoreAllMocks()
   })
 
   it('GET /api/ui/theme → 200 for guest without cookie', async () => {
     const app = createApp()
-    const res = await request(app).get(
-      '/api/ui/theme'
-    )
+    const res = await request(app).get('/api/ui/theme')
     expect(res.status).toBe(200)
     expect(res.body).toHaveProperty('theme')
   })
