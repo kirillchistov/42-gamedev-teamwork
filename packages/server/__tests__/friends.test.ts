@@ -1,9 +1,30 @@
 import request from 'supertest'
+import { UniqueConstraintError } from 'sequelize'
 import { createApp } from '../createApp'
 import { UserFriend } from '../models/UserFriend'
 
-describe('/friends API', () => {
+jest.mock('../models/UserFriend', () => ({
+  UserFriend: {
+    findAll: jest.fn(),
+    count: jest.fn(),
+    create: jest.fn(),
+    destroy: jest.fn(),
+  },
+}))
+
+const UserFriendMock = UserFriend as jest.Mocked<typeof UserFriend>
+
+type FriendRow = {
+  ownerPraktikumId: number
+  friendNickname: string
+  friendDisplayName: string
+  friendAvatar: string | null
+  friendPraktikumId: number | null
+}
+
+describe('/friends API (HTTP, mocked DB)', () => {
   const envStore: Record<string, string | undefined> = {}
+  let store: FriendRow[] = []
 
   beforeEach(() => {
     envStore.NODE_ENV = process.env.NODE_ENV
@@ -13,12 +34,63 @@ describe('/friends API', () => {
     process.env.NODE_ENV = 'test'
     process.env.LOCAL_PRAKTIKUM_AUTH_BYPASS = '1'
     process.env.LOCAL_PRAKTIKUM_USER_ID = '5861'
+
+    store = []
+    jest.clearAllMocks()
+
+    UserFriendMock.findAll.mockImplementation(async options => {
+      const where = options?.where as { ownerPraktikumId?: number } | undefined
+      const ownerId = where?.ownerPraktikumId ?? 0
+      return store
+        .filter(row => row.ownerPraktikumId === ownerId)
+        .sort((a, b) => a.friendNickname.localeCompare(b.friendNickname))
+        .map(row => ({ ...row } as UserFriend))
+    })
+
+    UserFriendMock.count.mockImplementation(async options => {
+      const where = options?.where as { ownerPraktikumId?: number } | undefined
+      const ownerId = where?.ownerPraktikumId ?? 0
+      return store.filter(row => row.ownerPraktikumId === ownerId).length
+    })
+
+    UserFriendMock.create.mockImplementation(async data => {
+      const payload = data as FriendRow
+      const ownerId = payload.ownerPraktikumId
+      const nickname = payload.friendNickname
+      const exists = store.some(
+        row =>
+          row.ownerPraktikumId === ownerId && row.friendNickname === nickname
+      )
+      if (exists) {
+        throw new UniqueConstraintError({ message: 'duplicate' })
+      }
+      const row: FriendRow = {
+        ownerPraktikumId: ownerId,
+        friendNickname: nickname,
+        friendDisplayName: payload.friendDisplayName || nickname,
+        friendAvatar: payload.friendAvatar ?? null,
+        friendPraktikumId: payload.friendPraktikumId ?? null,
+      }
+      store.push(row)
+      return row as UserFriend
+    })
+
+    UserFriendMock.destroy.mockImplementation(async options => {
+      const where = options?.where as
+        | { ownerPraktikumId?: number; friendNickname?: string }
+        | undefined
+      const ownerId = where?.ownerPraktikumId ?? 0
+      const nickname = where?.friendNickname ?? ''
+      const before = store.length
+      store = store.filter(
+        row =>
+          !(row.ownerPraktikumId === ownerId && row.friendNickname === nickname)
+      )
+      return before - store.length
+    })
   })
 
-  afterEach(async () => {
-    await UserFriend.destroy({
-      where: { ownerPraktikumId: 5861 },
-    })
+  afterEach(() => {
     for (const k of Object.keys(envStore)) {
       const v = envStore[k]
       if (v === undefined) {

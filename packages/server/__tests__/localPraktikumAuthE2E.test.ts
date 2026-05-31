@@ -72,10 +72,13 @@ describe('LOCAL_PRAKTIKUM_AUTH_BYPASS (HTTP)', () => {
   it('GET /friends without Cookie returns 200 when bypass on', async () => {
     process.env.NODE_ENV = 'test'
     process.env.LOCAL_PRAKTIKUM_AUTH_BYPASS = '1'
+    const { UserFriend } = await import('../models/UserFriend')
+    jest.spyOn(UserFriend, 'findAll').mockResolvedValue([])
     const app = createApp()
     const res = await request(app).get('/friends')
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body)).toBe(true)
+    jest.restoreAllMocks()
   })
 
   it('GET /friends without Cookie returns 403 when bypass off', async () => {
