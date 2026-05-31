@@ -1,13 +1,13 @@
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
 
 import { TEAM_MEMBERS } from '../Landing/teamData'
-import { markAuthLoginRedirect } from '../../shared/authLoginRedirect'
+import { appRouteUrl } from '../../utils/publicAssetUrl'
 import { useSelector } from '../../store'
 import { selectUser } from '../../slices/userSlice'
 import {
   CHALLENGES,
   CLIENT_STACK,
+  HTTP_APIS_OVERVIEW_URL,
   SERVER_STACK,
   techIconUrl,
 } from './presentationData'
@@ -104,190 +104,66 @@ function StackColumn({
 
 function ArchitectureDiagram() {
   return (
-    <figure className="presentation-arch" aria-label="Архитектура проекта">
-      <svg
-        className="presentation-arch__svg"
-        viewBox="0 0 520 200"
-        role="img"
-        aria-hidden>
-        <defs>
-          <marker
-            id="arch-arrow"
-            markerWidth="8"
-            markerHeight="8"
-            refX="6"
-            refY="4"
-            orient="auto">
-            <path d="M0,0 L8,4 L0,8 Z" fill="#38bdf8" />
-          </marker>
-        </defs>
-        <rect
-          x="8"
-          y="72"
-          width="100"
-          height="56"
-          rx="8"
-          className="presentation-arch__box"
-        />
-        <text
-          x="58"
-          y="104"
-          textAnchor="middle"
-          className="presentation-arch__label">
-          Браузер
-        </text>
-        <rect
-          x="140"
-          y="24"
-          width="120"
-          height="48"
-          rx="8"
-          className="presentation-arch__box"
-        />
-        <text
-          x="200"
-          y="54"
-          textAnchor="middle"
-          className="presentation-arch__label">
-          React + Canvas
-        </text>
-        <rect
-          x="140"
-          y="128"
-          width="120"
-          height="48"
-          rx="8"
-          className="presentation-arch__box"
-        />
-        <text
-          x="200"
-          y="158"
-          textAnchor="middle"
-          className="presentation-arch__label">
-          Express SSR
-        </text>
-        <rect
-          x="300"
-          y="72"
-          width="100"
-          height="56"
-          rx="8"
-          className="presentation-arch__box"
-        />
-        <text
-          x="350"
-          y="104"
-          textAnchor="middle"
-          className="presentation-arch__label">
-          API + ws
-        </text>
-        <rect
-          x="420"
-          y="72"
-          width="92"
-          height="56"
-          rx="8"
-          className="presentation-arch__box presentation-arch__box--db"
-        />
-        <text
-          x="466"
-          y="104"
-          textAnchor="middle"
-          className="presentation-arch__label">
-          PostgreSQL
-        </text>
-        <line
-          x1="108"
-          y1="92"
-          x2="138"
-          y2="48"
-          className="presentation-arch__line"
-          markerEnd="url(#arch-arrow)"
-        />
-        <line
-          x1="108"
-          y1="108"
-          x2="138"
-          y2="152"
-          className="presentation-arch__line"
-          markerEnd="url(#arch-arrow)"
-        />
-        <line
-          x1="260"
-          y1="100"
-          x2="298"
-          y2="100"
-          className="presentation-arch__line"
-          markerEnd="url(#arch-arrow)"
-        />
-        <line
-          x1="400"
-          y1="100"
-          x2="418"
-          y2="100"
-          className="presentation-arch__line"
-          markerEnd="url(#arch-arrow)"
-        />
-        <text
-          x="260"
-          y="18"
-          textAnchor="middle"
-          className="presentation-arch__note">
-          Nginx / Proxy / SSL
-        </text>
-      </svg>
-      <figcaption className="presentation-arch__caption">
-        Клиент: Canvas и UI · SSR отдаёт HTML · API и WebSocket · данные в
-        PostgreSQL
-      </figcaption>
+    <figure
+      className="presentation-arch presentation-arch--http"
+      aria-label="HTTP-слои проекта">
+      <img
+        src={HTTP_APIS_OVERVIEW_URL}
+        alt="Схема HTTP: браузер, SSR-клиент, apiProxy, Praktikum API, forum backend и PostgreSQL"
+        className="presentation-arch__img"
+      />
     </figure>
   )
 }
 
 export function SlideStack() {
+  const [showDiagram, setShowDiagram] = useState(false)
+
+  useEffect(() => {
+    setShowDiagram(false)
+    const timer = window.setTimeout(() => setShowDiagram(true), 2000)
+    return () => window.clearTimeout(timer)
+  }, [])
+
   return (
     <div className="presentation-slide presentation-slide--stack">
-      <div className="presentation-stack__columns">
-        <StackColumn title="Клиент" items={CLIENT_STACK} />
-        <StackColumn title="Сервер" items={SERVER_STACK} />
+      <div
+        className={
+          showDiagram
+            ? 'presentation-stack__swap presentation-stack__swap--diagram'
+            : 'presentation-stack__swap presentation-stack__swap--list'
+        }>
+        {!showDiagram ? (
+          <div className="presentation-stack__columns">
+            <StackColumn title="Клиент" items={CLIENT_STACK} />
+            <StackColumn title="Сервер" items={SERVER_STACK} />
+          </div>
+        ) : (
+          <ArchitectureDiagram />
+        )}
       </div>
-      <ArchitectureDiagram />
     </div>
   )
 }
 
-type SlideGameProps = {
-  onClose: () => void
-}
-
-export function SlideGame({ onClose }: SlideGameProps) {
+export function SlideGame() {
   const user = useSelector(selectUser)
-  const navigate = useNavigate()
 
   const openGame = () => {
-    onClose()
-    if (user) {
-      navigate('/game/start')
-      return
-    }
-    markAuthLoginRedirect('/game/start')
-    navigate('/login')
+    const path = user ? '/game/start' : '/login'
+    window.open(appRouteUrl(path), '_blank', 'noopener,noreferrer')
   }
 
   return (
     <div className="presentation-slide presentation-slide--game">
-      <p>
-        Cosmic Match — match‑3 с целями уровня, квестами, компаньонами, HUD и
-        настройками поля. Лучше всего смотреть в живом интерфейсе.
-      </p>
+      <p>Cosmic Match — match‑3 с уровнями, квестами, HUD и пр.</p>
+      <p>Лучше всего посмотреть на игру в действии.</p>
       <button type="button" className="btn btn--primary" onClick={openGame}>
         {user ? 'Открыть /game/start' : 'Войти и открыть игру'}
       </button>
-      {!user ? (
-        <p className="presentation-slide__note">
-          После входа вы попадёте на экран старта матча.
-        </p>
-      ) : null}
+      <p className="presentation-slide__note">
+        Презентация останется открытой — можно продолжить листать слайды.
+      </p>
     </div>
   )
 }
@@ -321,6 +197,10 @@ export function SlideLearning() {
     <div className="presentation-slide presentation-slide--learning">
       <ul className="presentation-learning__list">
         <li>
+          Разделение UI и игрового runtime, тесты на критичную логику,
+          итеративная доставка без поломки ядра игры.
+        </li>
+        <li>
           <strong>Командное взаимодействие</strong> — распределение зон, code
           review и общие стандарты в монорепо.
         </li>
@@ -331,10 +211,6 @@ export function SlideLearning() {
         <li>
           <strong>Самостоятельное освоение</strong> — Web API, SSR, Docker и
           облако по документации и экспериментам.
-        </li>
-        <li>
-          Разделение UI и игрового runtime, тесты на критичную логику,
-          итеративная доставка без поломки core-loop.
         </li>
       </ul>
       <p className="presentation-learning__thanks">СПАСИБО!</p>

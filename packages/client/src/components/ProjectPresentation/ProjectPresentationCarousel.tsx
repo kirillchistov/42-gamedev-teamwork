@@ -64,20 +64,14 @@ type Props = {
   onOpenChange: (open: boolean) => void
 }
 
-function SlideBody({
-  slideId,
-  onClose,
-}: {
-  slideId: typeof SLIDES[number]['id']
-  onClose: () => void
-}) {
+function SlideBody({ slideId }: { slideId: typeof SLIDES[number]['id'] }) {
   switch (slideId) {
     case 'team':
       return <SlideTeam />
     case 'stack':
       return <SlideStack />
     case 'game':
-      return <SlideGame onClose={onClose} />
+      return <SlideGame />
     case 'challenges':
       return <SlideChallenges />
     case 'learning':
@@ -149,11 +143,11 @@ export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
 
       <div className="match3-presentation-fullscreen__content">
         <span className="match3-presentation-fullscreen__counter">
-          Презентация · ~7 мин · {index + 1} / {total}
+          Презентация проекта Cosmic Match · {index + 1} / {total}
         </span>
         <h2>{slide.title}</h2>
         <div className="match3-presentation-fullscreen__body">
-          <SlideBody slideId={slide.id} onClose={close} />
+          <SlideBody slideId={slide.id} />
         </div>
         <div
           className="match3-presentation__dots match3-presentation-fullscreen__dots"

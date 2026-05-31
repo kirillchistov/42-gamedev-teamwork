@@ -44,7 +44,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
   },
   {
     name: 'Антон',
-    role: 'Universal treasure keeper)',
+    role: 'Universal treasure keeper',
     githubUrl: 'https://github.com/TelRoY',
     avatarUrl: 'https://avatars.githubusercontent.com/u/207622043?v=4',
     responsibilities: [
@@ -70,7 +70,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
   },
 ]
 
-/** Иконки стека для орбиты hero (без Mongo). */
+/** Иконки стека для орбиты hero */
 export const HERO_TECH_ICON_FILES = [
   'tech-react.svg',
   'tech-ts.svg',

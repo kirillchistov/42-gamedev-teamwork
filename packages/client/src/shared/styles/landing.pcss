@@ -89,17 +89,38 @@
   width: 0;
   height: 0;
   pointer-events: none;
-  z-index: 2;
+  z-index: 1;
+  animation: heroOrbitItemPeek 8s ease-in-out infinite;
+  animation-delay: var(--orbit-delay, 0s);
+}
+
+@keyframes heroOrbitItemPeek {
+  0%,
+  58%,
+  100% {
+    z-index: 1;
+    transform: rotate(var(--orbit-a))
+      translateY(calc(-1 * var(--orbit-r-in)))
+      rotate(calc(-1 * var(--orbit-a))) scale(0.7);
+    opacity: 0.35;
+  }
+
+  14%,
+  42% {
+    z-index: 5;
+    transform: rotate(var(--orbit-a))
+      translateY(calc(-1 * var(--orbit-r-out)))
+      rotate(calc(-1 * var(--orbit-a))) scale(1);
+    opacity: 1;
+  }
 }
 
 .hero-visual-orbit__avatar-wrap {
-  transform: rotate(var(--orbit-a)) translateY(calc(-1 * var(--orbit-r)))
-    rotate(calc(-1 * var(--orbit-a)));
+  /* transform driven by keyframes */
 }
 
 .hero-visual-orbit__tech-wrap {
-  transform: rotate(var(--orbit-a)) translateY(calc(-1 * var(--orbit-r)))
-    rotate(calc(-1 * var(--orbit-a)));
+  /* transform driven by keyframes */
 }
 
 .hero-visual-orbit__avatar {
@@ -126,6 +147,7 @@
 .hero-visual-orbit__center {
   position: relative;
   z-index: 3;
+  isolation: isolate;
 }
 
 /* hero board */
@@ -138,6 +160,7 @@
   border: 1px solid rgba(148, 163, 184, 0.4);
   position: relative;
   overflow: hidden;
+  z-index: 1;
 }
 
 .hero-board--presentation {

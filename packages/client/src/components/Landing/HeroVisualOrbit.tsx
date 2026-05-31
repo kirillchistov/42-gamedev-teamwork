@@ -3,8 +3,10 @@ import React from 'react'
 import { publicAssetUrl } from '../../utils/publicAssetUrl'
 import { HERO_TECH_ICON_FILES, TEAM_MEMBERS } from './teamData'
 
-const TEAM_ORBIT_RADIUS = 148
-const TECH_ORBIT_RADIUS = 108
+const TEAM_ORBIT_RADIUS_OUT = 148
+const TEAM_ORBIT_RADIUS_IN = 58
+const TECH_ORBIT_RADIUS_OUT = 108
+const TECH_ORBIT_RADIUS_IN = 42
 
 type Props = {
   children: React.ReactNode
@@ -33,8 +35,10 @@ export function HeroVisualOrbit({ children }: Props) {
             className="hero-visual-orbit__avatar-wrap"
             style={
               {
-                '--orbit-r': `${TEAM_ORBIT_RADIUS}px`,
+                '--orbit-r-out': `${TEAM_ORBIT_RADIUS_OUT}px`,
+                '--orbit-r-in': `${TEAM_ORBIT_RADIUS_IN}px`,
                 '--orbit-a': `${angle}deg`,
+                '--orbit-delay': `${i * 0.08}s`,
               } as React.CSSProperties
             }>
             <div
@@ -62,8 +66,10 @@ export function HeroVisualOrbit({ children }: Props) {
             className="hero-visual-orbit__tech-wrap"
             style={
               {
-                '--orbit-r': `${TECH_ORBIT_RADIUS}px`,
+                '--orbit-r-out': `${TECH_ORBIT_RADIUS_OUT}px`,
+                '--orbit-r-in': `${TECH_ORBIT_RADIUS_IN}px`,
                 '--orbit-a': `${angle}deg`,
+                '--orbit-delay': `${i * 0.06}s`,
               } as React.CSSProperties
             }>
             <img
