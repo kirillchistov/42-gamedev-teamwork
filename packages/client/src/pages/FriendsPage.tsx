@@ -13,7 +13,11 @@ import {
   selectIsLoadingFriends,
   clearFriendsActionError,
 } from '../slices/friendsSlice'
-import { fetchUserThunk, selectUser } from '../slices/userSlice'
+import {
+  fetchUserThunk,
+  selectUser,
+  selectUserIsAuthChecked,
+} from '../slices/userSlice'
 import { PageInitArgs } from '../routes'
 import { usePage } from '../hooks/usePage'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
