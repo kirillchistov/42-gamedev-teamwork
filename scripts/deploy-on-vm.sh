@@ -5,8 +5,27 @@ set -euo pipefail
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/cosmic-match}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 
-: "${CLIENT_IMAGE:?CLIENT_IMAGE is required}"
-: "${SERVER_IMAGE:?SERVER_IMAGE is required}"
+: "${IMAGE_TAG:?IMAGE_TAG is required}"
+: "${GHCR_OWNER:?GHCR_OWNER is required}"
+: "${GHCR_REPO:?GHCR_REPO is required}"
+
+IMAGE_TAG="$(printf '%s' "$IMAGE_TAG" | tr -d '[:space:]')"
+GHCR_OWNER="$(printf '%s' "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+GHCR_REPO="$(printf '%s' "$GHCR_REPO" | tr -d '[:space:]')"
+
+CLIENT_IMAGE="ghcr.io/${GHCR_OWNER}/${GHCR_REPO}/client:${IMAGE_TAG}"
+SERVER_IMAGE="ghcr.io/${GHCR_OWNER}/${GHCR_REPO}/server:${IMAGE_TAG}"
+
+if [[ "$CLIENT_IMAGE" == *": "* || "$SERVER_IMAGE" == *": "* ]]; then
+  echo "Invalid image reference (space after tag colon)."
+  echo "CLIENT_IMAGE=$CLIENT_IMAGE"
+  echo "SERVER_IMAGE=$SERVER_IMAGE"
+  exit 1
+fi
+
+echo "==> Images"
+echo "    CLIENT_IMAGE=$CLIENT_IMAGE"
+echo "    SERVER_IMAGE=$SERVER_IMAGE"
 
 cd "$DEPLOY_PATH"
 

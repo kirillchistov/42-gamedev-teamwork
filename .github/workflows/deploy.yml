@@ -66,14 +66,13 @@ jobs:
           else
             TAG="${{ github.event.workflow_run.head_sha }}"
           fi
+          TAG="$(printf '%s' "$TAG" | tr -d '[:space:]')"
           echo "IMAGE_TAG=$TAG" >> "$GITHUB_ENV"
           echo "Deploying tag: $TAG"
 
-      - name: Set image URLs
+      - name: Set GHCR coordinates
         run: |
-          REPO="${{ github.event.repository.name }}"
-          echo "CLIENT_IMAGE=ghcr.io/${{ env.OWNER_LC }}/${REPO}/client:${IMAGE_TAG}" >> "$GITHUB_ENV"
-          echo "SERVER_IMAGE=ghcr.io/${{ env.OWNER_LC }}/${REPO}/server:${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "GHCR_REPO=${{ github.event.repository.name }}" >> "$GITHUB_ENV"
 
       - name: Set deploy path
         run: |
@@ -121,8 +120,9 @@ jobs:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         env:
-          CLIENT_IMAGE: ${{ env.CLIENT_IMAGE }}
-          SERVER_IMAGE: ${{ env.SERVER_IMAGE }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          GHCR_OWNER: ${{ env.OWNER_LC }}
+          GHCR_REPO: ${{ env.GHCR_REPO }}
           DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           GHCR_USER: ${{ secrets.GHCR_USER || github.repository_owner }}
@@ -130,7 +130,7 @@ jobs:
           host: ${{ secrets.YC_VM_HOST }}
           username: ${{ secrets.YC_VM_USER }}
           key: ${{ secrets.YC_VM_SSH_KEY }}
-          envs: CLIENT_IMAGE,SERVER_IMAGE,DEPLOY_PATH,GHCR_TOKEN,GHCR_USER
+          envs: IMAGE_TAG,GHCR_OWNER,GHCR_REPO,DEPLOY_PATH,GHCR_TOKEN,GHCR_USER
           script_stop: true
           script: |
             chmod +x "$DEPLOY_PATH/scripts/deploy-on-vm.sh"
