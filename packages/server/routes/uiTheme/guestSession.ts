@@ -50,12 +50,14 @@ export async function findActiveGuestSession(
 }
 
 export function setGuestSessionCookie(res: Response, sessionId: string): void {
+  // Снять legacy cookie с Path=/ — иначе уходит на /api/v2 и ломает signin Практикума.
+  res.clearCookie(ANONYMOUS_SESSION_COOKIE, { path: '/' })
   res.cookie(ANONYMOUS_SESSION_COOKIE, sessionId, {
     httpOnly: true,
     maxAge: GUEST_COOKIE_MAX_AGE_SEC * 1000,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
-    path: '/',
+    path: '/api/ui',
   })
 }
 

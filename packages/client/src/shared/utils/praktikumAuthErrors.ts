@@ -2,9 +2,7 @@
  * Разбор тел ответов API и человекочитаемые тексты ошибок для UI.
  */
 
-export function parseJsonReasonFromText(
-  text: string
-): string {
+export function parseJsonReasonFromText(text: string): string {
   const t = text.trim()
   if (!t) return ''
   try {
@@ -18,9 +16,7 @@ export function parseJsonReasonFromText(
   return t
 }
 
-export function humanizePraktikumAuthReason(
-  reason: string
-): string {
+export function humanizePraktikumAuthReason(reason: string): string {
   const r = reason.trim()
   if (!r) return r
 
@@ -29,7 +25,11 @@ export function humanizePraktikumAuthReason(
     low.includes('user already in system') ||
     low.includes('already in system')
   ) {
-    return 'Вы уже вошли в систему. Выйдите из аккаунта и повторите вход.'
+    return 'Вы уже вошли в системе. Выйдите из аккаунта и повторите вход.'
+  }
+
+  if (low.includes('cookie is not valid')) {
+    return 'Сессия устарела. Очистите cookie для сайта или откройте вкладку инкognito и войдите снова.'
   }
 
   return r

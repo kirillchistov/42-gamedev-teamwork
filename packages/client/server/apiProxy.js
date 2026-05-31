@@ -4,6 +4,30 @@ exports.registerApiProxy = registerApiProxy;
 const http_proxy_middleware_1 = require("http-proxy-middleware");
 const DEFAULT_PRAKTIKUM_ORIGIN = 'https://ya-praktikum.tech';
 const DEFAULT_NODE_API = 'http://localhost:3000';
+/** Cookie нашего API (тема UI) не отправляем в ya-praktikum.tech — иначе logout/signin → «Cookie is not valid». */
+const PRAKTIKUM_AUTH_COOKIE_NAMES = new Set(['uuid']);
+function filterPraktikumCookieHeader(cookieHeader) {
+    if (!cookieHeader) {
+        return undefined;
+    }
+    const kept = cookieHeader
+        .split(';')
+        .map(part => part.trim())
+        .filter(Boolean)
+        .filter(part => {
+        var _a;
+        const name = (_a = part.split('=')[0]) === null || _a === void 0 ? void 0 : _a.trim();
+        return name != null && PRAKTIKUM_AUTH_COOKIE_NAMES.has(name);
+    });
+    return kept.length > 0 ? kept.join('; ') : undefined;
+}
+function rewritePraktikumSetCookieLines(header) {
+    if (header == null) {
+        return undefined;
+    }
+    const lines = Array.isArray(header) ? header : [header];
+    return lines.map(line => line.replace(/;\s*SameSite=None/gi, '; SameSite=Lax'));
+}
 function trimTrailingSlash(value) {
     return value.replace(/\/+$/, '');
 }
@@ -90,6 +114,23 @@ function registerApiProxy(app) {
         target: `${praktikumOrigin}/api/v2`,
         ...sharedProxyOptions,
         secure: true,
+        on: {
+            proxyReq: (proxyReq, req) => {
+                const filtered = filterPraktikumCookieHeader(req.headers.cookie);
+                if (filtered) {
+                    proxyReq.setHeader('cookie', filtered);
+                }
+                else {
+                    proxyReq.removeHeader('cookie');
+                }
+            },
+            proxyRes: proxyRes => {
+                const rewritten = rewritePraktikumSetCookieLines(proxyRes.headers['set-cookie']);
+                if (rewritten) {
+                    proxyRes.headers['set-cookie'] = rewritten;
+                }
+            },
+        },
     }));
     app.use('/api/forum', nodeProxy(nodeApiTarget, '/api/forum'));
     app.use('/api/ui', nodeProxy(nodeApiTarget, '/api/ui'));

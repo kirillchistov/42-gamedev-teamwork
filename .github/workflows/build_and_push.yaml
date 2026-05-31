@@ -35,6 +35,8 @@ jobs:
           context: .
           file: Dockerfile.client
           push: true
+          build-args: |
+            VITE_YANDEX_OAUTH_REDIRECT_URI=${{ vars.VITE_YANDEX_OAUTH_REDIRECT_URI || 'https://cosmic.ya-praktikum.tech' }}
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/${{ github.event.repository.name }}/client:${{ github.sha }}
             ghcr.io/${{ env.OWNER_LC }}/${{ github.event.repository.name }}/client:latest

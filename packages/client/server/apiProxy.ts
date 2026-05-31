@@ -8,6 +8,38 @@ import { createProxyMiddleware, type Options } from 'http-proxy-middleware'
 const DEFAULT_PRAKTIKUM_ORIGIN = 'https://ya-praktikum.tech'
 const DEFAULT_NODE_API = 'http://localhost:3000'
 
+/** Cookie нашего API (тема UI) не отправляем в ya-praktikum.tech — иначе logout/signin → «Cookie is not valid». */
+const PRAKTIKUM_AUTH_COOKIE_NAMES = new Set(['uuid'])
+
+function filterPraktikumCookieHeader(
+  cookieHeader: string | undefined
+): string | undefined {
+  if (!cookieHeader) {
+    return undefined
+  }
+  const kept = cookieHeader
+    .split(';')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .filter(part => {
+      const name = part.split('=')[0]?.trim()
+      return name != null && PRAKTIKUM_AUTH_COOKIE_NAMES.has(name)
+    })
+  return kept.length > 0 ? kept.join('; ') : undefined
+}
+
+function rewritePraktikumSetCookieLines(
+  header: string | string[] | undefined
+): string[] | undefined {
+  if (header == null) {
+    return undefined
+  }
+  const lines = Array.isArray(header) ? header : [header]
+  return lines.map(line =>
+    line.replace(/;\s*SameSite=None/gi, '; SameSite=Lax')
+  )
+}
+
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '')
 }
@@ -113,6 +145,26 @@ export function registerApiProxy(app: Express): void {
       target: `${praktikumOrigin}/api/v2`,
       ...sharedProxyOptions,
       secure: true,
+      on: {
+        proxyReq: (proxyReq, req) => {
+          const filtered = filterPraktikumCookieHeader(
+            req.headers.cookie as string | undefined
+          )
+          if (filtered) {
+            proxyReq.setHeader('cookie', filtered)
+          } else {
+            proxyReq.removeHeader('cookie')
+          }
+        },
+        proxyRes: proxyRes => {
+          const rewritten = rewritePraktikumSetCookieLines(
+            proxyRes.headers['set-cookie']
+          )
+          if (rewritten) {
+            proxyRes.headers['set-cookie'] = rewritten
+          }
+        },
+      },
     })
   )
 
