@@ -4,6 +4,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { useSelector } from '../../store'
 import { selectUser } from '../../slices/userSlice'
+import { HeroVisualOrbit } from './HeroVisualOrbit'
 
 const BOARD_ROWS = 6
 const BOARD_COLS = 6
@@ -23,7 +24,11 @@ const getGemColorClass = (row: number, col: number) => {
   return GEM_COLORS[idx]
 }
 
-export function Hero() {
+type HeroProps = {
+  onOpenPresentation?: () => void
+}
+
+export function Hero({ onOpenPresentation }: HeroProps) {
   const user = useSelector(selectUser)
   const ctaLink = user ? '/profile' : '/signup'
   const ctaText = user ? 'Профиль' : 'Зарегистрироваться'
@@ -48,43 +53,52 @@ export function Hero() {
       </div>
 
       <div className="hero__visual">
-        <div className="hero-board">
-          {Array.from({ length: BOARD_ROWS }).map((_, row) => (
-            <div className="hero-board__row" key={row}>
-              {Array.from({
-                length: BOARD_COLS,
-              }).map((__, col) => {
-                const isMatch = isMatchCell(row, col)
-                const gemColorClass = getGemColorClass(row, col)
-                return (
-                  <div
-                    key={col}
-                    className={
-                      'hero-board__cell' +
-                      (isMatch ? ' hero-board__cell--match' : '')
-                    }>
+        <HeroVisualOrbit>
+          <button
+            type="button"
+            className="hero-board hero-board--presentation"
+            onClick={onOpenPresentation}
+            aria-label="Открыть презентацию проекта, около 7 минут">
+            {Array.from({ length: BOARD_ROWS }).map((_, row) => (
+              <div className="hero-board__row" key={row}>
+                {Array.from({
+                  length: BOARD_COLS,
+                }).map((__, col) => {
+                  const isMatch = isMatchCell(row, col)
+                  const gemColorClass = getGemColorClass(row, col)
+                  return (
                     <div
+                      key={col}
                       className={
-                        'hero-board__gem ' +
-                        gemColorClass +
-                        (isMatch ? ' hero-board__gem--pulse' : '')
-                      }
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          ))}
+                        'hero-board__cell' +
+                        (isMatch ? ' hero-board__cell--match' : '')
+                      }>
+                      <div
+                        className={
+                          'hero-board__gem ' +
+                          gemColorClass +
+                          (isMatch ? ' hero-board__gem--pulse' : '')
+                        }
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
 
-          {/* пара неоновых вспышек поверх доски */}
-          <div className="hero-board__flash hero-board__flash--one" />
-          <div className="hero-board__flash hero-board__flash--two" />
-          <div className="hero-board__combo-burst" />
-          <div className="hero-board__combo-line hero-board__combo-line--h" />
-          <div className="hero-board__combo-line hero-board__combo-line--v" />
-          <div className="hero-board__combo-tag">MEGA COMBO x8</div>
-          <div className="hero-board__effect" />
-        </div>
+            {/* пара неоновых вспышек поверх доски */}
+            <div className="hero-board__flash hero-board__flash--one" />
+            <div className="hero-board__flash hero-board__flash--two" />
+            <div className="hero-board__combo-burst" />
+            <div className="hero-board__combo-line hero-board__combo-line--h" />
+            <div className="hero-board__combo-line hero-board__combo-line--v" />
+            <div className="hero-board__combo-tag">MEGA COMBO x8</div>
+            <div className="hero-board__effect" />
+            <span className="hero-board__presentation-hint">
+              Презентация проекта
+            </span>
+          </button>
+        </HeroVisualOrbit>
       </div>
     </section>
   )

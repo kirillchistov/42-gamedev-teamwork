@@ -8,6 +8,38 @@ import { createProxyMiddleware, type Options } from 'http-proxy-middleware'
 const DEFAULT_PRAKTIKUM_ORIGIN = 'https://ya-praktikum.tech'
 const DEFAULT_NODE_API = 'http://localhost:3000'
 
+/** Cookie сессии Практикума; anonymous_session_id с Path=/ не отправляем. */
+const PRAKTIKUM_AUTH_COOKIE_NAMES = new Set(['uuid', 'authCookie'])
+
+function filterPraktikumCookieHeader(
+  cookieHeader: string | undefined
+): string | undefined {
+  if (!cookieHeader) {
+    return undefined
+  }
+  const kept = cookieHeader
+    .split(';')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .filter(part => {
+      const name = part.split('=')[0]?.trim()
+      return name != null && PRAKTIKUM_AUTH_COOKIE_NAMES.has(name)
+    })
+  return kept.length > 0 ? kept.join('; ') : undefined
+}
+
+function rewritePraktikumSetCookieLines(
+  header: string | string[] | undefined
+): string[] | undefined {
+  if (header == null) {
+    return undefined
+  }
+  const lines = Array.isArray(header) ? header : [header]
+  return lines.map(line =>
+    line.replace(/;\s*SameSite=None/gi, '; SameSite=Lax')
+  )
+}
+
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '')
 }
@@ -26,6 +58,15 @@ function readPraktikumOrigin(): string {
   return normalized
 }
 
+function readDevNodeApiTarget(): string {
+  const explicit = process.env.DEV_NODE_API_URL?.trim()
+  if (explicit) {
+    return trimTrailingSlash(explicit)
+  }
+  const port = process.env.SERVER_PORT?.trim() || '3000'
+  return `http://localhost:${port}`
+}
+
 function readNodeApiTarget(): string {
   const external =
     process.env.EXTERNAL_SERVER_URL?.trim() ||
@@ -35,6 +76,16 @@ function readNodeApiTarget(): string {
   // В dev на хосте INTERNAL_SERVER_URL=http://server:… из docker-compose не резолвится.
   const internalIsDockerOnly =
     internal != null && /:\/\/server(?::|\/|$)/.test(internal)
+
+  if (process.env.NODE_ENV === 'development') {
+    if (internalIsDockerOnly) {
+      return readDevNodeApiTarget()
+    }
+    // .env с SERVER_PORT=3001 для ВМ/Docker — локальный yarn dev:server слушает 3000.
+    if (external && /:\/\/(localhost|127\.0\.0\.1):3001\b/.test(external)) {
+      return readDevNodeApiTarget()
+    }
+  }
 
   if (
     process.env.NODE_ENV === 'development' &&
@@ -94,6 +145,26 @@ export function registerApiProxy(app: Express): void {
       target: `${praktikumOrigin}/api/v2`,
       ...sharedProxyOptions,
       secure: true,
+      on: {
+        proxyReq: (proxyReq, req) => {
+          const filtered = filterPraktikumCookieHeader(
+            req.headers.cookie as string | undefined
+          )
+          if (filtered) {
+            proxyReq.setHeader('cookie', filtered)
+          } else {
+            proxyReq.removeHeader('cookie')
+          }
+        },
+        proxyRes: proxyRes => {
+          const rewritten = rewritePraktikumSetCookieLines(
+            proxyRes.headers['set-cookie']
+          )
+          if (rewritten) {
+            proxyRes.headers['set-cookie'] = rewritten
+          }
+        },
+      },
     })
   )
 

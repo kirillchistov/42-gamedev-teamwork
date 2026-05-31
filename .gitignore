@@ -15,3 +15,4 @@ packages/client/src/**/*.d.ts
 !packages/client/src/sw-env.d.ts
 !packages/client/src/types/jest-dom.d.ts
 package-lock.json
+deploy/nginx/certs/*.pem

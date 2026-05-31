@@ -3,13 +3,14 @@
  * - профиль обновляется через updateProfileThunk
  * - аватар обновляется через updateAvatarThunk
  **/
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { useDispatch, useSelector } from 'react-redux'
 import { Helmet } from 'react-helmet'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { Avatar } from '../components/Avatar'
+import { ProfileGeoLine } from '../components/ProfileGeoLine/ProfileGeoLine'
 import { usePage } from '../hooks/usePage'
 import { PageInitArgs } from '../routes'
 import { Button, Input, FieldError } from '../shared/ui'
@@ -34,6 +35,15 @@ import {
   updateUserAvatar,
   fetchUserThunk,
 } from '../slices/userSlice'
+import {
+  formatCoarseRegionLine,
+  getTimezoneRegion,
+  isGeolocationSupported,
+  readStoredCoarseRegion,
+  resolveCoarseRegion,
+  writeStoredCoarseRegion,
+  type CoarseRegion,
+} from '../utils/geolocation'
 
 function profilesEqual(a: ProfileData, b: ProfileData): boolean {
   return (
@@ -71,6 +81,15 @@ export function ProfilePage() {
   const [showPasswordPanel, setShowPasswordPanel] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [savedProfile, setSavedProfile] = useState<ProfileData | null>(null)
+  const [coarseRegion, setCoarseRegion] = useState<CoarseRegion | null>(() =>
+    readStoredCoarseRegion()
+  )
+  const [geoEnabled, setGeoEnabled] = useState(
+    () => readStoredCoarseRegion()?.source === 'geolocation'
+  )
+  const [regionLoading, setRegionLoading] = useState(false)
+  const [regionError, setRegionError] = useState('')
+  const [clockTick, setClockTick] = useState(0)
   const [pwdFieldBlurred, setPwdFieldBlurred] = useState({
     oldPassword: false,
     newPassword: false,
@@ -94,6 +113,28 @@ export function ProfilePage() {
     }, 2800)
     return () => window.clearTimeout(id)
   }, [toastMessage])
+
+  useEffect(() => {
+    if (coarseRegion) return
+    const region = getTimezoneRegion()
+    writeStoredCoarseRegion(region)
+    setCoarseRegion(region)
+  }, [coarseRegion])
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setClockTick(t => t + 1)
+    }, 60_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  const geoLine = useMemo(() => {
+    if (!coarseRegion) {
+      return 'Регион не определён'
+    }
+    void clockTick
+    return formatCoarseRegionLine(coarseRegion)
+  }, [coarseRegion, clockTick])
 
   const passwordsValidate = useValidate()
 
@@ -296,6 +337,20 @@ export function ProfilePage() {
     }
   }
 
+  const handleToggleGeo = async () => {
+    const next = !geoEnabled
+    setRegionLoading(true)
+    setRegionError('')
+    const result = await resolveCoarseRegion({ useGeolocation: next })
+    setRegionLoading(false)
+    if (result.ok) {
+      setCoarseRegion(result.region)
+      setGeoEnabled(next)
+      return
+    }
+    setRegionError(result.reason)
+  }
+
   const handleAvatarDelete = async () => {
     try {
       await userApi.deleteAvatar()
@@ -340,6 +395,15 @@ export function ProfilePage() {
             url={avatar}
             handleAvatarChange={handleAvatarChange}
             handleAvatarDelete={handleAvatarDelete}
+          />
+
+          <ProfileGeoLine
+            line={geoLine}
+            loading={regionLoading}
+            geoEnabled={geoEnabled}
+            geoSupported={isGeolocationSupported()}
+            error={regionError || undefined}
+            onToggleGeo={() => void handleToggleGeo()}
           />
 
           {/* Форма профиля */}

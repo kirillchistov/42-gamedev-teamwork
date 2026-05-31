@@ -25,7 +25,7 @@ const AUTH_REQUEST_TIMEOUT_MS = 12_000
 const AUTH_RELOGIN_CONFLICT_MESSAGE =
   'Аккаунт уже активен на другом устройстве. Выйдите из аккаунта там и повторите вход.'
 const AUTH_SESSION_CONFIRMATION_FAILED_MESSAGE =
-  'Вход выполнен, но сессия не подтвердилась. Обновите страницу (жёстко), очистите данные сайта или откройте в приватной вкладке и войдите снова.'
+  'Не удалось завершить вход. Обновите страницу и попробуйте ещё раз.'
 const AUTH_SESSION_CONFIRM_RETRIES = 4
 const AUTH_SESSION_CONFIRM_RETRY_MS = 200
 
@@ -99,7 +99,9 @@ const fetchCurrentUser = async (): Promise<User> => {
   return (await res.json()) as Promise<User>
 }
 
-/** Сброс старой сессии Практикума перед signin (битые cookie на мобильном Safari). */
+/**
+ * Сброс старой сессии Практикума перед signin (битые cookie на мобильном Safari).
+ */
 async function clearAuthSessionBeforeLogin(): Promise<void> {
   try {
     await fetchWithTimeout(`${getBaseUrl()}/auth/logout`, {

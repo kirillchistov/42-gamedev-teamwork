@@ -59,7 +59,6 @@ export function LogoutPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    await dispatch(logoutThunk())
     const result = await dispatch(loginThunk({ login, password }))
     if (loginThunk.fulfilled.match(result)) {
       navigate('/game', { replace: true })

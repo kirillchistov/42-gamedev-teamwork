@@ -1,18 +1,52 @@
-# Дополнительный Web API
+# Подключение Web API (задача 9.3)
 
-> **Web API** здесь — браузерные API (Fullscreen, Performance, Page Visibility…), не HTTP-ручки `packages/server`. Cookie и `requirePraktikumAuth` — в [auth-middleware-backend.md](./auth-middleware-backend.md). Обзор по проекту — [project-web-api.md](./project-web-api.md).
+> **Web API** — браузерные API (Notifications, Geolocation, Page Visibility, Vibration).  
+> Обзор статуса — [project-web-api.md](./project-web-api.md).
 
-```mermaid
-flowchart TB
-  A["Браузер: Web API"]
-  B["fetch + Cookie на server"]
-  C["requirePraktikumAuth"]
-  D["JSON-ручки"]
-  A -.->|только если шлёте метрики| B
-  B --> C --> D
+## Статус в ветках
+
+| Ветка | Код 9.3 (Notification, Geolocation, Page Visibility, Vibration) |
+|-------|-------------------------------------------------------------------|
+| `feature/9.3-add-webapi` | **есть** — полная реализация + тесты |
+| `feature/9.8-final-demo` (текущая) | **нет** — в docs только план; нужен merge/cherry-pick с `9.3` |
+
+Перенести код на текущую ветку:
+
+```bash
+git fetch origin
+git checkout feature/9.8-final-demo   # или ваша рабочая ветка
+
+git checkout origin/feature/9.3-add-webapi -- \
+  packages/client/src/utils/notifications.ts \
+  packages/client/src/utils/notifications.test.ts \
+  packages/client/src/utils/geolocation.ts \
+  packages/client/src/utils/geolocation.test.ts \
+  packages/client/src/utils/pageVisibility.ts \
+  packages/client/src/utils/pageVisibility.test.ts \
+  packages/client/src/utils/vibration.ts \
+  packages/client/src/utils/webApiStorage.ts \
+  packages/client/src/hooks/useGameReturnNotification.ts \
+  packages/client/src/hooks/usePageVisibilityPause.ts \
+  packages/client/src/pages/GamePage.tsx \
+  packages/client/src/pages/ProfilePage.tsx \
+  packages/client/src/game/match3/Match3Screen.tsx
+
+# CSP для Geolocation (если ещё geolocation=()):
+# packages/client/server/csp.ts — Permissions-Policy: geolocation=(self)
 ```
 
-Шаг в браузере не требует Node. Цепочка справа нужна только если данные уходят на наш API.
+После checkout — `yarn workspace client typecheck` и тесты из разделов ниже.
+
+---
+
+## Порядок внедрения
+
+1. **Notification API**
+2. **Geolocation API**
+3. **Page Visibility API**
+4. **Vibration API**
+
+После каждой итерации: `yarn workspace client typecheck`.
 
 ---
 
@@ -20,117 +54,432 @@ flowchart TB
 
 | Спринт | API | Где |
 |--------|-----|-----|
-| 6.6 | **Fullscreen** | [fullscreen.ts](../packages/client/src/utils/fullscreen.ts), [Header](../packages/client/src/components/Header/index.tsx), `GamePage` (клавиша F) |
-| 7.5 | **Performance** (`mark` / `measure`, `PerformanceObserver` longtask) | [performanceMetrics.ts](../packages/client/src/utils/performanceMetrics.ts), [GamePage.tsx](../packages/client/src/pages/GamePage.tsx), [Match3Screen.tsx](../packages/client/src/game/match3/Match3Screen.tsx) |
-| — | **localStorage / sessionStorage** | настройки, результат партии, темы, форум-редирект |
-| — | **Speech Synthesis** (озвучка иероглифов) | [HieroglyphCardOverlay.tsx](../packages/client/src/game/match3/HieroglyphCardOverlay.tsx) — отдельное задание не закрывало; для 9.3 лучше не брать |
+| 6.6 | **Fullscreen** | `packages/client/src/utils/fullscreen.ts`, Header, `GamePage` |
+| 7.5 | **Performance** | `performanceMetrics.ts`, `GamePage`, `Match3Screen` |
+| — | **localStorage / sessionStorage** | настройки, прогресс, форум |
+| — | **Speech Synthesis** | `HieroglyphCardOverlay.tsx` — не для 9.3 |
 
-`visibilitychange` уже слушает **только** мониторинг Performance (пауза longtask), **не** останавливает таймер партии. Это не засчитывается как фича Page Visibility для игрока.
-
----
-
-## Задача 9.3 (спринт 9): что делать
-
-**Рекомендация: [Page Visibility API](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API)**
-
-Почему сейчас:
-
-- Прямая польза в match-3: честная пауза, когда вкладка в фоне.
-- Ложится на уже есть overlay «Пауза» в `Match3Screen`.
-- Не дублирует Fullscreen (6.6) и Performance (7.5).
-- Мало правок, заметно на демо.
-
-**Запасные варианты** (если Visibility не зайдёт):
-
-| API | Сценарий | Сложность |
-|-----|----------|-----------|
-| **Notification** | Напоминание «вернись в игру» после opt-in; только при `granted` | средняя, нужен toggle в UI |
-| **Vibration** | Короткий отклик на крупный комбо / победу; toggle «вибрация» | низкая, только mobile |
-| **Clipboard** | «Скопировать счёт» на экране финиша | низкая |
-| **Geolocation** | Регион в профиле | высокая, privacy, для нас слабый приоритет |
-
-**Не брать для 9.3:** Performance (7.5), Fullscreen (6.6), снова только `console.log` без UI.
+`visibilitychange` в `performanceMetrics.ts` паузит только longtask observer, **не** игровой таймер.
 
 ---
 
-## План: Page Visibility (9.3)
+## Итерация 1 — Notification API
 
-### 1. Утилита
+### Файлы
 
-Файл `packages/client/src/utils/pageVisibility.ts`:
+| Путь |
+|------|
+| `packages/client/src/utils/notifications.ts` |
+| `packages/client/src/hooks/useGameReturnNotification.ts` |
+| `packages/client/src/utils/notifications.test.ts` |
+| `packages/client/src/pages/GamePage.tsx` |
 
-- `subscribePageVisibility(onChange: (hidden: boolean) => void): () => void`
-- guards: `typeof document === 'undefined'`, нет API → no-op unsubscribe
-- слушатель: `document.visibilityState` / `visibilitychange`
-- при подписке сразу вызвать `onChange(document.visibilityState === 'hidden')`
+### `notifications.ts` (util)
 
-### 2. Игра
+```typescript
+export const NOTIFICATIONS_OPT_IN_KEY = 'match3:notifications-opt-in'
+export const GAME_RETURN_REMIND_MS = 120_000
 
-В [Match3Screen.tsx](../packages/client/src/game/match3/Match3Screen.tsx) (или тонкий хук `usePageVisibilityPause`):
+export function isNotificationSupported(): boolean {
+  return typeof window !== 'undefined' && typeof Notification !== 'undefined'
+}
 
-1. При `hidden === true` и фаза `playing` — открыть тот же пауза-overlay, что по кнопке (или отдельный текст: «Вкладка в фоне — игра на паузе»).
-2. При возврате на вкладку — **не** снимать паузу автоматически (игрок сам жмёт «Продолжить»), либо снять только если пауза была из-за visibility — зафиксировать в PR.
-3. Диспатчить существующий `MATCH3_PERF_PAUSE_EVENT` с `{ paused: true }`, чтобы 7.5 не считал long tasks в фоне (уже согласовано с [performanceMetrics.ts](../packages/client/src/utils/performanceMetrics.ts)).
+export function readNotificationsOptIn(): boolean {
+  try {
+    return window.localStorage.getItem(NOTIFICATIONS_OPT_IN_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
-### 3. UI
+export async function requestNotificationPermission(): Promise<NotificationPermission | 'unsupported'> {
+  if (!isNotificationSupported()) return 'unsupported'
+  if (Notification.permission !== 'default') return Notification.permission
+  return Notification.requestPermission()
+}
 
-- Бейдж или строка в overlay паузы при `document.hidden`.
-- Опционально: пункт в настройках игры «Пауза при сворачивании вкладки» (localStorage, по умолчанию `true`).
+export function showGameReturnNotification(): boolean {
+  if (Notification.permission !== 'granted') return false
+  new Notification('Cosmic Match', {
+    body: 'Партия ждёт — вернитесь в игру, когда будет удобно.',
+    tag: 'cosmic-match-return',
+  })
+  return true
+}
+```
 
-### 4. Тесты
+Полный файл — ~90 строк (см. ветку `feature/9.3-add-webapi`).
 
-- Unit: mock `document.visibilityState`, проверить вызов callback и `removeEventListener` после unsubscribe.
-- Ручная проверка: `/game/play` → старт → свернуть вкладку → таймер/ходы не идут → вернуться → overlay виден.
+### `useGameReturnNotification.ts` (hook)
 
-### 5. Критерий готовности (9.3)
+```typescript
+import { useEffect } from 'react'
+import {
+  GAME_RETURN_REMIND_MS,
+  getNotificationPermission,
+  readNotificationsOptIn,
+  showGameReturnNotification,
+} from '../utils/notifications'
 
-- [ ] Отдельный util + подписка с cleanup в `useEffect`
-- [ ] Поведение видно игроку (не только консоль)
-- [ ] Fallback, если API нет
-- [ ] Строка в PR / комментарий: зачем API
-- [ ] Обновить [s9-plan.md](./s9-plan.md) или README: 9.3 → Page Visibility
+export function useGameReturnNotification(activeOnPage: boolean): void {
+  useEffect(() => {
+    if (!activeOnPage || !readNotificationsOptIn()) return
+    if (getNotificationPermission() !== 'granted') return
+
+    let timer: number | null = null
+    const clearTimer = () => {
+      if (timer !== null) {
+        window.clearTimeout(timer)
+        timer = null
+      }
+    }
+
+    const onVisibility = () => {
+      clearTimer()
+      if (document.visibilityState !== 'hidden') return
+      timer = window.setTimeout(() => {
+        if (document.visibilityState === 'hidden') {
+          showGameReturnNotification()
+        }
+      }, GAME_RETURN_REMIND_MS)
+    }
+
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      clearTimer()
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [activeOnPage])
+}
+```
+
+### Врезка в `GamePage.tsx`
+
+```typescript
+import { useGameReturnNotification } from '../hooks/useGameReturnNotification'
+import {
+  getNotificationPermission,
+  isNotificationSupported,
+  readNotificationsOptIn,
+  requestNotificationPermission,
+  writeNotificationsOptIn,
+} from '../utils/notifications'
+
+// state
+const [notificationsOptIn, setNotificationsOptIn] = useState(() =>
+  readNotificationsOptIn()
+)
+
+const isOnGameSection =
+  location.pathname === '/game/play' ||
+  location.pathname === '/game/start' ||
+  location.pathname === '/game'
+
+useGameReturnNotification(isOnGameSection && notificationsOptIn)
+
+// в панели настроек — select «Напоминания (уведомления)»:
+// при включении → requestNotificationPermission(), при denied — сброс opt-in
+```
+
+### Проверка
+
+```bash
+yarn workspace client test src/utils/notifications.test.ts
+```
 
 ---
 
-## Альтернатива: Notification API
+## Итерация 2 — Geolocation API
 
-Если команда выберет уведомления вместо Visibility.
+### Файлы
 
-1. Toggle в профиле или на `/game`: «Напоминания».
-2. `Notification.requestPermission()` только по клику.
-3. При `granted` — один сценарий, например после ухода со страницы игры: `setTimeout` + проверка `document.hidden`, затем `new Notification('Cosmic Match', { body: '…', tag: 'match3-remind' })`.
-4. Флаг opt-in: `localStorage` `match3:notifications-opt-in`.
-5. Не дублировать без разрешения; не слать в SSR.
+| Путь |
+|------|
+| `packages/client/src/utils/geolocation.ts` |
+| `packages/client/src/utils/geolocation.test.ts` |
+| `packages/client/src/pages/ProfilePage.tsx` |
+| `packages/client/server/csp.ts` — `geolocation=(self)` |
 
-MDN: [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API).
+### `geolocation.ts` (ключевые части)
+
+```typescript
+export const PROFILE_REGION_KEY = 'profile:coarse-region'
+
+export type CoarseRegion = {
+  label: string
+  timezone: string
+  source: 'intl' | 'geolocation'
+}
+
+export function getTimezoneRegion(): CoarseRegion {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  return {
+    label: timezone.replace(/_/g, ' '),
+    timezone,
+    source: 'intl',
+  }
+}
+
+export function resolveCoarseRegion(options?: {
+  useGeolocation?: boolean
+}): Promise<GeolocationResolveResult> {
+  if (!options?.useGeolocation) {
+    const region = getTimezoneRegion()
+    writeStoredCoarseRegion(region)
+    return Promise.resolve({ ok: true, region })
+  }
+  return new Promise(resolve => {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const region: CoarseRegion = {
+          label: `≈ ${Math.round(pos.coords.latitude * 10) / 10}°, …`,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          source: 'geolocation',
+        }
+        writeStoredCoarseRegion(region)
+        resolve({ ok: true, region })
+      },
+      err => resolve({ ok: false, reason: '…' }),
+      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 12_000 }
+    )
+  })
+}
+```
+
+### CSP (`csp.ts`)
+
+```typescript
+res.setHeader(
+  'Permissions-Policy',
+  'camera=(), microphone=(), geolocation=(self)'
+)
+```
+
+### Врезка в `ProfilePage.tsx`
+
+```typescript
+import {
+  getTimezoneRegion,
+  isGeolocationSupported,
+  readStoredCoarseRegion,
+  resolveCoarseRegion,
+} from '../utils/geolocation'
+
+const handleDetectTimezone = () => {
+  setCoarseRegion(getTimezoneRegion())
+}
+
+const handleDetectGeolocation = async () => {
+  const result = await resolveCoarseRegion({ useGeolocation: true })
+  if (result.ok) setCoarseRegion(result.region)
+  else setRegionError(result.reason)
+}
+
+// UI: блок «Регион (приблизительно)» + кнопки «Часовой пояс» / «С геолокацией»
+```
 
 ---
 
-## Справка: Performance (7.5, уже в коде)
+## Итерация 3 — Page Visibility API
 
-Реализовано в [performanceMetrics.ts](../packages/client/src/utils/performanceMetrics.ts):
+### Файлы
 
-- `markMatch3SessionStart` / `measureMatch3SessionEnd`
-- `startPerformanceMonitoring` + longtask observer + итог в консоль
-- пауза observer при overlay и при `visibilitychange` (внутренне для метрик)
+| Путь |
+|------|
+| `packages/client/src/utils/pageVisibility.ts` |
+| `packages/client/src/utils/webApiStorage.ts` |
+| `packages/client/src/hooks/usePageVisibilityPause.ts` |
+| `packages/client/src/utils/pageVisibility.test.ts` |
+| `packages/client/src/game/match3/Match3Screen.tsx` |
+| `packages/client/src/pages/GamePage.tsx` |
 
-Новый код 9.3 **может** вызывать `MATCH3_PERF_PAUSE_EVENT`, но не должен копировать логику замеров.
+### `pageVisibility.ts`
+
+```typescript
+export function subscribePageVisibility(
+  onChange: (hidden: boolean) => void
+): () => void {
+  if (typeof document === 'undefined' || !document.visibilityState) {
+    return () => undefined
+  }
+
+  const handler = () => {
+    onChange(document.visibilityState === 'hidden')
+  }
+
+  handler()
+  document.addEventListener('visibilitychange', handler)
+  return () => document.removeEventListener('visibilitychange', handler)
+}
+```
+
+### `webApiStorage.ts`
+
+```typescript
+export const PAUSE_ON_TAB_HIDDEN_KEY = 'match3:pause-on-tab-hidden'
+
+export function readPauseOnTabHidden(): boolean {
+  const raw = window.localStorage.getItem(PAUSE_ON_TAB_HIDDEN_KEY)
+  return raw === null ? true : raw === '1'
+}
+```
+
+### `usePageVisibilityPause.ts`
+
+```typescript
+export function usePageVisibilityPause({
+  uiPhase,
+  isPauseOpen,
+  setIsPauseOpen,
+  pauseOnTabHidden,
+}: Options): boolean {
+  const [pausedByVisibility, setPausedByVisibility] = useState(false)
+
+  useEffect(() => {
+    if (!pauseOnTabHidden) return
+    return subscribePageVisibility(hidden => {
+      if (uiPhase !== 'playing') return
+      if (hidden) {
+        setIsPauseOpen(true)
+        setPausedByVisibility(true)
+      } else {
+        setPausedByVisibility(false)
+      }
+    })
+  }, [uiPhase, setIsPauseOpen, pauseOnTabHidden])
+
+  return pausedByVisibility
+}
+```
+
+Пауза шлёт `MATCH3_PERF_PAUSE_EVENT` через уже существующий `useEffect` на `isPauseOpen` в `Match3Screen`.
+
+### Врезка в `Match3Screen.tsx`
+
+```typescript
+import { usePageVisibilityPause } from '../../hooks/usePageVisibilityPause'
+
+// props
+vibrationEnabled?: boolean
+pauseOnTabHidden?: boolean
+
+const pausedByVisibility = usePageVisibilityPause({
+  uiPhase,
+  isPauseOpen,
+  setIsPauseOpen,
+  pauseOnTabHidden,
+})
+
+// overlay паузы:
+<p className="match3__pause-title">
+  {pausedByVisibility ? 'Вкладка в фоне — игра на паузе' : 'Игра на паузе'}
+</p>
+```
+
+### Врезка в `GamePage.tsx`
+
+```typescript
+import { readPauseOnTabHidden, writePauseOnTabHidden } from '../utils/webApiStorage'
+
+// settings select «Пауза при сворачивании вкладки»
+// <Match3Screen pauseOnTabHidden={pauseOnTabHidden} … />
+```
 
 ---
 
-## Отправка метрик на server (опционально)
+## Итерация 4 — Vibration API
 
-Если позже метрики уйдут на `packages/server`:
+### Файлы
 
-- отдельная ручка POST;
-- обязательно `requirePraktikumAuth` — см. [auth-middleware-backend.md](./auth-middleware-backend.md).
+| Путь |
+|------|
+| `packages/client/src/utils/vibration.ts` |
+| `packages/client/src/game/match3/Match3Screen.tsx` |
+| `packages/client/src/pages/GamePage.tsx` |
 
-Для зачёта 9.3 сервер не обязателен.
+### `vibration.ts`
+
+```typescript
+export const VIBRATION_ENABLED_KEY = 'match3:vibration-enabled'
+export const COMBO_VIBRATION_PATTERN = [40, 30, 60]
+
+export function vibrateComboFeedback(): void {
+  if (!readVibrationEnabled() || !('vibrate' in navigator)) return
+  navigator.vibrate(COMBO_VIBRATION_PATTERN)
+}
+
+export function vibrateWinFeedback(): void {
+  if (!readVibrationEnabled() || !('vibrate' in navigator)) return
+  navigator.vibrate([80, 50, 80, 50, 120])
+}
+```
+
+### Врезка в `Match3Screen.tsx`
+
+```typescript
+import { vibrateComboFeedback } from '../../utils/vibration'
+
+const onComboShake = useCallback(
+  (chain: number) => {
+    if (chain < 3) return
+    if (vibrationEnabled && chain >= 4) {
+      vibrateComboFeedback()
+    }
+    // … существующая тряска доски
+  },
+  [vibrationEnabled]
+)
+```
+
+### Врезка в `GamePage.tsx`
+
+```typescript
+import { vibrateWinFeedback, readVibrationEnabled, writeVibrationEnabled } from '../utils/vibration'
+
+// в handleGameFinished при payload.reason === 'goalReached':
+vibrateWinFeedback()
+
+// settings: select «Вибрация (комбо / победа)»
+// <Match3Screen vibrationEnabled={vibrationEnabled} … />
+```
+
+---
+
+## Проверка всего 9.3
+
+```bash
+yarn workspace client typecheck
+yarn workspace client test src/utils/notifications.test.ts src/utils/geolocation.test.ts src/utils/pageVisibility.test.ts
+```
+
+| API | Ручная проверка |
+|-----|-----------------|
+| Notification | Настройки → вкл → разрешить → `/game/play` → вкладка в фон 2+ мин |
+| Geolocation | `/profile` → часовой пояс / с геолокацией |
+| Page Visibility | `/game/play` → старт → другая вкладка → таймер стоит |
+| Vibration | Мобильный браузер, комбо ≥4 и победа |
+
+---
+
+## Коммиты (предложения)
+
+```
+feat(client): Notification API — opt-in reminders on game routes
+feat(client): Geolocation API — coarse region on profile
+feat(client): Page Visibility API — pause match-3 when tab hidden
+feat(client): Vibration API — haptic feedback on combo and win
+```
+
+Или один:
+
+```
+feat(client): sprint 9.3 Web APIs — notifications, geolocation, visibility, vibration
+```
 
 ---
 
 ## Ссылки
 
-- [s9-plan.md](./s9-plan.md) — задача 9.3
-- [project-web-api.md](./project-web-api.md) — полный обзор и порядок API
-- [MEMORYLEAKS.md](./MEMORYLEAKS.md) — cleanup слушателей и observers
+- [project-web-api.md](./project-web-api.md)
+- [s9-plan.md](./s9-plan.md)
+- [MEMORYLEAKS.md](./MEMORYLEAKS.md)

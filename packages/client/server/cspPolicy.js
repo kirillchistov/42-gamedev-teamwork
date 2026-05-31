@@ -11,6 +11,10 @@ exports.shouldInjectGhPagesCspMeta = shouldInjectGhPagesCspMeta;
 exports.CSP_ORIGINS = {
     praktikumApi: 'https://ya-praktikum.tech',
     yandexOAuth: 'https://oauth.yandex.ru',
+    googleFontsCss: 'https://fonts.googleapis.com',
+    googleFontsStatic: 'https://fonts.gstatic.com',
+    /** Обратное геокодирование для демо региона в профиле (без ключа). */
+    bigDataCloud: 'https://api.bigdatacloud.net',
 };
 function isDevEnv() {
     return process.env.NODE_ENV === 'development';
@@ -18,6 +22,10 @@ function isDevEnv() {
 function isGhPagesStaticBuild() {
     const flag = process.env.VITE_STATIC_DEPLOY;
     return flag === 'gh-pages';
+}
+/** Только для прода с валидным TLS (Let's Encrypt). На IP + :9000 ломает загрузку ассетов. */
+function shouldUpgradeInsecureRequests() {
+    return process.env.CSP_UPGRADE_INSECURE === '1';
 }
 // Сериализация директив в значение заголовка / meta
 function formatCspHeader(directives) {
@@ -37,8 +45,11 @@ function buildSsrCspDirectives(nonce) {
         "'self'",
         exports.CSP_ORIGINS.praktikumApi,
         exports.CSP_ORIGINS.yandexOAuth,
+        exports.CSP_ORIGINS.bigDataCloud,
     ];
-    const styleSrc = ["'self'", "'unsafe-inline'"];
+    const styleSrc = ["'self'", "'unsafe-inline'", exports.CSP_ORIGINS.googleFontsCss];
+    const styleSrcElem = ["'self'", "'unsafe-inline'", exports.CSP_ORIGINS.googleFontsCss];
+    const fontSrc = ["'self'", 'data:', exports.CSP_ORIGINS.googleFontsStatic];
     if (isDevEnv()) {
         scriptSrc.push("'unsafe-eval'");
         connectSrc.push('ws:', 'wss:', 'http://localhost:*', 'http://127.0.0.1:*');
@@ -48,24 +59,17 @@ function buildSsrCspDirectives(nonce) {
         'base-uri': ["'self'"],
         'script-src': scriptSrc,
         'style-src': styleSrc,
-        'img-src': [
-            "'self'",
-            'data:',
-            'blob:',
-            'https:',
-        ],
-        'font-src': ["'self'", 'data:'],
+        'style-src-elem': styleSrcElem,
+        'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+        'font-src': fontSrc,
         'connect-src': connectSrc,
         'frame-src': [exports.CSP_ORIGINS.yandexOAuth],
-        'form-action': [
-            "'self'",
-            exports.CSP_ORIGINS.yandexOAuth,
-        ],
+        'form-action': ["'self'", exports.CSP_ORIGINS.yandexOAuth],
         'manifest-src': ["'self'"],
         'worker-src': ["'self'"],
         'object-src': ["'none'"],
     };
-    if (!isDevEnv()) {
+    if (!isDevEnv() && shouldUpgradeInsecureRequests()) {
         directives['upgrade-insecure-requests'] = [];
     }
     return directives;
@@ -80,17 +84,9 @@ function buildGhPagesCspDirectives() {
         'base-uri': ["'self'"],
         'script-src': ["'self'"],
         'style-src': ["'self'", "'unsafe-inline'"],
-        'img-src': [
-            "'self'",
-            'data:',
-            'blob:',
-            'https:',
-        ],
+        'img-src': ["'self'", 'data:', 'blob:', 'https:'],
         'font-src': ["'self'", 'data:'],
-        'connect-src': [
-            "'self'",
-            exports.CSP_ORIGINS.praktikumApi,
-        ],
+        'connect-src': ["'self'", exports.CSP_ORIGINS.praktikumApi],
         'form-action': ["'self'"],
         'manifest-src': ["'self'"],
         'worker-src': ["'self'"],

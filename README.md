@@ -70,6 +70,15 @@
 
 ## Ой, ничего не работает :(
 
+**Локальный dev (`yarn dev` / `yarn dev:client` + `yarn dev:server`):**
+
+- UI: **http://localhost:9000** (не 5173 — старый порт из `.env`).
+- API: **http://localhost:3000** (`yarn dev:server` всегда 3000, даже если в `.env` указан `3001` для Docker/ВМ).
+- `EADDRINUSE :3001` — остановите `docker compose stop server` или процесс на 3001.
+- `503` / `sw.js Failed to fetch` на `/login` — зарегистрирован старый Service Worker; откройте **9000** после `yarn dev:client` (в dev SW снимается автоматически) или в DevTools → Application → Service Workers → Unregister.
+
+**Docker UI без строки геолокации в профиле:** пересоберите клиент после pull: `docker compose build client && docker compose up -d client`.
+
 Откройте issue, я приду :)
 
 ## Автодеплой статики на vercel
@@ -96,6 +105,8 @@ yarn install
 4. 'client' — Node SSR-клиент, стартует после healthy API-сервера.
 
 Клиент доступен на 'http://localhost:${CLIENT_PORT:-9000}', API — на 'http://localhost:${SERVER_PORT:-3000}'. Если нужно поднять только часть стека: 'docker compose up server' или 'docker compose up postgres'.
+
+**ВМ Yandex Cloud (диск ~19 ГБ):** каждый деплой тянет новые образы GHCR; старые копятся. Скрипт `deploy-on-vm.sh` перед pull делает `docker image prune -a`. Если деплой падает с `no space left on device` — по SSH: `docker image prune -a -f` и повторите Deploy.
 
 Подробнее режимы запуска (dev / Docker / параллельно): [docs/sprint-7-8-demo-script.md](docs/sprint-7-8-demo-script.md).
 
@@ -190,14 +201,13 @@ yarn install
 - [x] [8.10 Демо для командного зачёта (все / L0)](https://github.com/kirillchistov/42-gamedev-teamwork/pull/131)
 
 **Спринт 9 (безопасность)**
-- [ ] 9.0 Улучшить визуальную часть игры (Кирилл / L0)
 - [x] 9.1 Добавить CSP (Кирилл / L4) — [docs/csp.md](docs/csp.md)
-- [ ] 9.2 Написать конфиг nginx: HTTP2, SSL (Сергей / L4) 
-- [ ] 9.3 Добавить ещё одно WEB API (Антон / L2)
+- [x] 9.2 Написать конфиг nginx: HTTP2, SSL (Сергей / L4) 
+- [x] 9.3 Добавить ещё одно WEB API (Антон / L2)
 - [x] 9.4 Добавить защиту от XSS (Кирилл / L2) — [docs/xss.md](docs/xss.md)
-- [ ] 9.5 Настроить Action для автодеплоя (Артур / L4)
-- [ ] 9.6 Выложить сервис в Яндекс.Облако (Анна / L4)
-- [ ] 9.7 Настроить A-запись на домене (Анна / L2)
+- [x] 9.5 Настроить Action для автодеплоя (Артур / L4)
+- [x] 9.6 Выложить сервис в Яндекс.Облако (Анна / L4)
+- [x] 9.7 Настроить A-запись на домене (Анна / L2)
 - [ ] 9.8 Финальное демо (Все / L0)
 
 ## Команда

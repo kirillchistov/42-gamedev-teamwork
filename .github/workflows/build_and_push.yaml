@@ -1,0 +1,52 @@
+name: Build and push Docker images
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+      - sprint_9
+      - feature/9.8-final-demo
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lowercase owner for GHCR
+        run: echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push client image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.client
+          push: true
+          build-args: |
+            VITE_YANDEX_OAUTH_REDIRECT_URI=${{ vars.VITE_YANDEX_OAUTH_REDIRECT_URI || 'https://cosmic.ya-praktikum.tech' }}
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/${{ github.event.repository.name }}/client:${{ github.sha }}
+            ghcr.io/${{ env.OWNER_LC }}/${{ github.event.repository.name }}/client:latest
+
+      - name: Build and push server image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.server
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/${{ github.event.repository.name }}/server:${{ github.sha }}
+            ghcr.io/${{ env.OWNER_LC }}/${{ github.event.repository.name }}/server:latest

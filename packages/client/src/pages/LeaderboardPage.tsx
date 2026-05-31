@@ -1,16 +1,22 @@
 import React, { useMemo, useState } from 'react'
 import { getApiResourcesUrl } from '../constants'
 import { Helmet } from 'react-helmet'
+import { Link } from 'react-router-dom'
 import clsx from 'clsx'
 
 import { PageInitArgs } from '../routes'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
-import { useSelector } from '../store'
+import { useDispatch, useSelector } from '../store'
 import {
+  addFriendThunk,
   fetchFriendsThunk,
+  removeFriendThunk,
+  selectFriendNicknames,
   selectFriends,
+  selectFriendsActionError,
   selectIsLoadingFriends,
+  clearFriendsActionError,
 } from '../slices/friendsSlice'
 import {
   fetchLeaderboardThunk,
@@ -78,9 +84,12 @@ function defaultSortDirForKey(key: SortKey): SortDir {
 }
 
 export function LeaderboardPage() {
+  const dispatch = useDispatch()
   const { theme } = useLandingTheme()
   const friends = useSelector(selectFriends)
+  const friendNicknames = useSelector(selectFriendNicknames)
   const isLoading = useSelector(selectIsLoadingFriends)
+  const friendsActionError = useSelector(selectFriendsActionError)
   const isLoadingResults = useSelector(isLoadingLeaderboard)
   const user = useSelector(selectUser)
 
@@ -91,19 +100,62 @@ export function LeaderboardPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [showFriendsOnly, setShowFriendsOnly] = useState(false)
 
-  const friendNicknames = useMemo(
-    () => new Set(friends.map(f => f.name)),
-    [friends]
-  )
+  const handleToggleFriend = (entry: LeaderboardEntry) => {
+    if (!entry.nickname || entry.nickname === 'Gaius Anonimous') {
+      return
+    }
+    if (user && entry.id === user.id) {
+      return
+    }
+    dispatch(clearFriendsActionError())
+    if (friendNicknames.has(entry.nickname)) {
+      void dispatch(removeFriendThunk(entry.nickname))
+      return
+    }
+    void dispatch(
+      addFriendThunk({
+        nickname: entry.nickname,
+        displayName: entry.nickname,
+        avatar: entry.avatar,
+        friendPraktikumId: entry.id > 0 ? entry.id : undefined,
+      })
+    )
+  }
+
+  const renderFriendToggle = (entry: LeaderboardEntry) => {
+    if (!user) {
+      return (
+        <Link to="/login" className="auth-link leaderboard-friend-login">
+          Войти
+        </Link>
+      )
+    }
+    if (entry.id === user.id) {
+      return <span className="leaderboard-friend-self">Вы</span>
+    }
+    const isFriend = friendNicknames.has(entry.nickname)
+    return (
+      <Button
+        type="button"
+        variant={isFriend ? 'outline' : 'primary'}
+        className="leaderboard-friend-btn"
+        onClick={() => handleToggleFriend(entry)}>
+        {isFriend ? 'Убрать' : 'В друзья'}
+      </Button>
+    )
+  }
 
   const leaderboardTable = useSelector(leaderboardData)
 
   const sortedEntries = useMemo(() => {
     let list = leaderboardTable
-    if (showFriendsOnly && friendNicknames.size > 0) {
-      list = list.filter((entry: LeaderboardEntry) =>
-        friendNicknames.has(entry.nickname)
-      )
+    if (showFriendsOnly) {
+      list =
+        friendNicknames.size > 0
+          ? list.filter((entry: LeaderboardEntry) =>
+              friendNicknames.has(entry.nickname)
+            )
+          : []
     }
 
     const copy = [...list]
@@ -152,9 +204,13 @@ export function LeaderboardPage() {
         <div className="auth-card auth-card--wide">
           <h1>Лидерборд</h1>
           <p className="auth-note">
-            Демо-лидерборд. В будущем данные будут через API для всех и для
-            фильтра друзей.
+            Добавляйте игроков из таблицы в «Друзья» — фильтр покажет только их
+            записи. Список хранится на нашем сервере для вашего аккаунта.
           </p>
+
+          {friendsActionError ? (
+            <p className="auth-form__error">{friendsActionError}</p>
+          ) : null}
 
           <div className="leaderboard-toolbar">
             <div className="leaderboard-toolbar__left">
@@ -205,12 +261,13 @@ export function LeaderboardPage() {
                     <th>{sortLabel('CM42_score', 'Рейтинг')}</th>
                     <th>{sortLabel('bestScore', 'Рекорд')}</th>
                     <th>{sortLabel('bestScoreDate', 'Дата рекорда')}</th>
+                    <th>Друзья</th>
                   </tr>
                 </thead>
                 <tbody>
                   {!isLoadingResults && sortedEntries.length === 0 && (
                     <tr>
-                      <td colSpan={5}>
+                      <td colSpan={6}>
                         {showFriendsOnly
                           ? 'Нет записей среди ваших друзей.'
                           : 'Записей пока нет.'}
@@ -242,6 +299,7 @@ export function LeaderboardPage() {
                             entry.bestScoreDate
                           )}
                         </td>
+                        <td>{renderFriendToggle(entry)}</td>
                       </tr>
                     ))}
                 </tbody>
@@ -287,6 +345,9 @@ export function LeaderboardPage() {
                             entry.bestScoreDate
                           )}
                         </div>
+                        <div className="leaderboard-grid-actions">
+                          {renderFriendToggle(entry)}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -310,10 +371,20 @@ export function LeaderboardPage() {
             ) : friends.length === 0 ? (
               <p>Список друзей пока пуст.</p>
             ) : (
-              <ul>
+              <ul className="leaderboard-friends-list">
                 {friends.map(friend => (
-                  <li key={friend.name}>
-                    {friend.name} {friend.secondName}
+                  <li key={friend.nickname}>
+                    <span>{friend.displayName || friend.nickname}</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="leaderboard-friend-btn"
+                      onClick={() => {
+                        dispatch(clearFriendsActionError())
+                        void dispatch(removeFriendThunk(friend.nickname))
+                      }}>
+                      Убрать
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -327,18 +398,23 @@ export function LeaderboardPage() {
   )
 }
 
-export const initLeaderboardPage = ({ dispatch, state }: PageInitArgs) => {
-  const queue: Array<Promise<unknown>> = [
-    dispatch(
-      fetchLeaderboardThunk({
-        cursor: 0,
-        limit: 10,
-      })
-    ),
-    dispatch(fetchFriendsThunk()).catch(() => undefined),
-  ]
+export const initLeaderboardPage = async ({
+  dispatch,
+  state,
+  getState,
+}: PageInitArgs) => {
+  await dispatch(
+    fetchLeaderboardThunk({
+      cursor: 0,
+      limit: 10,
+    })
+  ).catch(() => undefined)
+
   if (!selectUser(state) && !selectUserIsAuthChecked(state)) {
-    queue.push(dispatch(fetchUserThunk()).catch(() => undefined))
+    await dispatch(fetchUserThunk()).catch(() => undefined)
   }
-  return Promise.all(queue)
+
+  if (selectUser(getState())) {
+    await dispatch(fetchFriendsThunk()).catch(() => undefined)
+  }
 }

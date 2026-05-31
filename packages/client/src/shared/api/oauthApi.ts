@@ -44,7 +44,8 @@ export function buildYandexRedirectUri(): string {
     return envValue.trim().replace(/\/+$/, '')
   }
 
-  if (typeof window !== 'undefined') {
+  // Клиентский бандл: origin страницы. SSR/сборка не подставляют localhost в прод-бандл.
+  if (!import.meta.env.SSR && typeof window !== 'undefined') {
     const origin = window.location.origin.replace(/\/+$/, '')
     const base = String(import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
     if (base && base !== '/') {
