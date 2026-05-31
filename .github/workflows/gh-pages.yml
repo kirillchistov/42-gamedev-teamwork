@@ -5,9 +5,8 @@ on:
     branches:
       - main
       - dev
-      - sprint_7
-      - sprint_8
-      - feature/8.10-demo
+      - sprint_9
+      - feature/9.8-final-demo
   workflow_dispatch:
 
 permissions:
