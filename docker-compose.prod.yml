@@ -16,8 +16,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
-    ports:
-      - "${POSTGRES_PORT:-5433}:5432"
+    # Прод: только docker-сеть (server/migrate). Не публикуйте 5433 наружу — иначе брутфорс и Kinsing.
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

@@ -50,6 +50,7 @@ cd /opt/cosmic-match
 Дополнительно создайте на ВМ `.env` (не в git), по образцу [`.env.sample`](../../.env.sample):
 
 - `POSTGRES_PASSWORD` — пароль для **server/migrate** (из `.env`, по умолчанию `postgres`). Пароль **внутри volume Postgres** задаётся только при **первом** `docker compose up` и сам не обновляется — если volume и compose когда‑то разошлись, форум/API дают 500, хотя пароль в `.env` «не меняли». Деплой перед server запускает `sync-postgres-password.sh`
+- **Не открывайте Postgres наружу.** В `docker-compose.prod.yml` порт 5433 **не** пробрасывается на `0.0.0.0`. Открытый Postgres + слабый пароль → брутфорс и майнер **Kinsing** (99% vCPU). В Yandex Cloud закройте 5433 в security group, оставьте 22/80/443
 - `SERVER_PORT`, `CLIENT_PORT`
 - `NGINX_HTTP_PORT=80`, `NGINX_HTTPS_PORT=443`
 - `VITE_YANDEX_OAUTH_REDIRECT_URI=https://<ваш-домен>` — после согласования с ментором

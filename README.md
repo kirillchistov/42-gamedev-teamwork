@@ -106,6 +106,8 @@ yarn install
 
 Клиент доступен на 'http://localhost:${CLIENT_PORT:-9000}', API — на 'http://localhost:${SERVER_PORT:-3000}'. Если нужно поднять только часть стека: 'docker compose up server' или 'docker compose up postgres'.
 
+**ВМ Yandex Cloud (диск ~19 ГБ):** каждый деплой тянет новые образы GHCR; старые копятся. Скрипт `deploy-on-vm.sh` перед pull делает `docker image prune -a`. Если деплой падает с `no space left on device` — по SSH: `docker image prune -a -f` и повторите Deploy.
+
 Подробнее режимы запуска (dev / Docker / параллельно): [docs/sprint-7-8-demo-script.md](docs/sprint-7-8-demo-script.md).
 
 ## Цели проекта

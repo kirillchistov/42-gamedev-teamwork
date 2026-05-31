@@ -4,9 +4,22 @@
 # сам пароль не обновляет после первого docker compose up).
 set -euo pipefail
 
-DEPLOY_PATH="${DEPLOY_PATH:-/opt/cosmic-match}"
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# На ВМ deploy-on-vm.sh задаёт DEPLOY_PATH=/opt/cosmic-match; локально — корень репозитория.
+DEPLOY_PATH="${DEPLOY_PATH:-$REPO_ROOT}"
 POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-cosmic-match-postgres}"
+
+if [ -z "${COMPOSE_FILE:-}" ]; then
+  if [ -f "$DEPLOY_PATH/docker-compose.prod.yml" ] && [ "$DEPLOY_PATH" = "/opt/cosmic-match" ]; then
+    COMPOSE_FILE=docker-compose.prod.yml
+  elif [ -f "$DEPLOY_PATH/docker-compose.yml" ]; then
+    COMPOSE_FILE=docker-compose.yml
+  else
+    COMPOSE_FILE=docker-compose.prod.yml
+  fi
+fi
 
 cd "$DEPLOY_PATH"
 
@@ -24,7 +37,7 @@ if [ -z "${SERVER_IMAGE:-}" ] && docker inspect cosmic-match-server >/dev/null 2
 fi
 
 compose_pw=""
-if [ -n "${CLIENT_IMAGE:-}" ] && [ -n "${SERVER_IMAGE:-}" ]; then
+if [ -f "$COMPOSE_FILE" ]; then
   compose_pw=$(
     docker compose -f "$COMPOSE_FILE" config 2>/dev/null \
       | awk -F': ' '/POSTGRES_PASSWORD:/ { gsub(/"/, "", $2); print $2; exit }'

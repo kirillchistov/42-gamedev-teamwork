@@ -21,6 +21,12 @@ fi
 
 export CLIENT_IMAGE SERVER_IMAGE
 
+echo "==> Disk before deploy"
+df -h / | tail -1
+
+echo "==> Prune unused images (free disk before pull)"
+docker image prune -a -f
+
 echo "==> Pull images"
 docker compose -f "$COMPOSE_FILE" pull
 
@@ -51,8 +57,11 @@ elif [ -f "$(dirname "$0")/verify-server-db.sh" ]; then
   bash "$(dirname "$0")/verify-server-db.sh"
 fi
 
-echo "==> Prune old images"
+echo "==> Prune dangling layers"
 docker image prune -f
+
+echo "==> Disk after deploy"
+df -h / | tail -1
 
 echo "==> Status"
 docker compose -f "$COMPOSE_FILE" ps
