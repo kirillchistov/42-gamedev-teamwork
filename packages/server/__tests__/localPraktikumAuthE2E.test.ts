@@ -76,7 +76,6 @@ describe('LOCAL_PRAKTIKUM_AUTH_BYPASS (HTTP)', () => {
     const res = await request(app).get('/friends')
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body)).toBe(true)
-    expect(res.body).toHaveLength(3)
   })
 
   it('GET /friends without Cookie returns 403 when bypass off', async () => {

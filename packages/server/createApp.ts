@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser'
 import { attachPraktikumUser } from './middleware/attachPraktikumUser'
 import { requirePraktikumAuth } from './middleware/requirePraktikumAuth'
 import { forumRouter } from './routes/forumRouter'
+import { friendsRouter } from './routes/friendsRouter'
 import { uiThemeRouter } from './routes/uiThemeRouter'
 import { sequelize } from './sequelize'
 
@@ -50,16 +51,7 @@ export function createApp(): express.Express {
   const protectedRouter = express.Router()
   protectedRouter.use(requirePraktikumAuth)
   protectedRouter.use('/api/forum', forumRouter)
-  protectedRouter.get('/friends', (_, res) => {
-    res.json([
-      { name: 'Саша', secondName: 'Панов' },
-      {
-        name: 'Лёша',
-        secondName: 'Садовников',
-      },
-      { name: 'Серёжа', secondName: 'Иванов' },
-    ])
-  })
+  protectedRouter.use('/friends', friendsRouter)
   protectedRouter.get('/user', (_, res) => {
     res.json({
       name: '</script>Степа',
