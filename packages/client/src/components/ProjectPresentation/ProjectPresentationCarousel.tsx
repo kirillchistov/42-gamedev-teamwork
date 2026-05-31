@@ -2,52 +2,38 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 
+import {
+  SlideChallenges,
+  SlideGame,
+  SlideLearning,
+  SlideStack,
+  SlideTeam,
+} from './PresentationSlides'
 import './ProjectPresentation.pcss'
 
-export type PresentationSlide = {
-  id: string
-  title: string
-  body: string
-}
-
-const SLIDES: PresentationSlide[] = [
-  {
-    id: 'team',
-    title: 'Команда и роли',
-    body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Представление команды: кто за что отвечает в проекте Cosmic Match, как распределены зоны ответственности и как устроена коммуникация внутри команды.',
-  },
-  {
-    id: 'stack',
-    title: 'Технологический стек',
-    body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. React, TypeScript, Vite, Redux Toolkit, Express SSR, React Router, Canvas для игрового поля, Web API (Fullscreen, Performance, localStorage).',
-  },
-  {
-    id: 'game',
-    title: 'Презентация игры',
-    body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Match-3 ядро, квесты, компаньоны, HUD, настройки уровня и интеграция с лидербордом и форумом.',
-  },
-  {
-    id: 'challenges',
-    title: 'Сложности и решения',
-    body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. SSR и OAuth, совместимость портов, GH Pages base path, сериализация состояния Redux, адаптивный HUD.',
-  },
-  {
-    id: 'learning',
-    title: 'Главное из обучения',
-    body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Разделение UI и runtime, тестирование, документация по Web API и монетизации, итеративная доставка фич без поломки core-loop.',
-  },
-]
+const SLIDES = [
+  { id: 'team', title: 'Команда и роли' },
+  { id: 'stack', title: 'Технологический стек' },
+  { id: 'game', title: 'Презентация игры' },
+  { id: 'challenges', title: 'Сложности и решения' },
+  { id: 'learning', title: 'Главное из обучения' },
+] as const
 
 function ChevronLeft() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="match3-presentation-fullscreen__chevron">
       <path
-        fill="none"
+        d="M15 6l-6 6 6 6"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M15 18l-6-6 6-6"
       />
     </svg>
   )
@@ -55,14 +41,19 @@ function ChevronLeft() {
 
 function ChevronRight() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="match3-presentation-fullscreen__chevron">
       <path
-        fill="none"
+        d="M9 6l6 6-6 6"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M9 18l6-6-6 6"
       />
     </svg>
   )
@@ -71,6 +62,29 @@ function ChevronRight() {
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+function SlideBody({
+  slideId,
+  onClose,
+}: {
+  slideId: typeof SLIDES[number]['id']
+  onClose: () => void
+}) {
+  switch (slideId) {
+    case 'team':
+      return <SlideTeam />
+    case 'stack':
+      return <SlideStack />
+    case 'game':
+      return <SlideGame onClose={onClose} />
+    case 'challenges':
+      return <SlideChallenges />
+    case 'learning':
+      return <SlideLearning />
+    default:
+      return null
+  }
 }
 
 export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
@@ -117,7 +131,7 @@ export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
       className="match3-presentation-fullscreen"
       role="dialog"
       aria-modal="true"
-      aria-label="Презентация проекта, около 7 минут">
+      aria-label="Презентация проекта Cosmic Match">
       <button
         type="button"
         className="match3-presentation-fullscreen__close"
@@ -138,7 +152,9 @@ export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
           Презентация · ~7 мин · {index + 1} / {total}
         </span>
         <h2>{slide.title}</h2>
-        <p>{slide.body}</p>
+        <div className="match3-presentation-fullscreen__body">
+          <SlideBody slideId={slide.id} onClose={close} />
+        </div>
         <div
           className="match3-presentation__dots match3-presentation-fullscreen__dots"
           role="tablist">
