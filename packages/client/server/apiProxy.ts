@@ -8,8 +8,8 @@ import { createProxyMiddleware, type Options } from 'http-proxy-middleware'
 const DEFAULT_PRAKTIKUM_ORIGIN = 'https://ya-praktikum.tech'
 const DEFAULT_NODE_API = 'http://localhost:3000'
 
-/** Cookie нашего API (тема UI) не отправляем в ya-praktikum.tech — иначе logout/signin → «Cookie is not valid». */
-const PRAKTIKUM_AUTH_COOKIE_NAMES = new Set(['uuid'])
+/** Cookie сессии Практикума; anonymous_session_id с Path=/ не отправляем. */
+const PRAKTIKUM_AUTH_COOKIE_NAMES = new Set(['uuid', 'authCookie'])
 
 function filterPraktikumCookieHeader(
   cookieHeader: string | undefined
