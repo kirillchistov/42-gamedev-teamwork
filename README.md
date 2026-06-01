@@ -98,13 +98,16 @@ yarn install
 
 Проверьте '.env': для Docker Postgres нужен пользователь 'postgres', пароль из 'POSTGRES_PASSWORD', база 'postgres', 'POSTGRES_HOST=localhost' для миграций с хоста. Если порт '5432' занят локальным PostgreSQL, поменяйте 'POSTGRES_PORT' на свободный порт.
 
-'docker compose up' запустит четыре сервиса:
-1. 'postgres' — PostgreSQL.
-2. 'migrate' — одноразовый запуск Sequelize-миграций после healthy Postgres.
-3. 'server' — Node/Express API, стартует после успешных миграций.
-4. 'client' — Node SSR-клиент, стартует после healthy API-сервера.
+'docker compose up' поднимает стек:
+1. 'postgres' — PostgreSQL (на хосте по умолчанию **127.0.0.1:5433** → :5432 в контейнере).
+2. 'migrate' — одноразовые Sequelize-миграции после healthy Postgres.
+3. 'server' — Node/Express API (healthcheck `/health`), после успешных миграций.
+4. 'client' — Node SSR + прокси `/api/v2` и `/api/forum`, после healthy server.
+5. 'nginx' (опционально) — TLS локально на **https://localhost:18443** (см. `deploy/nginx/certs/`).
 
-Клиент доступен на 'http://localhost:${CLIENT_PORT:-9000}', API — на 'http://localhost:${SERVER_PORT:-3000}'. Если нужно поднять только часть стека: 'docker compose up server' или 'docker compose up postgres'.
+UI в Docker: **http://localhost:${CLIENT_PORT:-9000}** (не открывать форум с `:3000` — cookie Практикума не дойдут). API: **http://localhost:${SERVER_PORT:-3000}**.
+
+Прод / ВМ: [docs/yacloud-deploy.md](docs/yacloud-deploy.md), образы GHCR — [docs/autodeploy-action.md](docs/autodeploy-action.md), [`docker-compose.prod.yml`](docker-compose.prod.yml).
 
 **ВМ Yandex Cloud (диск ~19 ГБ):** каждый деплой тянет новые образы GHCR; старые копятся. Скрипт `deploy-on-vm.sh` перед pull делает `docker image prune -a`. Если деплой падает с `no space left on device` — по SSH: `docker image prune -a -f` и повторите Deploy.
 

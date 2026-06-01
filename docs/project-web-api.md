@@ -1,24 +1,20 @@
 # Project Web API
 
-> Браузерные Web API (Fullscreen, Storage, Performance, Notifications и т.д.).  
-> Сетевой API (`packages/server`, OAuth) — в [project-structure.md](./project-structure.md).
-
-Подробные шаги, **врезки кода** и cherry-pick с ветки `feature/9.3-add-webapi` — [add-web-api.md](./add-web-api.md).
+> Здесь про браузерные Web API (Fullscreen, Storage, Performance, Notifications и т.д.).  
+> Про сетевой API (`packages/server`, OAuth) — см. [project-structure.md](./project-structure.md).
 
 ---
 
 ## Статус по веткам (актуально)
 
-| Ветка | 6.6 Fullscreen | 7.5 Performance | 9.3 (4 API) |
+| Ветка | 6.6 Fullscreen | 7.5 Performance | 9.3 (Geolocation) |
 |-------|----------------|-----------------|-------------|
-| `main` / `feature/9.8-final-demo` | да | да | **нет в коде** |
+| `main` / `feature/9.8-final-demo` | да | да | **да** |
 | `feature/9.3-add-webapi` | да | да | **да** |
-
-На **`feature/9.8-final-demo`** задача 9.3 описана в docs, но файлов `notifications.ts`, `pageVisibility.ts`, `vibration.ts`, хуков и правок в `GamePage` / `Match3Screen` / `ProfilePage` **нет**. Решение целиком лежит в **`feature/9.3-add-webapi`** — см. [add-web-api.md](./add-web-api.md), раздел «Статус в ветках».
 
 ---
 
-## 1) Уже в проекте (все ветки)
+## 1) Что уже реализовано в проекте 
 
 ### 1.1 Fullscreen API (6.6)
 
@@ -41,9 +37,9 @@
 
 ---
 
-## 2) Задача 9.3 — реализация (ветка `feature/9.3-add-webapi`)
+## 2) В рамках задачи 9.3 — ветка `feature/9.8-add-webapi`
 
-Порядок: **Notification → Geolocation → Page Visibility → Vibration**.
+4 API: **Notification → Geolocation → Page Visibility → Vibration**.
 
 | API | Модуль | UI | localStorage / ключи |
 |-----|--------|-----|----------------------|
@@ -52,7 +48,7 @@
 | **Page Visibility** | `utils/pageVisibility.ts`, `hooks/usePageVisibilityPause.ts` | `Match3Screen`, `GamePage` | `match3:pause-on-tab-hidden` |
 | **Vibration** | `utils/vibration.ts` | `Match3Screen`, `GamePage` | `match3:vibration-enabled` |
 
-Ниже — сжатые врезки; полные файлы и diff — в [add-web-api.md](./add-web-api.md).
+См. diff — в [add-web-api.md](./add-web-api.md).
 
 ### 2.1 Notification API
 
@@ -119,7 +115,7 @@ yarn workspace client test src/utils/notifications.test.ts src/utils/geolocation
 
 ---
 
-## 3) API вне 9.3 (на будущее)
+## 3) API вне скоупа (на будущее)
 
 | API | Польза |
 |-----|--------|
@@ -131,7 +127,7 @@ yarn workspace client test src/utils/notifications.test.ts src/utils/geolocation
 
 ## 4) Definition of Done (9.3)
 
-- [ ] Код в целевой ветке (`feature/9.8-final-demo` или `main`) — cherry-pick с `feature/9.3-add-webapi`
+- [x] Код в целевой ветке (`feature/9.8-final-demo` и `feature/9.3-add-webapi`)
 - [x] Отдельный util/хук на API (в ветке `9.3`)
 - [x] Graceful fallback
 - [x] Cleanup слушателей
@@ -143,6 +139,6 @@ yarn workspace client test src/utils/notifications.test.ts src/utils/geolocation
 
 ## Ссылки
 
-- [add-web-api.md](./add-web-api.md) — итерации, полные врезки, cherry-pick
+- [add-web-api.md](./add-web-api.md)
 - [s9-plan.md](./s9-plan.md)
 - [csp.md](./csp.md)

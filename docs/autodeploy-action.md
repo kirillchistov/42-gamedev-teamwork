@@ -146,7 +146,7 @@ jobs:
 
 | Файл | Назначение |
 |------|------------|
-| [`docker-compose.prod.yml`](../docker-compose.prod.yml) | стек только из образов GHCR |
+| [`docker-compose.prod.yml`](../docker-compose.prod.yml) | стек GHCR: postgres, migrate, server, client, nginx |
 | [`scripts/deploy-on-vm.sh`](../scripts/deploy-on-vm.sh) | pull + up на сервере |
 | [`deploy/vm/README.md`](../deploy/vm/README.md) | первичная настройка ВМ |
 

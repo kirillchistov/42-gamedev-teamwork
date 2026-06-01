@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 640" role="img" aria-labelledby="title desc">
-  <title id="title">Forum flow</title>
-  <desc id="desc">Forum pages, Redux forumSlice, forumApi through SSR apiProxy, requirePraktikumAuth and forumRouter on server.</desc>
+  <title id="title">Блок-схема форума</title>
+  <desc id="desc">Форум: страницы, Redux forumSlice, forumApi через SSR apiProxy, requirePraktikumAuth и forumRouter на сервере.</desc>
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0f172a"/>
@@ -31,25 +31,25 @@
     </marker>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
-  <text x="470" y="34" class="lbl" font-size="16">Forum flow (client + server)</text>
-  <text x="470" y="52" class="sub">withAuthGuard on /forum routes; 403 redirects to /login</text>
-  <text x="470" y="66" class="sub">Spec: forum-api-spec.md, client: forum-api-client.md</text>
+  <text x="470" y="34" class="lbl" font-size="16">Форум (клиент + сервер)</text>
+  <text x="470" y="52" class="sub">withAuthGuard на /forum; при 403 — редирект на /login</text>
+  <text x="470" y="66" class="sub">Описание API: forum-api-spec.md, для клиента: forum-api-client.md</text>
 
-  <text x="80" y="92" class="sub" text-anchor="start">Client (packages/client)</text>
+  <text x="80" y="92" class="sub" text-anchor="start">Клиент (packages/client)</text>
 
   <rect id="b1" x="48" y="108" width="220" height="66" class="box"/>
-  <text x="158" y="134" class="lbl">Forum UI</text>
+  <text x="158" y="134" class="lbl">UI форума</text>
   <text x="158" y="148" class="sub">ForumPage, ForumTopicPage</text>
   <text x="158" y="162" class="sub">withAuthGuard</text>
 
   <rect id="b2" x="48" y="208" width="220" height="66" class="box"/>
-  <text x="158" y="234" class="lbl">init + thunks</text>
+  <text x="158" y="234" class="lbl">init и thunks</text>
   <text x="158" y="248" class="sub">fetchTopicsThunk</text>
-  <text x="158" y="262" class="sub">createTopic, comments</text>
+  <text x="158" y="262" class="sub">createTopic, комментарии</text>
 
   <rect id="b3" x="48" y="308" width="220" height="66" class="box"/>
   <text x="158" y="334" class="lbl">forumSlice</text>
-  <text x="158" y="348" class="sub">Redux state</text>
+  <text x="158" y="348" class="sub">состояние Redux</text>
   <text x="158" y="362" class="sub">forumSlice.ts</text>
 
   <rect id="b4" x="48" y="408" width="220" height="66" class="box"/>
@@ -63,7 +63,7 @@
   <path id="l4" class="arr" d="M 268 441 L 312 441 L 312 185 L 372 185"/>
 
   <line class="sep" x1="300" y1="88" x2="300" y2="500"/>
-  <text x="470" y="92" class="sub">SSR proxy + Node API</text>
+  <text x="470" y="92" class="sub">SSR прокси + Node API</text>
 
   <rect id="b5" x="372" y="152" width="200" height="66" class="box"/>
   <text x="472" y="178" class="lbl">apiProxy</text>
@@ -72,18 +72,18 @@
 
   <rect id="b6" x="372" y="264" width="240" height="66" class="box"/>
   <text x="492" y="290" class="lbl">requirePraktikumAuth</text>
-  <text x="492" y="304" class="sub">Cookie to /auth/user</text>
-  <text x="492" y="318" class="sub">403 if no session</text>
+  <text x="492" y="304" class="sub">Есть Cookie -> /auth/user</text>
+  <text x="492" y="318" class="sub">403 если не авторизован</text>
 
   <rect id="b7" x="372" y="376" width="220" height="66" class="box"/>
   <text x="482" y="402" class="lbl">forumRouter</text>
-  <text x="482" y="416" class="sub">topics, comments</text>
+  <text x="482" y="416" class="sub">темы, комментарии</text>
   <text x="482" y="430" class="sub">forumRouter.ts</text>
 
   <rect id="b8" x="372" y="488" width="200" height="58" class="box"/>
   <text x="472" y="512" class="lbl">PostgreSQL</text>
-  <text x="472" y="526" class="sub">Sequelize models</text>
-  <text x="472" y="538" class="sub">Topic, Comment</text>
+  <text x="472" y="526" class="sub">Sequelize модели</text>
+  <text x="472" y="538" class="sub">Тема, Комментарий</text>
 
   <path id="l5" class="arr" d="M 472 218 L 472 264"/>
   <path id="l6" class="arr" d="M 492 330 L 492 376"/>
@@ -92,11 +92,11 @@
   <path id="l8" class="redirect" d="M 372 297 L 352 297 L 352 141 L 268 141"/>
 
   <rect x="648" y="248" width="244" height="100" class="box" style="fill:#1e293b;stroke:#64748b"/>
-  <text x="770" y="278" class="lbl">403 handling</text>
+  <text x="770" y="278" class="lbl">Обработка 403</text>
   <text x="770" y="294" class="sub">forumAuthRedirect</text>
-  <text x="770" y="308" class="sub">navigate /login</text>
-  <text x="770" y="324" class="sub">no logout loop</text>
+  <text x="770" y="308" class="sub">навигация /login</text>
+  <text x="770" y="324" class="sub">откл. logout loop</text>
 
-  <text x="470" y="598" class="sub">SSR prefetch: initForumPage uses VITE_APP_API_URL (direct to :3000). Browser uses relative /api/forum via proxy.</text>
-  <text x="470" y="616" class="sub">GH Pages: forum disabled (StaticHostingForumNotice); no Node API.</text>
+  <text x="470" y="598" class="sub">SSR prefetch: initForumPage использует VITE_APP_API_URL (direct to :3000). Браузер ходит по /api/forum через прокси.</text>
+  <text x="470" y="616" class="sub">GH Pages: форум не работает (StaticHostingForumNotice), т.к. там нет Node API.</text>
 </svg>

@@ -69,9 +69,10 @@ flowchart TB
 
 | Процесс | Типичный порт | Переменная |
 | --- | --- | --- |
-| SSR Express (клиент) | **9000** (fallback 8080) | `CLIENT_PORT`, `PORT` |
+| SSR Express (клиент) | **9000** (fallback **8080**; не 3000 — это API) | `CLIENT_PORT`, `PORT` |
 | Node API (`packages/server`) | **3000** | `SERVER_PORT` |
-| PostgreSQL (host) | **5433** (если 5432 занят) | `POSTGRES_PORT` |
+| PostgreSQL (host) | **5433** по умолчанию (`127.0.0.1`, если 5432 занят Homebrew) | `POSTGRES_PORT` |
+| nginx (опционально) | **18080** / **18443** локально; **80** / **443** на ВМ | `NGINX_HTTP_PORT`, `NGINX_HTTPS_PORT` |
 
 В [`.env.sample`](../.env.sample) **`VITE_APP_API_URL=http://localhost:3000`** — для **SSR prefetch** (прямой вызов Node с сервера). Браузер на dev ходит на **`http://localhost:9000/api/...`** через прокси.
 
@@ -102,7 +103,19 @@ flowchart TB
 - [`packages/client/src/entry-server.tsx`](../packages/client/src/entry-server.tsx) — серверный вход React: рендер маршрута, `initialState`, Helmet, стили.
 - [`packages/client/src/main.tsx`](../packages/client/src/main.tsx) — клиент: `ReactDOM.createRoot`, **Provider**, **RouterProvider** (React Router v6), темы, **ErrorBoundary** / **AppErrorFallback**, обёртки **`withAuthGuard`**.
 
-Детали SSR + Redux + data router: [`project-redux-router-ssr.md`](./project-redux-router-ssr.md); чеклист спринта: [`redux-router-ssr.md`](./redux-router-ssr.md).
+Детали SSR + Redux + data router: [`project-redux-router-ssr.md`](./project-redux-router-ssr.md).
+
+### Безопасность и production (спринт 9)
+
+- **CSP** — [`packages/client/server/csp.ts`](../packages/client/server/csp.ts), описание: [`csp.md`](./csp.md).
+- **XSS** — санитизация контента: [`packages/client/src/shared/security/plainTextContent.ts`](../packages/client/src/shared/security/plainTextContent.ts), [`xss.md`](./xss.md).
+- **nginx** — TLS, HTTP/2: [`nginx-config.md`](./nginx-config.md).
+- **Деплой** — GitHub Actions: [`autodeploy-action.md`](./autodeploy-action.md); ВМ в Яндекс.Облако: [`yacloud-deploy.md`](./yacloud-deploy.md).
+
+### Лендинг
+
+- Секция **«Блог разработки»** (`#blog`) — карточки по спринтам 5–9 в [`Blog.tsx`](../packages/client/src/components/Landing/Blog.tsx).
+- **Презентация проекта** — полноэкранная карусель по клику на игровое поле в hero: [`ProjectPresentationCarousel.tsx`](../packages/client/src/components/ProjectPresentation/ProjectPresentationCarousel.tsx).
 
 ---
 

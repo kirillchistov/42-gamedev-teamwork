@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 500" role="img" aria-labelledby="title desc">
-  <title id="title">Canvas render pipeline</title>
-  <desc id="desc">Animated two-layer rendering flow for board canvas and FX canvas with requestAnimationFrame loops.</desc>
+  <title id="title">Цепочка отрисовки canvas</title>
+  <desc id="desc">Двухслойная блок-схема рендеринга: 1) canvas игровой доски и FX canvas c requestAnimationFrame loops.</desc>
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0f172a"/><stop offset="100%" style="stop-color:#1e293b"/></linearGradient>
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -18,59 +18,59 @@
     <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0 0,8 4,0 8" fill="#64748b"/></marker>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
-  <text x="460" y="34" text-anchor="middle" class="lbl" font-size="16">Rendering layers: game canvas + React overlays</text>
-  <text x="460" y="52" text-anchor="middle" class="sub">Game canvas has board + fx; React overlays are composited above them</text>
+  <text x="460" y="34" text-anchor="middle" class="lbl" font-size="16">Слои отрисовки: game canvas + React-оверлеи</text>
+  <text x="460" y="52" text-anchor="middle" class="sub">Game canvas -> поле + fx; Оверлеи React собираются над ними</text>
 
   <rect id="b1" x="40" y="88" width="200" height="58" class="box"/>
   <g id="t1" transform="translate(140 0)">
-    <text y="112" text-anchor="middle" class="lbl">State snapshot</text>
-    <text y="128" text-anchor="middle" class="sub">grid + animation frames</text>
+    <text y="112" text-anchor="middle" class="lbl">Снимок состояния</text>
+    <text y="128" text-anchor="middle" class="sub">сетка + кадры анимации</text>
   </g>
   <path id="l1" class="arr" d="M 240 117 L 300 117"/>
   <rect id="b2" x="300" y="88" width="230" height="58" class="box"/>
   <g id="t2" transform="translate(415 0)">
     <text y="112" text-anchor="middle" class="lbl">renderer.renderBoard()</text>
-    <text y="128" text-anchor="middle" class="sub">board-canvas clear + draw</text>
+    <text y="128" text-anchor="middle" class="sub">очистка доски + draw</text>
   </g>
   <path id="l2" class="arr" d="M 530 117 L 592 117"/>
   <rect id="b3" x="592" y="88" width="288" height="58" class="box"/>
   <g id="t3" transform="translate(736 0)">
-    <text y="112" text-anchor="middle" class="lbl">draw cells, tiles, blockers, highlights</text>
-    <text y="128" text-anchor="middle" class="sub">icons/theme fallback to shapes</text>
+    <text y="112" text-anchor="middle" class="lbl">draw клетки, фишки, блокеры, эффекты</text>
+    <text y="128" text-anchor="middle" class="sub">иконки темы и откат к базовым при регресии</text>
   </g>
 
   <path id="l3" class="arr" d="M 415 146 L 415 196"/>
   <rect id="b4" x="250" y="196" width="330" height="58" class="box"/>
   <g id="t4" transform="translate(415 0)">
-    <text y="220" text-anchor="middle" class="lbl">requestAnimationFrame board loop</text>
-    <text y="236" text-anchor="middle" class="sub">while game is active</text>
+    <text y="220" text-anchor="middle" class="lbl">цикл requestAnimationFrame доски</text>
+    <text y="236" text-anchor="middle" class="sub">пока игра активна</text>
   </g>
   <path id="l4" class="arr" d="M 580 225 L 660 225"/>
   <rect id="b5" x="660" y="196" width="230" height="58" class="box"/>
   <g id="t5" transform="translate(775 0)">
-    <text y="220" text-anchor="middle" class="lbl">matchFx update</text>
-    <text y="236" text-anchor="middle" class="sub">particles + premium combos</text>
+    <text y="220" text-anchor="middle" class="lbl">обновление matchFx</text>
+    <text y="236" text-anchor="middle" class="sub">частицы + premium комбо</text>
   </g>
 
   <path id="l5" class="arr" d="M 775 254 L 775 306"/>
   <rect id="b6" x="620" y="306" width="270" height="58" class="box"/>
   <g id="t6" transform="translate(755 0)">
     <text y="330" text-anchor="middle" class="lbl">fx-canvas draw</text>
-    <text y="346" text-anchor="middle" class="sub">separate layer over board</text>
+    <text y="346" text-anchor="middle" class="sub">отдельный слой над доской</text>
   </g>
   <path id="l6" class="arr" d="M 620 335 L 516 335"/>
   <rect id="b7" x="278" y="306" width="238" height="58" class="box"/>
   <g id="t7" transform="translate(397 0)">
-    <text y="330" text-anchor="middle" class="lbl">compose on screen</text>
-    <text y="346" text-anchor="middle" class="sub">game canvas + React overlay layer</text>
+    <text y="330" text-anchor="middle" class="lbl">композиция на экране</text>
+    <text y="346" text-anchor="middle" class="sub">game canvas + React-оверлей</text>
   </g>
   <path id="l7" class="arr" d="M 278 335 L 196 335"/>
   <rect id="b8" x="40" y="306" width="156" height="58" class="box"/>
   <g id="t8" transform="translate(118 0)">
-    <text y="330" text-anchor="middle" class="lbl">next frame</text>
-    <text y="346" text-anchor="middle" class="sub">loop</text>
+    <text y="330" text-anchor="middle" class="lbl">следующий кадр</text>
+    <text y="346" text-anchor="middle" class="sub">цикл</text>
   </g>
 
-  <text x="32" y="460" class="sub">Visual model: game canvas (board + fx) plus React DOM overlays for HUD and modals.</text>
-  <text x="32" y="476" class="sub">Key files: renderer.ts, matchFx.ts, Match3Screen.tsx, GamePage.tsx, game-visuals.md</text>
+  <text x="32" y="460" class="sub">Визуальная модель: game canvas (поле + fx) + React DOM overlays для HUD и модальных окон.</text>
+  <text x="32" y="476" class="sub">Артефакты: renderer.ts, matchFx.ts, Match3Screen.tsx, GamePage.tsx, game-visuals.md</text>
 </svg>

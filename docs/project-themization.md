@@ -206,7 +206,7 @@ yarn workspace server test
 docker compose up -d postgres   # опционально, если нет локального PG
 yarn db:migrate
 yarn dev:server                 # :3000
-yarn dev:client                 # обычно :5173
+yarn dev:client                 # обычно :9000 (CLIENT_PORT)
 ```
 
 **В браузере (DevTools → Network):**
@@ -252,7 +252,7 @@ docker compose up
 
 | Сервис   | URL с хоста              |
 |----------|--------------------------|
-| Клиент   | http://localhost:5173    |
+| Клиент   | http://localhost:9000    |
 | API      | http://localhost:3000    |
 | Postgres | localhost:5432           |
 
@@ -261,7 +261,7 @@ docker compose up
 1. **Миграции** в образ `server` **не входят** и при старте **не выполняются** — один раз `yarn db:migrate` с хоста к порту `5432`.
 2. **`VITE_APP_API_URL`** подставляется при **сборке** клиента. Для портов по умолчанию подходит `http://localhost:3000` (fallback в [`constants.tsx`](../packages/client/src/constants.tsx)). При других портах — пересобрать client с нужным значением в `.env` на этапе `docker compose build`.
 3. В контейнере `server` **`NODE_ENV=production`** → **`LOCAL_PRAKTIKUM_AUTH_BYPASS` не работает**. В Docker удобно проверять **гостевую** тему; ветку «авторизован + `praktikum_user_id`» — через реальный логин в браузере или локальный `yarn dev:server` с bypass.
-4. Клиент (`5173`) и API (`3000`) — разные origin; нужны CORS + `credentials: 'include'` (в [`createApp.ts`](../packages/server/createApp.ts) настроено).
+4. В **браузере** клиент и API — один origin (SSR :9000 + прокси `/api/forum`); прямой `localhost:3000` из браузера для форума не использовать. CORS на `packages/server` — для прямых вызовов при отладке.
 
 **API в Docker:**
 
@@ -272,7 +272,7 @@ curl -s -c /tmp/c.txt -X PUT http://localhost:3000/api/ui/theme \
 curl -s -b /tmp/c.txt http://localhost:3000/api/ui/theme
 ```
 
-**UI в Docker:** тот же сценарий, что в §4.3, клиент по `http://localhost:5173`.
+**UI в Docker:** тот же сценарий, что в §4.3; порт клиента — `CLIENT_PORT` из `.env` (часто **9000** на хосте).
 
 ### 4.6. Критерии «всё работает»
 

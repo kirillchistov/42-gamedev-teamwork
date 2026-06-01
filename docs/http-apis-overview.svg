@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 580" role="img" aria-labelledby="title desc">
-  <title id="title">HTTP layers overview</title>
-  <desc id="desc">Browser loads SSR from client server; same-origin fetch via apiProxy to Praktikum and packages/server; forum data in Postgres.</desc>
+  <title id="title">Обзор HTTP-слоёв</title>
+  <desc id="desc">Браузер загружает SSR с клиентского сервера; same-origin fetch через apiProxy к Практикуму и packages/server; данные форума в Postgres.</desc>
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0b1220"/>
@@ -22,25 +22,25 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
-  <text x="480" y="36" class="t" font-size="18">HTTP: who talks to whom</text>
-  <text x="480" y="58" class="s">One browser origin (client :9000) proxies API; Praktikum session cookie on all hops</text>
+  <text x="480" y="36" class="t" font-size="18">HTTP: кто с кем общается</text>
+  <text x="480" y="58" class="s">Один origin браузера (клиент :9000) проксирует API; cookie сессии Практикума на всех шагах</text>
 
   <rect x="360" y="78" width="240" height="58" class="boxHi"/>
-  <text x="480" y="104" class="t">Browser</text>
+  <text x="480" y="104" class="t">Браузер</text>
   <text x="480" y="122" class="s">SPA + fetch /api/*</text>
 
   <rect x="40" y="188" width="300" height="144" class="grp"/>
   <rect x="56" y="204" width="268" height="84" class="box"/>
   <text x="190" y="232" class="t">SSR Express + apiProxy</text>
   <text x="190" y="250" class="s">HTML, APP_INITIAL_STATE, CSP</text>
-  <text x="190" y="268" class="s">CLIENT_PORT default 9000</text>
+  <text x="190" y="268" class="s">CLIENT_PORT по умолчанию 9000</text>
   <text x="190" y="318" class="s">packages/client/server</text>
 
   <rect x="360" y="188" width="300" height="144" class="grp"/>
   <rect x="376" y="204" width="268" height="84" class="box"/>
   <text x="510" y="232" class="t">Node API</text>
   <text x="510" y="250" class="s">/api/forum /friends /user</text>
-  <text x="510" y="268" class="s">SERVER_PORT default 3000</text>
+  <text x="510" y="268" class="s">SERVER_PORT по умолчанию 3000</text>
   <text x="510" y="318" class="s">packages/server</text>
 
   <rect x="680" y="188" width="260" height="144" class="grp"/>
@@ -48,14 +48,14 @@
   <text x="810" y="232" class="t">ya-praktikum.tech</text>
   <text x="810" y="250" class="s">/api/v2 auth, profile</text>
   <text x="810" y="268" class="s">GET /auth/user + Cookie</text>
-  <text x="810" y="318" class="s">Praktikum</text>
+  <text x="810" y="318" class="s">Практикум</text>
 
   <rect x="376" y="400" width="268" height="64" class="box"/>
   <text x="510" y="428" class="t">PostgreSQL</text>
-  <text x="510" y="446" class="s">forum topics, comments</text>
+  <text x="510" y="446" class="s">темы, комментарии форума</text>
 
   <path class="edgeHi" d="M 480 136 L 480 168 L 190 168 L 190 204"/>
-  <text x="300" y="160" class="cap">first document</text>
+  <text x="300" y="160" class="cap">первый документ</text>
 
   <path class="edgeHi" d="M 500 136 L 500 168 L 510 168 L 510 204"/>
   <text x="520" y="160" class="cap">/api/forum</text>
@@ -64,10 +64,10 @@
   <text x="680" y="160" class="cap">/api/v2</text>
 
   <path class="edge" d="M 324 246 L 376 246"/>
-  <text x="350" y="238" class="s">proxy</text>
+  <text x="350" y="238" class="s">прокси</text>
 
   <path class="edge" d="M 644 246 L 696 246"/>
-  <text x="670" y="238" class="s">auth check</text>
+  <text x="670" y="238" class="s">проверка auth</text>
 
   <path class="edge" d="M 510 288 L 510 400"/>
 

@@ -1,130 +1,108 @@
-# Redux и React Router в SSR (текущая реализация и чеклист задания)
+# Redux и React Router в SSR
 
-Документ привязан к монорепозиторию: SSR выполняется в **`packages/client`** (Express + Vite в [`packages/client/server`](../packages/client/server)), а **не** в [`packages/server`](../packages/server) (отдельный JSON API — см. **[`project-structure.md`](./project-structure.md)**).
+Документ описывает **текущую реализацию** SSR в **`packages/client`** (Express + Vite в [`packages/client/server`](../packages/client/server)). JSON API живёт в отдельном [`packages/server`](../packages/server) — см. **[`project-structure.md`](./project-structure.md)**.
 
-## 1. Что уже сделано в проекте
+Спринты **7.1–7.2** (Express SSR, Redux + Router на сервере) — **выполнены**.
 
-### 1.1. Роутинг «как у пользователя» на сервере
+---
 
-На сервере используется **статический data router** React Router v6 ('createStaticHandler', 'createStaticRouter', 'StaticRouterProvider'), а не устаревший одиночный 'StaticRouter'. Смысл тот же: запрос 'req' превращается в 'Request', выполняется 'query', затем рендер с тем же набором маршрутов, что и на клиенте.
+## 1. Что сделано
 
-Ключевой файл: 'packages/client/src/entry-server.tsx' — функция **'render(req)'** строит 'fetchRequest' из Express-запроса, вызывает 'query', оборачивает приложение в 'StaticRouterProvider'.
+### 1.1. Роутинг на сервере
+
+Используется **data router** React Router v6: `createStaticHandler`, `createStaticRouter`, `StaticRouterProvider`. Запрос Express превращается в `Request`, выполняется `query`, рендер с тем же деревом маршрутов, что на клиенте.
+
+Файл: [`packages/client/src/entry-server.tsx`](../packages/client/src/entry-server.tsx) — функция **`render(req)`**.
 
 ### 1.2. Redux на сервере
 
-В 'render' создаётся отдельный стор на запрос:
+На каждый HTTP-запрос:
 
-- 'configureStore({ reducer })' — тот же 'reducer', что и на клиенте ('packages/client/src/store.ts').
-- Перед 'renderToString' для совпавшего маршрута вызывается **'fetchData'** из конфигурации роута (см. 'packages/client/src/routes.tsx'): туда передаются 'dispatch', 'state', 'ctx' (в т.ч. данные из cookie запроса — см. `entry-server.utils` / `clientToken`, если используется).
-- После инициализации диспатчится 'setPageHasBeenInitializedOnServer(true)' ('ssrSlice'), чтобы на клиенте **'usePage'** не дублировал загрузку после гидратации.
+1. `configureStore({ reducer })` — тот же `reducer`, что в [`store.ts`](../packages/client/src/store.ts).
+2. Для совпавшего маршрута вызывается **`fetchData`** из [`routes.tsx`](../packages/client/src/routes.tsx) с `{ dispatch, state, ctx }` (cookie/токен из `entry-server.utils`, если нужно).
+3. `dispatch(setPageHasBeenInitializedOnServer(true))` — [`ssrSlice`](../packages/client/src/slices/ssrSlice.ts), чтобы [`usePage`](../packages/client/src/hooks/usePage.ts) не дублировал загрузку после гидратации.
 
-### 1.3. Сериализация и передача 'initialState'
+### 1.3. Сериализация в HTML
 
-1. **'store.getState()'** после загрузки данных.
-2. В шаблон 'index.html' вставляется скрипт с **'window.APP_INITIAL_STATE'** через 'serialize-javascript' (безопасная JSON-строка для вставки в HTML).
-
-Фрагмент сервера (логика в [`packages/client/server/index.ts`](../packages/client/server/index.ts); после сборки — `index.js`):
-
-```ts
-// packages/client/server/index.ts — упрощённый фрагмент
-      const {
-        html: appHtml,
-        initialState,
-        helmet,
-        styleTags,
-      } = await render(req)
-
-      const html = template
-        .replace('<!--ssr-styles-->', styleTags)
-        .replace(
-          `<!--ssr-helmet-->`,
-          `${helmet.meta.toString()} ${helmet.title.toString()} ${helmet.link.toString()}`
-        )
-        .replace(`<!--ssr-outlet-->`, appHtml)
-        .replace(
-          `<!--ssr-initial-state-->`,
-          `<script>window.APP_INITIAL_STATE = ${serialize(
-            initialState,
-            {
-              isJSON: true,
-            }
-          )}</script>`
-        )
-```
-
-Плейсхолдер в HTML:
+После `fetchData`: `initialState = store.getState()` → в шаблон вставляется
 
 ```html
-<!-- packages/client/index.html -->
-    <!--ssr-initial-state-->
-    <div id="root"><!--ssr-outlet--></div>
+<script>window.APP_INITIAL_STATE = …</script>
 ```
 
-### 1.4. Восстановление стора на клиенте
+через **`serialize-javascript`** (`isJSON: true`) в [`packages/client/server/index.ts`](../packages/client/server/index.ts). Плейсхолдер: `<!--ssr-initial-state-->` в [`packages/client/index.html`](../packages/client/index.html).
 
-Глобальный тип и **'preloadedState'** при создании единственного клиентского стора (см. [`packages/client/src/store.ts`](../packages/client/src/store.ts) — фактический код может отличаться, напр. очистка `APP_INITIAL_STATE` после чтения):
+### 1.4. Клиент
 
-```ts
-// packages/client/src/store.ts — концептуально
-declare global {
-  interface Window {
-    APP_INITIAL_STATE: RootState
-  }
-}
+[`store.ts`](../packages/client/src/store.ts) — `preloadedState: window.APP_INITIAL_STATE` (при отсутствии — `undefined`). После чтения глобаль можно очистить, чтобы не держать дубликат в памяти.
 
-export const store = configureStore({
-  reducer,
-  preloadedState:
-    typeof window === 'undefined'
-      ? undefined
-      : window.APP_INITIAL_STATE,
-})
+### 1.5. Прокси и cookie (спринт 7–8)
+
+В **браузере** запросы к Практикуму (`/api/v2`) и к нашему API (`/api/forum`, `/friends`, `/user`) идут на **origin SSR** (порт клиента, по умолчанию **9000**) через [`apiProxy.ts`](../packages/client/server/apiProxy.ts) — `credentials: 'include'`.
+
+В **Node** (`fetchData`) нет `window`; вызовы к **нашему** API с SSR-машины — на `VITE_APP_API_URL` / `INTERNAL_SERVER_URL` (см. `.env.sample`), не на URL страницы в браузере.
+
+---
+
+## 2. Соответствие заданию курса (2.1–2.5)
+
+| Подпункт | Реализация |
+| --- | --- |
+| 2.1 Загрузка на сервере | `fetchData` в `routes` + `entry-server.tsx` |
+| 2.2 Сохранение state | `store.getState()` после инициализации |
+| 2.3 Передача в HTML | `serialize` → `window.APP_INITIAL_STATE` |
+| 2.4 Клиент | `preloadedState` в `configureStore` |
+| 2.5 URL | `createStaticHandler` по `req.originalUrl` |
+
+---
+
+## 3. Добавление страницы с SSR-данными
+
+1. В `routes.tsx`: `path`, `Component`, **`fetchData`**.
+2. `fetchData` = `({ dispatch, ctx }) => dispatch(yourThunk(...))` или `Promise.all([...])`.
+3. На странице: **`usePage({ initPage: initYourPage })`** — та же логика, что в `fetchData`.
+4. В `fetchData` **не использовать** `window`, `document`, `localStorage` без guard.
+
+Примеры: [`initLeaderboardPage`](../packages/client/src/pages/LeaderboardPage.tsx), [`initForumPage`](../packages/client/src/pages/ForumPage.tsx).
+
+---
+
+## 4. Риски
+
+| Риск | Митигация |
+| --- | --- |
+| Hydration mismatch | Не использовать `Date.now()` / `Math.random()` в первом рендере без стабилизации |
+| Двойная загрузка | `ssrSlice` + `usePage` |
+| Падение SSR из `window` в thunk | Ревью `init*Page` на SSR-safe код |
+| Cookie только в браузере | Для SSR-запросов к Практикуму — явный проброс `Cookie` из `req`, если понадобится |
+
+---
+
+## 5. Чеклист приёмки (спринт 7)
+
+- [x] Конкретный URL рендерит нужную страницу на сервере.
+- [x] В HTML есть `window.APP_INITIAL_STATE`.
+- [x] После гидратации store совпадает с серверным.
+- [x] `fetchData` на защищённых маршрутах (форум, лидерборд) подключены.
+- [ ] Периодический smoke: нет hydration errors на `/`, `/game`, `/forum`, `/leaderboard`.
+
+---
+
+## 6. Smoke-test
+
+```bash
+yarn dev:client   # или yarn dev
 ```
 
-На практике это эквивалент учебному **'createStore(reducer, preloadedState)'**: Redux Toolkit просто объединяет reducer и начальное состояние в одном вызове.
-
-### 1.5. Клиентская навигация после SSR
-
-'packages/client/src/hooks/usePage.ts' читает флаг из 'ssrSlice': если страница уже инициализирована на сервере, клиентский 'initPage' **не** вызывается повторно при первом монтировании; иначе выполняется та же логика загрузки, что и при переходе по ссылкам внутри SPA.
-
----
-
-## 2. Соответствие подпунктам задания (2.1–2.5)
-
-| Подпункт | Реализация в репозитории |
-|----------|-------------------------|
-| **2.1** Загрузка данных на сервере | 'fetchData' в 'routes' + 'await fetchData({ dispatch, state, ctx })' в 'entry-server.tsx' |
-| **2.2** Сохранение стейта на сервере | 'initialState: store.getState()' в возврате 'render' |
-| **2.3** Передача в HTML | `serialize` → `window.APP_INITIAL_STATE` в SSR Express [`packages/client/server`](../packages/client/server) |
-| **2.4** Инициализация на клиенте | 'preloadedState: window.APP_INITIAL_STATE' в 'store.ts' |
-| **2.5** Нужный URL | 'createStaticHandler' / 'StaticRouterProvider' по 'req.originalUrl' |
+1. Открыть **http://localhost:9000/forum** (или другой маршрут с `fetchData`).
+2. View Source — скрипт `window.APP_INITIAL_STATE`.
+3. Redux DevTools — данные слайсов совпадают с ожидаемыми после первой отрисовки.
+4. Консоль — без критичных hydration errors.
 
 ---
 
-## 3. Врезки при расширении (не ломая схему)
+## 7. Связанные документы
 
-### 3.1. Новая страница с данными для SSR
-
-1. В 'routes.tsx' добавьте объект маршрута с 'path', 'Component', **'fetchData'**.
-2. Реализуйте 'fetchData' как '({ dispatch, ctx }) => dispatch(yourThunk(...))' или 'Promise.all([...])'.
-3. На странице вызовите **'usePage({ initPage: initYourPage })'** с той же 'initYourPage', что и в 'fetchData' (копия логики для клиентской навигации).
-
-### 3.2. Если задание формально требует именно 'StaticRouter'
-
-В React Router 6 для data routers рекомендуемый API — текущий ('StaticRouterProvider'). Если в курсе требуют классический пример с 'StaticRouter' + 'Routes', его можно показать отдельно; для **этого** проекта менять data router на legacy не нужно — поведение «URL с сервера = тот же маршрут» уже обеспечено.
-
-### 3.3. Авторизация, cookie и наш API
-
-В **браузере** cookie Практикума уже используются для запросов к **Практикуму** и к **`packages/server`** (`credentials: 'include'`, база нашего API — `SERVER_HOST` / `VITE_APP_API_URL`, см. [`project-structure.md`](./project-structure.md)).
-
-В **SSR** (`fetchData` в Node) нет `window`; если thunk вызывает только Практикум с `credentials`, cookie из входящего `Request` нужно **явно пробрасывать** в `fetch`, если такой сценарий появится. Запросы к **нашему** API с SSR-машины — на **другой базовый URL** (не «тот же origin, что HTML»), задаётся env (`INTERNAL_SERVER_URL` / см. `.env.sample`), и не смешиваются с процессом `packages/server` автоматически.
-
-'createContext' в `entry-server.utils.ts` может передавать **`clientToken: req.cookies.token`** (или аналог) — используйте это согласованно с реальными cookie-именами Практикума и нашими ручками.
-
----
-
-## 4. Проверка
-
-1. 'cd packages/client && yarn dev'
-2. Откройте страницу с тяжёлым 'fetchData' (например, форум) и в DevTools → Elements убедитесь, что в начале '<body>' есть скрипт с 'window.APP_INITIAL_STATE'.
-3. Сравните данные в Redux DevTools после гидратации с тем, что должен был отдать сервер (совпадение ключей слайсов).
+- HTTP-слои: [`project-structure.md`](./project-structure.md), [`http-apis-overview.svg`](./http-apis-overview.svg).
+- OAuth (колбэк после редиректа): [`project-yandex-oauth.md`](./project-yandex-oauth.md).
+- Утечки / Performance observer: [`MEMORYLEAKS.md`](./MEMORYLEAKS.md).

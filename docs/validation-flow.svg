@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480" role="img" aria-labelledby="title desc">
-  <title id="title">Validation flow</title>
-  <desc id="desc">Animated validation flow for forms: input, blur, rules check, errors, submit gate, dispatch.</desc>
+  <title id="title">Поток валидации форм</title>
+  <desc id="desc">Анимированная схема валидации: ввод, blur, проверка правил, ошибки, блокировка submit, dispatch.</desc>
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0f172a"/>
@@ -26,72 +26,72 @@
     </marker>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
-  <text x="460" y="36" text-anchor="middle" class="lbl" font-size="16">Form validation flow</text>
-  <text x="460" y="54" text-anchor="middle" class="sub">Blur + submit checks with error rendering and dispatch gate</text>
+  <text x="460" y="36" text-anchor="middle" class="lbl" font-size="16">Валидация форм</text>
+  <text x="460" y="54" text-anchor="middle" class="sub">Проверки на blur и submit, отображение ошибок, блокировка отправки</text>
 
   <rect id="b1" x="40" y="80" width="172" height="58" class="box"/>
   <g id="t1" transform="translate(126 0)">
-    <text y="104" text-anchor="middle" class="lbl">Input change</text>
-    <text y="118" text-anchor="middle" class="sub">Login/Signup/Profile form</text>
-    <text y="130" text-anchor="middle" class="sub">Component: page form</text>
+    <text y="104" text-anchor="middle" class="lbl">Изменение поля</text>
+    <text y="118" text-anchor="middle" class="sub">Login / Signup / Profile</text>
+    <text y="130" text-anchor="middle" class="sub">Компонент: форма страницы</text>
   </g>
   <path id="l1" class="arr" d="M 212 109 L 262 109"/>
 
   <rect id="b2" x="262" y="80" width="186" height="58" class="box"/>
   <g id="t2" transform="translate(355 0)">
-    <text y="104" text-anchor="middle" class="lbl">useValidate hook</text>
-    <text y="118" text-anchor="middle" class="sub">track values + touched</text>
-    <text y="130" text-anchor="middle" class="sub">Hook: useValidate.ts</text>
+    <text y="104" text-anchor="middle" class="lbl">хук useValidate</text>
+    <text y="118" text-anchor="middle" class="sub">значения + touched</text>
+    <text y="130" text-anchor="middle" class="sub">Хук: useValidate.ts</text>
   </g>
   <path id="l2" class="arr" d="M 448 109 L 506 109"/>
 
   <rect id="b3" x="506" y="80" width="210" height="58" class="box"/>
   <g id="t3" transform="translate(611 0)">
-    <text y="104" text-anchor="middle" class="lbl">authValidation rules</text>
-    <text y="118" text-anchor="middle" class="sub">login/email/password/phone</text>
-    <text y="130" text-anchor="middle" class="sub">Module: authValidation.ts</text>
+    <text y="104" text-anchor="middle" class="lbl">правила authValidation</text>
+    <text y="118" text-anchor="middle" class="sub">login / email / password / phone</text>
+    <text y="130" text-anchor="middle" class="sub">Модуль: authValidation.ts</text>
   </g>
   <path id="l3" class="arr" d="M 611 138 L 611 170"/>
 
   <rect id="b4" x="450" y="170" width="322" height="62" class="box"/>
   <g id="t4" transform="translate(611 0)">
-    <text y="194" text-anchor="middle" class="lbl">Field status computed</text>
-    <text y="208" text-anchor="middle" class="sub">valid + errorMessage per field</text>
-    <text y="220" text-anchor="middle" class="sub">Module: validation state</text>
+    <text y="194" text-anchor="middle" class="lbl">Статус поля</text>
+    <text y="208" text-anchor="middle" class="sub">valid + errorMessage на поле</text>
+    <text y="220" text-anchor="middle" class="sub">Модуль: validation state</text>
   </g>
   <path id="l4" class="arr" d="M 450 201 L 344 201"/>
 
   <rect id="b5" x="156" y="170" width="188" height="62" class="box"/>
   <g id="t5" transform="translate(250 0)">
-    <text y="194" text-anchor="middle" class="lbl">FieldError render</text>
-    <text y="208" text-anchor="middle" class="sub">show inline errors</text>
-    <text y="220" text-anchor="middle" class="sub">Component: FieldError</text>
+    <text y="194" text-anchor="middle" class="lbl">FieldError</text>
+    <text y="208" text-anchor="middle" class="sub">инлайн-ошибки</text>
+    <text y="220" text-anchor="middle" class="sub">Компонент: FieldError</text>
   </g>
   <path id="l5" class="arr" d="M 250 232 L 250 266"/>
 
   <rect id="b6" x="140" y="266" width="220" height="58" class="box"/>
   <g id="t6" transform="translate(250 0)">
-    <text y="290" text-anchor="middle" class="lbl">Submit attempt</text>
-    <text y="304" text-anchor="middle" class="sub">run full validation pass</text>
-    <text y="316" text-anchor="middle" class="sub">Component: submit handler</text>
+    <text y="290" text-anchor="middle" class="lbl">Попытка submit</text>
+    <text y="304" text-anchor="middle" class="sub">полная проверка формы</text>
+    <text y="316" text-anchor="middle" class="sub">Компонент: submit handler</text>
   </g>
   <path id="l6" class="arr" d="M 360 295 L 472 295"/>
 
   <rect id="b7" x="472" y="266" width="300" height="58" class="box"/>
   <g id="t7" transform="translate(622 0)">
-    <text y="290" text-anchor="middle" class="lbl">Gate submission</text>
-    <text y="304" text-anchor="middle" class="sub">invalid -> stop, valid -> dispatch thunk</text>
-    <text y="316" text-anchor="middle" class="sub">Module: page action gate</text>
+    <text y="290" text-anchor="middle" class="lbl">Блокировка отправки</text>
+    <text y="304" text-anchor="middle" class="sub">невалидно -&gt; стоп; валидно -&gt; thunk</text>
+    <text y="316" text-anchor="middle" class="sub">Модуль: page action gate</text>
   </g>
   <path id="l7" class="arr" d="M 622 324 L 622 356"/>
 
   <rect id="b8" x="472" y="356" width="300" height="58" class="box"/>
   <g id="t8" transform="translate(622 0)">
-    <text y="380" text-anchor="middle" class="lbl">API call / state update</text>
-    <text y="394" text-anchor="middle" class="sub">only after valid form</text>
-    <text y="406" text-anchor="middle" class="sub">Module: thunk/API layer</text>
+    <text y="380" text-anchor="middle" class="lbl">API / обновление state</text>
+    <text y="394" text-anchor="middle" class="sub">только после валидной формы</text>
+    <text y="406" text-anchor="middle" class="sub">Модуль: thunk / API</text>
   </g>
 
-  <text x="40" y="448" class="sub">Key files: hooks/useValidate.ts, shared/validation/authValidation.ts, shared/ui/FieldError</text>
+  <text x="40" y="448" class="sub">Ключевые файлы: hooks/useValidate.ts, shared/validation/authValidation.ts, shared/ui/FieldError</text>
   <text x="40" y="466" class="sub">LoginPage.tsx, SignupPage.tsx, ProfilePage.tsx</text>
 </svg>

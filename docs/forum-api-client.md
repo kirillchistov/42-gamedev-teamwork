@@ -86,7 +86,7 @@ flowchart TB
 ```mermaid
 sequenceDiagram
   participant B as Браузер
-  participant C as client SSR :5173
+  participant C as client SSR :9000
   participant P as apiProxy
   participant S as server :3000
   participant Y as ya-praktikum.tech
@@ -235,7 +235,7 @@ yarn workspace server dev
 yarn workspace client dev
 ```
 
-Открывать форум: **http://localhost:5173/forum** (origin SSR-клиента с прокси), не `localhost:3000`.
+Открывать форум: **http://localhost:9000/forum** (origin SSR-клиента с прокси, `CLIENT_PORT`), не `localhost:3000`.
 
 ### 5.3. Проверки CI / локально
 

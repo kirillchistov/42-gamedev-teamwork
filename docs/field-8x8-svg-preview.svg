@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 620" role="img" aria-labelledby="title desc">
-  <title id="title">8x8 field preview (Match-3) - SVG</title>
-  <desc id="desc">Non-interactive 8x8 board preview with animated VFX, special tiles, and S7 visual improvements.</desc>
+  <title id="title">Превью поля 8×8 (Match-3)</title>
+  <desc id="desc">Статичное превью доски 8×8 с анимированными VFX, особыми плитками и визуалом спринта 7.</desc>
 
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -524,43 +524,43 @@
   <!-- Legend -->
   <g id="legend" transform="translate(0 0)">
     <rect x="64" y="520" width="432" height="86" rx="16" fill="rgba(2, 6, 23, 0.35)" stroke="rgba(148,163,184,0.25)" stroke-width="2"/>
-    <text x="84" y="548" font-size="13" fill="rgba(248,250,252,0.96)" font-family="system-ui, sans-serif" font-weight="700">S7 visual set shown</text>
+    <text x="84" y="548" font-size="13" fill="rgba(248,250,252,0.96)" font-family="system-ui, sans-serif" font-weight="700">Набор визуала S7</text>
     <g transform="translate(84 560)">
       <g transform="translate(0 0)">
         <circle cx="10" cy="10" r="8" fill="#3b82f6"/>
-        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Blue</text>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Синий</text>
       </g>
       <g transform="translate(120 0)">
         <circle cx="10" cy="10" r="8" fill="#22c55e"/>
-        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Green</text>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Зелёный</text>
       </g>
       <g transform="translate(240 0)">
         <circle cx="10" cy="10" r="8" fill="#fbbf24"/>
-        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Yellow</text>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Жёлтый</text>
       </g>
       <g transform="translate(360 0)">
         <circle cx="10" cy="10" r="8" fill="#ef4444"/>
-        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Red</text>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Красный</text>
       </g>
       <g transform="translate(0 28)">
         <circle cx="10" cy="10" r="8" fill="#ec4899"/>
-        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Pink</text>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Розовый</text>
       </g>
 
       <g transform="translate(160 28)">
         <rect x="0" y="2" width="18" height="18" rx="4" fill="rgba(186,230,253,0.25)" stroke="rgba(186,230,253,0.7)"/>
-        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Ice block</text>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Лёд</text>
       </g>
       <g transform="translate(320 28)">
         <path d="M 5 15 L 15 8 L 15 22 Z" fill="#f59e0b" opacity="0.95"/>
-        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Booster</text>
+        <text x="26" y="14" font-size="12" fill="rgba(203,213,225,0.95)" font-family="ui-monospace, monospace">Бустер</text>
       </g>
     </g>
   </g>
 
   <!-- Subtle note -->
   <text x="280" y="610" text-anchor="middle" font-size="11" fill="rgba(203,213,225,0.7)" font-family="ui-monospace, monospace">
-    Preview-only: static SVG with animated VFX overlays.
+    Только превью: статичный SVG с анимированными VFX.
   </text>
 </svg>
 

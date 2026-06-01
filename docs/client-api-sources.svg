@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 516" role="img" aria-labelledby="title desc">
-  <title id="title">Client API sources</title>
-  <desc id="desc">Browser uses same-origin paths via SSR apiProxy; SSR uses VITE_APP_API_URL; GitHub Pages calls Praktikum directly.</desc>
+  <title id="title">Источники API на клиенте</title>
+  <desc id="desc">Браузер: относительные пути через SSR apiProxy; SSR: VITE_APP_API_URL; GitHub Pages — прямой вызов Практикума.</desc>
   <defs>
     <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#0b1220"/>
@@ -21,16 +21,16 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg2)"/>
-  <text x="440" y="32" class="h" font-size="16">Client: where requests go</text>
-  <text x="440" y="52" class="m">constants.tsx — browser: relative URLs + apiProxy on SSR (port 9000)</text>
+  <text x="440" y="32" class="h" font-size="16">Клиент: куда уходят запросы</text>
+  <text x="440" y="52" class="m">constants.tsx — в браузере относительные URL + apiProxy на SSR (порт 9000)</text>
 
   <rect x="32" y="72" width="380" height="320" class="col"/>
-  <text x="222" y="98" class="h">Praktikum (via /api/v2)</text>
-  <text x="222" y="116" class="m">BASE_URL = /api/v2 in browser</text>
+  <text x="222" y="98" class="h">Практикум (через /api/v2)</text>
+  <text x="222" y="116" class="m">BASE_URL = /api/v2 в браузере</text>
 
   <rect x="48" y="132" width="348" height="48" class="row"/>
   <text x="222" y="152" class="t">apiClient, userApi</text>
-  <text x="222" y="168" class="m">profile, logout, avatar</text>
+  <text x="222" y="168" class="m">профиль, logout, аватар</text>
 
   <rect x="48" y="188" width="348" height="48" class="row"/>
   <text x="222" y="208" class="t">userSlice</text>
@@ -38,15 +38,15 @@
 
   <rect x="48" y="244" width="348" height="48" class="row"/>
   <text x="222" y="264" class="t">oauthApi.ts</text>
-  <text x="222" y="280" class="m">Yandex OAuth</text>
+  <text x="222" y="280" class="m">OAuth Яндекс</text>
 
   <rect x="48" y="300" width="348" height="48" class="row"/>
   <text x="222" y="320" class="t">leaderboardApi.ts</text>
   <text x="222" y="336" class="m">GET /leaderboard</text>
 
   <rect x="468" y="72" width="380" height="260" class="col"/>
-  <text x="658" y="98" class="h">Our Node API (same-origin)</text>
-  <text x="658" y="116" class="m">SERVER_HOST = empty in browser</text>
+  <text x="658" y="98" class="h">Наш Node API (same-origin)</text>
+  <text x="658" y="116" class="m">SERVER_HOST = пусто в браузере</text>
 
   <rect x="484" y="132" width="348" height="48" class="row"/>
   <text x="658" y="152" class="t">forumApi.ts</text>
@@ -61,17 +61,17 @@
   <text x="658" y="280" class="m">GET/PUT /api/ui/theme</text>
 
   <rect x="468" y="348" width="380" height="80" class="col"/>
-  <text x="658" y="374" class="h">SSR only (Node fetch)</text>
-  <text x="658" y="392" class="m">VITE_APP_API_URL to localhost:3000</text>
-  <text x="658" y="408" class="m">initForumPage, friends prefetch</text>
+  <text x="658" y="374" class="h">Только SSR (Node fetch)</text>
+  <text x="658" y="392" class="m">VITE_APP_API_URL → localhost:3000</text>
+  <text x="658" y="408" class="m">initForumPage, prefetch друзей</text>
 
   <rect x="32" y="432" width="816" height="72" class="col"/>
-  <text x="440" y="458" class="h">GitHub Pages (static)</text>
+  <text x="440" y="458" class="h">GitHub Pages (статика)</text>
   <text x="440" y="474" class="m">BASE_URL = ya-praktikum.tech/api/v2</text>
-  <text x="440" y="490" class="m">forum and friends unavailable (no Node)</text>
+  <text x="440" y="490" class="m">форум и друзья недоступны (нет Node)</text>
 
   <path class="edge" d="M 412 200 L 468 200"/>
   <text x="440" y="192" class="note">apiProxy</text>
 
-  <text x="440" y="508" class="m">packages/client/server/apiProxy.ts forwards /api/v2 and /api/forum to Praktikum and server</text>
+  <text x="440" y="508" class="m">packages/client/server/apiProxy.ts — /api/v2 и /api/forum на Практикум и server</text>
 </svg>

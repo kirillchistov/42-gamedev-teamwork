@@ -19,18 +19,19 @@
     ├─ DNS A-запись → статический публичный IP ВМ
     │
     v
-nginx :443 (SSL, HTTP/2)          ← см. nginx-config.md
-    │
+nginx :443 (SSL, HTTP/2)          ← хост или сервис nginx в compose
+    │   proxy_pass → client :9000 (хост) / client:80 (docker-сеть)
     v
-Docker: client (SSR) :9000→:80
-    ├─ proxy /api/v2 → ya-praktikum.tech
-    └─ proxy /api/forum, /friends → server :3000
-              │
-              v
-         postgres :5432 (volume)
+Docker Compose (docker-compose.prod.yml):
+  client (SSR) :9000→:80
+    ├─ apiProxy /api/v2 → ya-praktikum.tech
+    └─ apiProxy /api/forum, /friends, /user → server :3000
+  migrate (одноразово) → postgres :5432 (volume pgdata)
 ```
 
-Порты **3000/9000** наружу не открываем — только **22** (SSH), **80**, **443**.
+Порты **3000**, **9000**, **5432** с интернета **не публикуем** — только **22** (SSH), **80**, **443**.
+
+Локальная отладка compose: UI **http://localhost:9000**, опционально nginx **https://localhost:18443** — [forum-server-infra.md](forum-server-infra.md).
 
 ---
 
@@ -70,80 +71,50 @@ Docker: client (SSR) :9000→:80
 | Публичный IP | **Статический** (обязательно для A-записи) |
 | SSH | Ваш публичный ключ (+ ключи команды на уже созданной ВМ) |
 
-### Спецификация Docker Compose на ВМ
+### Docker Compose на ВМ
 
-Возьмите ['docker-compose.yml'](../docker-compose.yml) и замените 'build:' на **'image:'** с тегами из GHCR:
+Используйте готовый [`docker-compose.prod.yml`](../docker-compose.prod.yml) (образы GHCR, без `build:`):
 
-```yaml
-services:
-  client:
-    container_name: cosmic-match-client
-    image: ghcr.io/<owner>/42-gamedev-teamwork/client:<sha>
-    restart: always
-    ports:
-      - "9000:80"
-    environment:
-      NODE_ENV: production
-      INTERNAL_SERVER_URL: http://server:3000
-      EXTERNAL_SERVER_URL: http://server:3000
-      PRAKTIKUM_API_URL: https://ya-praktikum.tech
-
-  server:
-    container_name: cosmic-match-server
-    image: ghcr.io/<owner>/42-gamedev-teamwork/server:<sha>
-    restart: always
-    ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: production
-      SERVER_PORT: "3000"
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: "5432"
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: <секрет>
-      POSTGRES_DB: postgres
-
-  postgres:
-    image: postgres:16-alpine
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: <секрет>
-      POSTGRES_DB: postgres
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  migrate:
-    image: ghcr.io/<owner>/42-gamedev-teamwork/server:<sha>
-    restart: "no"
-    command: ["/app/packages/server/scripts/docker-migrate.sh"]
-    environment:
-      POSTGRES_HOST: postgres
-      # … те же POSTGRES_*
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-volumes:
-  pgdata:
+```bash
+export CLIENT_IMAGE=ghcr.io/<owner>/42-gamedev-teamwork/client:<sha>
+export SERVER_IMAGE=ghcr.io/<owner>/42-gamedev-teamwork/server:<sha>
+# .env на ВМ: POSTGRES_PASSWORD, FORUM_MODERATOR_*, NGINX_* при необходимости
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-Порядок запуска: 'postgres' → 'migrate' → 'server' → 'client' (как в локальном compose).
+Сервисы и порядок (как локально):
 
-**Проверка без домена:** 'http://<публичный-IP>:9000' — клиент; 'http://<IP>:3000/health' — API.
+| Сервис | Порт на хосте (типично) | Заметка |
+|--------|-------------------------|---------|
+| postgres | не публикуется наружу | только docker-сеть |
+| migrate | — | одноразовые миграции |
+| server | 3000 (localhost / SG) | `/health`, `/api/forum` |
+| client | **9000→80** | SSR + apiProxy |
+| nginx | **80, 443** | TLS, см. certs в `deploy/nginx/certs/` |
+
+Переменные `client`: `INTERNAL_SERVER_URL=http://server:3000`, `PRAKTIKUM_API_URL=https://ya-praktikum.tech` — уже в prod-compose.
+
+Порядок: `postgres` (healthy) → `migrate` (success) → `server` (healthy) → `client` → `nginx`.
+
+**Временная проверка без домена** (закройте порт 9000 в SG после отладки): `http://<публичный-IP>:9000`. API: `http://<IP>:3000/health` только с ВМ/SSH.
 
 ---
 
 ## Шаг 3. Nginx и HTTPS на ВМ
 
-На хосте (не в контейнере client) установить nginx, конфиг — [nginx-config.md](nginx-config.md):
+Два варианта (оба описаны в [nginx-config.md](nginx-config.md)):
 
-- 'listen 443 ssl http2'
-- 'proxy_pass http://127.0.0.1:9000'
-- редирект '80 → 443'
-- 'proxy_set_header X-Forwarded-Proto $scheme' (важно для cookie и OAuth)
+1. **Сервис `nginx` в `docker-compose.prod.yml`** — монтируются `deploy/nginx/cosmic-match.docker.conf` и сертификаты в `deploy/nginx/certs/`. На ВМ в `.env`: `NGINX_HTTP_PORT=80`, `NGINX_HTTPS_PORT=443`.
+2. **nginx на хосте ВМ** — `proxy_pass http://127.0.0.1:9000`, если client проброшен только на localhost.
 
-Сертификат: **certbot** ('certbot --nginx -d ваш-домен') или сертификат из Yandex Certificate Manager.
+Обязательно:
+
+- `listen 443 ssl http2`
+- `proxy_set_header X-Forwarded-Proto $scheme` (cookie, OAuth)
+- редирект `80 → 443`
+
+Сертификат: **certbot** или Yandex Certificate Manager → файлы в `deploy/nginx/certs/` (см. README в этой папке).
 
 ---
 
