@@ -36,11 +36,10 @@ export function Hero({ onOpenPresentation }: HeroProps) {
   return (
     <section className="hero" id="top-hero">
       <div className="hero__text">
-        <h1>Cosmic Match: match‑3 с прогрессией и живыми событиями</h1>
+        <h1>Cosmic Match с живой прогрессией</h1>
         <p>
-          Уже сейчас в браузере доступны уровни, цели и комбо‑каскады. В
-          ближайших итерациях добавим игру по ходам, расширенные цели, бустеры и
-          мета‑слой с персонажем и историей.
+          Уровни, цели и комбо‑каскады. Широкий выбор игровых и визуальных
+          настроек. Выбирай своего персонажа и делай историю вместе с ним!
         </p>
         <div className="hero__actions">
           <Link className="btn btn--primary" to="/game">
