@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { ThemeProvider } from '@gravity-ui/uikit'
-import { store } from './store'
+import { applySsrClientReconciliation, store } from './store'
 import { routes } from './routes'
 import { LandingThemeProvider } from './contexts/LandingThemeContext'
 import { ThemeServerSync } from './components/ThemeServerSync'
@@ -86,6 +86,8 @@ const root = <React.StrictMode>{app}</React.StrictMode>
 
 if (canHydrate) {
   ReactDOM.hydrateRoot(rootElement, root)
+  applySsrClientReconciliation()
 } else {
+  applySsrClientReconciliation()
   ReactDOM.createRoot(rootElement).render(root)
 }

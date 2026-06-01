@@ -3,44 +3,37 @@
 // возвращает статус: loading | allowed | denied
 
 import { useEffect } from 'react'
-import {
-  useDispatch,
-  useSelector,
-} from '../store'
+import { useDispatch, useSelector } from '../store'
 import {
   fetchUserThunk,
   selectUser,
   selectUserIsAuthChecked,
   selectUserIsLoading,
 } from '../slices/userSlice'
+import { selectPageHasBeenInitializedOnServer } from '../slices/ssrSlice'
 
-export type AuthGuardStatus =
-  | 'loading'
-  | 'allowed'
-  | 'denied'
+export type AuthGuardStatus = 'loading' | 'allowed' | 'denied'
 
-export const useAuthGuard =
-  (): AuthGuardStatus => {
-    const dispatch = useDispatch()
-    const user = useSelector(selectUser)
-    const isAuthChecked = useSelector(
-      selectUserIsAuthChecked
-    )
-    const isLoading = useSelector(
-      selectUserIsLoading
-    )
+export const useAuthGuard = (): AuthGuardStatus => {
+  const dispatch = useDispatch()
+  const user = useSelector(selectUser)
+  const isAuthChecked = useSelector(selectUserIsAuthChecked)
+  const isLoading = useSelector(selectUserIsLoading)
+  const pageInitOnServer = useSelector(selectPageHasBeenInitializedOnServer)
 
-    useEffect(() => {
-      const needsSessionCheck =
-        !isAuthChecked || (!user && !isLoading)
-      if (needsSessionCheck) {
-        void dispatch(fetchUserThunk())
-      }
-    }, [dispatch, isAuthChecked, isLoading, user])
-
-    if (!isAuthChecked || isLoading) {
-      return 'loading'
+  useEffect(() => {
+    const needsSessionCheck = !isAuthChecked || (!user && !isLoading)
+    if (needsSessionCheck) {
+      void dispatch(fetchUserThunk())
     }
+  }, [dispatch, isAuthChecked, isLoading, user])
 
-    return user ? 'allowed' : 'denied'
+  const showLoading =
+    !isAuthChecked || (isLoading && !(pageInitOnServer && isAuthChecked))
+
+  if (showLoading) {
+    return 'loading'
   }
+
+  return user ? 'allowed' : 'denied'
+}

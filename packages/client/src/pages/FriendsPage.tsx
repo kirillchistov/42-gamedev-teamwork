@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from '../store'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
-import { Button } from '../shared/ui'
+import { LeaderboardFriendToggle } from '../components/LeaderboardFriendToggle'
 import {
   fetchFriendsThunk,
   removeFriendThunk,
@@ -69,22 +69,22 @@ export const FriendsPage = () => {
           {isLoading ? (
             <p>Загрузка списка…</p>
           ) : friends.length === 0 ? (
-            <p>Список пуст. Откройте лидерборд и нажмите «В друзья».</p>
+            <p>
+              Список пуст. Откройте лидерборд и добавьте игроков кнопкой с
+              иконкой «+».
+            </p>
           ) : (
             <ul className="leaderboard-friends-list">
               {friends.map(friend => (
                 <li key={friend.nickname}>
                   <span>{friend.displayName || friend.nickname}</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="leaderboard-friend-btn"
+                  <LeaderboardFriendToggle
+                    isFriend
                     onClick={() => {
                       dispatch(clearFriendsActionError())
                       void dispatch(removeFriendThunk(friend.nickname))
-                    }}>
-                    Убрать
-                  </Button>
+                    }}
+                  />
                 </li>
               ))}
             </ul>

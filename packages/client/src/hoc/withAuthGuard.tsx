@@ -22,6 +22,7 @@ export function withAuthGuard<P extends object>(
     const location = useLocation()
     const { theme } = useLandingTheme()
     const [arenaBgTick, setArenaBgTick] = useState(0)
+    const [shellReady, setShellReady] = useState(false)
 
     const isGameRoute = location.pathname.startsWith('/game')
 
@@ -31,6 +32,7 @@ export function withAuthGuard<P extends object>(
     }, [arenaBgTick])
 
     useEffect(() => {
+      setShellReady(true)
       const bump = () => setArenaBgTick(n => n + 1)
       bump()
       const onStorage = (e: StorageEvent) => {
@@ -46,7 +48,8 @@ export function withAuthGuard<P extends object>(
       }
     }, [])
 
-    const showShellArena = Boolean(resolvedArenaUrl) && !isGameRoute
+    const showShellArena =
+      shellReady && Boolean(resolvedArenaUrl) && !isGameRoute
 
     const shellStyle = showShellArena
       ? ({

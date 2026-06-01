@@ -162,7 +162,7 @@ export function SlideGame() {
         {user ? 'Открыть /game/start' : 'Войти и открыть игру'}
       </button>
       <p className="presentation-slide__note">
-        Презентация останется открытой — можно продолжить листать слайды.
+        Игра откроется в новой вкладке (после логина).
       </p>
     </div>
   )

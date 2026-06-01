@@ -31,6 +31,7 @@ import {
 } from '../slices/userSlice'
 import { usePage } from '../hooks/usePage'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
+import { LeaderboardFriendToggle } from '../components/LeaderboardFriendToggle'
 import { Button } from '../shared/ui'
 import {
   compareLeaderboardRecordDates,
@@ -135,13 +136,10 @@ export function LeaderboardPage() {
     }
     const isFriend = friendNicknames.has(entry.nickname)
     return (
-      <Button
-        type="button"
-        variant={isFriend ? 'outline' : 'primary'}
-        className="leaderboard-friend-btn"
-        onClick={() => handleToggleFriend(entry)}>
-        {isFriend ? 'Убрать' : 'В друзья'}
-      </Button>
+      <LeaderboardFriendToggle
+        isFriend={isFriend}
+        onClick={() => handleToggleFriend(entry)}
+      />
     )
   }
 
@@ -201,7 +199,7 @@ export function LeaderboardPage() {
       <Header />
 
       <main className="auth-main">
-        <div className="auth-card auth-card--wide">
+        <div className="auth-card auth-card--wide auth-card--leaderboard">
           <h1>Лидерборд</h1>
           <p className="auth-note">
             Добавляйте игроков из таблицы в «Друзья» — фильтр покажет только их
@@ -253,57 +251,84 @@ export function LeaderboardPage() {
           {viewMode === 'table' ? (
             <div className="extra-card leaderboard-card">
               <h3>Таблица рекордов</h3>
-              <table className="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>{sortLabel('rank', '#')}</th>
-                    <th>{sortLabel('nickname', 'Игрок')}</th>
-                    <th>{sortLabel('CM42_score', 'Рейтинг')}</th>
-                    <th>{sortLabel('bestScore', 'Рекорд')}</th>
-                    <th>{sortLabel('bestScoreDate', 'Дата рекорда')}</th>
-                    <th>Друзья</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!isLoadingResults && sortedEntries.length === 0 && (
+              <div className="leaderboard-table-scroll">
+                <table className="leaderboard-table">
+                  <thead>
                     <tr>
-                      <td colSpan={6}>
-                        {showFriendsOnly
-                          ? 'Нет записей среди ваших друзей.'
-                          : 'Записей пока нет.'}
-                      </td>
+                      <th className="leaderboard-table__col--rank">
+                        {sortLabel('rank', '#')}
+                      </th>
+                      <th className="leaderboard-table__col--player">
+                        {sortLabel('nickname', 'Игрок')}
+                      </th>
+                      <th className="leaderboard-table__col--num">
+                        {sortLabel('CM42_score', 'Рейтинг')}
+                      </th>
+                      <th className="leaderboard-table__col--num">
+                        {sortLabel('bestScore', 'Рекорд')}
+                      </th>
+                      <th className="leaderboard-table__col--date">
+                        {sortLabel('bestScoreDate', 'Дата')}
+                      </th>
+                      <th className="leaderboard-table__col--friends">
+                        Друзья
+                      </th>
                     </tr>
-                  )}
-                  {!isLoadingResults &&
-                    sortedEntries.map((entry, index) => (
-                      <tr key={entry.id}>
-                        <td>{index + 1}</td>
-                        <td>
-                          <span className="leaderboard-player">
-                            <span className="leaderboard-avatar">
-                              {entry.avatar ? (
-                                <img
-                                  src={`${getApiResourcesUrl()}${entry.avatar}`}
-                                />
-                              ) : (
-                                <div>👤</div>
-                              )}
-                            </span>
-                            <span>{entry.nickname || 'Gaius Anonimous'}</span>
-                          </span>
+                  </thead>
+                  <tbody>
+                    {!isLoadingResults && sortedEntries.length === 0 && (
+                      <tr>
+                        <td colSpan={6}>
+                          {showFriendsOnly
+                            ? 'Нет записей среди ваших друзей.'
+                            : 'Записей пока нет.'}
                         </td>
-                        <td>{entry.CM42_score}</td>
-                        <td>{entry.bestScore}</td>
-                        <td>
-                          {formatLeaderboardRecordDateForDisplay(
-                            entry.bestScoreDate
-                          )}
-                        </td>
-                        <td>{renderFriendToggle(entry)}</td>
                       </tr>
-                    ))}
-                </tbody>
-              </table>
+                    )}
+                    {!isLoadingResults &&
+                      sortedEntries.map((entry, index) => (
+                        <tr key={entry.id}>
+                          <td className="leaderboard-table__col--rank">
+                            {index + 1}
+                          </td>
+                          <td className="leaderboard-table__col--player">
+                            <span className="leaderboard-player">
+                              <span className="leaderboard-avatar">
+                                {entry.avatar ? (
+                                  <img
+                                    src={`${getApiResourcesUrl()}${
+                                      entry.avatar
+                                    }`}
+                                    alt=""
+                                  />
+                                ) : (
+                                  <div>👤</div>
+                                )}
+                              </span>
+                              <span className="leaderboard-player__name">
+                                {entry.nickname || 'Gaius Anonimous'}
+                              </span>
+                            </span>
+                          </td>
+                          <td className="leaderboard-table__col--num">
+                            {entry.CM42_score}
+                          </td>
+                          <td className="leaderboard-table__col--num">
+                            {entry.bestScore}
+                          </td>
+                          <td className="leaderboard-table__col--date">
+                            {formatLeaderboardRecordDateForDisplay(
+                              entry.bestScoreDate
+                            )}
+                          </td>
+                          <td className="leaderboard-table__col--friends">
+                            {renderFriendToggle(entry)}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
               {isLoadingResults && (
                 <div className="leaderboard-card-loader">
                   Идет загрузка лучших результатов...
@@ -375,16 +400,13 @@ export function LeaderboardPage() {
                 {friends.map(friend => (
                   <li key={friend.nickname}>
                     <span>{friend.displayName || friend.nickname}</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="leaderboard-friend-btn"
+                    <LeaderboardFriendToggle
+                      isFriend
                       onClick={() => {
                         dispatch(clearFriendsActionError())
                         void dispatch(removeFriendThunk(friend.nickname))
-                      }}>
-                      Убрать
-                    </Button>
+                      }}
+                    />
                   </li>
                 ))}
               </ul>

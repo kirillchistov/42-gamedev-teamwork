@@ -103,4 +103,35 @@
   .leaderboard-grid-item {
     padding: 8px 0;
   }
+
+  .leaderboard-toolbar__left,
+  .leaderboard-toolbar__right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .leaderboard-table {
+    min-width: 28rem;
+    font-size: 12px;
+  }
+
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 6px 5px;
+  }
+}
+
+@media (max-width: 479px) {
+  .leaderboard-table__col--date {
+    display: none;
+  }
+
+  .leaderboard-table {
+    min-width: 22rem;
+  }
+
+  .auth-card--leaderboard {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
