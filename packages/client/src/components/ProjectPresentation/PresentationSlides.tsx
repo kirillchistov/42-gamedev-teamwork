@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState, type CSSProperties } from 'react'
 
 import { TEAM_MEMBERS } from '../Landing/teamData'
 import { appRouteUrl } from '../../utils/publicAssetUrl'
@@ -8,9 +8,30 @@ import {
   CHALLENGES,
   CLIENT_STACK,
   HTTP_APIS_OVERVIEW_URL,
+  LEARNING_GALAXY,
   SERVER_STACK,
   techIconUrl,
 } from './presentationData'
+import { PresentationGameBoardPreview } from './PresentationGameBoardPreview'
+
+function TeamTaskTag({ label }: { label: string }) {
+  const space = label.indexOf(' ')
+  const firstWord = space > 0 ? label.slice(0, space) : label
+  const hasMore = space > 0
+
+  return (
+    <li className="presentation-team__tag" title={label}>
+      <span className="presentation-team__tag-text">
+        <span className="presentation-team__tag-first">{firstWord}</span>
+        {hasMore ? (
+          <span className="presentation-team__tag-more" aria-hidden>
+            …
+          </span>
+        ) : null}
+      </span>
+    </li>
+  )
+}
 
 function TeamAvatar({
   avatarUrl,
@@ -54,20 +75,36 @@ export function SlideTeam() {
               name={member.name}
               size="lg"
             />
-            <div className="presentation-team__body">
-              <h3>{member.name}</h3>
-              <p className="presentation-team__role">{member.role}</p>
-              <ul className="presentation-team__tasks">
-                {member.responsibilities.map(task => (
-                  <li key={task}>{task}</li>
-                ))}
-              </ul>
+            <div className="presentation-team__main">
+              <p
+                className="presentation-team__title"
+                title={`${member.name} / ${member.role}`}>
+                <span className="presentation-team__name">{member.name}</span>
+                <span className="presentation-team__sep"> / </span>
+                <span className="presentation-team__role">{member.role}</span>
+              </p>
             </div>
+            <ul className="presentation-team__tasks">
+              {member.responsibilities.map(task => (
+                <TeamTaskTag key={task} label={task} />
+              ))}
+            </ul>
           </li>
         ))}
       </ul>
     </div>
   )
+}
+
+function planetPosition(
+  starX: number,
+  starY: number,
+  planet: { angleDeg: number; radiusPct: number }
+): CSSProperties {
+  const rad = (planet.angleDeg * Math.PI) / 180
+  const left = starX + planet.radiusPct * Math.cos(rad)
+  const top = starY + planet.radiusPct * Math.sin(rad)
+  return { left: `${left}%`, top: `${top}%` }
 }
 
 function StackColumn({
@@ -78,7 +115,7 @@ function StackColumn({
   items: ReadonlyArray<{ label: string; icon: string | null }>
 }) {
   return (
-    <div className="presentation-stack__column">
+    <div className="presentation-stack__column presentation-panel">
       <h3>{title}</h3>
       <ul className="presentation-stack__list">
         {items.map(item => (
@@ -105,7 +142,7 @@ function StackColumn({
 function ArchitectureDiagram() {
   return (
     <figure
-      className="presentation-arch presentation-arch--http"
+      className="presentation-arch presentation-arch--http presentation-panel"
       aria-label="HTTP-слои проекта">
       <img
         src={HTTP_APIS_OVERVIEW_URL}
@@ -119,12 +156,6 @@ function ArchitectureDiagram() {
 export function SlideStack() {
   const [showDiagram, setShowDiagram] = useState(false)
 
-  useEffect(() => {
-    setShowDiagram(false)
-    const timer = window.setTimeout(() => setShowDiagram(true), 2000)
-    return () => window.clearTimeout(timer)
-  }, [])
-
   return (
     <div className="presentation-slide presentation-slide--stack">
       <div
@@ -134,12 +165,32 @@ export function SlideStack() {
             : 'presentation-stack__swap presentation-stack__swap--list'
         }>
         {!showDiagram ? (
-          <div className="presentation-stack__columns">
-            <StackColumn title="Клиент" items={CLIENT_STACK} />
-            <StackColumn title="Сервер" items={SERVER_STACK} />
-          </div>
+          <>
+            <div className="presentation-stack__columns">
+              <StackColumn title="Клиент" items={CLIENT_STACK} />
+              <StackColumn title="Сервер" items={SERVER_STACK} />
+            </div>
+            <div className="presentation-slide__actions">
+              <button
+                type="button"
+                className="presentation-btn presentation-btn--primary"
+                onClick={() => setShowDiagram(true)}>
+                Блок-схема
+              </button>
+            </div>
+          </>
         ) : (
-          <ArchitectureDiagram />
+          <>
+            <ArchitectureDiagram />
+            <div className="presentation-slide__actions">
+              <button
+                type="button"
+                className="presentation-btn presentation-btn--ghost"
+                onClick={() => setShowDiagram(false)}>
+                ← К стеку
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -156,11 +207,18 @@ export function SlideGame() {
 
   return (
     <div className="presentation-slide presentation-slide--game">
-      <p>Cosmic Match — match‑3 с уровнями, квестами, HUD и пр.</p>
-      <p>Лучше всего посмотреть на игру в действии.</p>
-      <button type="button" className="btn btn--primary" onClick={openGame}>
-        {user ? 'Открыть /game/start' : 'Войти и открыть игру'}
-      </button>
+      <p className="presentation-game__lead">
+        Cosmic Match — match‑3 с уровнями, квестами, HUD и космической темой.
+      </p>
+      <PresentationGameBoardPreview onOpen={openGame} />
+      <div className="presentation-slide__actions presentation-slide__actions--center">
+        <button
+          type="button"
+          className="presentation-btn presentation-btn--primary"
+          onClick={openGame}>
+          {user ? 'Открыть /game/start' : 'Войти и открыть игру'}
+        </button>
+      </div>
       <p className="presentation-slide__note">
         Игра откроется в новой вкладке (после логина).
       </p>
@@ -173,7 +231,9 @@ export function SlideChallenges() {
     <div className="presentation-slide presentation-slide--challenges">
       <ul className="presentation-challenges">
         {CHALLENGES.map(item => (
-          <li key={item.id} className="presentation-challenges__item">
+          <li
+            key={item.id}
+            className="presentation-challenges__item presentation-panel">
             <img
               src={item.image}
               alt=""
@@ -193,27 +253,93 @@ export function SlideChallenges() {
 }
 
 export function SlideLearning() {
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const active =
+    LEARNING_GALAXY.find(s => s.id === activeId) ?? LEARNING_GALAXY[0]
+
   return (
     <div className="presentation-slide presentation-slide--learning">
-      <ul className="presentation-learning__list">
-        <li>
-          Разделение UI и игрового runtime, тесты на критичную логику,
-          итеративная доставка без поломки ядра игры.
-        </li>
-        <li>
-          <strong>Командное взаимодействие</strong> — распределение зон, code
-          review и общие стандарты в монорепо.
-        </li>
-        <li>
-          <strong>Тайм-менеджмент</strong> — спринты, приоритеты и доведение фич
-          до рабочего демо.
-        </li>
-        <li>
-          <strong>Самостоятельное освоение</strong> — Web API, SSR, Docker и
-          облако по документации и экспериментам.
-        </li>
-      </ul>
-      <p className="presentation-learning__thanks">СПАСИБО!</p>
+      <div
+        className="presentation-galaxy"
+        role="img"
+        aria-label="Галактика выводов">
+        <div className="presentation-galaxy__sky" aria-hidden>
+          {Array.from({ length: 48 }, (_, i) => (
+            <span
+              key={i}
+              className="presentation-galaxy__dust"
+              style={
+                {
+                  ['--i' as string]: String(i),
+                  left: `${(i * 17) % 100}%`,
+                  top: `${(i * 23) % 100}%`,
+                } as CSSProperties
+              }
+            />
+          ))}
+        </div>
+        <div className="presentation-galaxy__core" aria-hidden />
+        <div
+          className="presentation-galaxy__arm presentation-galaxy__arm--a"
+          aria-hidden
+        />
+        <div
+          className="presentation-galaxy__arm presentation-galaxy__arm--b"
+          aria-hidden
+        />
+
+        {LEARNING_GALAXY.map(star =>
+          star.planets.map(planet => (
+            <span
+              key={`${star.id}-${planet.label}`}
+              className={
+                activeId === star.id ||
+                (activeId == null && star.id === active.id)
+                  ? 'presentation-galaxy__planet presentation-galaxy__planet--lit'
+                  : 'presentation-galaxy__planet'
+              }
+              style={planetPosition(star.x, star.y, planet)}
+              title={planet.label}>
+              <span className="presentation-galaxy__planet-body" aria-hidden />
+              <span className="presentation-galaxy__planet-label">
+                {planet.label}
+              </span>
+            </span>
+          ))
+        )}
+
+        {LEARNING_GALAXY.map(star => (
+          <button
+            key={star.id}
+            type="button"
+            className={
+              activeId === star.id ||
+              (activeId == null && star.id === active.id)
+                ? 'presentation-galaxy__star presentation-galaxy__star--active'
+                : 'presentation-galaxy__star'
+            }
+            style={{ left: `${star.x}%`, top: `${star.y}%` }}
+            onClick={() => setActiveId(star.id)}
+            aria-pressed={activeId === star.id}>
+            <span className="presentation-galaxy__star-glow" aria-hidden />
+            <span className="presentation-galaxy__star-core" aria-hidden />
+            <span className="presentation-galaxy__star-label">
+              {star.short}
+            </span>
+          </button>
+        ))}
+
+        <p className="presentation-galaxy__thanks">СПАСИБО</p>
+      </div>
+
+      <div className="presentation-galaxy__detail presentation-panel">
+        <p>{active.text}</p>
+        <ul className="presentation-galaxy__detail-planets">
+          {active.planets.map(p => (
+            <li key={p.label}>{p.label}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }

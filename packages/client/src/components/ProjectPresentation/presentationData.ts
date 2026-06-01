@@ -45,6 +45,90 @@ export const CHALLENGES = [
   },
 ] as const
 
+export type LearningPlanet = {
+  label: string
+  /** Угол орбиты в градусах относительно звезды */
+  angleDeg: number
+  /** Расстояние от звезды, % от размера галактики */
+  radiusPct: number
+}
+
+export const LEARNING_GALAXY = [
+  {
+    id: 'architecture',
+    short: 'Архитектура',
+    text: 'Разделение UI и игрового runtime, итеративная доставка без поломки ядра игры.',
+    x: 14,
+    y: 20,
+    planets: [
+      { label: 'Декомпозиция', angleDeg: -58, radiusPct: 12 },
+      { label: 'Тесты', angleDeg: -12, radiusPct: 14 },
+      { label: 'Итерации', angleDeg: 38, radiusPct: 12 },
+    ],
+  },
+  {
+    id: 'team',
+    short: 'Команда',
+    text: 'Командное взаимодействие — распределение зон и общие стандарты в монорепо.',
+    x: 82,
+    y: 16,
+    planets: [
+      { label: 'Приоритеты', angleDeg: -42, radiusPct: 11 },
+      { label: 'Тайм-менеджмент', angleDeg: 8, radiusPct: 13 },
+    ],
+  },
+  {
+    id: 'time',
+    short: 'Спринты',
+    text: 'Спринты, приоритеты и доведение фич до рабочего демо.',
+    x: 10,
+    y: 78,
+    planets: [
+      { label: 'Коммуникация', angleDeg: -35, radiusPct: 12 },
+      { label: 'Внутренние ревью', angleDeg: 5, radiusPct: 14 },
+      { label: 'Стандарты кодинга', angleDeg: 42, radiusPct: 12 },
+    ],
+  },
+  {
+    id: 'self',
+    short: 'Рост',
+    text: 'Самостоятельное освоение технологий по документации и экспериментам.',
+    x: 86,
+    y: 74,
+    planets: [
+      { label: 'Самообучение', angleDeg: -48, radiusPct: 11 },
+      { label: 'Документация', angleDeg: -18, radiusPct: 13 },
+      { label: 'Освоение разных API', angleDeg: 12, radiusPct: 14 },
+      { label: 'Эксперименты', angleDeg: 44, radiusPct: 11 },
+    ],
+  },
+] as const
+
+export const PRESENTATION_BG_URL = publicAssetUrl('icons/bgcosmic2.jpg')
+
+/** 8×8 раскладка «камней» для превью поля (индексы 0–7). */
+export const GAME_BOARD_PREVIEW: readonly (number | null)[][] = [
+  [0, 1, 2, 3, 4, 5, 6, 7],
+  [3, 4, 5, 6, 7, 0, 1, 2],
+  [6, 7, 0, 1, 2, 3, 4, 5],
+  [1, 2, 3, 4, 5, 6, 7, 0],
+  [4, 5, 6, 7, 0, 1, 2, 3],
+  [7, 0, 1, 2, 3, 4, 5, 6],
+  [2, 3, 4, 5, 6, 7, 0, 1],
+  [5, 6, 7, 0, 1, 2, 3, 4],
+]
+
+export const GAME_GEM_COLORS = [
+  '#38bdf8',
+  '#a78bfa',
+  '#f472b6',
+  '#fbbf24',
+  '#34d399',
+  '#f87171',
+  '#22d3ee',
+  '#818cf8',
+] as const
+
 export const HTTP_APIS_OVERVIEW_URL = publicAssetUrl(
   'docs/http-apis-overview.svg'
 )

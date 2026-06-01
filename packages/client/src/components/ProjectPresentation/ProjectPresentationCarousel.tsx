@@ -1,4 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+  type CSSProperties,
+} from 'react'
 import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 
@@ -9,6 +14,7 @@ import {
   SlideStack,
   SlideTeam,
 } from './PresentationSlides'
+import { PRESENTATION_BG_URL } from './presentationData'
 import './ProjectPresentation.pcss'
 
 const SLIDES = [
@@ -123,15 +129,25 @@ export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
   return createPortal(
     <div
       className="match3-presentation-fullscreen"
+      style={
+        {
+          ['--pres-bg-url' as string]: `url("${PRESENTATION_BG_URL}")`,
+        } as CSSProperties
+      }
       role="dialog"
       aria-modal="true"
       aria-label="Презентация проекта Cosmic Match">
-      <button
-        type="button"
-        className="match3-presentation-fullscreen__close"
-        onClick={close}>
-        Закрыть
-      </button>
+      <div className="match3-presentation-fullscreen__topbar">
+        <span className="match3-presentation-fullscreen__counter">
+          Презентация проекта Cosmic Match · {index + 1} / {total}
+        </span>
+        <button
+          type="button"
+          className="match3-presentation-fullscreen__close"
+          onClick={close}>
+          Закрыть
+        </button>
+      </div>
 
       <button
         type="button"
@@ -142,9 +158,6 @@ export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
       </button>
 
       <div className="match3-presentation-fullscreen__content">
-        <span className="match3-presentation-fullscreen__counter">
-          Презентация проекта Cosmic Match · {index + 1} / {total}
-        </span>
         <h2>{slide.title}</h2>
         <div className="match3-presentation-fullscreen__body">
           <SlideBody slideId={slide.id} />
