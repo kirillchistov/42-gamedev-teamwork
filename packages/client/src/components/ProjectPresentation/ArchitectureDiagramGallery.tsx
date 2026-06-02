@@ -73,9 +73,9 @@ export function ArchitectureDiagramGallery({ onBack }: Props) {
         </span>
       </div>
 
-      <p className="presentation-diagram-gallery__hint">
+      {/* <p className="presentation-diagram-gallery__hint">
         От общего к частному · свайп по схеме или вкладки ниже
-      </p>
+      </p> */}
 
       <figure
         className="presentation-arch presentation-arch--http presentation-panel presentation-diagram-gallery__figure"

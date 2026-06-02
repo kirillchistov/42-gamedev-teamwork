@@ -75,6 +75,18 @@ function ChevronRight() {
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  initialSlide?: number
+}
+
+function normalizeStartIndex(
+  slideNumber: number | undefined,
+  total: number
+): number {
+  if (!Number.isFinite(slideNumber)) return 0
+  const n = Math.trunc(slideNumber as number)
+  if (n <= 1) return 0
+  if (n >= total) return total - 1
+  return n - 1
 }
 
 function SlideBody({ slideId }: { slideId: typeof SLIDES[number]['id'] }) {
@@ -124,7 +136,11 @@ function SlideDots({ index, onSelect, className }: SlideDotsProps) {
   )
 }
 
-export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
+export function ProjectPresentationCarousel({
+  open,
+  onOpenChange,
+  initialSlide,
+}: Props) {
   const [index, setIndex] = useState(0)
   const [compactNav, setCompactNav] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -189,8 +205,9 @@ export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
   }, [open])
 
   useEffect(() => {
-    if (open) setIndex(0)
-  }, [open])
+    if (!open) return
+    setIndex(normalizeStartIndex(initialSlide, total))
+  }, [open, initialSlide, total])
 
   const onSwipeTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement
