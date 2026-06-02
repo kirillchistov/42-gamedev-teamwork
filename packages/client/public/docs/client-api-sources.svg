@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 516" role="img" aria-labelledby="title desc">
+  <title id="title">Источники API на клиенте</title>
+  <desc id="desc">Браузер: относительные пути через SSR apiProxy; SSR: VITE_APP_API_URL; GitHub Pages — прямой вызов Практикума.</desc>
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0b1220"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <polygon points="0 0, 8 4, 0 8" fill="#64748b"/>
+    </marker>
+    <style>
+      .col{fill:#0f172a;stroke:#475569;stroke-width:1;rx:12}
+      .row{fill:#334155;stroke:#64748b;stroke-width:1.2;rx:8}
+      .h{fill:#38bdf8;font:700 13px system-ui,sans-serif;text-anchor:middle}
+      .t{fill:#f8fafc;font:600 12px system-ui,sans-serif;text-anchor:middle}
+      .m{fill:#cbd5e1;font:10px ui-monospace,monospace;text-anchor:middle}
+      .note{fill:#94a3b8;font:10px system-ui,sans-serif;text-anchor:middle}
+      .edge{stroke:#64748b;stroke-width:1.5;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg2)"/>
+  <text x="440" y="32" class="h" font-size="16">Клиент: куда уходят запросы</text>
+  <text x="440" y="52" class="m">constants.tsx — в браузере относительные URL + apiProxy на SSR (порт 9000)</text>
+
+  <rect x="32" y="72" width="380" height="320" class="col"/>
+  <text x="222" y="98" class="h">Практикум (через /api/v2)</text>
+  <text x="222" y="116" class="m">BASE_URL = /api/v2 в браузере</text>
+
+  <rect x="48" y="132" width="348" height="48" class="row"/>
+  <text x="222" y="152" class="t">apiClient, userApi</text>
+  <text x="222" y="168" class="m">профиль, logout, аватар</text>
+
+  <rect x="48" y="188" width="348" height="48" class="row"/>
+  <text x="222" y="208" class="t">userSlice</text>
+  <text x="222" y="224" class="m">sign-in, sign-up</text>
+
+  <rect x="48" y="244" width="348" height="48" class="row"/>
+  <text x="222" y="264" class="t">oauthApi.ts</text>
+  <text x="222" y="280" class="m">OAuth Яндекс</text>
+
+  <rect x="48" y="300" width="348" height="48" class="row"/>
+  <text x="222" y="320" class="t">leaderboardApi.ts</text>
+  <text x="222" y="336" class="m">GET /leaderboard</text>
+
+  <rect x="468" y="72" width="380" height="260" class="col"/>
+  <text x="658" y="98" class="h">Наш Node API (same-origin)</text>
+  <text x="658" y="116" class="m">SERVER_HOST = пусто в браузере</text>
+
+  <rect x="484" y="132" width="348" height="48" class="row"/>
+  <text x="658" y="152" class="t">forumApi.ts</text>
+  <text x="658" y="168" class="m">/api/forum/* + credentials</text>
+
+  <rect x="484" y="188" width="348" height="48" class="row"/>
+  <text x="658" y="208" class="t">friendsSlice.ts</text>
+  <text x="658" y="224" class="m">GET /friends</text>
+
+  <rect x="484" y="244" width="348" height="48" class="row"/>
+  <text x="658" y="264" class="t">themeApi.ts</text>
+  <text x="658" y="280" class="m">GET/PUT /api/ui/theme</text>
+
+  <rect x="468" y="348" width="380" height="80" class="col"/>
+  <text x="658" y="374" class="h">Только SSR (Node fetch)</text>
+  <text x="658" y="392" class="m">VITE_APP_API_URL → localhost:3000</text>
+  <text x="658" y="408" class="m">initForumPage, prefetch друзей</text>
+
+  <rect x="32" y="432" width="816" height="72" class="col"/>
+  <text x="440" y="458" class="h">GitHub Pages (статика)</text>
+  <text x="440" y="474" class="m">BASE_URL = ya-praktikum.tech/api/v2</text>
+  <text x="440" y="490" class="m">форум и друзья недоступны (нет Node)</text>
+
+  <path class="edge" d="M 412 200 L 468 200"/>
+  <text x="440" y="192" class="note">apiProxy</text>
+
+  <text x="440" y="508" class="m">packages/client/server/apiProxy.ts — /api/v2 и /api/forum на Практикум и server</text>
+</svg>

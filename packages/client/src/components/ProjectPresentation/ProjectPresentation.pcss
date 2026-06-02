@@ -38,12 +38,14 @@
   z-index: 1200;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-rows: 1fr;
+  align-items: stretch;
   gap: 12px;
   padding: 24px clamp(12px, 3vw, 40px);
   box-sizing: border-box;
   color: #e2e8f0;
   overflow: hidden;
+  min-height: 100dvh;
   background-color: #020617;
   background-image:
     linear-gradient(
@@ -101,16 +103,67 @@
 }
 
 .match3-presentation-fullscreen__topbar {
+  --pres-topbar-control-height: 40px;
   position: absolute;
   top: 16px;
   left: clamp(12px, 3vw, 40px);
   right: clamp(12px, 3vw, 40px);
   z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 12px;
+  pointer-events: none;
+}
+
+.match3-presentation-fullscreen--compact-nav
+  .match3-presentation-fullscreen__topbar {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+
+.match3-presentation-fullscreen__header-nav {
+  pointer-events: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  pointer-events: none;
+  justify-content: center;
+  align-self: stretch;
+  gap: 8px;
+  min-height: var(--pres-topbar-control-height);
+  padding: 0;
+}
+
+.match3-presentation-fullscreen--compact-nav
+  .match3-presentation-fullscreen__counter {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.match3-presentation-fullscreen--compact-nav
+  .match3-presentation-fullscreen__header-nav {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.match3-presentation-fullscreen--compact-nav
+  .match3-presentation-fullscreen__close {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.match3-presentation-fullscreen__nav--header {
+  width: 36px;
+  height: 36px;
+}
+
+.match3-presentation-fullscreen__nav--inline {
+  width: 40px;
+  height: 40px;
+}
+
+.match3-presentation-fullscreen__dots--header {
+  margin: 0;
+  gap: 6px;
 }
 
 .match3-presentation-fullscreen__topbar > * {
@@ -118,9 +171,13 @@
 }
 
 .match3-presentation-fullscreen__counter {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
   margin: 0;
   padding: 8px 14px;
+  min-height: var(--pres-topbar-control-height);
   border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
@@ -129,7 +186,8 @@
   background: var(--pres-panel);
   border: 1px solid var(--pres-border);
   box-shadow: 0 0 20px rgba(56, 189, 248, 0.12);
-  max-width: min(70%, 520px);
+  width: fit-content;
+  max-width: min(68vw, 520px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -139,8 +197,10 @@
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 8px 14px;
+  min-height: var(--pres-topbar-control-height);
+  padding: 0 14px;
   border-radius: 10px;
   border: 1px solid var(--pres-border);
   background: var(--pres-panel);
@@ -154,6 +214,14 @@
     box-shadow 0.2s ease;
 }
 
+.match3-presentation-fullscreen__close-icon {
+  display: none;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 700;
+  transform: rotate(45deg);
+}
+
 .match3-presentation-fullscreen__close:hover {
   border-color: #7dd3fc;
   box-shadow: 0 0 24px rgba(56, 189, 248, 0.35);
@@ -162,21 +230,50 @@
 .match3-presentation-fullscreen__content {
   position: relative;
   z-index: 1;
+  grid-column: 2;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
   max-width: min(980px, 100%);
   width: 100%;
-  height: calc(100vh - 48px);
-  max-height: calc(100vh - 48px);
+  min-height: 0;
+  height: 100%;
   margin: 0 auto;
   text-align: center;
-  padding: 56px 8px 12px;
+  padding: 56px 8px 16px;
   box-sizing: border-box;
   overflow: hidden;
+  touch-action: pan-y;
+}
+
+.match3-presentation-fullscreen__content-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
+  flex: 0 1 auto;
 }
 
 .match3-presentation-fullscreen__content:has(.presentation-slide--team) {
   overflow: hidden;
+  justify-content: flex-start;
+}
+
+.match3-presentation-fullscreen__content:has(.presentation-slide--team)
+  .match3-presentation-fullscreen__content-inner {
+  flex: 1 1 auto;
+  height: 100%;
+  justify-content: flex-start;
+}
+
+.match3-presentation-fullscreen__content:has(.presentation-slide--team)
+  .match3-presentation-fullscreen__body {
+  flex: 1 1 auto;
+  max-height: none;
+  margin-bottom: 0;
 }
 
 .match3-presentation-fullscreen__content:not(:has(.presentation-slide--team)) {
@@ -196,14 +293,34 @@
 }
 
 .match3-presentation-fullscreen__body {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
+  max-height: min(72vh, 100%);
   text-align: left;
   margin-top: 4px;
   margin-bottom: 12px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.match3-presentation-fullscreen__footer-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.match3-presentation-fullscreen__dots--footer {
+  margin: 0;
+}
+
+.match3-presentation-fullscreen__content:not(:has(.presentation-slide--team))
+  .match3-presentation-fullscreen__body {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.4) transparent;
 }
 
 .match3-presentation-fullscreen__dots {
@@ -213,6 +330,7 @@
 .match3-presentation-fullscreen__nav {
   position: relative;
   z-index: 1;
+  align-self: center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -556,6 +674,153 @@
   border-radius: 10px;
   border: 1px solid rgba(56, 189, 248, 0.35);
   box-shadow: 0 12px 32px rgba(2, 6, 23, 0.45);
+}
+
+/* Галерея блок-схем (слайд «Стек») */
+
+.presentation-diagram-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: min(52vh, 440px);
+  touch-action: pan-y;
+}
+
+.presentation-diagram-gallery__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.presentation-diagram-gallery__back {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.presentation-diagram-gallery__counter {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #bae6fd;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(15, 23, 42, 0.65);
+}
+
+.presentation-diagram-gallery__hint {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.presentation-diagram-gallery__figure {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 10px;
+}
+
+.presentation-diagram-gallery__caption {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e0f2fe;
+  text-align: center;
+}
+
+.presentation-diagram-gallery__figure .presentation-arch__img {
+  flex: 1;
+  min-height: 0;
+  max-height: min(42vh, 360px);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.presentation-diagram-gallery__nav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.presentation-diagram-gallery__arrow {
+  width: 36px;
+  min-height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  background: rgba(15, 23, 42, 0.75);
+  color: #e0f2fe;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.presentation-diagram-gallery__arrow:hover {
+  border-color: #7dd3fc;
+  background: rgba(30, 58, 95, 0.85);
+}
+
+.presentation-diagram-gallery__tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.4) transparent;
+  touch-action: pan-x;
+}
+
+.presentation-diagram-gallery__tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.65);
+  color: #cbd5e1;
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.presentation-diagram-gallery__tab--active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.18);
+  color: #f0f9ff;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.presentation-diagram-gallery__tab-index {
+  font-weight: 800;
+  color: #7dd3fc;
+}
+
+.presentation-diagram-gallery__tab-label {
+  max-width: 7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-stack__swap--diagram {
+  min-height: min(56vh, 480px);
 }
 
 /* Игра — превью поля */
@@ -1025,20 +1290,42 @@
 @media (max-width: 720px) {
   .match3-presentation-fullscreen {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto auto;
-    padding-bottom: 16px;
-  }
-
-  .match3-presentation-fullscreen__nav--prev,
-  .match3-presentation-fullscreen__nav--next {
-    position: static;
-    justify-self: center;
+    padding-bottom: 12px;
   }
 
   .match3-presentation-fullscreen__content {
-    grid-row: 1;
-    order: -1;
-    padding-top: 56px;
+    grid-column: 1;
+    padding-top: 64px;
+  }
+
+  .match3-presentation-fullscreen--compact-nav
+    .match3-presentation-fullscreen__topbar {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-rows: auto;
+    align-items: center;
+    justify-items: stretch;
+  }
+
+  .match3-presentation-fullscreen--compact-nav
+    .match3-presentation-fullscreen__counter {
+    grid-column: 1;
+    grid-row: auto;
+    max-width: min(58vw, 360px);
+  }
+
+  .match3-presentation-fullscreen--compact-nav
+    .match3-presentation-fullscreen__header-nav {
+    grid-column: 2;
+    grid-row: auto;
+    width: auto;
+    justify-content: center;
+  }
+
+  .match3-presentation-fullscreen--compact-nav
+    .match3-presentation-fullscreen__close {
+    grid-column: 3;
+    grid-row: auto;
+    justify-self: end;
   }
 
   .presentation-stack__columns {
@@ -1055,6 +1342,43 @@
 
   .presentation-game-board {
     max-width: 100%;
+  }
+
+  .presentation-diagram-gallery__nav {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .presentation-diagram-gallery__arrow {
+    display: none;
+  }
+
+  .presentation-diagram-gallery__tabs {
+    order: -1;
+  }
+}
+
+@media (max-width: 999px) {
+  .match3-presentation-fullscreen__close {
+    width: var(--pres-topbar-control-height);
+    padding: 0;
+  }
+
+  .match3-presentation-fullscreen__close-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(100%);
+    white-space: nowrap;
+  }
+
+  .match3-presentation-fullscreen__close-icon {
+    display: block;
   }
 }
 

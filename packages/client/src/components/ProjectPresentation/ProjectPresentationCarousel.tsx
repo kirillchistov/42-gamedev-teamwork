@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
 } from 'react'
@@ -24,6 +25,12 @@ const SLIDES = [
   { id: 'challenges', title: 'Сложности и решения' },
   { id: 'learning', title: 'Главное из обучения' },
 ] as const
+
+const SWIPE_THRESHOLD_PX = 56
+const COMPACT_NAV_MAX_HEIGHT = 700
+const COMPACT_NAV_MAX_WIDTH = 760
+const TRACKPAD_SWIPE_THRESHOLD_PX = 90
+const TRACKPAD_SWIPE_COOLDOWN_MS = 380
 
 function ChevronLeft() {
   return (
@@ -87,8 +94,43 @@ function SlideBody({ slideId }: { slideId: typeof SLIDES[number]['id'] }) {
   }
 }
 
+type SlideDotsProps = {
+  index: number
+  onSelect: (i: number) => void
+  className?: string
+}
+
+function SlideDots({ index, onSelect, className }: SlideDotsProps) {
+  return (
+    <div
+      className={clsx('match3-presentation__dots', className)}
+      role="tablist"
+      aria-label="Слайды презентации">
+      {SLIDES.map((s, i) => (
+        <button
+          key={s.id}
+          type="button"
+          role="tab"
+          aria-selected={i === index}
+          aria-label={`Слайд ${i + 1}: ${s.title}`}
+          className={clsx(
+            'match3-presentation__dot',
+            i === index && 'match3-presentation__dot--active'
+          )}
+          onClick={() => onSelect(i)}
+        />
+      ))}
+    </div>
+  )
+}
+
 export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
   const [index, setIndex] = useState(0)
+  const [compactNav, setCompactNav] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const swipeStartX = useRef<number | null>(null)
+  const trackpadDeltaX = useRef(0)
+  const trackpadLastSwitchAt = useRef(0)
   const total = SLIDES.length
   const slide = SLIDES[index]
 
@@ -101,6 +143,32 @@ export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
   const goNext = useCallback(() => {
     setIndex(i => (i + 1) % total)
   }, [total])
+
+  const updateCompactNav = useCallback(() => {
+    const h = window.visualViewport?.height ?? window.innerHeight
+    const w = window.innerWidth
+    const shouldCompact =
+      h <= COMPACT_NAV_MAX_HEIGHT || w <= COMPACT_NAV_MAX_WIDTH
+    setCompactNav(shouldCompact)
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    updateCompactNav()
+    const root = rootRef.current
+    const ro =
+      typeof ResizeObserver !== 'undefined' && root
+        ? new ResizeObserver(updateCompactNav)
+        : null
+    ro?.observe(root ?? document.documentElement)
+    window.addEventListener('resize', updateCompactNav)
+    window.visualViewport?.addEventListener('resize', updateCompactNav)
+    return () => {
+      ro?.disconnect()
+      window.removeEventListener('resize', updateCompactNav)
+      window.visualViewport?.removeEventListener('resize', updateCompactNav)
+    }
+  }, [open, updateCompactNav])
 
   useEffect(() => {
     if (!open) return
@@ -124,11 +192,76 @@ export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
     if (open) setIndex(0)
   }, [open])
 
+  const onSwipeTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement
+    if (
+      target.closest(
+        '.presentation-diagram-gallery, .presentation-diagram-gallery__tabs, .presentation-diagram-gallery__tab'
+      )
+    ) {
+      swipeStartX.current = null
+      return
+    }
+    swipeStartX.current = e.touches[0]?.clientX ?? null
+  }
+
+  const onSwipeTouchEnd = (e: React.TouchEvent) => {
+    if (swipeStartX.current == null) return
+    const endX = e.changedTouches[0]?.clientX
+    if (endX == null) return
+    const dx = endX - swipeStartX.current
+    swipeStartX.current = null
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return
+    if (dx < 0) goNext()
+    else goPrev()
+  }
+
+  const onTrackpadWheel = (e: React.WheelEvent) => {
+    const target = e.target as HTMLElement
+    if (
+      target.closest(
+        '.presentation-diagram-gallery, .presentation-diagram-gallery__tabs, .presentation-diagram-gallery__tab'
+      )
+    ) {
+      return
+    }
+
+    const absX = Math.abs(e.deltaX)
+    const absY = Math.abs(e.deltaY)
+    if (absX < 2 || absX <= absY * 1.15) {
+      trackpadDeltaX.current = 0
+      return
+    }
+
+    const now = Date.now()
+    if (now - trackpadLastSwitchAt.current < TRACKPAD_SWIPE_COOLDOWN_MS) {
+      return
+    }
+
+    trackpadDeltaX.current += e.deltaX
+    if (Math.abs(trackpadDeltaX.current) < TRACKPAD_SWIPE_THRESHOLD_PX) {
+      return
+    }
+
+    if (trackpadDeltaX.current > 0) goNext()
+    else goPrev()
+    trackpadDeltaX.current = 0
+    trackpadLastSwitchAt.current = now
+  }
+
   if (!open) return null
+
+  const counterLabel = compactNav
+    ? `О проекте · ${index + 1} / ${total}`
+    : `Презентация проекта Cosmic Match · ${index + 1} / ${total}`
 
   return createPortal(
     <div
-      className="match3-presentation-fullscreen"
+      ref={rootRef}
+      className={clsx(
+        'match3-presentation-fullscreen',
+        compactNav && 'match3-presentation-fullscreen--compact-nav'
+      )}
       style={
         {
           ['--pres-bg-url' as string]: `url("${PRESENTATION_BG_URL}")`,
@@ -139,56 +272,87 @@ export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
       aria-label="Презентация проекта Cosmic Match">
       <div className="match3-presentation-fullscreen__topbar">
         <span className="match3-presentation-fullscreen__counter">
-          Презентация проекта Cosmic Match · {index + 1} / {total}
+          {counterLabel}
         </span>
+
+        {compactNav ? (
+          <nav
+            className="match3-presentation-fullscreen__header-nav"
+            aria-label="Навигация по слайдам">
+            <button
+              type="button"
+              className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--header"
+              onClick={goPrev}
+              aria-label="Предыдущий слайд">
+              <ChevronLeft />
+            </button>
+            <SlideDots
+              index={index}
+              onSelect={setIndex}
+              className="match3-presentation-fullscreen__dots--header"
+            />
+            <button
+              type="button"
+              className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--header"
+              onClick={goNext}
+              aria-label="Следующий слайд">
+              <ChevronRight />
+            </button>
+          </nav>
+        ) : null}
+
         <button
           type="button"
           className="match3-presentation-fullscreen__close"
           onClick={close}>
-          Закрыть
+          <span className="match3-presentation-fullscreen__close-label">
+            Закрыть
+          </span>
+          <span
+            className="match3-presentation-fullscreen__close-icon"
+            aria-hidden>
+            +
+          </span>
         </button>
       </div>
 
-      <button
-        type="button"
-        className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--prev"
-        onClick={goPrev}
-        aria-label="Предыдущий слайд">
-        <ChevronLeft />
-      </button>
-
-      <div className="match3-presentation-fullscreen__content">
-        <h2>{slide.title}</h2>
-        <div className="match3-presentation-fullscreen__body">
-          <SlideBody slideId={slide.id} />
-        </div>
-        <div
-          className="match3-presentation__dots match3-presentation-fullscreen__dots"
-          role="tablist">
-          {SLIDES.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              role="tab"
-              aria-selected={i === index}
-              aria-label={`Слайд ${i + 1}: ${s.title}`}
-              className={clsx(
-                'match3-presentation__dot',
-                i === index && 'match3-presentation__dot--active'
-              )}
-              onClick={() => setIndex(i)}
-            />
-          ))}
+      <div
+        className="match3-presentation-fullscreen__content"
+        onTouchStart={onSwipeTouchStart}
+        onTouchEnd={onSwipeTouchEnd}
+        onWheel={onTrackpadWheel}>
+        <div className="match3-presentation-fullscreen__content-inner">
+          <h2>{slide.title}</h2>
+          <div className="match3-presentation-fullscreen__body">
+            <SlideBody slideId={slide.id} />
+          </div>
+          {!compactNav ? (
+            <nav
+              className="match3-presentation-fullscreen__footer-nav"
+              aria-label="Навигация по слайдам">
+              <button
+                type="button"
+                className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--inline"
+                onClick={goPrev}
+                aria-label="Предыдущий слайд">
+                <ChevronLeft />
+              </button>
+              <SlideDots
+                index={index}
+                onSelect={setIndex}
+                className="match3-presentation-fullscreen__dots match3-presentation-fullscreen__dots--footer"
+              />
+              <button
+                type="button"
+                className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--inline"
+                onClick={goNext}
+                aria-label="Следующий слайд">
+                <ChevronRight />
+              </button>
+            </nav>
+          ) : null}
         </div>
       </div>
-
-      <button
-        type="button"
-        className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--next"
-        onClick={goNext}
-        aria-label="Следующий слайд">
-        <ChevronRight />
-      </button>
     </div>,
     document.body
   )

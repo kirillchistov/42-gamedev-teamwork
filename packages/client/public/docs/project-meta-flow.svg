@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 520" role="img" aria-labelledby="title desc">
+  <title id="title">Мета-схема проекта</title>
+  <desc id="desc">Связи auth, оболочки приложения, игрового движка, canvas, API форума и service worker.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0b1220"/><stop offset="100%" style="stop-color:#1e293b"/></linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .core{fill:#334155;stroke:#94a3b8;stroke-width:1.6;rx:10;animation:glow 10s ease-in-out infinite}
+      .group{fill:#1f2937;stroke:#475569;stroke-width:1;rx:12}
+      .lbl{fill:#f8fafc;font:600 13px system-ui,sans-serif;text-anchor:middle}
+      .sub{fill:#cbd5e1;font:10px ui-monospace,monospace;text-anchor:middle}
+      .arr{stroke:#64748b;stroke-width:2;fill:none;marker-end:url(#m);animation:line 10s ease-in-out infinite}
+      .sync{stroke:#f59e0b;stroke-width:2;fill:none;stroke-dasharray:6 4;marker-end:url(#mo)}
+      @keyframes glow{0%,1.2%{stroke:#38bdf8;stroke-width:2.7;fill:#1e3a5f;filter:url(#glow)}3%,100%{stroke:#94a3b8;stroke-width:1.6;fill:#334155;filter:none}}
+      @keyframes line{0%,1.2%{stroke:#38bdf8;stroke-width:2.7}3%,100%{stroke:#64748b;stroke-width:2}}
+      #b1,#l1{animation-delay:0s}#b2,#l2{animation-delay:1s}#b3,#l3{animation-delay:2s}#b4,#l4{animation-delay:3s}
+      #b5,#l5{animation-delay:4s}#b6,#l6{animation-delay:5s}#b7,#l7{animation-delay:6s}#b8,#l8{animation-delay:7s}#b9,#l9{animation-delay:8s}#b10,#l10{animation-delay:9s}
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><polygon points="0 0,8 4,0 8" fill="#64748b"/></marker>
+    <marker id="mo" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><polygon points="0 0,8 4,0 8" fill="#f59e0b"/></marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <text x="490" y="34" class="lbl" font-size="17">Мета-поток проекта</text>
+  <text x="490" y="52" class="sub">Auth, оболочка, движок, canvas, форум, service worker</text>
+
+  <rect x="24" y="72" width="270" height="300" class="group"/>
+  <text x="159" y="90" class="sub">Пользователь / сессия</text>
+
+  <rect id="b1" x="44" y="108" width="230" height="58" class="core"/>
+  <text x="159" y="130" class="lbl">Валидация</text>
+  <text x="159" y="144" class="sub">useValidate</text>
+  <text x="159" y="156" class="sub">authValidation</text>
+
+  <rect id="b2" x="44" y="188" width="230" height="58" class="core"/>
+  <text x="159" y="210" class="lbl">Авторизация</text>
+  <text x="159" y="224" class="sub">userSlice + guards</text>
+  <text x="159" y="236" class="sub">auth-flow.svg</text>
+
+  <rect x="318" y="72" width="344" height="300" class="group"/>
+  <text x="490" y="90" class="sub">Оболочка приложения</text>
+
+  <rect id="b3" x="336" y="108" width="308" height="58" class="core"/>
+  <text x="490" y="130" class="lbl">SSR / Router / Redux</text>
+  <text x="490" y="144" class="sub">main, routes, store</text>
+  <text x="490" y="156" class="sub">entry-server.tsx</text>
+
+  <rect id="b4" x="336" y="188" width="308" height="58" class="core"/>
+  <text x="490" y="210" class="lbl">Мост GamePage</text>
+  <text x="490" y="224" class="sub">Match3Screen</text>
+  <text x="490" y="236" class="sub">React -&gt; движок</text>
+
+  <rect id="b5" x="336" y="268" width="308" height="58" class="core"/>
+  <text x="490" y="290" class="lbl">Клиент форума</text>
+  <text x="490" y="304" class="sub">forumSlice + forumApi</text>
+  <text x="490" y="316" class="sub">forum-flow.svg</text>
+
+  <rect x="684" y="72" width="270" height="300" class="group"/>
+  <text x="819" y="90" class="sub">Игровое ядро</text>
+
+  <rect id="b6" x="702" y="108" width="234" height="58" class="core"/>
+  <text x="819" y="130" class="lbl">Конечный автомат</text>
+  <text x="819" y="144" class="sub">ready / playing</text>
+  <text x="819" y="156" class="sub">gameState</text>
+
+  <rect id="b7" x="702" y="188" width="234" height="58" class="core"/>
+  <text x="819" y="210" class="lbl">Пайплайн хода</text>
+  <text x="819" y="224" class="sub">swap, resolve</text>
+  <text x="819" y="236" class="sub">resolvePipeline</text>
+
+  <rect id="b8" x="702" y="268" width="234" height="58" class="core"/>
+  <text x="819" y="290" class="lbl">Отрисовка canvas</text>
+  <text x="819" y="304" class="sub">поле + FX</text>
+  <text x="819" y="316" class="sub">renderer</text>
+
+  <rect id="b9" x="702" y="348" width="234" height="58" class="core"/>
+  <text x="819" y="370" class="lbl">Колбэки HUD</text>
+  <text x="819" y="384" class="sub">onHudChange / end</text>
+  <text x="819" y="396" class="sub">в React UI</text>
+
+  <rect x="318" y="388" width="344" height="100" class="group"/>
+  <text x="490" y="406" class="sub">Платформа</text>
+  <rect id="b10" x="336" y="420" width="308" height="58" class="core"/>
+  <text x="490" y="442" class="lbl">Service Worker</text>
+  <text x="490" y="456" class="sub">sw.ts, офлайн-кэш</text>
+  <text x="490" y="468" class="sub">skip /api в fetch</text>
+
+  <path id="l1" class="arr" d="M 274 137 L 336 137"/>
+  <path id="l2" class="arr" d="M 274 217 L 336 217"/>
+  <path id="l3" class="arr" d="M 644 137 L 702 137"/>
+  <path id="l4" class="arr" d="M 644 217 L 702 217"/>
+  <path id="l5" class="arr" d="M 644 297 L 702 297"/>
+  <path id="l6" class="arr" d="M 819 406 L 819 449 L 644 449"/>
+  <path id="l7" class="sync" d="M 819 406 L 819 494 L 304 494 L 304 297 L 336 297"/>
+  <path id="l8" class="arr" d="M 490 326 L 490 420"/>
+  <path id="l9" class="arr" d="M 490 246 L 490 268"/>
+  <path id="l10" class="arr" d="M 490 166 L 490 188"/>
+
+  <text x="490" y="506" class="sub">См.: auth-flow.svg, forum-flow.svg, game-engine-flow.svg, game-states-flow.svg, react-redux-flow.svg</text>
+</svg>

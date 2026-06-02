@@ -7,11 +7,11 @@ import { selectUser } from '../../slices/userSlice'
 import {
   CHALLENGES,
   CLIENT_STACK,
-  HTTP_APIS_OVERVIEW_URL,
   LEARNING_GALAXY,
   SERVER_STACK,
   techIconUrl,
 } from './presentationData'
+import { ArchitectureDiagramGallery } from './ArchitectureDiagramGallery'
 import { PresentationGameBoardPreview } from './PresentationGameBoardPreview'
 
 function TeamTaskTag({ label }: { label: string }) {
@@ -139,20 +139,6 @@ function StackColumn({
   )
 }
 
-function ArchitectureDiagram() {
-  return (
-    <figure
-      className="presentation-arch presentation-arch--http presentation-panel"
-      aria-label="HTTP-слои проекта">
-      <img
-        src={HTTP_APIS_OVERVIEW_URL}
-        alt="Схема HTTP: браузер, SSR-клиент, apiProxy, Praktikum API, forum backend и PostgreSQL"
-        className="presentation-arch__img"
-      />
-    </figure>
-  )
-}
-
 export function SlideStack() {
   const [showDiagram, setShowDiagram] = useState(false)
 
@@ -175,22 +161,12 @@ export function SlideStack() {
                 type="button"
                 className="presentation-btn presentation-btn--primary"
                 onClick={() => setShowDiagram(true)}>
-                Блок-схема
+                Блок-схемы
               </button>
             </div>
           </>
         ) : (
-          <>
-            <ArchitectureDiagram />
-            <div className="presentation-slide__actions">
-              <button
-                type="button"
-                className="presentation-btn presentation-btn--ghost"
-                onClick={() => setShowDiagram(false)}>
-                ← К стеку
-              </button>
-            </div>
-          </>
+          <ArchitectureDiagramGallery onBack={() => setShowDiagram(false)} />
         )}
       </div>
     </div>
@@ -216,12 +192,12 @@ export function SlideGame() {
           type="button"
           className="presentation-btn presentation-btn--primary"
           onClick={openGame}>
-          {user ? 'Открыть /game/start' : 'Войти и открыть игру'}
+          {user ? 'Запустить игру' : 'Войти в игру'}
         </button>
       </div>
-      <p className="presentation-slide__note">
+      {/* <p className="presentation-slide__note">
         Игра откроется в новой вкладке (после логина).
-      </p>
+      </p> */}
     </div>
   )
 }

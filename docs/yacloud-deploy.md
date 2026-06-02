@@ -234,15 +234,117 @@ docker compose -f docker-compose.prod.yml up -d
 
 ---
 
+## Проверка работоспособности сервисов на ВМ
+
+Ключевые команды для диагностики после первого деплоя и после каждого обновления. Подробнее о первичной настройке: [deploy/vm/README.md](../deploy/vm/README.md).
+
+### Подключение к ВМ
+
+```bash
+# Yandex CLI (с локальной машины, из корня репозитория)
+yc compute ssh --id <instance-id> --login yc-user --identity-file ~/.ssh/id_ed25519
+
+# Обычный SSH
+ssh -i ~/.ssh/id_ed25519 yc-user@<публичный-IP>
+```
+
+### Комплексная проверка готовности
+
+Скрипт [`scripts/verify-vm-setup.sh`](../scripts/verify-vm-setup.sh) проверяет Docker/Compose, каталог `/opt/cosmic-match`, `.env`, TLS, контейнеры и порты.
+
+```bash
+# С локальной машины — скрипт передаётся на сервер через stdin
+yc compute ssh --id <instance-id> --login yc-user --identity-file ~/.ssh/id_ed25519 -- bash -s < scripts/verify-vm-setup.sh
+
+# Уже на ВМ (если репозиторий /opt/cosmic-match на месте)
+cd /opt/cosmic-match
+bash scripts/verify-vm-setup.sh
+```
+
+### Статус Docker-стека
+
+```bash
+cd /opt/cosmic-match
+
+docker compose -f docker-compose.prod.yml ps
+docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+```
+
+Ожидаемые контейнеры: `cosmic-match-postgres`, `cosmic-match-server`, `cosmic-match-client`, `cosmic-match-nginx`.
+
+### Healthcheck сервисов
+
+```bash
+# API (server)
+curl -sS http://127.0.0.1:3000/health
+
+# SSR-клиент
+curl -sI http://127.0.0.1:9000/health
+curl -sI http://127.0.0.1:9000/
+
+# Nginx (HTTPS + ping)
+curl -skI --http2 https://127.0.0.1/ping
+curl -skI --http2 https://127.0.0.1/
+```
+
+Снаружи (только для отладки; порты **3000** и **9000** с интернета лучше закрыть в security group):
+
+```bash
+curl -sS http://<публичный-IP>:3000/health
+curl -sI http://<публичный-IP>:9000/
+curl -skI https://<ваш-домен>/ping
+```
+
+### Postgres и связь server → БД
+
+```bash
+# Статус healthcheck Postgres
+docker inspect cosmic-match-postgres --format '{{.State.Health.Status}}'
+
+# Таблицы в БД
+docker exec -it cosmic-match-postgres psql -U postgres -d postgres -c "\dt"
+
+# Проверка, что server подключается к Postgres (вызывается и из deploy-on-vm.sh)
+bash /opt/cosmic-match/scripts/verify-server-db.sh
+```
+
+### После деплоя (ручной перезапуск)
+
+Полный сценарий — [`scripts/deploy-on-vm.sh`](../scripts/deploy-on-vm.sh) (`pull` → ожидание `postgres healthy` → `sync-postgres-password.sh` → `up -d` → `verify-server-db.sh` → `docker compose ps`).
+
+```bash
+cd /opt/cosmic-match
+export CLIENT_IMAGE=ghcr.io/<owner>/<repo>/client:<sha>
+export SERVER_IMAGE=ghcr.io/<owner>/<repo>/server:<sha>
+
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml ps
+```
+
+### Быстрая диагностика (порты, диск, логи)
+
+```bash
+ss -tlnp | grep -E ':(80|443|3000|9000)\s'
+df -h / /var/lib/docker
+docker logs cosmic-match-server --tail 50
+docker logs cosmic-match-client --tail 50
+docker logs cosmic-match-nginx --tail 50
+```
+
+**Локально** (не на ВМ, тот же стек с nginx): [`scripts/verify-nginx-local.sh`](../scripts/verify-nginx-local.sh) — поднимает compose и проверяет `curl` на `:18080` / `:18443`.
+
+---
+
 ## Чеклист готовности 9.6 + 9.7
 
-- [ ] ВМ создана, **статический IP** записан.
-- [ ] 'docker ps' — 'cosmic-match-client', 'cosmic-match-server', 'postgres'.
-- [ ] Nginx + HTTPS, HTTP/2 ([nginx-config.md](nginx-config.md)).
-- [ ] Ментору отправлена строка '<команда>-<продукт>-<когорта>: <ip>'.
-- [ ] Запрошена A-запись на домен; 'dig' резолвит IP ВМ.
-- [ ] Ментору отправлен новый **OAuth redirect_uri**; в '.env' / CI обновлён 'VITE_YANDEX_OAUTH_REDIRECT_URI', client пересобран.
-- [ ] Демо: логин, OAuth, игра, форум по 'https://<домен>/'.
+- [x] ВМ создана, **статический IP** записан.
+- [x] 'docker ps' — 'cosmic-match-client', 'cosmic-match-server', 'postgres'.
+- [x] Nginx + HTTPS, HTTP/2 ([nginx-config.md](nginx-config.md)).
+- [x] Ментору отправлена строка '<команда>-<продукт>-<когорта>: <ip>'.
+- [x] Запрошена A-запись на домен; 'dig' резолвит IP ВМ.
+- [x] Ментору отправлен новый **OAuth redirect_uri**; в '.env' / CI обновлён 'VITE_YANDEX_OAUTH_REDIRECT_URI', client пересобран.
+- [x] Демо: логин, OAuth, игра, форум по 'https://<домен>/'.
 
 ---
 

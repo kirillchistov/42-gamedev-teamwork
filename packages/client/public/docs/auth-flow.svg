@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" role="img" aria-labelledby="title desc">
+  <title id="title">Блок-схема авторизации</title>
+  <desc id="desc">Цепочка авторизации на клиенте и middleware requirePraktikumAuth в packages/server для наших API-роутов.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .box { fill:#334155; stroke:#94a3b8; stroke-width:1.5; rx:8; animation:glow 8s ease-in-out infinite; }
+      .lbl { fill:#f1f5f9; font:600 13px system-ui,sans-serif; text-anchor:middle; }
+      .sub { fill:#cbd5e1; font:10px ui-monospace,monospace; text-anchor:middle; }
+      .arr { stroke:#475569; stroke-width:2; fill:none; marker-end:url(#m); animation:line 8s ease-in-out infinite; }
+      .redirect { stroke:#f59e0b; stroke-width:2; fill:none; stroke-dasharray:6 4; marker-end:url(#mo); }
+      .sep { stroke:#475569; stroke-width:1; opacity:0.45; }
+      .cap { fill:#94a3b8; font:600 10px system-ui,sans-serif; }
+      @keyframes glow { 0%,1.5%{stroke:#38bdf8;stroke-width:2.5;fill:#1e3a5f;filter:url(#glow)} 3%,100%{stroke:#94a3b8;stroke-width:1.5;fill:#334155;filter:none} }
+      @keyframes line { 0%,1.5%{stroke:#38bdf8;stroke-width:2.5} 3%,100%{stroke:#475569;stroke-width:2} }
+      #b1,#l1{animation-delay:0s} #b2,#l2{animation-delay:1s} #b3,#l3{animation-delay:2s} #b4,#l4{animation-delay:3s}
+      #b5,#l5{animation-delay:4s} #b6,#l6{animation-delay:5s} #b7,#l7{animation-delay:6s} #b8,#l8{animation-delay:7s}
+      #b9,#l9{animation-delay:7.5s} #b10,#la1{animation-delay:0s} #b11,#la2{animation-delay:1s} #b12,#la3{animation-delay:2s}
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <polygon points="0 0, 8 4, 0 8" fill="#64748b"/>
+    </marker>
+    <marker id="mo" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <polygon points="0 0, 8 4, 0 8" fill="#f59e0b"/>
+    </marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <text x="500" y="34" class="lbl" font-size="16">Поток авторизации (React + Redux)</text>
+  <text x="500" y="52" class="sub">Клиент: useAuthCheck, withAuthGuard, useAuthGuard, ProtectedRoute</text>
+  <text x="500" y="66" class="sub">Сервер: requirePraktikumAuth on /api/forum, /friends, /user</text>
+
+  <!-- Login row -->
+  <rect id="b1" x="40" y="96" width="168" height="66" class="box"/>
+  <text x="124" y="122" class="lbl">Страница входа</text>
+  <text x="124" y="136" class="sub">/login, /sign-in</text>
+  <text x="124" y="150" class="sub">LoginPage.tsx</text>
+
+  <rect id="b2" x="248" y="96" width="194" height="66" class="box"/>
+  <text x="345" y="122" class="lbl">Валидация форм</text>
+  <text x="345" y="136" class="sub">useValidate</text>
+  <text x="345" y="150" class="sub">authValidation.ts</text>
+
+  <rect id="b3" x="482" y="96" width="176" height="66" class="box"/>
+  <text x="570" y="122" class="lbl">submitLoginThunk</text>
+  <text x="570" y="136" class="sub">userSlice.ts</text>
+  <text x="570" y="150" class="sub">Redux thunk</text>
+
+  <path id="l1" class="arr" d="M 208 129 L 248 129"/>
+  <path id="l2" class="arr" d="M 442 129 L 482 129"/>
+  <path id="l3" class="arr" d="M 570 162 L 570 198"/>
+
+  <rect id="b4" x="430" y="198" width="280" height="68" class="box"/>
+  <text x="570" y="224" class="lbl">API авторизации Практикума</text>
+  <text x="570" y="238" class="sub">userApi sign-in, /auth/user</text>
+  <text x="570" y="252" class="sub">BASE_URL /api/v2 (прокси)</text>
+
+  <path id="l4" class="arr" d="M 570 266 L 570 302"/>
+
+  <rect id="b5" x="430" y="302" width="280" height="66" class="box"/>
+  <text x="570" y="328" class="lbl">Redux: пользователь</text>
+  <text x="570" y="342" class="sub">аутентификация в сторе</text>
+  <text x="570" y="356" class="sub">store.ts</text>
+
+  <path id="l5" class="arr" d="M 430 335 L 224 335"/>
+
+  <rect id="b6" x="64" y="302" width="160" height="66" class="box"/>
+  <text x="144" y="328" class="lbl">useAuthCheck</text>
+  <text x="144" y="342" class="sub">синхронизация сессии</text>
+  <text x="144" y="356" class="sub">useAuthCheck.ts</text>
+
+  <path id="l6" class="arr" d="M 144 368 L 144 418 L 268 418 L 268 448"/>
+
+  <rect id="b7" x="168" y="448" width="200" height="66" class="box"/>
+  <text x="268" y="474" class="lbl">ProtectedRoute</text>
+  <text x="268" y="488" class="sub">допуск или redirect</text>
+  <text x="268" y="502" class="sub">ProtectedRoute/</text>
+
+  <rect id="b8" x="408" y="448" width="200" height="66" class="box"/>
+  <text x="508" y="474" class="lbl">withAuthGuard</text>
+  <text x="508" y="488" class="sub">HOC для защищенных роутов</text>
+  <text x="508" y="502" class="sub">withAuthGuard.tsx</text>
+
+  <rect id="b9" x="648" y="448" width="200" height="66" class="box"/>
+  <text x="748" y="474" class="lbl">useAuthGuard</text>
+  <text x="748" y="488" class="sub">решение о допуске</text>
+  <text x="748" y="502" class="sub">useAuthGuard.ts</text>
+
+  <path id="l7" class="arr" d="M 368 481 L 408 481"/>
+  <path id="l8" class="arr" d="M 608 481 L 648 481"/>
+  <path id="l9" class="redirect" d="M 168 481 L 20 481 L 20 286 L 124 286 L 124 162"/>
+
+  <line class="sep" x1="32" y1="538" x2="968" y2="538"/>
+  <text x="500" y="558" class="lbl" font-size="13">Наш Node API (packages/server)</text>
+  <text x="500" y="574" class="sub">Сессия (валидность куки) проверяется на сервере; см. auth-middleware-backend.md</text>
+
+  <rect id="b10" x="48" y="592" width="188" height="60" class="box"/>
+  <text x="142" y="616" class="lbl">Запрос к нашему API</text>
+  <text x="142" y="630" class="sub">forumApi, friends</text>
+  <text x="142" y="644" class="sub">same-origin /api/*</text>
+
+  <rect id="b11" x="268" y="592" width="232" height="60" class="box"/>
+  <text x="384" y="616" class="lbl">requirePraktikumAuth</text>
+  <text x="384" y="630" class="sub">middleware</text>
+  <text x="384" y="644" class="sub">requirePraktikumAuth.ts</text>
+
+  <rect id="b12" x="532" y="592" width="360" height="60" class="box"/>
+  <text x="712" y="616" class="lbl">GET /auth/user (Практикум)</text>
+  <text x="712" y="630" class="sub">req.praktikumUser или 403</text>
+  <text x="712" y="644" class="sub">createApp.ts</text>
+
+  <path id="la1" class="arr" d="M 236 622 L 268 622"/>
+  <path id="la2" class="arr" d="M 500 622 L 532 622"/>
+
+  <text x="500" y="678" class="sub">Навигация по роутам в UX на клиенте; сервер возвращает ошибку 403, если сессия не валидна.</text>
+</svg>

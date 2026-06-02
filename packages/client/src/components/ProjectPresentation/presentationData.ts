@@ -58,43 +58,44 @@ export const LEARNING_GALAXY = [
     id: 'architecture',
     short: 'Архитектура',
     text: 'Разделение UI и игрового runtime, итеративная доставка без поломки ядра игры.',
-    x: 14,
+    x: 24,
     y: 20,
     planets: [
       { label: 'Декомпозиция', angleDeg: -58, radiusPct: 12 },
       { label: 'Тесты', angleDeg: -12, radiusPct: 14 },
-      { label: 'Итерации', angleDeg: 38, radiusPct: 12 },
+      { label: 'Документация', angleDeg: 38, radiusPct: 12 },
     ],
   },
   {
     id: 'team',
     short: 'Команда',
     text: 'Командное взаимодействие — распределение зон и общие стандарты в монорепо.',
-    x: 82,
-    y: 16,
+    x: 72,
+    y: 26,
     planets: [
-      { label: 'Приоритеты', angleDeg: -42, radiusPct: 11 },
-      { label: 'Тайм-менеджмент', angleDeg: 8, radiusPct: 13 },
+      { label: 'Коммуникация', angleDeg: -42, radiusPct: 11 },
+      { label: 'Внутренние ревью', angleDeg: 8, radiusPct: 13 },
+      { label: 'Стандарты кодинга', angleDeg: 56, radiusPct: 15 },
     ],
   },
   {
     id: 'time',
-    short: 'Спринты',
+    short: 'Время',
     text: 'Спринты, приоритеты и доведение фич до рабочего демо.',
-    x: 10,
+    x: 20,
     y: 78,
     planets: [
-      { label: 'Коммуникация', angleDeg: -35, radiusPct: 12 },
-      { label: 'Внутренние ревью', angleDeg: 5, radiusPct: 14 },
-      { label: 'Стандарты кодинга', angleDeg: 42, radiusPct: 12 },
+      { label: 'Командные спринты', angleDeg: -35, radiusPct: 12 },
+      { label: 'Приоритеты', angleDeg: 5, radiusPct: 14 },
+      { label: 'Тайм-менеджмент', angleDeg: 42, radiusPct: 12 },
     ],
   },
   {
     id: 'self',
     short: 'Рост',
     text: 'Самостоятельное освоение технологий по документации и экспериментам.',
-    x: 86,
-    y: 74,
+    x: 66,
+    y: 69,
     planets: [
       { label: 'Самообучение', angleDeg: -48, radiusPct: 11 },
       { label: 'Документация', angleDeg: -18, radiusPct: 13 },
@@ -129,9 +130,101 @@ export const GAME_GEM_COLORS = [
   '#818cf8',
 ] as const
 
-export const HTTP_APIS_OVERVIEW_URL = publicAssetUrl(
-  'docs/http-apis-overview.svg'
+/** Схемы из `docs/`, порядок: от общего к частному. */
+export const ARCHITECTURE_DIAGRAMS = [
+  {
+    id: 'project-meta',
+    file: 'project-meta-flow.svg',
+    title: 'Мета-схема проекта',
+    short: 'Мета',
+    alt: 'Связи auth, оболочки приложения, игрового движка, canvas, API форума и service worker',
+  },
+  {
+    id: 'http-overview',
+    file: 'http-apis-overview.svg',
+    title: 'Обзор HTTP-слоёв',
+    short: 'HTTP',
+    alt: 'Браузер, SSR-клиент, apiProxy, Практикум API, forum backend и PostgreSQL',
+  },
+  {
+    id: 'client-api',
+    file: 'client-api-sources.svg',
+    title: 'Клиент: BASE_URL и SERVER_HOST',
+    short: 'Клиент API',
+    alt: 'Как клиент выбирает хосты для запросов к API',
+  },
+  {
+    id: 'react-redux',
+    file: 'react-redux-flow.svg',
+    title: 'React и Redux',
+    short: 'Redux',
+    alt: 'Поток данных React, Redux Toolkit и SSR',
+  },
+  {
+    id: 'react-canvas',
+    file: 'react-canvas-bridge.svg',
+    title: 'Мост React ↔ Canvas',
+    short: 'Canvas',
+    alt: 'Связь React-оболочки и игрового Canvas runtime',
+  },
+  {
+    id: 'game-engine',
+    file: 'game-engine-flow.svg',
+    title: 'Игровой движок',
+    short: 'Движок',
+    alt: 'Цикл match-3: ввод, resolve, каскады, HUD',
+  },
+  {
+    id: 'game-states',
+    file: 'game-states-flow.svg',
+    title: 'Состояния игры',
+    short: 'Состояния',
+    alt: 'Переходы между экранами и фазами партии',
+  },
+  {
+    id: 'canvas-render',
+    file: 'canvas-render-flow.svg',
+    title: 'Рендер Canvas',
+    short: 'Рендер',
+    alt: 'Отрисовка поля, анимации и синхронизация с HUD',
+  },
+  {
+    id: 'auth',
+    file: 'auth-flow.svg',
+    title: 'Авторизация',
+    short: 'Auth',
+    alt: 'OAuth, сессия Практикума и защищённые маршруты',
+  },
+  {
+    id: 'forum',
+    file: 'forum-flow.svg',
+    title: 'Форум',
+    short: 'Форум',
+    alt: 'UI → forumSlice → API → Postgres',
+  },
+  {
+    id: 'service-worker',
+    file: 'service-worker-flow.svg',
+    title: 'Service Worker',
+    short: 'SW',
+    alt: 'Кэш, офлайн и обновление PWA',
+  },
+  {
+    id: 'validation',
+    file: 'validation-flow.svg',
+    title: 'Валидация форм',
+    short: 'Валидация',
+    alt: 'Проверка ввода на клиенте и ответы API',
+  },
+] as const
+
+export const HTTP_APIS_OVERVIEW_URL = architectureDiagramUrl(
+  'http-apis-overview.svg'
 )
+
+export function architectureDiagramUrl(file: string): string {
+  return publicAssetUrl(`docs/${file}`)
+}
 
 export function techIconUrl(file: string): string {
   return publicAssetUrl(`icons/${file}`)
