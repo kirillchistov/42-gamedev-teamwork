@@ -21,7 +21,7 @@ import './ProjectPresentation.pcss'
 const SLIDES = [
   { id: 'team', title: 'Команда и роли' },
   { id: 'stack', title: 'Технологический стек' },
-  { id: 'game', title: 'Презентация игры' },
+  { id: 'game', title: 'Игра' },
   { id: 'challenges', title: 'Сложности и решения' },
   { id: 'learning', title: 'Главное из обучения' },
 ] as const
@@ -322,7 +322,9 @@ export function ProjectPresentationCarousel({ open, onOpenChange }: Props) {
         onTouchEnd={onSwipeTouchEnd}
         onWheel={onTrackpadWheel}>
         <div className="match3-presentation-fullscreen__content-inner">
-          <h2>{slide.title}</h2>
+          <h2 className="match3-presentation-fullscreen__title">
+            {slide.title}
+          </h2>
           <div className="match3-presentation-fullscreen__body">
             <SlideBody slideId={slide.id} />
           </div>

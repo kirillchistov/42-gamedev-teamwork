@@ -184,7 +184,7 @@ export function SlideGame() {
   return (
     <div className="presentation-slide presentation-slide--game">
       <p className="presentation-game__lead">
-        Cosmic Match — match‑3 с уровнями, квестами, HUD и космической темой.
+        Cosmic Match‑3 с космическими квестами и тонкой настройкой.
       </p>
       <PresentationGameBoardPreview onOpen={openGame} />
       <div className="presentation-slide__actions presentation-slide__actions--center">
