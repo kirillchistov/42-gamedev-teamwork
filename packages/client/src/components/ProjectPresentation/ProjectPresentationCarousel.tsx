@@ -8,23 +8,14 @@ import React, {
 import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 
-import {
-  SlideChallenges,
-  SlideGame,
-  SlideLearning,
-  SlideStack,
-  SlideTeam,
-} from './PresentationSlides'
+import { exportPresentationPdf } from './presentationPdfExport'
+import { PresentationSlideContent } from './PresentationSlides'
 import { PRESENTATION_BG_URL } from './presentationData'
+import {
+  PRESENTATION_SLIDES,
+  type PresentationSlideId,
+} from './presentationSlidesConfig'
 import './ProjectPresentation.pcss'
-
-const SLIDES = [
-  { id: 'team', title: 'Команда и роли' },
-  { id: 'stack', title: 'Технологический стек' },
-  { id: 'game', title: 'Игра' },
-  { id: 'challenges', title: 'Сложности и решения' },
-  { id: 'learning', title: 'Главное из обучения' },
-] as const
 
 const SWIPE_THRESHOLD_PX = 56
 const COMPACT_NAV_MAX_HEIGHT = 700
@@ -89,23 +80,6 @@ function normalizeStartIndex(
   return n - 1
 }
 
-function SlideBody({ slideId }: { slideId: typeof SLIDES[number]['id'] }) {
-  switch (slideId) {
-    case 'team':
-      return <SlideTeam />
-    case 'stack':
-      return <SlideStack />
-    case 'game':
-      return <SlideGame />
-    case 'challenges':
-      return <SlideChallenges />
-    case 'learning':
-      return <SlideLearning />
-    default:
-      return null
-  }
-}
-
 type SlideDotsProps = {
   index: number
   onSelect: (i: number) => void
@@ -118,7 +92,7 @@ function SlideDots({ index, onSelect, className }: SlideDotsProps) {
       className={clsx('match3-presentation__dots', className)}
       role="tablist"
       aria-label="Слайды презентации">
-      {SLIDES.map((s, i) => (
+      {PRESENTATION_SLIDES.map((s, i) => (
         <button
           key={s.id}
           type="button"
@@ -143,12 +117,28 @@ export function ProjectPresentationCarousel({
 }: Props) {
   const [index, setIndex] = useState(0)
   const [compactNav, setCompactNav] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [pdfError, setPdfError] = useState<string | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
   const swipeStartX = useRef<number | null>(null)
   const trackpadDeltaX = useRef(0)
   const trackpadLastSwitchAt = useRef(0)
-  const total = SLIDES.length
-  const slide = SLIDES[index]
+  const total = PRESENTATION_SLIDES.length
+  const slide = PRESENTATION_SLIDES[index]
+
+  const handleDownloadPdf = useCallback(async () => {
+    setPdfError(null)
+    setPdfLoading(true)
+    try {
+      await exportPresentationPdf()
+    } catch (e) {
+      setPdfError(
+        e instanceof Error ? e.message : 'Не удалось сформировать PDF'
+      )
+    } finally {
+      setPdfLoading(false)
+    }
+  }, [])
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange])
 
@@ -318,20 +308,35 @@ export function ProjectPresentationCarousel({
           </nav>
         ) : null}
 
-        <button
-          type="button"
-          className="match3-presentation-fullscreen__close"
-          onClick={close}>
-          <span className="match3-presentation-fullscreen__close-label">
-            Закрыть
-          </span>
-          <span
-            className="match3-presentation-fullscreen__close-icon"
-            aria-hidden>
-            +
-          </span>
-        </button>
+        <div className="match3-presentation-fullscreen__topbar-actions">
+          <button
+            type="button"
+            className="match3-presentation-fullscreen__pdf"
+            onClick={() => void handleDownloadPdf()}
+            disabled={pdfLoading}
+            aria-busy={pdfLoading}>
+            {pdfLoading ? 'PDF…' : 'Скачать PDF'}
+          </button>
+          <button
+            type="button"
+            className="match3-presentation-fullscreen__close"
+            onClick={close}>
+            <span className="match3-presentation-fullscreen__close-label">
+              Закрыть
+            </span>
+            <span
+              className="match3-presentation-fullscreen__close-icon"
+              aria-hidden>
+              +
+            </span>
+          </button>
+        </div>
       </div>
+      {pdfError ? (
+        <p className="match3-presentation-fullscreen__pdf-error" role="alert">
+          {pdfError}
+        </p>
+      ) : null}
 
       <div
         className="match3-presentation-fullscreen__content"
@@ -339,11 +344,20 @@ export function ProjectPresentationCarousel({
         onTouchEnd={onSwipeTouchEnd}
         onWheel={onTrackpadWheel}>
         <div className="match3-presentation-fullscreen__content-inner">
-          <h2 className="match3-presentation-fullscreen__title">
-            {slide.title}
-          </h2>
+          {slide.id !== 'title' ? (
+            <h2 className="match3-presentation-fullscreen__title">
+              {slide.title}
+            </h2>
+          ) : (
+            <div
+              className="match3-presentation-fullscreen__title match3-presentation-fullscreen__title--spacer"
+              aria-hidden
+            />
+          )}
           <div className="match3-presentation-fullscreen__body">
-            <SlideBody slideId={slide.id} />
+            <PresentationSlideContent
+              slideId={slide.id as PresentationSlideId}
+            />
           </div>
           {!compactNav ? (
             <nav

@@ -1,7 +1,19 @@
+const TEAM_PROJECT_VIEW_URL =
+  'https://github.com/users/kirillchistov/projects/5/views/1'
+
+export function teamBacklogUrl(assigneeLogin: string): string {
+  return `${TEAM_PROJECT_VIEW_URL}?filterQuery=assignee%3A${encodeURIComponent(
+    assigneeLogin
+  )}`
+}
+
 export type TeamMember = {
   name: string
   role: string
   githubUrl?: string
+  /** Логин для filterQuery assignee в GitHub Projects. */
+  backlogAssignee?: string
+  backlogUrl?: string
   avatarUrl?: string
   responsibilities: string[]
 }
@@ -11,6 +23,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     name: 'Анна',
     role: 'Queen of cosmic beauty',
     githubUrl: 'https://github.com/larannma',
+    backlogAssignee: 'larannma',
+    backlogUrl: teamBacklogUrl('larannma'),
     avatarUrl: 'https://avatars.githubusercontent.com/u/66175549?v=4',
     responsibilities: ['Форум', 'Service Workers', 'OAuth', 'Темы', 'Web API'],
   },
@@ -18,6 +32,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     name: 'Сергей',
     role: 'Commander of eternal wisdom',
     githubUrl: 'https://github.com/zergeugenson',
+    backlogAssignee: 'zergeugenson',
+    backlogUrl: teamBacklogUrl('zergeugenson'),
     avatarUrl: 'https://avatars.githubusercontent.com/u/33512074?v=4',
     responsibilities: [
       'Валидация',
@@ -32,6 +48,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     name: 'Артур',
     role: 'Master of stellar magic',
     githubUrl: 'https://github.com/Arturaldo',
+    backlogAssignee: 'Arturaldo',
+    backlogUrl: teamBacklogUrl('Arturaldo'),
     avatarUrl: 'https://avatars.githubusercontent.com/u/97703299?v=4',
     responsibilities: [
       'Механика игры',
@@ -46,6 +64,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     name: 'Антон',
     role: 'Universal treasure keeper',
     githubUrl: 'https://github.com/TelRoY',
+    backlogAssignee: 'TelRoY',
+    backlogUrl: teamBacklogUrl('TelRoY'),
     avatarUrl: 'https://avatars.githubusercontent.com/u/207622043?v=4',
     responsibilities: [
       'Профиль',
@@ -59,6 +79,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     name: 'Кирилл',
     role: 'Lunar story teller',
     githubUrl: 'https://github.com/kirillchistov',
+    backlogAssignee: 'kirillchistov',
+    backlogUrl: teamBacklogUrl('kirillchistov'),
     avatarUrl: 'https://avatars.githubusercontent.com/u/101833862?v=4',
     responsibilities: [
       'Инфраструктура',

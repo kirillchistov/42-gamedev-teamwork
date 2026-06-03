@@ -1,10 +1,13 @@
+import { isStaticGhPagesDeploy } from '../shared/staticDeploy'
+
 /**
  * Старый SW (PWA / dev) перехватывает навигацию и даёт 503.
- * Снимаем регистрацию, если SW не включали явно (VITE_ENABLE_SW=1).
+ * На GitHub Pages SW нужен для прокси /api/v2 — не снимаем регистрацию.
  */
 export async function unregisterStaleServiceWorkers(): Promise<void> {
-  const enableSw = import.meta.env.VITE_ENABLE_SW === '1'
-  if (enableSw) {
+  const keepServiceWorker =
+    import.meta.env.VITE_ENABLE_SW === '1' || isStaticGhPagesDeploy()
+  if (keepServiceWorker) {
     return
   }
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {

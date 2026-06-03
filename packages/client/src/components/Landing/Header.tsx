@@ -2,6 +2,8 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { GameLogoIcon } from '../GameLogoIcon'
+
 type LandingTheme = 'light-flat' | 'light-3d' | 'dark-neon'
 
 const themeClassByValue: Record<LandingTheme, string> = {
@@ -49,7 +51,7 @@ export function Header() {
         <div className="landing-header__left">
           <div className="landing-logo">
             <Link className="btn btn--flat" to="/">
-              <span className="landing-logo__icon" />
+              <GameLogoIcon />
               <span className="landing-logo__text">Cosmic Match</span>
             </Link>
           </div>

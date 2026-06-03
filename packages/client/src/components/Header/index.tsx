@@ -13,6 +13,8 @@
  * (на остальных страницах — как раньше - трио: light-flat / light-3d / dark-neon).
  **/
 import React, { useCallback, useEffect, useState } from 'react'
+
+import { GameLogoIcon } from '../GameLogoIcon'
 import { Link } from 'react-router-dom'
 import {
   type LandingTheme,
@@ -124,7 +126,7 @@ export function Header({
         <div className="landing-header__left">
           <div className="landing-logo">
             <Link className="btn btn--flat" to="/" onClick={closeMobile}>
-              <span className="landing-logo__icon" />
+              <GameLogoIcon />
               <span className="landing-logo__text">Cosmic Match</span>
             </Link>
           </div>

@@ -105,7 +105,17 @@ export const LEARNING_GALAXY = [
   },
 ] as const
 
+/** Текст панели на финальном слайде, пока звезда не выбрана. */
+export const LEARNING_FEEDBACK_DEFAULT = {
+  text: 'С нетерпением ждем обратную связь',
+  planets: ['Вопросы', 'Идеи', 'Комментарии'] as const,
+}
+
 export const PRESENTATION_BG_URL = publicAssetUrl('icons/bgcosmic2.jpg')
+
+export const PRESENTATION_QR_URL = publicAssetUrl('images/qrcode_me.png')
+
+export const PRESENTATION_GAME_QR_URL = publicAssetUrl('images/qrcode_game.png')
 
 /** 8×8 раскладка «камней» для превью поля (индексы 0–7). */
 export const GAME_BOARD_PREVIEW: readonly (number | null)[][] = [
@@ -132,6 +142,13 @@ export const GAME_GEM_COLORS = [
 
 /** Схемы из `docs/`, порядок: от общего к частному. */
 export const ARCHITECTURE_DIAGRAMS = [
+  {
+    id: 'project-architecture',
+    file: 'project-architecture.svg',
+    title: 'Архитектура Cosmic Match (9 спринтов)',
+    short: 'Архитектура',
+    alt: 'Итоговая архитектура проекта после 9 спринтов: браузер, SSR, Canvas, API, форум, Postgres, OAuth, PWA, облако',
+  },
   {
     id: 'project-meta',
     file: 'project-meta-flow.svg',

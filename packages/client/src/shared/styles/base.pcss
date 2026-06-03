@@ -127,41 +127,11 @@ button {
 .landing-logo__icon {
   width: 32px;
   height: 32px;
+  flex-shrink: 0;
   border-radius: var(--radius-pill);
-  background: radial-gradient(
-      circle at 20% 20%,
-      var(--color-accent-primary),
-      transparent 60%
-    ),
-    radial-gradient(
-      circle at 80% 80%,
-      var(--color-accent-secondary),
-      transparent 60%
-    );
+  object-fit: cover;
   box-shadow: 0 0 18px rgba(79, 70, 229, 0.6),
     0 0 0 1px rgba(148, 163, 184, 0.4);
-  position: relative;
-}
-
-.landing-logo__icon::before,
-.landing-logo__icon::after {
-  content: '';
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  border-radius: var(--radius-pill);
-  background: var(--color-neon-amber);
-  box-shadow: 0 0 8px rgba(251, 191, 36, 0.9);
-}
-
-.landing-logo__icon::before {
-  top: 4px;
-  left: 10px;
-}
-
-.landing-logo__icon::after {
-  bottom: 5px;
-  right: 6px;
 }
 
 .landing-nav {
@@ -291,23 +261,6 @@ button {
 .landing-header--game .landing-logo__icon {
   width: var(--game-logo-icon);
   height: var(--game-logo-icon);
-}
-
-.landing-header--game .landing-logo__icon::before,
-.landing-header--game .landing-logo__icon::after {
-  width: 3px;
-  height: 3px;
-}
-
-.landing-header--game
-  .landing-logo__icon::before {
-  top: 3px;
-  left: 8px;
-}
-
-.landing-header--game .landing-logo__icon::after {
-  bottom: 4px;
-  right: 5px;
 }
 
 .landing-header--game .landing-nav {
