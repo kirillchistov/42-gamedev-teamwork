@@ -1,7 +1,6 @@
 // 7.3 chores: OAuth — без дефолтного service_id; только env или ответ API.
 
 import { getBaseUrl } from '../../constants'
-import { waitForGhPagesServiceWorker } from '../ghPagesPraktikumProxy'
 import { isStaticGhPagesDeploy } from '../staticDeploy'
 import {
   humanizePraktikumAuthReason,
@@ -59,7 +58,7 @@ export function buildYandexRedirectUri(): string {
 
 export async function getYandexServiceId(redirectUri: string): Promise<string> {
   if (isStaticGhPagesDeploy()) {
-    await waitForGhPagesServiceWorker()
+    throw new Error('OAuth на GitHub Pages недоступен. Используйте демо-вход.')
   }
   const envServiceId = readYandexServiceIdFromEnv()
   if (envServiceId) return envServiceId
@@ -95,7 +94,7 @@ export async function signInByYandexCode(
   payload: YandexOAuthPayload
 ): Promise<void> {
   if (isStaticGhPagesDeploy()) {
-    await waitForGhPagesServiceWorker()
+    throw new Error('OAuth на GitHub Pages недоступен. Используйте демо-вход.')
   }
   const response = await fetch(`${getBaseUrl()}/oauth/yandex`, {
     method: 'POST',

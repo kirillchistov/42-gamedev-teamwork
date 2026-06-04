@@ -1,12 +1,12 @@
 import { isStaticGhPagesDeploy } from '../shared/staticDeploy'
 
 /**
- * Старый SW (PWA / dev) перехватывает навигацию и даёт 503.
- * На GitHub Pages SW нужен для прокси /api/v2 — не снимаем регистрацию.
+ * На GitHub Pages снимаем старый SW (прокси /api/v2 ломал cookie).
+ * В dev с VITE_ENABLE_SW=1 SW оставляем для локальной отладки.
  */
 export async function unregisterStaleServiceWorkers(): Promise<void> {
   const keepServiceWorker =
-    import.meta.env.VITE_ENABLE_SW === '1' || isStaticGhPagesDeploy()
+    import.meta.env.VITE_ENABLE_SW === '1' && !isStaticGhPagesDeploy()
   if (keepServiceWorker) {
     return
   }
@@ -16,6 +16,10 @@ export async function unregisterStaleServiceWorkers(): Promise<void> {
   try {
     const registrations = await navigator.serviceWorker.getRegistrations()
     await Promise.all(registrations.map(reg => reg.unregister()))
+    if ('caches' in window) {
+      const keys = await caches.keys()
+      await Promise.all(keys.map(key => caches.delete(key)))
+    }
   } catch {
     // noop
   }

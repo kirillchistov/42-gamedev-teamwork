@@ -137,8 +137,8 @@ export function LoginPage() {
             <h1>Вход</h1>
             {IS_STATIC_GH_PAGES_DEPLOY ? (
               <p className="auth-note">
-                На GitHub Pages вход идёт через Service Worker. Если вход не
-                срабатывает с первого раза — обновите страницу (F5) и повторите.
+                Демо на GitHub Pages: логин <strong>testuser12345</strong>,
+                пароль <strong>Testuser12345</strong> (без API Практикума).
               </p>
             ) : null}
             {fromForum ? (

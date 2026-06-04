@@ -11,9 +11,12 @@ import type { RootState } from '../store'
 import { getBaseUrl } from '../constants'
 import type { LoginCredentials, SignupData, User } from '../types/user'
 import {
-  isGhPagesApiProxyActive,
-  waitForGhPagesServiceWorker,
-} from '../shared/ghPagesPraktikumProxy'
+  clearGhPagesDemoSession,
+  isGhPagesDemoSessionActive,
+  matchesGhPagesDemoCredentials,
+  readGhPagesDemoUser,
+  saveGhPagesDemoSession,
+} from '../shared/ghPagesDemoAuth'
 import { isStaticGhPagesDeploy } from '../shared/staticDeploy'
 import {
   cancelScheduledTimeout,
@@ -29,8 +32,6 @@ const AUTH_RELOGIN_CONFLICT_MESSAGE =
   'Аккаунт уже активен на другом устройстве. Выйдите из аккаунта там и повторите вход.'
 const AUTH_SESSION_CONFIRMATION_FAILED_MESSAGE =
   'Не удалось завершить вход. Обновите страницу и попробуйте ещё раз.'
-const GH_PAGES_SW_NOT_READY_MESSAGE =
-  'Прокси авторизации ещё не готов. Подождите несколько секунд и обновите страницу (F5), затем войдите снова.'
 const AUTH_SESSION_CONFIRM_RETRIES = 4
 const AUTH_SESSION_CONFIRM_RETRY_MS = 200
 
@@ -93,6 +94,13 @@ const initialState: UserState = {
 }
 
 const fetchCurrentUser = async (): Promise<User> => {
+  if (isStaticGhPagesDeploy()) {
+    if (isGhPagesDemoSessionActive()) {
+      return readGhPagesDemoUser()
+    }
+    throw new Error('Unauthorized')
+  }
+
   const res = await fetchWithTimeout(`${getBaseUrl()}/auth/user`, {
     credentials: 'include',
   })
@@ -108,6 +116,10 @@ const fetchCurrentUser = async (): Promise<User> => {
  * Сброс старой сессии Практикума перед signin (битые cookie на мобильном Safari).
  */
 async function clearAuthSessionBeforeLogin(): Promise<void> {
+  if (isStaticGhPagesDeploy()) {
+    clearGhPagesDemoSession()
+    return
+  }
   try {
     await fetchWithTimeout(`${getBaseUrl()}/auth/logout`, {
       method: 'POST',
@@ -154,9 +166,6 @@ const readErrorReason = async (response: Response, fallback: string) => {
 }
 
 export const fetchUserThunk = createAsyncThunk('user/fetchUser', async () => {
-  if (isStaticGhPagesDeploy()) {
-    await waitForGhPagesServiceWorker()
-  }
   return fetchCurrentUser()
 })
 
@@ -164,10 +173,14 @@ export const loginThunk = createAsyncThunk(
   'user/login',
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     if (isStaticGhPagesDeploy()) {
-      await waitForGhPagesServiceWorker()
-      if (!isGhPagesApiProxyActive()) {
-        return rejectWithValue(GH_PAGES_SW_NOT_READY_MESSAGE)
+      await clearAuthSessionBeforeLogin()
+      if (
+        !matchesGhPagesDemoCredentials(credentials.login, credentials.password)
+      ) {
+        return rejectWithValue('Неверный логин или пароль')
       }
+      saveGhPagesDemoSession()
+      return readGhPagesDemoUser()
     }
     await clearAuthSessionBeforeLogin()
 
@@ -208,10 +221,9 @@ export const signupThunk = createAsyncThunk(
   'user/signup',
   async (data: SignupData, { rejectWithValue }) => {
     if (isStaticGhPagesDeploy()) {
-      await waitForGhPagesServiceWorker()
-      if (!isGhPagesApiProxyActive()) {
-        return rejectWithValue(GH_PAGES_SW_NOT_READY_MESSAGE)
-      }
+      return rejectWithValue(
+        'Регистрация на GitHub Pages недоступна. Войдите демо-логином testuser12345.'
+      )
     }
     await clearAuthSessionBeforeLogin()
 
@@ -238,6 +250,10 @@ export const signupThunk = createAsyncThunk(
 )
 
 export const logoutThunk = createAsyncThunk('user/logout', async () => {
+  if (isStaticGhPagesDeploy()) {
+    clearGhPagesDemoSession()
+    return
+  }
   try {
     await withTimeout(userApi.logout(), AUTH_REQUEST_TIMEOUT_MS)
   } catch {
@@ -248,13 +264,31 @@ export const logoutThunk = createAsyncThunk('user/logout', async () => {
 export const updateProfileThunk = createAsyncThunk(
   'user/updateProfile',
   async (profileData: ProfileData) => {
+    if (isStaticGhPagesDeploy()) {
+      const base = readGhPagesDemoUser()
+      return {
+        ...base,
+        first_name: profileData.first_name,
+        second_name: profileData.second_name,
+        display_name: profileData.display_name,
+        email: profileData.email,
+        phone: profileData.phone,
+        login: profileData.login,
+        avatar: base.avatar ?? '',
+      }
+    }
     return await userApi.updateProfile(profileData)
   }
 )
 
 export const updateAvatarThunk = createAsyncThunk(
   'user/updateAvatar',
-  async (file: File) => {
+  async (file: File, { rejectWithValue }) => {
+    if (isStaticGhPagesDeploy()) {
+      return rejectWithValue(
+        'Загрузка аватара на GitHub Pages недоступна в демо-режиме.'
+      )
+    }
     return await userApi.updateAvatar(file)
   }
 )
