@@ -145,9 +145,9 @@ export const ARCHITECTURE_DIAGRAMS = [
   {
     id: 'project-architecture',
     file: 'project-architecture.svg',
-    title: 'Архитектура Cosmic Match (9 спринтов)',
+    title: 'Архитектура Cosmic Match',
     short: 'Архитектура',
-    alt: 'Итоговая архитектура проекта после 9 спринтов: браузер, SSR, Canvas, API, форум, Postgres, OAuth, PWA, облако',
+    alt: 'Итоговая архитектура проекта: браузер, SSR, Canvas, API, форум, Postgres, OAuth, PWA, облако',
   },
   {
     id: 'project-meta',

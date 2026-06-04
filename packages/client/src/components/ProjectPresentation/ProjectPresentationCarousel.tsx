@@ -203,7 +203,7 @@ export function ProjectPresentationCarousel({
     const target = e.target as HTMLElement
     if (
       target.closest(
-        '.presentation-diagram-gallery, .presentation-diagram-gallery__tabs, .presentation-diagram-gallery__tab'
+        '.presentation-diagram-gallery, .presentation-diagram-gallery__tabs, .presentation-diagram-gallery__tab, .presentation-diagram-fullscreen, .presentation-diagram-fullscreen__nav'
       )
     ) {
       swipeStartX.current = null
@@ -227,7 +227,7 @@ export function ProjectPresentationCarousel({
     const target = e.target as HTMLElement
     if (
       target.closest(
-        '.presentation-diagram-gallery, .presentation-diagram-gallery__tabs, .presentation-diagram-gallery__tab'
+        '.presentation-diagram-gallery, .presentation-diagram-gallery__tabs, .presentation-diagram-gallery__tab, .presentation-diagram-fullscreen, .presentation-diagram-fullscreen__nav'
       )
     ) {
       return
