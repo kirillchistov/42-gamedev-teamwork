@@ -135,6 +135,12 @@ export function LoginPage() {
         ) : (
           <section className="auth-card auth-card--wide">
             <h1>Вход</h1>
+            {IS_STATIC_GH_PAGES_DEPLOY ? (
+              <p className="auth-note">
+                На GitHub Pages вход идёт через Service Worker. Если вход не
+                срабатывает с первого раза — обновите страницу (F5) и повторите.
+              </p>
+            ) : null}
             {fromForum ? (
               <div className="auth-page__toast-wrap">
                 <div className="auth-page__toast">

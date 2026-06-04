@@ -36,18 +36,26 @@ export function rewritePraktikumSetCookie(
   return out
 }
 
+function ghPagesServiceWorkerUrls(): { swUrl: string; scope: string } {
+  const base = typeof __APP_BASE_URL__ === 'string' ? __APP_BASE_URL__ : '/'
+  const scope = base.endsWith('/') ? base : `${base}/`
+  return { swUrl: `${scope}sw.js`, scope }
+}
+
 /** Дождаться controlling SW (прокси /api/v2) перед auth на GitHub Pages. */
 export async function waitForGhPagesServiceWorker(): Promise<void> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     return
   }
   try {
+    const { swUrl, scope } = ghPagesServiceWorkerUrls()
+    await navigator.serviceWorker.register(swUrl, { scope })
     await navigator.serviceWorker.ready
     if (navigator.serviceWorker.controller) {
       return
     }
     await new Promise<void>(resolve => {
-      const maxWait = scheduleTimeout(() => resolve(), 4000)
+      const maxWait = scheduleTimeout(() => resolve(), 6000)
       navigator.serviceWorker.addEventListener(
         'controllerchange',
         () => {
@@ -60,6 +68,14 @@ export async function waitForGhPagesServiceWorker(): Promise<void> {
   } catch {
     /* SW недоступен — пробуем login как есть */
   }
+}
+
+export function isGhPagesApiProxyActive(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    navigator.serviceWorker.controller != null
+  )
 }
 
 export function readSetCookieLines(headers: Headers): string[] {

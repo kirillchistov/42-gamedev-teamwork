@@ -10,7 +10,10 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { RootState } from '../store'
 import { getBaseUrl } from '../constants'
 import type { LoginCredentials, SignupData, User } from '../types/user'
-import { waitForGhPagesServiceWorker } from '../shared/ghPagesPraktikumProxy'
+import {
+  isGhPagesApiProxyActive,
+  waitForGhPagesServiceWorker,
+} from '../shared/ghPagesPraktikumProxy'
 import { isStaticGhPagesDeploy } from '../shared/staticDeploy'
 import {
   cancelScheduledTimeout,
@@ -26,6 +29,8 @@ const AUTH_RELOGIN_CONFLICT_MESSAGE =
   'Аккаунт уже активен на другом устройстве. Выйдите из аккаунта там и повторите вход.'
 const AUTH_SESSION_CONFIRMATION_FAILED_MESSAGE =
   'Не удалось завершить вход. Обновите страницу и попробуйте ещё раз.'
+const GH_PAGES_SW_NOT_READY_MESSAGE =
+  'Прокси авторизации ещё не готов. Подождите несколько секунд и обновите страницу (F5), затем войдите снова.'
 const AUTH_SESSION_CONFIRM_RETRIES = 4
 const AUTH_SESSION_CONFIRM_RETRY_MS = 200
 
@@ -160,6 +165,9 @@ export const loginThunk = createAsyncThunk(
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     if (isStaticGhPagesDeploy()) {
       await waitForGhPagesServiceWorker()
+      if (!isGhPagesApiProxyActive()) {
+        return rejectWithValue(GH_PAGES_SW_NOT_READY_MESSAGE)
+      }
     }
     await clearAuthSessionBeforeLogin()
 
@@ -201,6 +209,9 @@ export const signupThunk = createAsyncThunk(
   async (data: SignupData, { rejectWithValue }) => {
     if (isStaticGhPagesDeploy()) {
       await waitForGhPagesServiceWorker()
+      if (!isGhPagesApiProxyActive()) {
+        return rejectWithValue(GH_PAGES_SW_NOT_READY_MESSAGE)
+      }
     }
     await clearAuthSessionBeforeLogin()
 

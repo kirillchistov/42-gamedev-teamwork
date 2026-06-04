@@ -4,29 +4,10 @@
  */
 import type { Express } from 'express'
 import { createProxyMiddleware, type Options } from 'http-proxy-middleware'
+import { filterPraktikumCookieHeader } from '../src/shared/praktikumAuthCookies'
 
 const DEFAULT_PRAKTIKUM_ORIGIN = 'https://ya-praktikum.tech'
 const DEFAULT_NODE_API = 'http://localhost:3000'
-
-/** Cookie сессии Практикума; anonymous_session_id с Path=/ не отправляем. */
-const PRAKTIKUM_AUTH_COOKIE_NAMES = new Set(['uuid', 'authCookie'])
-
-function filterPraktikumCookieHeader(
-  cookieHeader: string | undefined
-): string | undefined {
-  if (!cookieHeader) {
-    return undefined
-  }
-  const kept = cookieHeader
-    .split(';')
-    .map(part => part.trim())
-    .filter(Boolean)
-    .filter(part => {
-      const name = part.split('=')[0]?.trim()
-      return name != null && PRAKTIKUM_AUTH_COOKIE_NAMES.has(name)
-    })
-  return kept.length > 0 ? kept.join('; ') : undefined
-}
 
 function rewritePraktikumSetCookieLines(
   header: string | string[] | undefined
