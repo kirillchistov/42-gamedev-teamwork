@@ -20,6 +20,7 @@
     "server/csp.ts",
     "server/cspPolicy.ts",
     "server/static-page.tsx",
-    "server/**/*.d.ts"
+    "server/**/*.d.ts",
+    "src/shared/praktikumAuthCookies.ts"
   ]
 }

@@ -2,25 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerApiProxy = registerApiProxy;
 const http_proxy_middleware_1 = require("http-proxy-middleware");
+const praktikumAuthCookies_1 = require("../src/shared/praktikumAuthCookies");
 const DEFAULT_PRAKTIKUM_ORIGIN = 'https://ya-praktikum.tech';
 const DEFAULT_NODE_API = 'http://localhost:3000';
-/** Cookie сессии Практикума; anonymous_session_id с Path=/ не отправляем. */
-const PRAKTIKUM_AUTH_COOKIE_NAMES = new Set(['uuid', 'authCookie']);
-function filterPraktikumCookieHeader(cookieHeader) {
-    if (!cookieHeader) {
-        return undefined;
-    }
-    const kept = cookieHeader
-        .split(';')
-        .map(part => part.trim())
-        .filter(Boolean)
-        .filter(part => {
-        var _a;
-        const name = (_a = part.split('=')[0]) === null || _a === void 0 ? void 0 : _a.trim();
-        return name != null && PRAKTIKUM_AUTH_COOKIE_NAMES.has(name);
-    });
-    return kept.length > 0 ? kept.join('; ') : undefined;
-}
 function rewritePraktikumSetCookieLines(header) {
     if (header == null) {
         return undefined;
@@ -116,7 +100,7 @@ function registerApiProxy(app) {
         secure: true,
         on: {
             proxyReq: (proxyReq, req) => {
-                const filtered = filterPraktikumCookieHeader(req.headers.cookie);
+                const filtered = (0, praktikumAuthCookies_1.filterPraktikumCookieHeader)(req.headers.cookie);
                 if (filtered) {
                     proxyReq.setHeader('cookie', filtered);
                 }
