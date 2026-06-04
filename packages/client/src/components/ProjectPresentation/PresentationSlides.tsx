@@ -1,5 +1,4 @@
 import React, { useState, type CSSProperties } from 'react'
-import { Link } from 'react-router-dom'
 
 import { HeroMiniBoard } from '../Landing/HeroMiniBoard'
 import { HeroVisualOrbit } from '../Landing/HeroVisualOrbit'
@@ -8,9 +7,7 @@ import {
   COSMIC_MATCH_LOGO_URL,
   GITHUB_MARK_WHITE_URL,
 } from '../../shared/brandAssets'
-import { appRouteUrl } from '../../utils/publicAssetUrl'
-import { useSelector } from '../../store'
-import { selectUser } from '../../slices/userSlice'
+import { usePresentationNavigation } from './usePresentationNavigation'
 import {
   CHALLENGES,
   CLIENT_STACK,
@@ -195,9 +192,8 @@ function StackColumn({
 }
 
 export function SlideTitle({ pdfMode = false }: { pdfMode?: boolean }) {
-  const user = useSelector(selectUser)
-  const ctaLink = user ? '/presentation' : '/signup'
-  const ctaText = user ? 'О проекте' : 'Зарегистрироваться'
+  const { goToPlay, goToSignupOrAbout, playLabel, signupCtaText } =
+    usePresentationNavigation()
 
   return (
     <section
@@ -222,17 +218,23 @@ export function SlideTitle({ pdfMode = false }: { pdfMode?: boolean }) {
           <div className="hero__actions presentation-title__actions">
             {pdfMode ? (
               <>
-                <span className="btn btn--primary">Играть</span>
-                <span className="btn btn--outline">{ctaText}</span>
+                <span className="btn btn--primary">{playLabel}</span>
+                <span className="btn btn--outline">{signupCtaText}</span>
               </>
             ) : (
               <>
-                <Link className="btn btn--primary" to="/game">
-                  Играть
-                </Link>
-                <Link className="btn btn--outline" to={ctaLink}>
-                  {ctaText}
-                </Link>
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  onClick={goToPlay}>
+                  {playLabel}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--outline"
+                  onClick={goToSignupOrAbout}>
+                  {signupCtaText}
+                </button>
               </>
             )}
           </div>
@@ -268,12 +270,7 @@ export function SlideDiagrams({ pdfMode = false }: { pdfMode?: boolean }) {
 }
 
 export function SlideGame({ pdfMode = false }: { pdfMode?: boolean }) {
-  const user = useSelector(selectUser)
-
-  const openGame = () => {
-    const path = user ? '/game/start' : '/login'
-    window.open(appRouteUrl(path), '_blank', 'noopener,noreferrer')
-  }
+  const { goToPlay, gameCtaText } = usePresentationNavigation()
 
   return (
     <div className="presentation-slide presentation-slide--game">
@@ -293,15 +290,15 @@ export function SlideGame({ pdfMode = false }: { pdfMode?: boolean }) {
           <figcaption>Откройте игру по QR-коду</figcaption>
         </figure>
       ) : (
-        <PresentationGameBoardPreview onOpen={openGame} />
+        <PresentationGameBoardPreview onOpen={goToPlay} />
       )}
       {!pdfMode ? (
         <div className="presentation-slide__actions presentation-slide__actions--center">
           <button
             type="button"
             className="presentation-btn presentation-btn--primary"
-            onClick={openGame}>
-            {user ? 'Запустить игру' : 'Войти в игру'}
+            onClick={goToPlay}>
+            {gameCtaText}
           </button>
         </div>
       ) : null}

@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom'
 import clsx from 'clsx'
 
 import { exportPresentationPdf } from './presentationPdfExport'
+import { PresentationNavProvider } from './PresentationNavContext'
 import { PresentationSlideContent } from './PresentationSlides'
 import { PRESENTATION_BG_URL } from './presentationData'
 import {
@@ -18,7 +19,7 @@ import {
 import './ProjectPresentation.pcss'
 
 const SWIPE_THRESHOLD_PX = 56
-const COMPACT_NAV_MAX_HEIGHT = 700
+const COMPACT_NAV_MAX_HEIGHT = 820
 const COMPACT_NAV_MAX_WIDTH = 760
 const TRACKPAD_SWIPE_THRESHOLD_PX = 90
 const TRACKPAD_SWIPE_COOLDOWN_MS = 380
@@ -355,9 +356,12 @@ export function ProjectPresentationCarousel({
             />
           )}
           <div className="match3-presentation-fullscreen__body">
-            <PresentationSlideContent
-              slideId={slide.id as PresentationSlideId}
-            />
+            <PresentationNavProvider
+              onLeavePresentation={() => onOpenChange(false)}>
+              <PresentationSlideContent
+                slideId={slide.id as PresentationSlideId}
+              />
+            </PresentationNavProvider>
           </div>
           {!compactNav ? (
             <nav

@@ -97,18 +97,9 @@ import {
   clampCursor,
   createMatch3InputController,
 } from './inputController'
-import {
-  encodeBombCell,
-  encodeLineCell,
-} from './core/cell'
-import {
-  createIdleHintController,
-  createRoundTimer,
-} from './sessionRuntime'
-import {
-  runOneResolvePass,
-  type ResolveTileMotion,
-} from './resolvePass'
+import { encodeBombCell, encodeLineCell } from './core/cell'
+import { createIdleHintController, createRoundTimer } from './sessionRuntime'
+import { runOneResolvePass, type ResolveTileMotion } from './resolvePass'
 import { classifySwapCelebration } from './resolvePipeline'
 import {
   countPositiveCells,
@@ -118,21 +109,12 @@ import {
   type OverlayGrid,
 } from './obstacleSystem'
 import { syncRecordsFromScore } from './hudSync'
-import {
-  loadDailyRecord,
-  loadPlayerRecord,
-} from '../systems/records'
-import {
-  createMatchFx,
-  type MatchFxApi,
-} from './matchFx'
+import { loadDailyRecord, loadPlayerRecord } from '../systems/records'
+import { createMatchFx, type MatchFxApi } from './matchFx'
 
 export type { GameHudState }
 
-export type GameEndReason =
-  | 'goalReached'
-  | 'timeOut'
-  | 'movesOut'
+export type GameEndReason = 'goalReached' | 'timeOut' | 'movesOut'
 
 export type GameEndPayload = {
   reason: GameEndReason
@@ -148,9 +130,7 @@ type CreateParams = {
   /**
    * Тема поля «Иероглиф»: повторный тап по уже выбранной фишке открывает карточку.
    */
-  onHieroglyphCardOpen?: (payload: {
-    kind: number
-  }) => void
+  onHieroglyphCardOpen?: (payload: { kind: number }) => void
   /**
    * Каскадный множитель текущего прохода (1 = первый матч, 2+ = комбо).
    * UI может использовать для лёгкого screen shake при chain ≥ 3.
@@ -159,9 +139,7 @@ type CreateParams = {
   /**
    * Матч 4+ в линии или T/L-форма: UI может показать искристую обводку поля.
    */
-  onPremiumMatchBorder?: (
-    shape: 'line4plus' | 'tOrL'
-  ) => void
+  onPremiumMatchBorder?: (shape: 'line4plus' | 'tOrL') => void
   /** По умолчанию `full`: частицы и вспышка на fx-canvas. `simple` — только лёгкая подсветка матчей. */
   vfxQuality?: GameVfxQualityOption
 }
@@ -178,12 +156,7 @@ type TileMotion = ResolveTileMotion
 type IceGrid = OverlayGrid
 type GoalGrid = OverlayGrid
 
-type SoundFx =
-  | 'swap'
-  | 'match'
-  | 'cascade'
-  | 'win'
-  | 'lose'
+type SoundFx = 'swap' | 'match' | 'cascade' | 'win' | 'lose'
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => {
@@ -191,9 +164,7 @@ function delay(ms: number): Promise<void> {
   })
 }
 
-export function createMatch3Game(
-  params: CreateParams
-) {
+export function createMatch3Game(params: CreateParams) {
   const {
     canvas,
     fxCanvas,
@@ -206,9 +177,7 @@ export function createMatch3Game(
   } = params
   const ctxMaybe = canvas.getContext('2d')
   if (!ctxMaybe) {
-    throw new Error(
-      'Canvas 2D context unavailable'
-    )
+    throw new Error('Canvas 2D context unavailable')
   }
   const ctx: CanvasRenderingContext2D = ctxMaybe
 
@@ -217,8 +186,7 @@ export function createMatch3Game(
   let matchFx: MatchFxApi | null = null
   let fxRafId: number | null = null
   let fxLastTs = 0
-  let fxCtx: CanvasRenderingContext2D | null =
-    null
+  let fxCtx: CanvasRenderingContext2D | null = null
 
   if (fxCanvas) {
     const fxCtxMaybe = fxCanvas.getContext('2d')
@@ -231,14 +199,9 @@ export function createMatch3Game(
   const syncBoardCanvasDpr = () => {
     const dpr = Math.min(
       2.5,
-      typeof window !== 'undefined'
-        ? window.devicePixelRatio || 1
-        : 1
+      typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
     )
-    const buf = Math.max(
-      1,
-      Math.round(MATCH3_BOARD_LOGICAL_PX * dpr)
-    )
+    const buf = Math.max(1, Math.round(MATCH3_BOARD_LOGICAL_PX * dpr))
     canvas.width = buf
     canvas.height = buf
     if (typeof ctx.setTransform === 'function') {
@@ -251,9 +214,7 @@ export function createMatch3Game(
     if (fxCanvas && fxCtx) {
       fxCanvas.width = buf
       fxCanvas.height = buf
-      if (
-        typeof fxCtx.setTransform === 'function'
-      ) {
+      if (typeof fxCtx.setTransform === 'function') {
         fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
       }
       fxCtx.imageSmoothingEnabled = true
@@ -265,8 +226,7 @@ export function createMatch3Game(
 
   syncBoardCanvasDpr()
 
-  let gameVfxQuality: GameVfxQualityOption =
-    initialVfxQuality ?? 'full'
+  let gameVfxQuality: GameVfxQualityOption = initialVfxQuality ?? 'full'
 
   const cancelFxLoop = () => {
     if (fxRafId !== null) {
@@ -281,15 +241,12 @@ export function createMatch3Game(
       fxRafId = null
       return
     }
-    const dt = fxLastTs
-      ? Math.min(48, now - fxLastTs)
-      : 16
+    const dt = fxLastTs ? Math.min(48, now - fxLastTs) : 16
     fxLastTs = now
     matchFx.step(dt)
     matchFx.draw()
     if (matchFx.isActive()) {
-      fxRafId =
-        window.requestAnimationFrame(fxLoop)
+      fxRafId = window.requestAnimationFrame(fxLoop)
     } else {
       fxRafId = null
       fxLastTs = 0
@@ -319,18 +276,15 @@ export function createMatch3Game(
   let gameMoveLimit: MoveLimitOption = 75
   let gameGoalScore = 0
   let gameTheme: GameThemeOption = 'standard'
-  let gameIconTheme: GameIconThemeOption =
-    'cosmic'
-  let gameBoardField: BoardFieldThemeOption =
-    'space'
+  let gameIconTheme: GameIconThemeOption = 'cosmic'
+  let gameBoardField: BoardFieldThemeOption = 'space'
   let soundEnabled = true
   let scoreMode: ScoreMode = 'x1'
   let gameIceMultiplier: 1 | 2 | 4 = 1
   let gameTargetCells = 0
   let goalLayout: CellRC[] = []
   let gameQuests = sanitizeLevelQuests(undefined)
-  let questProgress =
-    createInitialQuestProgress(gameQuests)
+  let questProgress = createInitialQuestProgress(gameQuests)
   let phase: Phase = 'idle'
   let isAnimating = false
   let isResolving = false
@@ -350,32 +304,21 @@ export function createMatch3Game(
   let hintPulseRedrawId: number | null = null
   const DRAG_SWAP_THRESHOLD_PX = 12
 
-  const applyDebugBoosterPreset = (
-    nextBoard: Board
-  ) => {
+  const applyDebugBoosterPreset = (nextBoard: Board) => {
     if (!debugBoostersMode) return
     const rows = nextBoard.length
-    const cols =
-      rows > 0 ? nextBoard[0]?.length ?? 0 : 0
+    const cols = rows > 0 ? nextBoard[0]?.length ?? 0 : 0
     if (rows === 0 || cols === 0) return
     const kindsSafe = Math.max(3, tileKinds)
     for (let r = 0; r < rows; r += 1) {
       for (let c = 0; c < cols; c += 1) {
-        const kind = Math.abs(
-          (r * 3 + c * 5) % kindsSafe
-        )
+        const kind = Math.abs((r * 3 + c * 5) % kindsSafe)
         if ((r + c) % 7 === 0) {
           nextBoard[r][c] = encodeBombCell(kind)
         } else if (r % 3 === 0) {
-          nextBoard[r][c] = encodeLineCell(
-            kind,
-            'row'
-          )
+          nextBoard[r][c] = encodeLineCell(kind, 'row')
         } else if (c % 3 === 0) {
-          nextBoard[r][c] = encodeLineCell(
-            kind,
-            'col'
-          )
+          nextBoard[r][c] = encodeLineCell(kind, 'col')
         } else {
           nextBoard[r][c] = kind
         }
@@ -394,8 +337,7 @@ export function createMatch3Game(
       },
     })
 
-  const scoreMult = () =>
-    scoreMultiplier(scoreMode)
+  const scoreMult = () => scoreMultiplier(scoreMode)
 
   const drawBoard = (opts?: RenderOpts) => {
     renderBoard(ctx, board, {
@@ -411,15 +353,19 @@ export function createMatch3Game(
     })
   }
 
+  const drawBoardAfterIconPreload = () => {
+    void preloadIconTheme(gameIconTheme).then(() => {
+      if (isDestroyed) return
+      drawBoard()
+    })
+  }
+
   const onBoardCanvasResize = () => {
     syncBoardCanvasDpr()
     drawBoard()
   }
   if (typeof window !== 'undefined') {
-    window.addEventListener(
-      'resize',
-      onBoardCanvasResize
-    )
+    window.addEventListener('resize', onBoardCanvasResize)
   }
 
   let audioCtx: AudioContext | null = null
@@ -452,14 +398,8 @@ export function createMatch3Game(
       const osc = ac.createOscillator()
       const gain = ac.createGain()
       osc.type = type
-      osc.frequency.setValueAtTime(
-        freq,
-        now + when
-      )
-      gain.gain.setValueAtTime(
-        gainFrom,
-        now + when
-      )
+      osc.frequency.setValueAtTime(freq, now + when)
+      gain.gain.setValueAtTime(gainFrom, now + when)
       gain.gain.exponentialRampToValueAtTime(
         Math.max(0.0001, gainTo),
         now + when + dur
@@ -471,101 +411,40 @@ export function createMatch3Game(
     }
 
     if (fx === 'swap') {
-      makeTone(
-        360,
-        0.05,
-        'triangle',
-        0.04,
-        0.0001
-      )
+      makeTone(360, 0.05, 'triangle', 0.04, 0.0001)
       return
     }
     if (fx === 'match') {
       makeTone(520, 0.08, 'sine', 0.06, 0.0001)
-      makeTone(
-        680,
-        0.09,
-        'sine',
-        0.04,
-        0.0001,
-        0.03
-      )
+      makeTone(680, 0.09, 'sine', 0.04, 0.0001, 0.03)
       return
     }
     if (fx === 'cascade') {
-      makeTone(
-        420,
-        0.07,
-        'triangle',
-        0.05,
-        0.0001
-      )
-      makeTone(
-        620,
-        0.09,
-        'triangle',
-        0.04,
-        0.0001,
-        0.03
-      )
-      makeTone(
-        820,
-        0.1,
-        'triangle',
-        0.03,
-        0.0001,
-        0.06
-      )
+      makeTone(420, 0.07, 'triangle', 0.05, 0.0001)
+      makeTone(620, 0.09, 'triangle', 0.04, 0.0001, 0.03)
+      makeTone(820, 0.1, 'triangle', 0.03, 0.0001, 0.06)
       return
     }
     if (fx === 'win') {
       makeTone(523, 0.09, 'sine', 0.07, 0.0001)
-      makeTone(
-        659,
-        0.11,
-        'sine',
-        0.06,
-        0.0001,
-        0.06
-      )
-      makeTone(
-        784,
-        0.14,
-        'sine',
-        0.05,
-        0.0001,
-        0.12
-      )
+      makeTone(659, 0.11, 'sine', 0.06, 0.0001, 0.06)
+      makeTone(784, 0.14, 'sine', 0.05, 0.0001, 0.12)
       return
     }
     makeTone(240, 0.12, 'sawtooth', 0.06, 0.0001)
-    makeTone(
-      180,
-      0.12,
-      'sawtooth',
-      0.05,
-      0.0001,
-      0.06
-    )
+    makeTone(180, 0.12, 'sawtooth', 0.05, 0.0001, 0.06)
   }
 
-  const cloneBoard = (src: Board): Board =>
-    src.map(row => [...row])
+  const cloneBoard = (src: Board): Board => src.map(row => [...row])
 
   const inBounds = (r: number, c: number) =>
-    r >= 0 &&
-    c >= 0 &&
-    r < board.length &&
-    c < (board[0]?.length ?? 0)
+    r >= 0 && c >= 0 && r < board.length && c < (board[0]?.length ?? 0)
 
-  const isFrozenCell = (r: number, c: number) =>
-    (iceGrid[r]?.[c] ?? 0) > 0
+  const isFrozenCell = (r: number, c: number) => (iceGrid[r]?.[c] ?? 0) > 0
 
   const getMatchBoard = (): Board =>
     board.map((row, r) =>
-      row.map((value, c) =>
-        isFrozenCell(r, c) ? -1 : value
-      )
+      row.map((value, c) => (isFrozenCell(r, c) ? -1 : value))
     )
 
   const trySwapConsideringIce = (
@@ -574,32 +453,18 @@ export function createMatch3Game(
   ): boolean => {
     if (!a || !b) return false
     if (!isAdjacentCell(a, b)) return false
-    if (
-      !inBounds(a.r, a.c) ||
-      !inBounds(b.r, b.c)
-    )
-      return false
-    if (
-      isFrozenCell(a.r, a.c) ||
-      isFrozenCell(b.r, b.c)
-    )
-      return false
+    if (!inBounds(a.r, a.c) || !inBounds(b.r, b.c)) return false
+    if (isFrozenCell(a.r, a.c) || isFrozenCell(b.r, b.c)) return false
     const aRow = board[a.r]
     const bRow = board[b.r]
     if (!aRow || !bRow) return false
     const v1 = aRow[a.c]
     const v2 = bRow[b.c]
-    if (
-      typeof v1 !== 'number' ||
-      typeof v2 !== 'number' ||
-      v1 < 0 ||
-      v2 < 0
-    )
+    if (typeof v1 !== 'number' || typeof v2 !== 'number' || v1 < 0 || v2 < 0)
       return false
     aRow[a.c] = v2
     bRow[b.c] = v1
-    const ok =
-      findMatches(getMatchBoard()).length > 0
+    const ok = findMatches(getMatchBoard()).length > 0
     if (!ok) {
       aRow[a.c] = v1
       bRow[b.c] = v2
@@ -625,10 +490,7 @@ export function createMatch3Game(
     return new Promise(resolve => {
       const start = performance.now()
       const tick = (now: number) => {
-        const t = Math.min(
-          1,
-          (now - start) / durationMs
-        )
+        const t = Math.min(1, (now - start) / durationMs)
         const eased = opts?.overshoot
           ? (() => {
               const s = 1.25
@@ -652,13 +514,9 @@ export function createMatch3Game(
     })
   }
 
-  const buildFallMotions = (
-    before: Board,
-    after: Board
-  ): TileMotion[] => {
+  const buildFallMotions = (before: Board, after: Board): TileMotion[] => {
     const rows = after.length
-    const cols =
-      rows > 0 ? after[0]?.length ?? 0 : 0
+    const cols = rows > 0 ? after[0]?.length ?? 0 : 0
     const motions: TileMotion[] = []
     for (let c = 0; c < cols; c += 1) {
       const sourceRows: number[] = []
@@ -672,8 +530,7 @@ export function createMatch3Game(
       let spawnIdx = 0
       for (let r = rows - 1; r >= 0; r -= 1) {
         const v = after[r]?.[c]
-        if (typeof v !== 'number' || v < 0)
-          continue
+        if (typeof v !== 'number' || v < 0) continue
         const fromR =
           sourceIdx < sourceRows.length
             ? sourceRows[sourceIdx++]
@@ -693,8 +550,7 @@ export function createMatch3Game(
     getInputBlocked: () => inputBlocked,
     getIsResolving: () => isResolving,
     getHintIdleMs: () => hintIdleMs,
-    selectionBlocksHint: () =>
-      Boolean(firstPick || targetCell),
+    selectionBlocksHint: () => Boolean(firstPick || targetCell),
     getCurrentHintMove: () => hintMove,
     setHintMove: m => {
       const hadHint = hintMove != null
@@ -705,8 +561,7 @@ export function createMatch3Game(
         stopHintPulseAnimation()
       }
     },
-    getFirstMoveCandidate: () =>
-      findPossibleMoves(getMatchBoard())[0],
+    getFirstMoveCandidate: () => findPossibleMoves(getMatchBoard())[0],
     redraw: drawBoard,
   })
 
@@ -734,20 +589,15 @@ export function createMatch3Game(
         drawBoard()
         return
       }
-      hintPulsePhase =
-        (performance.now() % 1650) / 1650
+      hintPulsePhase = (performance.now() % 1650) / 1650
       drawBoard()
     }, 42)
   }
 
-  let roundTimer: ReturnType<
-    typeof createRoundTimer
-  > | null = null
+  let roundTimer: ReturnType<typeof createRoundTimer> | null = null
 
   const finishGame = (reason: GameEndReason) => {
-    playSound(
-      reason === 'goalReached' ? 'win' : 'lose'
-    )
+    playSound(reason === 'goalReached' ? 'win' : 'lose')
     phase = 'ended'
     roundTimerPaused = false
     roundTimerStarted = false
@@ -790,9 +640,7 @@ export function createMatch3Game(
   const renderInteraction = () => {
     const target =
       targetCell ??
-      (firstPick &&
-      keyboardCursor &&
-      !isSameCell(firstPick, keyboardCursor)
+      (firstPick && keyboardCursor && !isSameCell(firstPick, keyboardCursor)
         ? keyboardCursor
         : null)
 
@@ -811,30 +659,16 @@ export function createMatch3Game(
     const baseDurationMs = fullVfx
       ? opts?.durationMs ?? 200
       : Math.min(opts?.durationMs ?? 220, 140)
-    const durationMs = match3AnimMs(
-      baseDurationMs
-    )
+    const durationMs = match3AnimMs(baseDurationMs)
     const chain = Math.max(1, opts?.chain ?? 1)
-    if (
-      matchFx &&
-      matches.length > 0 &&
-      fullVfx
-    ) {
-      matchFx.burstFromMatches(
-        board,
-        matches,
-        gameTheme,
-        chain
-      )
+    if (matchFx && matches.length > 0 && fullVfx) {
+      matchFx.burstFromMatches(board, matches, gameTheme, chain)
       ensureFxLoop()
     }
     return new Promise(resolve => {
       const start = performance.now()
       const stepAnim = (now: number) => {
-        const t = Math.min(
-          1,
-          (now - start) / durationMs
-        )
+        const t = Math.min(1, (now - start) / durationMs)
         const alpha = fullVfx
           ? 0.4 + 0.6 * Math.sin(t * Math.PI * 3)
           : 0.5 + 0.45 * Math.sin(t * Math.PI)
@@ -855,8 +689,7 @@ export function createMatch3Game(
     style: 'normal' | 'line4plus' | 'tOrL',
     matches: CellRC[]
   ) => {
-    if (!matchFx || gameVfxQuality !== 'full')
-      return
+    if (!matchFx || gameVfxQuality !== 'full') return
     matchFx.burstCelebration(
       board,
       matches.length > 0 ? matches : [a, b],
@@ -881,53 +714,44 @@ export function createMatch3Game(
           return
         }
         pass += 1
-        const { matched, nextChain, questDelta } =
-          await runOneResolvePass({
-            board,
-            getMatchBoard,
-            isFrozenCell,
-            getIceGrid: () => iceGrid,
-            setIceGrid: g => {
-              iceGrid = g
-            },
-            getGoalGrid: () => goalGrid,
-            setGoalGrid: g => {
-              goalGrid = g
-            },
-            hud,
-            tileKinds,
-            chain,
-            gameVfxQuality,
-            gameTheme,
-            scoreMult,
-            iceScorePerDamage:
-              ICE_SCORE_PER_DAMAGE,
-            iceBreakBonus: ICE_SCORE_BREAK_BONUS,
-            targetScorePerHit:
-              TARGET_SCORE_PER_HIT,
-            onPremiumMatchBorder,
-            onComboShake,
-            playSound,
-            matchFx,
-            ensureFxLoop,
-            cloneBoard,
-            buildFallMotions,
-            animateTileMotions,
-            flashMatches,
-            clearHint,
-            emitHud,
-            delay,
-            activeScoreMultiplier: () =>
-              questProgress.activeScoreMultiplier,
-          })
+        const { matched, nextChain, questDelta } = await runOneResolvePass({
+          board,
+          getMatchBoard,
+          isFrozenCell,
+          getIceGrid: () => iceGrid,
+          setIceGrid: g => {
+            iceGrid = g
+          },
+          getGoalGrid: () => goalGrid,
+          setGoalGrid: g => {
+            goalGrid = g
+          },
+          hud,
+          tileKinds,
+          chain,
+          gameVfxQuality,
+          gameTheme,
+          scoreMult,
+          iceScorePerDamage: ICE_SCORE_PER_DAMAGE,
+          iceBreakBonus: ICE_SCORE_BREAK_BONUS,
+          targetScorePerHit: TARGET_SCORE_PER_HIT,
+          onPremiumMatchBorder,
+          onComboShake,
+          playSound,
+          matchFx,
+          ensureFxLoop,
+          cloneBoard,
+          buildFallMotions,
+          animateTileMotions,
+          flashMatches,
+          clearHint,
+          emitHud,
+          delay,
+          activeScoreMultiplier: () => questProgress.activeScoreMultiplier,
+        })
         if (!matched) break
-        applyQuestDelta(
-          questProgress,
-          questDelta,
-          hud.moves
-        )
-        const questReward =
-          consumePendingFlatReward(questProgress)
+        applyQuestDelta(questProgress, questDelta, hud.moves)
+        const questReward = consumePendingFlatReward(questProgress)
         if (questReward > 0) {
           hud.score += questReward
         }
@@ -936,26 +760,18 @@ export function createMatch3Game(
       }
 
       if (maxChain > 0) {
-        hud.maxCombo = Math.max(
-          hud.maxCombo,
-          maxChain
-        )
+        hud.maxCombo = Math.max(hud.maxCombo, maxChain)
       }
       hud.currentCombo = 0
       syncGoalProgress(hud)
-      const synced = syncRecordsFromScore(
-        hud.score
-      )
+      const synced = syncRecordsFromScore(hud.score)
       hud.playerRecord = synced.playerRecord
       hud.dailyRecord = synced.dailyRecord
 
-      const hasAnyMoves =
-        findPossibleMoves(getMatchBoard())
-          .length > 0
+      const hasAnyMoves = findPossibleMoves(getMatchBoard()).length > 0
       if (!hasAnyMoves) {
         clearHint()
-        const shuffled =
-          shuffleBoardUntilPlayable(board)
+        const shuffled = shuffleBoardUntilPlayable(board)
         if (!shuffled) {
           rebuildBoard()
         }
@@ -982,18 +798,11 @@ export function createMatch3Game(
   }
 
   const rebuildBoard = () => {
-    const next = createPlayableBoard(
-      boardSize,
-      forcedTileKinds ?? undefined
-    )
+    const next = createPlayableBoard(boardSize, forcedTileKinds ?? undefined)
     tileKinds = next.tileKinds
     board = next.board
     applyDebugBoosterPreset(board)
-    iceGrid = createIceGrid(
-      board,
-      computeIceCount(),
-      ICE_HP
-    )
+    iceGrid = createIceGrid(board, computeIceCount(), ICE_HP)
     const isLayoutCompatible =
       goalLayout.length > 0 &&
       goalLayout.every(
@@ -1004,19 +813,11 @@ export function createMatch3Game(
           cell.c < (board[0]?.length ?? 0)
       )
     if (!isLayoutCompatible) {
-      goalLayout = createGoalLayout(
-        board,
-        gameTargetCells
-      )
+      goalLayout = createGoalLayout(board, gameTargetCells)
     }
-    goalGrid = createGoalGridFromLayout(
-      board,
-      goalLayout,
-      TARGET_HP
-    )
+    goalGrid = createGoalGridFromLayout(board, goalLayout, TARGET_HP)
     hud.goalTargetsTotal = gameTargetCells
-    hud.goalTargetsLeft =
-      countPositiveCells(goalGrid)
+    hud.goalTargetsLeft = countPositiveCells(goalGrid)
     syncGoalProgress(hud)
     keyboardCursor = {
       r: Math.floor(boardSize / 2),
@@ -1024,16 +825,11 @@ export function createMatch3Game(
     }
     targetCell = null
     targetPulse = false
-    drawBoard()
+    drawBoardAfterIconPreload()
   }
 
   async function handleSelectCell(cell: CellRC) {
-    if (
-      phase !== 'playing' ||
-      isResolving ||
-      isAnimating ||
-      inputBlocked
-    )
+    if (phase !== 'playing' || isResolving || isAnimating || inputBlocked)
       return
     markPlayerActivity()
     if (isFrozenCell(cell.r, cell.c)) {
@@ -1049,10 +845,7 @@ export function createMatch3Game(
       return
     }
 
-    if (
-      gameBoardField === 'hieroglyph' &&
-      isSameCell(firstPick, cell)
-    ) {
+    if (gameBoardField === 'hieroglyph' && isSameCell(firstPick, cell)) {
       const v = board[cell.r]?.[cell.c]
       if (typeof v === 'number' && v >= 0) {
         onHieroglyphCardOpen?.({
@@ -1094,18 +887,9 @@ export function createMatch3Game(
         ],
         SWAP_ANIM_MS
       )
-      const immediateMatches = findMatches(
-        getMatchBoard()
-      )
-      const style = classifySwapCelebration(
-        immediateMatches
-      )
-      celebrateSwap(
-        source,
-        cell,
-        style,
-        immediateMatches
-      )
+      const immediateMatches = findMatches(getMatchBoard())
+      const style = classifySwapCelebration(immediateMatches)
+      celebrateSwap(source, cell, style, immediateMatches)
       hud.moves += 1
       drawBoard()
       await resolveBoard()
@@ -1123,22 +907,12 @@ export function createMatch3Game(
     emitHud()
   }
 
-  const moveKeyboardCursor = (
-    dr: number,
-    dc: number
-  ) => {
+  const moveKeyboardCursor = (dr: number, dc: number) => {
     if (inputBlocked) return
     markPlayerActivity()
     const rows = board.length
-    const cols =
-      rows > 0 ? board[0]?.length ?? 0 : 0
-    keyboardCursor = clampCursor(
-      keyboardCursor,
-      dr,
-      dc,
-      rows,
-      cols
-    )
+    const cols = rows > 0 ? board[0]?.length ?? 0 : 0
+    keyboardCursor = clampCursor(keyboardCursor, dr, dc, rows, cols)
     if (!keyboardCursor) return
     renderInteraction()
   }
@@ -1149,79 +923,53 @@ export function createMatch3Game(
     void handleSelectCell(keyboardCursor)
   }
 
-  const match3Input = createMatch3InputController(
-    {
-      canvas,
-      dragThresholdPx: DRAG_SWAP_THRESHOLD_PX,
-      getBoard: () => board,
-      pointerGuard: () =>
-        phase === 'playing' &&
-        !isResolving &&
-        !isAnimating &&
-        !inputBlocked,
-      keyboardGuard: () =>
-        phase === 'playing' &&
-        !isAnimating &&
-        !inputBlocked,
-      ensureAudio,
-      markActivity: markPlayerActivity,
-      onPointerDownPick: ev => {
-        const cell = pickCellAt(board, canvas, ev)
-        if (!cell) return
-        void handleSelectCell(cell)
-      },
-      moveKeyboardCursor,
-      submitKeyboardCursor: selectKeyboardCursor,
-      renderInteraction,
-      onSelectCell: handleSelectCell,
-      setKeyboardCursor: cell => {
-        keyboardCursor = cell
-      },
-      clearPointerPreview: () => {
+  const match3Input = createMatch3InputController({
+    canvas,
+    dragThresholdPx: DRAG_SWAP_THRESHOLD_PX,
+    getBoard: () => board,
+    pointerGuard: () =>
+      phase === 'playing' && !isResolving && !isAnimating && !inputBlocked,
+    keyboardGuard: () => phase === 'playing' && !isAnimating && !inputBlocked,
+    ensureAudio,
+    markActivity: markPlayerActivity,
+    onPointerDownPick: ev => {
+      const cell = pickCellAt(board, canvas, ev)
+      if (!cell) return
+      void handleSelectCell(cell)
+    },
+    moveKeyboardCursor,
+    submitKeyboardCursor: selectKeyboardCursor,
+    renderInteraction,
+    onSelectCell: handleSelectCell,
+    setKeyboardCursor: cell => {
+      keyboardCursor = cell
+    },
+    clearPointerPreview: () => {
+      targetCell = null
+      targetPulse = false
+      renderInteraction()
+    },
+    setPointerPreviewTarget: cell => {
+      targetCell = cell
+      targetPulse = false
+      renderInteraction()
+    },
+    onPointerUpWithoutDragCommit: () => {
+      if (targetCell) {
         targetCell = null
         targetPulse = false
         renderInteraction()
-      },
-      setPointerPreviewTarget: cell => {
-        targetCell = cell
-        targetPulse = false
-        renderInteraction()
-      },
-      onPointerUpWithoutDragCommit: () => {
-        if (targetCell) {
-          targetCell = null
-          targetPulse = false
-          renderInteraction()
-        }
-      },
-    }
-  )
+      }
+    },
+  })
 
   canvas.tabIndex = 0
-  canvas.addEventListener(
-    'pointerdown',
-    match3Input.onPointerDown
-  )
-  canvas.addEventListener(
-    'pointermove',
-    match3Input.onPointerMove
-  )
-  canvas.addEventListener(
-    'pointerup',
-    match3Input.onPointerUpOrCancel
-  )
-  canvas.addEventListener(
-    'pointercancel',
-    match3Input.onPointerUpOrCancel
-  )
-  window.addEventListener(
-    'keydown',
-    match3Input.onKeyDown
-  )
-  window.addEventListener(
-    'keyup',
-    match3Input.onKeyUp
-  )
+  canvas.addEventListener('pointerdown', match3Input.onPointerDown)
+  canvas.addEventListener('pointermove', match3Input.onPointerMove)
+  canvas.addEventListener('pointerup', match3Input.onPointerUpOrCancel)
+  canvas.addEventListener('pointercancel', match3Input.onPointerUpOrCancel)
+  window.addEventListener('keydown', match3Input.onKeyDown)
+  window.addEventListener('keyup', match3Input.onKeyUp)
 
   const resetIdle = () => {
     roundTimerPaused = false
@@ -1249,8 +997,7 @@ export function createMatch3Game(
       goalTargetsTotal: gameTargetCells,
       goalTargetsLeft: gameTargetCells,
     })
-    questProgress =
-      createInitialQuestProgress(gameQuests)
+    questProgress = createInitialQuestProgress(gameQuests)
     drawBoard()
     emitHud()
   }
@@ -1272,8 +1019,7 @@ export function createMatch3Game(
       goalTargetsTotal: gameTargetCells,
       goalTargetsLeft: gameTargetCells,
     })
-    questProgress =
-      createInitialQuestProgress(gameQuests)
+    questProgress = createInitialQuestProgress(gameQuests)
     goalLayout = []
     firstPick = null
 
@@ -1287,8 +1033,7 @@ export function createMatch3Game(
   }
 
   const setBoardSize = (size: number) => {
-    if (!Number.isInteger(size) || size < 4)
-      return
+    if (!Number.isInteger(size) || size < 4) return
     boardSize = size
     goalLayout = []
     if (phase === 'playing') {
@@ -1305,10 +1050,7 @@ export function createMatch3Game(
   }
 
   const setDuration = (durationSec: number) => {
-    if (
-      !Number.isInteger(durationSec) ||
-      durationSec <= 0
-    ) {
+    if (!Number.isInteger(durationSec) || durationSec <= 0) {
       return
     }
     gameDurationSec = durationSec
@@ -1331,9 +1073,7 @@ export function createMatch3Game(
     }
   }
 
-  const setMoveLimit = (
-    moveLimit: MoveLimitOption
-  ) => {
+  const setMoveLimit = (moveLimit: MoveLimitOption) => {
     gameMoveLimit = moveLimit
   }
 
@@ -1342,20 +1082,12 @@ export function createMatch3Game(
     drawBoard()
   }
 
-  const setIconTheme = (
-    iconTheme: GameIconThemeOption
-  ) => {
+  const setIconTheme = (iconTheme: GameIconThemeOption) => {
     gameIconTheme = iconTheme
-    drawBoard()
-    void preloadIconTheme(iconTheme).then(() => {
-      if (isDestroyed || phase === 'ended') return
-      drawBoard()
-    })
+    drawBoardAfterIconPreload()
   }
 
-  const setBoardField = (
-    field: BoardFieldThemeOption
-  ) => {
+  const setBoardField = (field: BoardFieldThemeOption) => {
     gameBoardField = field
     drawBoard()
   }
@@ -1367,14 +1099,10 @@ export function createMatch3Game(
     gameTheme = level.theme
     forcedTileKinds = level.tileKinds
     gameIceMultiplier = level.iceMultiplier ?? 1
-    gameTargetCells = Math.max(
-      0,
-      level.targetCells ?? 0
-    )
+    gameTargetCells = Math.max(0, level.targetCells ?? 0)
     goalLayout = []
     gameQuests = sanitizeLevelQuests(level.quests)
-    questProgress =
-      createInitialQuestProgress(gameQuests)
+    questProgress = createInitialQuestProgress(gameQuests)
 
     if (phase === 'playing') {
       rebuildBoard()
@@ -1414,9 +1142,7 @@ export function createMatch3Game(
     }
   }
 
-  const setVfxQuality = (
-    q: GameVfxQualityOption
-  ) => {
+  const setVfxQuality = (q: GameVfxQualityOption) => {
     gameVfxQuality = q
     if (q === 'simple') {
       cancelFxLoop()
@@ -1424,9 +1150,7 @@ export function createMatch3Game(
     }
   }
 
-  const setDebugBoostersMode = (
-    enabled: boolean
-  ) => {
+  const setDebugBoostersMode = (enabled: boolean) => {
     debugBoostersMode = Boolean(enabled)
     if (phase === 'playing') {
       rebuildBoard()
@@ -1460,35 +1184,14 @@ export function createMatch3Game(
 
   const destroy = () => {
     isDestroyed = true
-    canvas.removeEventListener(
-      'pointerdown',
-      match3Input.onPointerDown
-    )
-    canvas.removeEventListener(
-      'pointermove',
-      match3Input.onPointerMove
-    )
-    canvas.removeEventListener(
-      'pointerup',
-      match3Input.onPointerUpOrCancel
-    )
-    canvas.removeEventListener(
-      'pointercancel',
-      match3Input.onPointerUpOrCancel
-    )
-    window.removeEventListener(
-      'keydown',
-      match3Input.onKeyDown
-    )
-    window.removeEventListener(
-      'keyup',
-      match3Input.onKeyUp
-    )
+    canvas.removeEventListener('pointerdown', match3Input.onPointerDown)
+    canvas.removeEventListener('pointermove', match3Input.onPointerMove)
+    canvas.removeEventListener('pointerup', match3Input.onPointerUpOrCancel)
+    canvas.removeEventListener('pointercancel', match3Input.onPointerUpOrCancel)
+    window.removeEventListener('keydown', match3Input.onKeyDown)
+    window.removeEventListener('keyup', match3Input.onKeyUp)
     if (typeof window !== 'undefined') {
-      window.removeEventListener(
-        'resize',
-        onBoardCanvasResize
-      )
+      window.removeEventListener('resize', onBoardCanvasResize)
     }
     stopTimer()
     stopHintTimer()
@@ -1503,9 +1206,7 @@ export function createMatch3Game(
 
   resetIdle()
 
-  const setRoundTimerPaused = (
-    paused: boolean
-  ) => {
+  const setRoundTimerPaused = (paused: boolean) => {
     roundTimerPaused = Boolean(paused)
   }
 

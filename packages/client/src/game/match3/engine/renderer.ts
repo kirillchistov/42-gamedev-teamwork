@@ -211,6 +211,10 @@ export function preloadIconTheme(theme: GameIconThemeOption): Promise<void> {
   return Promise.all(icons.map(waitForImage)).then(() => undefined)
 }
 
+if (typeof window !== 'undefined') {
+  void preloadIconTheme('cosmic')
+}
+
 function drawShape(
   ctx: CanvasRenderingContext2D,
   idx: number,

@@ -14,7 +14,7 @@ export function PresentationGameBoardPreview({ onOpen, className }: Props) {
       type="button"
       className={clsx('presentation-game-board', className)}
       onClick={onOpen}
-      aria-label="Открыть игру в новой вкладке">
+      aria-label="Перейти к игре">
       <span className="presentation-game-board__hud">
         <span className="presentation-game-board__hud-pill">Уровень 1</span>
         <span className="presentation-game-board__hud-pill presentation-game-board__hud-pill--score">

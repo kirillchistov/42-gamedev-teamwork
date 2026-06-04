@@ -1972,3 +1972,95 @@ a.presentation-btn {
     max-width: 64px;
   }
 }
+
+/* Портрет: контент не обрезается (iPhone и узкие экраны) */
+@media (max-width: 430px), (max-height: 860px) {
+  .match3-presentation-fullscreen {
+    min-height: 100dvh;
+    height: auto;
+    max-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .match3-presentation-fullscreen__content {
+    overflow-x: hidden;
+    overflow-y: visible;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    justify-content: flex-start;
+    padding-top: max(48px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .match3-presentation-fullscreen__content-inner {
+    grid-template-rows: auto auto auto;
+    height: auto;
+    max-height: none;
+  }
+
+  .match3-presentation-fullscreen__body {
+    overflow: visible;
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: none;
+    margin-top: 0.5rem;
+  }
+
+  .match3-presentation-fullscreen__body > .presentation-slide {
+    flex: 0 1 auto;
+    min-height: 0;
+    justify-content: flex-start;
+  }
+}
+
+/* Альбом: слайды не сплющивать, прокрутка тела */
+@media (orientation: landscape) and (max-height: 520px) {
+  .match3-presentation-fullscreen {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .match3-presentation-fullscreen__content {
+    overflow-y: visible;
+    justify-content: flex-start;
+    padding-top: max(40px, env(safe-area-inset-top, 0px));
+  }
+
+  .match3-presentation-fullscreen__content-inner {
+    grid-template-rows: auto minmax(min-content, auto) auto;
+    height: auto;
+  }
+
+  .match3-presentation-fullscreen__body {
+    overflow: visible;
+    flex: 0 1 auto;
+    min-height: min-content;
+  }
+
+  .match3-presentation-fullscreen__body > .presentation-slide {
+    flex: 0 1 auto;
+    min-height: min-content;
+  }
+
+  .match3-presentation-fullscreen .presentation-slide--title.hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+    gap: 12px;
+    align-items: center;
+  }
+
+  .match3-presentation-fullscreen .presentation-slide--title .presentation-title__copy p {
+    font-size: clamp(12px, 2.2vh, 15px);
+    margin-bottom: 10px;
+  }
+
+  .presentation-team__list {
+    gap: 8px;
+  }
+
+  .presentation-team__item {
+    padding: 8px 10px;
+  }
+}
