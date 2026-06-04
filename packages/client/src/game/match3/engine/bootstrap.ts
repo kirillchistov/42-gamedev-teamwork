@@ -354,6 +354,7 @@ export function createMatch3Game(params: CreateParams) {
   }
 
   const drawBoardAfterIconPreload = () => {
+    drawBoard()
     void preloadIconTheme(gameIconTheme).then(() => {
       if (isDestroyed) return
       drawBoard()
