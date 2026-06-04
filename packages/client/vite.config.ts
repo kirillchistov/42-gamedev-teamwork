@@ -42,6 +42,7 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_STATIC_DEPLOY': JSON.stringify(viteStaticDeploy),
       'process.env.GITHUB_PAGES_BASE_URL': JSON.stringify(viteBase),
       __GH_PAGES_API_PROXY__: JSON.stringify(isGhPagesDeploy),
+      __IS_GH_PAGES_STATIC_DEPLOY__: JSON.stringify(isGhPagesDeploy),
     },
     build: {
       outDir: path.join(__dirname, 'dist/client'),
@@ -57,6 +58,20 @@ export default defineConfig(({ mode }) => {
           const csp = buildGhPagesCspMetaContent()
           const meta = `<meta http-equiv="Content-Security-Policy" content="${csp}" />`
           return html.replace('</head>', `    ${meta}\n  </head>`)
+        },
+      },
+      {
+        name: 'gh-pages-early-service-worker',
+        transformIndexHtml(html) {
+          if (!isGhPagesDeploy) {
+            return html
+          }
+          const scope = viteBase
+          const swUrl = `${scope}sw.js`
+          const earlySw = `<script>if('serviceWorker' in navigator){navigator.serviceWorker.register(${JSON.stringify(
+            swUrl
+          )},{scope:${JSON.stringify(scope)}});}</script>`
+          return html.replace(/<head>/i, `<head>\n    ${earlySw}`)
         },
       },
       {
@@ -79,7 +94,9 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         // GH Pages: SW проксирует /api/v2 → Практикум. Иначе: VITE_ENABLE_SW=1
-        injectRegister: enableServiceWorker ? 'auto' : false,
+        // Регистрация SW на GH Pages — в <head> (gh-pages-early-service-worker), до бандла
+        injectRegister:
+          enableServiceWorker && !isGhPagesDeploy ? 'auto' : false,
         strategies: 'injectManifest',
         srcDir: 'src',
         filename: 'sw.ts',

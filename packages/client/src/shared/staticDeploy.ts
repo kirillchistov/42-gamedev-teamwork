@@ -17,6 +17,12 @@ export function isStaticGhPagesDeploy(): boolean {
   if (!isBrowserBundle()) {
     return false
   }
+  if (
+    typeof __IS_GH_PAGES_STATIC_DEPLOY__ !== 'undefined' &&
+    __IS_GH_PAGES_STATIC_DEPLOY__
+  ) {
+    return true
+  }
   return process.env.VITE_STATIC_DEPLOY === 'gh-pages'
 }
 

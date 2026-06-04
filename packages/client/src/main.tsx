@@ -29,9 +29,9 @@ import '@gravity-ui/uikit/styles/styles.css'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppErrorFallback } from './components/AppErrorFallback'
 import { isPublicRoutePath } from './router/publicRoutePaths'
+import { bootstrapGhPagesApiProxy } from './shared/ghPagesPraktikumProxy'
+import { isStaticGhPagesDeploy } from './shared/staticDeploy'
 import { unregisterStaleServiceWorkers } from './utils/unregisterStaleServiceWorker'
-
-void unregisterStaleServiceWorkers()
 
 const routerBasename = (() => {
   const base = import.meta.env.BASE_URL || '/'
@@ -84,10 +84,20 @@ const canHydrate = rootElement.firstElementChild != null
 
 const root = <React.StrictMode>{app}</React.StrictMode>
 
-if (canHydrate) {
-  ReactDOM.hydrateRoot(rootElement, root)
-  applySsrClientReconciliation()
-} else {
-  applySsrClientReconciliation()
-  ReactDOM.createRoot(rootElement).render(root)
+async function startClient(): Promise<void> {
+  if (isStaticGhPagesDeploy()) {
+    await bootstrapGhPagesApiProxy()
+  } else {
+    await unregisterStaleServiceWorkers()
+  }
+
+  if (canHydrate) {
+    ReactDOM.hydrateRoot(rootElement, root)
+    applySsrClientReconciliation()
+  } else {
+    applySsrClientReconciliation()
+    ReactDOM.createRoot(rootElement).render(root)
+  }
 }
+
+void startClient()
