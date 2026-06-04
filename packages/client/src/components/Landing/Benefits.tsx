@@ -54,8 +54,8 @@ export function Benefits() {
     <section className="section" id="benefits">
       <h2>Преимущества Cosmic Match</h2>
       <p className="section-subtitle">
-        Проект развивается как игровая платформа: быстрый вход, понятная
-        прогрессия и расширяемая архитектура под новые механики.
+        Легкий вход, понятный прогресс, гибкость и расширяемость под новые
+        механики.
       </p>
       <div className="benefits__inner">
         <div className="benefits__content">
