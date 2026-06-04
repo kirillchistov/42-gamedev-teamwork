@@ -4,19 +4,25 @@ const PDF_PAGE_W = 1280
 const PDF_PAGE_H = 720
 
 const UNSAFE_COLOR_RE = /color\(|oklch\(|lab\(|lch\(/i
+const MAX_PDF_STYLESHEET_BYTES = 600_000
 
-/** Только CSS презентации / hero — без глобального бандла приложения. */
+/** CSS, нужный для слайдов PDF (inline или бандл Vite). */
 function isPresentationOnlyStyle(text: string): boolean {
-  if (!text || UNSAFE_COLOR_RE.test(text)) return false
-  if (text.length > 120_000) return false
+  if (!text || text.length > MAX_PDF_STYLESHEET_BYTES) return false
   return (
     text.includes('.match3-presentation') ||
     text.includes('.presentation-') ||
     text.includes('.hero-board') ||
     text.includes('.hero-visual') ||
     text.includes('.hero__') ||
+    /\.hero(\s|{|\.|#)/.test(text) ||
     text.includes('.team-card__avatar')
   )
+}
+
+/** modern-screenshot не рисует oklch/lab — подменяем на hex. */
+function sanitizeCssForScreenshot(css: string): string {
+  return css.replace(/(?:oklch|lab|lch|color)\([^)]*\)/gi, '#94a3b8')
 }
 
 const PDF_BASE_CSS = `
@@ -50,26 +56,65 @@ const PDF_BASE_CSS = `
   }
 `
 
-export function copyPresentationStylesTo(targetDoc: Document): void {
+async function appendPresentationStylesheet(
+  targetDoc: Document,
+  cssText: string,
+  seen: Set<string>
+): Promise<void> {
+  if (!isPresentationOnlyStyle(cssText) || seen.has(cssText)) {
+    return
+  }
+  seen.add(cssText)
+  const style = targetDoc.createElement('style')
+  style.textContent = sanitizeCssForScreenshot(cssText)
+  targetDoc.head.appendChild(style)
+}
+
+export async function copyPresentationStylesTo(
+  targetDoc: Document
+): Promise<void> {
   const seen = new Set<string>()
+
   document.querySelectorAll('style').forEach(style => {
     const text = style.textContent ?? ''
-    if (!isPresentationOnlyStyle(text)) return
-    if (seen.has(text)) return
+    if (!isPresentationOnlyStyle(text) || seen.has(text)) {
+      return
+    }
     seen.add(text)
-    targetDoc.head.appendChild(style.cloneNode(true))
+    const clone = style.cloneNode(true) as HTMLStyleElement
+    if (UNSAFE_COLOR_RE.test(clone.textContent ?? '')) {
+      clone.textContent = sanitizeCssForScreenshot(clone.textContent ?? '')
+    }
+    targetDoc.head.appendChild(clone)
   })
+
+  await Promise.all(
+    Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(
+      async link => {
+        const href = (link as HTMLLinkElement).href
+        if (!href) return
+        try {
+          const res = await fetch(href, { credentials: 'same-origin' })
+          if (!res.ok) return
+          const text = await res.text()
+          await appendPresentationStylesheet(targetDoc, text, seen)
+        } catch {
+          /* сеть / CORS — остаются inline-стили */
+        }
+      }
+    )
+  )
 
   const base = targetDoc.createElement('style')
   base.textContent = PDF_BASE_CSS
   targetDoc.head.appendChild(base)
 }
 
-export function createPdfRenderFrame(): {
+export async function createPdfRenderFrame(): Promise<{
   document: Document
   body: HTMLElement
   destroy: () => void
-} {
+}> {
   const iframe = document.createElement('iframe')
   iframe.setAttribute('aria-hidden', 'true')
   iframe.setAttribute('title', 'PDF export')
@@ -94,7 +139,7 @@ export function createPdfRenderFrame(): {
   doc.write('<!DOCTYPE html><html><head></head><body></body></html>')
   doc.close()
 
-  copyPresentationStylesTo(doc)
+  await copyPresentationStylesTo(doc)
 
   return {
     document: doc,

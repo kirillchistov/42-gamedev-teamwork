@@ -56,7 +56,7 @@ export async function exportPresentationPdf(
     compress: true,
   })
 
-  const frame = createPdfRenderFrame()
+  const frame = await createPdfRenderFrame()
 
   try {
     for (let i = 0; i < total; i += 1) {

@@ -137,8 +137,7 @@ export function LoginPage() {
             <h1>Вход</h1>
             {IS_STATIC_GH_PAGES_DEPLOY ? (
               <p className="auth-note">
-                Демо на GitHub Pages: логин <strong>testuser12345</strong>,
-                пароль <strong>Testuser12345</strong> (без API Практикума).
+                Демо-вход: testuser12345/Testuser12345.
               </p>
             ) : null}
             {fromForum ? (
