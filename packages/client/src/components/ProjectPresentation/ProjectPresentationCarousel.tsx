@@ -68,6 +68,8 @@ type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
   initialSlide?: number
+  /** CTA «Играть» / «Регистрация»; по умолчанию — onOpenChange(false). */
+  onLeavePresentation?: () => void
 }
 
 function normalizeStartIndex(
@@ -115,6 +117,7 @@ export function ProjectPresentationCarousel({
   open,
   onOpenChange,
   initialSlide,
+  onLeavePresentation,
 }: Props) {
   const [index, setIndex] = useState(0)
   const [compactNav, setCompactNav] = useState(false)
@@ -283,31 +286,29 @@ export function ProjectPresentationCarousel({
           {counterLabel}
         </span>
 
-        {compactNav ? (
-          <nav
-            className="match3-presentation-fullscreen__header-nav"
-            aria-label="Навигация по слайдам">
-            <button
-              type="button"
-              className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--header"
-              onClick={goPrev}
-              aria-label="Предыдущий слайд">
-              <ChevronLeft />
-            </button>
-            <SlideDots
-              index={index}
-              onSelect={setIndex}
-              className="match3-presentation-fullscreen__dots--header"
-            />
-            <button
-              type="button"
-              className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--header"
-              onClick={goNext}
-              aria-label="Следующий слайд">
-              <ChevronRight />
-            </button>
-          </nav>
-        ) : null}
+        <nav
+          className="match3-presentation-fullscreen__header-nav"
+          aria-label="Навигация по слайдам">
+          <button
+            type="button"
+            className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--header"
+            onClick={goPrev}
+            aria-label="Предыдущий слайд">
+            <ChevronLeft />
+          </button>
+          <SlideDots
+            index={index}
+            onSelect={setIndex}
+            className="match3-presentation-fullscreen__dots--header"
+          />
+          <button
+            type="button"
+            className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--header"
+            onClick={goNext}
+            aria-label="Следующий слайд">
+            <ChevronRight />
+          </button>
+        </nav>
 
         <div className="match3-presentation-fullscreen__topbar-actions">
           <button
@@ -357,37 +358,14 @@ export function ProjectPresentationCarousel({
           )}
           <div className="match3-presentation-fullscreen__body">
             <PresentationNavProvider
-              onLeavePresentation={() => onOpenChange(false)}>
+              onLeavePresentation={
+                onLeavePresentation ?? (() => onOpenChange(false))
+              }>
               <PresentationSlideContent
                 slideId={slide.id as PresentationSlideId}
               />
             </PresentationNavProvider>
           </div>
-          {!compactNav ? (
-            <nav
-              className="match3-presentation-fullscreen__footer-nav"
-              aria-label="Навигация по слайдам">
-              <button
-                type="button"
-                className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--inline"
-                onClick={goPrev}
-                aria-label="Предыдущий слайд">
-                <ChevronLeft />
-              </button>
-              <SlideDots
-                index={index}
-                onSelect={setIndex}
-                className="match3-presentation-fullscreen__dots match3-presentation-fullscreen__dots--footer"
-              />
-              <button
-                type="button"
-                className="match3-presentation-fullscreen__nav match3-presentation-fullscreen__nav--inline"
-                onClick={goNext}
-                aria-label="Следующий слайд">
-                <ChevronRight />
-              </button>
-            </nav>
-          ) : null}
         </div>
       </div>
     </div>,

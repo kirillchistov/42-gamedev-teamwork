@@ -26,7 +26,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     backlogAssignee: 'larannma',
     backlogUrl: teamBacklogUrl('larannma'),
     avatarUrl: 'https://avatars.githubusercontent.com/u/66175549?v=4',
-    responsibilities: ['Форум', 'Service Workers', 'OAuth', 'Темы', 'Web API'],
+    responsibilities: ['Forum', 'SW', 'OAuth', 'Themes', 'WebAPI'],
   },
   {
     name: 'Сергей',
@@ -36,12 +36,13 @@ export const TEAM_MEMBERS: TeamMember[] = [
     backlogUrl: teamBacklogUrl('zergeugenson'),
     avatarUrl: 'https://avatars.githubusercontent.com/u/33512074?v=4',
     responsibilities: [
-      'Валидация',
-      'Покрытие тестами',
-      'Лидерборд',
-      'Хуки и HOC',
-      'Авторизация на бэке с прокси',
-      'Nginx',
+      'Validation',
+      'Tests',
+      'Leaderboard',
+      'Hooks',
+      'HOC',
+      'Auth MW',
+      'nginx',
     ],
   },
   {
@@ -52,12 +53,12 @@ export const TEAM_MEMBERS: TeamMember[] = [
     backlogUrl: teamBacklogUrl('Arturaldo'),
     avatarUrl: 'https://avatars.githubusercontent.com/u/97703299?v=4',
     responsibilities: [
-      'Механика игры',
-      'Логика авторизации',
-      'Состояния игры',
-      'Redux + Router + SSR',
-      'Темизация',
-      'Автодеплой',
+      'Gamedev',
+      'Auth',
+      'States',
+      'Router SSR',
+      'Themes',
+      'Autodeploy',
     ],
   },
   {
@@ -67,13 +68,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     backlogAssignee: 'TelRoY',
     backlogUrl: teamBacklogUrl('TelRoY'),
     avatarUrl: 'https://avatars.githubusercontent.com/u/207622043?v=4',
-    responsibilities: [
-      'Профиль',
-      'Redux',
-      'Performance API',
-      'Форум',
-      'Облако',
-    ],
+    responsibilities: ['Profile', 'Redux', 'WebAPI', 'Forum', 'Cloud'],
   },
   {
     name: 'Кирилл',
@@ -82,13 +77,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     backlogAssignee: 'kirillchistov',
     backlogUrl: teamBacklogUrl('kirillchistov'),
     avatarUrl: 'https://avatars.githubusercontent.com/u/101833862?v=4',
-    responsibilities: [
-      'Инфраструктура',
-      'Вёрстка',
-      'Лендинг',
-      'SSR и порты',
-      'Документация',
-    ],
+    responsibilities: ['Infra', 'Layout', 'Slides', 'Ports SSR', 'Docs'],
   },
 ]
 

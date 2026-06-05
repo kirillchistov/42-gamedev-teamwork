@@ -47,6 +47,9 @@ export function PresentationPage() {
           onOpenChange={nextOpen => {
             if (!nextOpen) navigate('/')
           }}
+          onLeavePresentation={() => {
+            /* CTA сам делает navigate; не уходим на главную раньше времени */
+          }}
         />
       ) : null}
     </>

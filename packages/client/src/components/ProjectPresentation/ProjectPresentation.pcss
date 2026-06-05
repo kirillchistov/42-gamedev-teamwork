@@ -116,12 +116,6 @@
   pointer-events: none;
 }
 
-.match3-presentation-fullscreen--compact-nav
-  .match3-presentation-fullscreen__topbar {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-}
-
 .match3-presentation-fullscreen__header-nav {
   pointer-events: auto;
   display: flex;
@@ -131,38 +125,16 @@
   gap: 8px;
   min-height: var(--pres-topbar-control-height);
   padding: 0;
-}
-
-.match3-presentation-fullscreen--compact-nav
-  .match3-presentation-fullscreen__counter {
-  grid-column: 1;
-  justify-self: start;
-}
-
-.match3-presentation-fullscreen--compact-nav
-  .match3-presentation-fullscreen__header-nav {
   position: absolute;
   left: 50%;
   top: 0;
   bottom: 0;
   transform: translateX(-50%);
-  justify-self: auto;
-}
-
-.match3-presentation-fullscreen--compact-nav
-  .match3-presentation-fullscreen__close {
-  grid-column: 2;
-  justify-self: end;
 }
 
 .match3-presentation-fullscreen__nav--header {
   width: 36px;
   height: 36px;
-}
-
-.match3-presentation-fullscreen__nav--inline {
-  width: 40px;
-  height: 40px;
 }
 
 .match3-presentation-fullscreen__dots--header {
@@ -175,6 +147,7 @@
 }
 
 .match3-presentation-fullscreen__counter {
+  grid-column: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -253,7 +226,7 @@
 
 .match3-presentation-fullscreen__content-inner {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) 56px;
+  grid-template-rows: auto minmax(0, 1fr);
   align-items: stretch;
   width: 100%;
   min-height: 0;
@@ -341,21 +314,6 @@
 
 .match3-presentation-fullscreen__body > .presentation-slide--team {
   justify-content: stretch;
-}
-
-.match3-presentation-fullscreen__footer-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 56px;
-  height: 56px;
-  margin: 0;
-  padding-bottom: 6px;
-}
-
-.match3-presentation-fullscreen__dots--footer {
-  margin: 0;
 }
 
 .match3-presentation-fullscreen__content:not(:has(.presentation-slide--team)):not(
@@ -867,9 +825,10 @@ a.presentation-btn {
 
 .presentation-diagram-gallery__figure {
   flex: 1;
-  min-height: 0;
+  min-height: min(42vh, 360px);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   margin: 0;
   padding: 10px;
 }
@@ -1643,6 +1602,8 @@ a.presentation-btn {
 /* PDF export */
 
 .match3-presentation-fullscreen__topbar-actions {
+  grid-column: 2;
+  justify-self: end;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1825,23 +1786,20 @@ a.presentation-btn {
     padding-top: 64px;
   }
 
-  .match3-presentation-fullscreen--compact-nav
-    .match3-presentation-fullscreen__topbar {
+  .match3-presentation-fullscreen__topbar {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     grid-template-rows: auto;
     align-items: center;
     justify-items: stretch;
   }
 
-  .match3-presentation-fullscreen--compact-nav
-    .match3-presentation-fullscreen__counter {
+  .match3-presentation-fullscreen__counter {
     grid-column: 1;
     grid-row: auto;
     max-width: min(52vw, 320px);
   }
 
-  .match3-presentation-fullscreen--compact-nav
-    .match3-presentation-fullscreen__header-nav {
+  .match3-presentation-fullscreen__header-nav {
     grid-column: 2;
     grid-row: auto;
     position: static;
@@ -1853,8 +1811,7 @@ a.presentation-btn {
     justify-self: center;
   }
 
-  .match3-presentation-fullscreen--compact-nav
-    .match3-presentation-fullscreen__close {
+  .match3-presentation-fullscreen__topbar-actions {
     grid-column: 3;
     grid-row: auto;
     justify-self: end;
@@ -1891,14 +1848,11 @@ a.presentation-btn {
 }
 
 @media (max-width: 640px) {
-  .match3-presentation-fullscreen--compact-nav
-    .match3-presentation-fullscreen__header-nav
-    .match3-presentation__dot {
+  .match3-presentation-fullscreen__header-nav .match3-presentation__dot {
     display: none;
   }
 
-  .match3-presentation-fullscreen--compact-nav
-    .match3-presentation-fullscreen__header-nav
+  .match3-presentation-fullscreen__header-nav
     .match3-presentation-fullscreen__nav {
     border: none;
     background: transparent;
@@ -2014,6 +1968,24 @@ a.presentation-btn {
     min-height: 0;
     justify-content: flex-start;
   }
+
+  .presentation-slide--team {
+    flex: 0 0 auto;
+    min-height: min-content;
+    overflow: visible;
+  }
+
+  .presentation-team__list {
+    flex: 0 0 auto;
+    min-height: min-content;
+    justify-content: flex-start;
+    overflow: visible;
+  }
+
+  .presentation-team__item {
+    flex: 0 0 auto;
+    min-height: min-content;
+  }
 }
 
 /* Альбом: слайды не сплющивать, прокрутка тела */
@@ -2056,11 +2028,23 @@ a.presentation-btn {
     margin-bottom: 10px;
   }
 
+  .presentation-slide--team {
+    flex: 0 0 auto;
+    min-height: min-content;
+    overflow: visible;
+  }
+
   .presentation-team__list {
+    flex: 0 0 auto;
+    min-height: min-content;
+    justify-content: flex-start;
     gap: 8px;
+    overflow: visible;
   }
 
   .presentation-team__item {
+    flex: 0 0 auto;
+    min-height: min-content;
     padding: 8px 10px;
   }
 }

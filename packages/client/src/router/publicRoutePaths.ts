@@ -14,6 +14,8 @@ export const PUBLIC_ROUTE_PATHS: readonly string[] = [
   '/premium',
   '/presentation',
   '/presentation/:slide',
+  '/game/demo',
+  '/game/demo/finish',
   '/error404',
   '/error/404',
   '/error500',

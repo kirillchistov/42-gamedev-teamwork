@@ -4,6 +4,10 @@ import type { User } from '../types/user'
 export const GH_PAGES_DEMO_LOGIN = 'testuser12345'
 export const GH_PAGES_DEMO_PASSWORD = 'Testuser12345'
 
+/** Публичный маршрут игры на GitHub Pages (без auth guard). */
+export const GH_PAGES_DEMO_GAME_PATH = '/game/demo'
+export const GH_PAGES_DEMO_GAME_FINISH_PATH = '/game/demo/finish'
+
 const SESSION_KEY = 'cosmic-match:gh-pages-demo-auth'
 
 export const GH_PAGES_DEMO_USER: User = {

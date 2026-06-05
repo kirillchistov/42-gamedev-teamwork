@@ -88,6 +88,16 @@ export const routes: AppRoute[] = [
     fetchData: initGamePage,
   },
   {
+    path: '/game/demo',
+    Component: GamePage,
+    fetchData: initGamePage,
+  },
+  {
+    path: '/game/demo/finish',
+    Component: GamePage,
+    fetchData: initGamePage,
+  },
+  {
     path: '/login',
     Component: LoginPage,
     fetchData: initLoginPage,

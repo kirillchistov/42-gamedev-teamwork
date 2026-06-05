@@ -188,9 +188,9 @@ export function ArchitectureDiagramGallery({
                 )}
                 onClick={() => setIndex(i)}
                 title={item.title}>
-                <span className="presentation-diagram-gallery__tab-index">
+                {/* <span className="presentation-diagram-gallery__tab-index">
                   {i + 1}
-                </span>
+                </span> */}
                 <span className="presentation-diagram-gallery__tab-label">
                   {item.short}
                 </span>
@@ -274,9 +274,9 @@ export function ArchitectureDiagramGallery({
                       )}
                       onClick={() => setIndex(i)}
                       title={item.title}>
-                      <span className="presentation-diagram-gallery__tab-index">
+                      {/* <span className="presentation-diagram-gallery__tab-index">
                         {i + 1}
-                      </span>
+                      </span> */}
                       <span className="presentation-diagram-gallery__tab-label">
                         {item.short}
                       </span>

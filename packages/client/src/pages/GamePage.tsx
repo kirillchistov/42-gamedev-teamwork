@@ -48,6 +48,10 @@ import type {
 } from '../game/match3/engine/bootstrap'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { toggleFullscreen } from '../utils/fullscreen'
+import {
+  GH_PAGES_DEMO_GAME_FINISH_PATH,
+  GH_PAGES_DEMO_GAME_PATH,
+} from '../shared/ghPagesDemoAuth'
 import { publicAssetUrl } from '../utils/publicAssetUrl'
 import {
   DEFAULT_MATCH3_LEVEL_ID,
@@ -551,11 +555,15 @@ export function GamePage() {
 
   const isStartRoute = location.pathname === '/game/start'
   const isGameLandingRoute = location.pathname === '/game'
-  const isPlayRoute = location.pathname === '/game/play'
-  const isOnGameSection = isPlayRoute || isStartRoute || isGameLandingRoute
+  const isDemoPlayRoute = location.pathname === GH_PAGES_DEMO_GAME_PATH
+  const isDemoFinishRoute = location.pathname === GH_PAGES_DEMO_GAME_FINISH_PATH
+  const isPlayRoute = location.pathname === '/game/play' || isDemoPlayRoute
+  const isOnGameSection =
+    isPlayRoute || isStartRoute || isGameLandingRoute || isDemoFinishRoute
 
   useGameReturnNotification(isOnGameSection && notificationsOptIn)
-  const isFinishRoute = location.pathname === '/game/finish'
+  const isFinishRoute =
+    location.pathname === '/game/finish' || isDemoFinishRoute
 
   useEffect(() => {
     if (!isGameLandingRoute) return
@@ -866,13 +874,16 @@ export function GamePage() {
           console.error('[game] submitLeaderboardScore failed:', e)
         })
       }
-      navigate('/game/finish', {
-        state: {
-          gameSettings: buildGameSettingsState(),
-        },
-      })
+      navigate(
+        isDemoPlayRoute ? GH_PAGES_DEMO_GAME_FINISH_PATH : '/game/finish',
+        {
+          state: {
+            gameSettings: buildGameSettingsState(),
+          },
+        }
+      )
     },
-    [buildGameSettingsState, user, navigate]
+    [buildGameSettingsState, isDemoPlayRoute, user, navigate]
   )
   const handleSendHeroChatMessage = useCallback((text: string) => {
     const check = validateForumContent(text)
@@ -1909,38 +1920,63 @@ export function GamePage() {
                 </p>
               )}
               <div className="match3__start-actions">
-                <button
-                  type="button"
-                  className="btn btn--outline match3__again-btn"
-                  onClick={() =>
-                    navigate('/game/start', {
-                      state: {
-                        openSettings: true,
-                        gameSettings: buildGameSettingsState(),
-                      },
-                    })
-                  }>
-                  Настройки
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--outline"
-                  onClick={handleCycleFinishArenaBg}>
-                  Фон
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--primary match3__play-btn"
-                  onClick={() =>
-                    navigate('/game/start', {
-                      state: {
-                        openSettings: true,
-                        gameSettings: buildGameSettingsState(),
-                      },
-                    })
-                  }>
-                  Сыграть снова
-                </button>
+                {isDemoFinishRoute ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn--outline"
+                      onClick={() => navigate('/presentation')}>
+                      К презентации
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--outline"
+                      onClick={handleCycleFinishArenaBg}>
+                      Фон
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--primary match3__play-btn"
+                      onClick={() => navigate(GH_PAGES_DEMO_GAME_PATH)}>
+                      Сыграть снова
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn--outline match3__again-btn"
+                      onClick={() =>
+                        navigate('/game/start', {
+                          state: {
+                            openSettings: true,
+                            gameSettings: buildGameSettingsState(),
+                          },
+                        })
+                      }>
+                      Настройки
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--outline"
+                      onClick={handleCycleFinishArenaBg}>
+                      Фон
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--primary match3__play-btn"
+                      onClick={() =>
+                        navigate('/game/start', {
+                          state: {
+                            openSettings: true,
+                            gameSettings: buildGameSettingsState(),
+                          },
+                        })
+                      }>
+                      Сыграть снова
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
