@@ -27,7 +27,10 @@ import {
   getFullscreenElement,
   toggleFullscreen,
 } from '../../utils/fullscreen'
-import { resolveGameEntryPath } from '../../game/match3/gameLandingGate'
+import {
+  resolveGameEntryPath,
+  type GameEntryPath,
+} from '../../game/match3/gameLandingGate'
 
 export type HeaderVariant = 'default' | 'game'
 
@@ -69,9 +72,7 @@ export function Header({
   const { theme, setTheme, toggleColorMode } = useLandingTheme()
   const user = useSelector(selectUser)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [gameNavPath, setGameNavPath] = useState<'/game' | '/game/start'>(
-    '/game'
-  )
+  const [gameNavPath, setGameNavPath] = useState<GameEntryPath>('/game')
 
   const closeMobile = useCallback(() => {
     setMobileOpen(false)

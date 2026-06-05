@@ -1,17 +1,15 @@
 import { themePut } from '../shared/api/themeApi'
 import type { LandingTheme } from '../shared/landingTheme'
+import { isStaticGhPagesDeploy } from '../shared/staticDeploy'
 
 const DEBOUNCE_MS = 400
 
-let debounceTimer: ReturnType<
-  typeof setTimeout
-> | null = null
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Отложенная оптимистичная отправка на сервер
-export function scheduleThemePut(
-  theme: LandingTheme
-): void {
+export function scheduleThemePut(theme: LandingTheme): void {
   if (typeof window === 'undefined') return
+  if (isStaticGhPagesDeploy()) return
   if (debounceTimer != null) {
     clearTimeout(debounceTimer)
   }
@@ -28,6 +26,7 @@ export async function pushLocalThemeToServer(
   theme: LandingTheme
 ): Promise<void> {
   if (typeof window === 'undefined') return
+  if (isStaticGhPagesDeploy()) return
   if (debounceTimer != null) {
     clearTimeout(debounceTimer)
     debounceTimer = null

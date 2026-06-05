@@ -2,7 +2,7 @@
 // Если сессия еще не проверена и не идет загрузка — диспатчит fetchUserThunk;
 // возвращает статус: loading | allowed | denied
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from '../store'
 import {
   fetchUserThunk,
@@ -20,13 +20,19 @@ export const useAuthGuard = (): AuthGuardStatus => {
   const isAuthChecked = useSelector(selectUserIsAuthChecked)
   const isLoading = useSelector(selectUserIsLoading)
   const pageInitOnServer = useSelector(selectPageHasBeenInitializedOnServer)
+  const fetchRequestedRef = useRef(false)
 
   useEffect(() => {
-    const needsSessionCheck = !isAuthChecked || (!user && !isLoading)
-    if (needsSessionCheck) {
-      void dispatch(fetchUserThunk())
+    if (isAuthChecked) {
+      fetchRequestedRef.current = false
+      return
     }
-  }, [dispatch, isAuthChecked, isLoading, user])
+    if (isLoading || fetchRequestedRef.current) {
+      return
+    }
+    fetchRequestedRef.current = true
+    void dispatch(fetchUserThunk())
+  }, [dispatch, isAuthChecked, isLoading])
 
   const showLoading =
     !isAuthChecked || (isLoading && !(pageInitOnServer && isAuthChecked))

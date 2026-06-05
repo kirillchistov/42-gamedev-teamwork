@@ -20,6 +20,7 @@ export async function unregisterStaleServiceWorkers(): Promise<void> {
       const keys = await caches.keys()
       await Promise.all(keys.map(key => caches.delete(key)))
     }
+    sessionStorage.removeItem('cosmic-match:gh-pages-sw-reload')
   } catch {
     // noop
   }
