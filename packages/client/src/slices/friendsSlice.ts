@@ -7,6 +7,7 @@ import {
   type AddFriendPayload,
   type FriendRecord,
 } from '../shared/api/friendsApi'
+import { humanizeApiReason } from '../shared/utils/praktikumAuthErrors'
 
 export type Friend = FriendRecord
 
@@ -30,8 +31,10 @@ export const fetchFriendsThunk = createAsyncThunk<
   try {
     return await fetchFriends()
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : 'Friends request failed'
+    const message = humanizeApiReason(
+      err instanceof Error ? err.message : '',
+      'Не удалось загрузить список друзей.'
+    )
     return rejectWithValue(message)
   }
 })
@@ -44,7 +47,10 @@ export const addFriendThunk = createAsyncThunk<
   try {
     return await addFriend(payload)
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Add friend failed'
+    const message = humanizeApiReason(
+      err instanceof Error ? err.message : '',
+      'Не удалось добавить друга.'
+    )
     return rejectWithValue(message)
   }
 })
@@ -58,7 +64,10 @@ export const removeFriendThunk = createAsyncThunk<
     await removeFriend(nickname)
     return nickname
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Remove friend failed'
+    const message = humanizeApiReason(
+      err instanceof Error ? err.message : '',
+      'Не удалось удалить друга.'
+    )
     return rejectWithValue(message)
   }
 })

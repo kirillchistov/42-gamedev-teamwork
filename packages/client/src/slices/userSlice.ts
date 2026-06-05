@@ -74,11 +74,6 @@ function isAlreadyLoggedInError(message: string): boolean {
   )
 }
 
-function isUnauthorizedMessage(message: string): boolean {
-  const m = message.toLowerCase()
-  return m.includes('unauthorized') || m.includes('не авторизован')
-}
-
 interface UserState {
   data: User | null
   isLoading: boolean
@@ -202,9 +197,6 @@ export const loginThunk = createAsyncThunk(
         } catch {
           return rejectWithValue(AUTH_RELOGIN_CONFLICT_MESSAGE)
         }
-      }
-      if (isUnauthorizedMessage(reason)) {
-        return rejectWithValue('Неверный логин или пароль')
       }
       return rejectWithValue(humanizePraktikumAuthReason(reason))
     }

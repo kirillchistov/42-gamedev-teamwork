@@ -1,4 +1,5 @@
 import { getServerHost } from '../../constants'
+import { humanizeApiReason } from '../utils/praktikumAuthErrors'
 import type {
   ForumComment,
   ForumReactionAgg,
@@ -61,7 +62,7 @@ export async function forumRequest<T>(
       typeof (body as { reason: unknown }).reason === 'string'
         ? (body as { reason: string }).reason
         : res.statusText || 'Ошибка запроса'
-    throw new ForumApiError(reason, res.status)
+    throw new ForumApiError(humanizeApiReason(reason), res.status)
   }
 
   return body as T
