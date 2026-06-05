@@ -34,7 +34,7 @@ export function PresentationPage() {
   return (
     <>
       <Helmet>
-        <title>Презентация проекта Cosmic Match</title>
+        <title>О Cosmic Match</title>
         <meta
           name="description"
           content="Полноэкранная презентация проекта Cosmic Match"

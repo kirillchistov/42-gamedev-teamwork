@@ -264,7 +264,7 @@ export function ProjectPresentationCarousel({
 
   const counterLabel = compactNav
     ? `О проекте · ${index + 1} / ${total}`
-    : `Презентация проекта Cosmic Match · ${index + 1} / ${total}`
+    : `О Cosmic Match · ${index + 1} / ${total}`
 
   return createPortal(
     <div
@@ -280,7 +280,7 @@ export function ProjectPresentationCarousel({
       }
       role="dialog"
       aria-modal="true"
-      aria-label="Презентация проекта Cosmic Match">
+      aria-label="О проекте CM-42">
       <div className="match3-presentation-fullscreen__topbar">
         <span className="match3-presentation-fullscreen__counter">
           {counterLabel}
@@ -317,7 +317,7 @@ export function ProjectPresentationCarousel({
             onClick={() => void handleDownloadPdf()}
             disabled={pdfLoading}
             aria-busy={pdfLoading}>
-            {pdfLoading ? 'PDF…' : 'Скачать PDF'}
+            {pdfLoading ? 'PDF…' : 'PDF'}
           </button>
           <button
             type="button"

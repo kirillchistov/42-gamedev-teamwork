@@ -115,7 +115,7 @@ flowchart TB
 ### Лендинг
 
 - Секция **«Блог разработки»** (`#blog`) — карточки по спринтам 5–9 в [`Blog.tsx`](../packages/client/src/components/Landing/Blog.tsx).
-- **Презентация проекта** — полноэкранная карусель по клику на игровое поле в hero: [`ProjectPresentationCarousel.tsx`](../packages/client/src/components/ProjectPresentation/ProjectPresentationCarousel.tsx).
+- **Презентация проекта** — полноэкранная карусель по клику на игровое поле в hero или /presentation: [`ProjectPresentationCarousel.tsx`](../packages/client/src/components/ProjectPresentation/ProjectPresentationCarousel.tsx).
 
 ---
 

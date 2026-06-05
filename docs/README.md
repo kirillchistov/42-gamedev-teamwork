@@ -13,8 +13,36 @@
 4. Локально UI обычно на **http://localhost:9000** (SSR Express, см. `CLIENT_PORT` в `.env.sample`), API — **http://localhost:3000**.
 5. Полезное: `yarn test`, `yarn lint`, `yarn build`, `yarn format`.
 
-Демо: [GitHub Pages](https://kirillchistov.github.io/42-gamedev-teamwork). На Pages авторизация через **Service Worker** (same-origin `/api/v2` → Практикум).
+Демо: [GitHub Pages](https://kirillchistov.github.io/42-gamedev-teamwork). На Pages демо-авторизация (фикс логин и пароль), не подключены Node API и Yandex Oauth, демо-профиль/лидерборд/форум.
 
+## Работа с Docker
+Все команды запускать из корня репозитория
+
+### Обновление локальных Docker-образов
+Весь стек (пересборка + перезапуск):
+```bash
+docker compose build && docker compose up -d
+```
+
+Быстрая сборка при поднятии:
+```bash
+docker compose up --build -d
+```
+
+Только клиент (после git pull):
+```bash
+docker compose build client && docker compose up -d client
+```
+
+Только server:
+```bash
+docker compose build server && docker compose up -d server
+```
+
+Если нужны образы с GHCR (на проде = ВМ в облаке):
+```bash
+docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
+```
 ---
 
 ## Архитектура и HTTP

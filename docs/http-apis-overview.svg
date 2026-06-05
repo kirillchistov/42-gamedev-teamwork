@@ -34,34 +34,34 @@
   <text x="190" y="232" class="t">SSR Express + apiProxy</text>
   <text x="190" y="250" class="s">HTML, APP_INITIAL_STATE, CSP</text>
   <text x="190" y="268" class="s">CLIENT_PORT по умолчанию 9000</text>
-  <text x="190" y="318" class="s">packages/client/server</text>
+  <text x="130" y="318" class="s">packages/client/server</text>
 
   <rect x="360" y="188" width="300" height="144" class="grp"/>
   <rect x="376" y="204" width="268" height="84" class="box"/>
   <text x="510" y="232" class="t">Node API</text>
   <text x="510" y="250" class="s">/api/forum /friends /user</text>
   <text x="510" y="268" class="s">SERVER_PORT по умолчанию 3000</text>
-  <text x="510" y="318" class="s">packages/server</text>
+  <text x="430" y="318" class="s">packages/server</text>
 
   <rect x="680" y="188" width="260" height="144" class="grp"/>
   <rect x="696" y="204" width="228" height="84" class="box"/>
   <text x="810" y="232" class="t">ya-praktikum.tech</text>
   <text x="810" y="250" class="s">/api/v2 auth, profile</text>
   <text x="810" y="268" class="s">GET /auth/user + Cookie</text>
-  <text x="810" y="318" class="s">Практикум</text>
+  <text x="730" y="318" class="s">Практикум</text>
 
   <rect x="376" y="400" width="268" height="64" class="box"/>
   <text x="510" y="428" class="t">PostgreSQL</text>
   <text x="510" y="446" class="s">темы, комментарии форума</text>
 
   <path class="edgeHi" d="M 480 136 L 480 168 L 190 168 L 190 204"/>
-  <text x="300" y="160" class="cap">первый документ</text>
+  <text x="250" y="160" class="cap">первый документ</text>
 
   <path class="edgeHi" d="M 500 136 L 500 168 L 510 168 L 510 204"/>
-  <text x="520" y="160" class="cap">/api/forum</text>
+  <text x="540" y="160" class="cap">/api/forum</text>
 
   <path class="edgeHi" d="M 460 136 L 460 168 L 810 168 L 810 204"/>
-  <text x="680" y="160" class="cap">/api/v2</text>
+  <text x="750" y="160" class="cap">/api/v2</text>
 
   <path class="edge" d="M 324 246 L 376 246"/>
   <text x="350" y="238" class="s">прокси</text>
