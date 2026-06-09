@@ -1,3 +1,5 @@
+import { publicAssetUrl } from '../../utils/publicAssetUrl'
+
 const TEAM_PROJECT_VIEW_URL =
   'https://github.com/users/kirillchistov/projects/5/views/1'
 
@@ -51,7 +53,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
     githubUrl: 'https://github.com/Arturaldo',
     backlogAssignee: 'Arturaldo',
     backlogUrl: teamBacklogUrl('Arturaldo'),
-    avatarUrl: 'https://avatars.githubusercontent.com/u/97703299?v=4',
+    avatarUrl: publicAssetUrl('images/arturaldo-avatar.jpg'),
     responsibilities: [
       'Gamedev',
       'Auth',
