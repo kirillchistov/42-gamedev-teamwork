@@ -9,106 +9,66 @@
  * Ошибки полей показываются только после blur поля или после submit (getFieldError);
  * handleFieldChange снимает ошибку, когда ввод снова валиден (после blur/submit).
  **/
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   SignupFormValues,
   validationRules,
 } from '../shared/validation/authValidation'
 
-function testPattern(
-  pattern: unknown,
-  value: string
-): boolean {
+function testPattern(pattern: unknown, value: string): boolean {
   if (pattern instanceof RegExp) {
     return pattern.test(value)
   }
-  return new RegExp(String(pattern ?? '')).test(
-    value
-  )
+  return new RegExp(String(pattern ?? '')).test(value)
 }
 
 export const useValidate = () => {
-  const [errors, setErrors] = useState<
-    Partial<SignupFormValues>
-  >({})
+  const [errors, setErrors] = useState<Partial<SignupFormValues>>({})
   const [touched, setTouched] = useState<
-    Partial<
-      Record<keyof SignupFormValues, boolean>
-    >
+    Partial<Record<keyof SignupFormValues, boolean>>
   >({})
-  const [isSubmitted, setIsSubmitted] =
-    useState(false)
-  const [isValidateError, setIsValidateError] =
-    useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isValidateError, setIsValidateError] = useState(false)
 
-  const validate = useCallback(
-    (values: SignupFormValues) => {
-      const checkErrors: Partial<SignupFormValues> =
-        {}
+  const validate = useCallback((values: SignupFormValues) => {
+    const checkErrors: Partial<SignupFormValues> = {}
 
-      for (const field of Object.keys(
-        values
-      ) as (keyof SignupFormValues)[]) {
-        const rules =
-          validationRules[field as string]
-        if (!rules) continue
+    for (const field of Object.keys(values) as (keyof SignupFormValues)[]) {
+      const rules = validationRules[field as string]
+      if (!rules) continue
 
-        const raw: unknown = values[field]
-        if (raw instanceof File) continue
+      const raw: unknown = values[field]
+      if (raw instanceof File) continue
 
-        const validatedValue =
-          typeof raw === 'string'
-            ? raw
-            : raw != null
-            ? String(raw)
-            : ''
+      const validatedValue =
+        typeof raw === 'string' ? raw : raw != null ? String(raw) : ''
 
-        if (
-          rules.notEmpty &&
-          !validatedValue.trim()
-        ) {
-          checkErrors[field] =
-            'Поле не может быть пустым'
-          continue
-        }
+      if (rules.notEmpty && !validatedValue.trim()) {
+        checkErrors[field] = 'Поле не может быть пустым'
+        continue
+      }
 
-        if (
-          rules.patterns?.length &&
-          validatedValue
-        ) {
-          const trimmed = validatedValue.trim()
-          for (
-            let i = 0;
-            i < rules.patterns.length;
-            i += 1
-          ) {
-            const pat = rules.patterns[i]
-            if (!testPattern(pat, trimmed)) {
-              const msg = rules.messages?.[i]
-              checkErrors[field] =
-                msg ?? 'Некорректное значение'
-              break
-            }
+      if (rules.patterns?.length && validatedValue) {
+        const trimmed = validatedValue.trim()
+        for (let i = 0; i < rules.patterns.length; i += 1) {
+          const pat = rules.patterns[i]
+          if (!testPattern(pat, trimmed)) {
+            const msg = rules.messages?.[i]
+            checkErrors[field] = msg ?? 'Некорректное значение'
+            break
           }
         }
       }
+    }
 
-      return checkErrors
-    },
-    []
-  )
+    return checkErrors
+  }, [])
 
   useEffect(() => {
     setIsValidateError(
-      (
-        Object.keys(
-          errors
-        ) as (keyof SignupFormValues)[]
-      ).some(k => Boolean(errors[k]))
+      (Object.keys(errors) as (keyof SignupFormValues)[]).some(k =>
+        Boolean(errors[k])
+      )
     )
   }, [errors])
 
@@ -122,16 +82,11 @@ export const useValidate = () => {
   )
 
   const doValidate = useCallback(
-    (
-      values: SignupFormValues,
-      callback?: () => void
-    ) => {
+    (values: SignupFormValues, callback?: () => void) => {
       setIsSubmitted(true)
       const validationErrors = validate(values)
       setErrors({ ...validationErrors })
-      if (
-        Object.keys(validationErrors).length === 0
-      ) {
+      if (Object.keys(validationErrors).length === 0) {
         callback?.()
       }
     },
@@ -139,10 +94,7 @@ export const useValidate = () => {
   )
 
   const validateField = useCallback(
-    (
-      field: keyof SignupFormValues,
-      value: unknown
-    ) => {
+    (field: keyof SignupFormValues, value: unknown) => {
       const fieldErrors = validate({
         [field]:
           typeof value === 'string'
@@ -170,18 +122,12 @@ export const useValidate = () => {
     [validate]
   )
 
-  const handleFieldFocus = useCallback(
-    (_field: keyof SignupFormValues) => {
-      /* Валидация по ТЗ: blur + submit; focus не помечает поле как «тронутое». */
-    },
-    []
-  )
+  const handleFieldFocus = useCallback(() => {
+    /* Валидация по ТЗ: blur + submit; focus не помечает поле как «тронутое». */
+  }, [])
 
   const handleFieldBlur = useCallback(
-    (
-      field: keyof SignupFormValues,
-      value: unknown
-    ) => {
+    (field: keyof SignupFormValues, value: unknown) => {
       setTouched(prev => ({
         ...prev,
         [field]: true,
@@ -193,10 +139,7 @@ export const useValidate = () => {
 
   /** Снимает/обновляет ошибку поля при вводе (после blur или submit ошибка видна через getFieldError). */
   const handleFieldChange = useCallback(
-    (
-      field: keyof SignupFormValues,
-      value: unknown
-    ) => {
+    (field: keyof SignupFormValues, value: unknown) => {
       validateField(field, value)
     },
     [validateField]

@@ -36,30 +36,73 @@ export function rewritePraktikumSetCookie(
   return out
 }
 
-/** Дождаться controlling SW (прокси /api/v2) перед auth на GitHub Pages. */
-export async function waitForGhPagesServiceWorker(): Promise<void> {
+const GH_PAGES_SW_RELOAD_KEY = 'cosmic-match:gh-pages-sw-reload'
+
+function ghPagesServiceWorkerUrls(): { swUrl: string; scope: string } {
+  const base = typeof __APP_BASE_URL__ === 'string' ? __APP_BASE_URL__ : '/'
+  const scope = base.endsWith('/') ? base : `${base}/`
+  return { swUrl: `${scope}sw.js`, scope }
+}
+
+async function waitForServiceWorkerController(
+  timeoutMs: number
+): Promise<void> {
+  if (navigator.serviceWorker.controller) {
+    return
+  }
+  await new Promise<void>(resolve => {
+    const maxWait = scheduleTimeout(() => resolve(), timeoutMs)
+    navigator.serviceWorker.addEventListener(
+      'controllerchange',
+      () => {
+        cancelScheduledTimeout(maxWait)
+        resolve()
+      },
+      { once: true }
+    )
+  })
+}
+
+/**
+ * GitHub Pages: зарегистрировать SW до React и любых /api/v2 fetch.
+ * После первой установки без controller — один reload (стандартный паттерн PWA).
+ */
+export async function bootstrapGhPagesApiProxy(): Promise<void> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
     return
   }
   try {
+    const { swUrl, scope } = ghPagesServiceWorkerUrls()
+    await navigator.serviceWorker.register(swUrl, { scope })
     await navigator.serviceWorker.ready
     if (navigator.serviceWorker.controller) {
       return
     }
-    await new Promise<void>(resolve => {
-      const maxWait = scheduleTimeout(() => resolve(), 4000)
-      navigator.serviceWorker.addEventListener(
-        'controllerchange',
-        () => {
-          cancelScheduledTimeout(maxWait)
-          resolve()
-        },
-        { once: true }
-      )
-    })
+    await waitForServiceWorkerController(8000)
+    if (navigator.serviceWorker.controller) {
+      return
+    }
+    if (!sessionStorage.getItem(GH_PAGES_SW_RELOAD_KEY)) {
+      sessionStorage.setItem(GH_PAGES_SW_RELOAD_KEY, '1')
+      window.location.reload()
+      return
+    }
   } catch {
-    /* SW недоступен — пробуем login как есть */
+    /* SW недоступен */
   }
+}
+
+/** Дождаться controlling SW (прокси /api/v2) перед auth на GitHub Pages. */
+export async function waitForGhPagesServiceWorker(): Promise<void> {
+  await bootstrapGhPagesApiProxy()
+}
+
+export function isGhPagesApiProxyActive(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    navigator.serviceWorker.controller != null
+  )
 }
 
 export function readSetCookieLines(headers: Headers): string[] {

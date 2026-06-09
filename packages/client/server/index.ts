@@ -23,7 +23,11 @@ import cookieParser from 'cookie-parser'
 import { renderSsrErrorHtml } from './ssrErrorPage'
 import { renderStaticPageHtml } from './static-page'
 import { registerApiProxy } from './apiProxy'
-import { registerCspMiddleware, getCspNonce } from './csp'
+import {
+  registerCspMiddleware,
+  getCspNonce,
+  injectHtmlScriptNonces,
+} from './csp'
 
 const clientPath = path.join(__dirname, '..')
 const isDev = process.env.NODE_ENV === 'development'
@@ -176,6 +180,7 @@ function registerErrorHandler(app: express.Express) {
 
 async function createServer() {
   const app = express()
+  app.set('trust proxy', true)
   const portCandidates = resolvePortCandidates()
 
   registerCspMiddleware(app)
@@ -212,21 +217,26 @@ async function createServer() {
       } = await render(req)
 
       // Заменяю комментарий на сгенерированную HTML-строку
-      const html = template
-        .replace('<!--ssr-styles-->', styleTags)
-        .replace(
-          `<!--ssr-helmet-->`,
-          `${helmet.meta.toString()} ${helmet.title.toString()} ${helmet.link.toString()}`
-        )
-        .replace(`<!--ssr-outlet-->`, appHtml)
-        .replace(
-          `<!--ssr-initial-state-->`,
-          `<script nonce="${getCspNonce(
-            res
-          )}">window.APP_INITIAL_STATE = ${serialize(initialState, {
-            isJSON: true,
-          })}</script>`
-        )
+      const nonce = getCspNonce(res)
+      const html = injectHtmlScriptNonces(
+        template
+          .replace('<!--ssr-styles-->', styleTags)
+          .replace(
+            `<!--ssr-helmet-->`,
+            `${helmet.meta.toString()} ${helmet.title.toString()} ${helmet.link.toString()}`
+          )
+          .replace(`<!--ssr-outlet-->`, appHtml)
+          .replace(
+            `<!--ssr-initial-state-->`,
+            `<script nonce="${nonce}">window.APP_INITIAL_STATE = ${serialize(
+              initialState,
+              {
+                isJSON: true,
+              }
+            )}</script>`
+          ),
+        nonce
+      )
 
       // Завершаю запрос и отдаю HTML-страницу
       res.status(200).set({ 'Content-Type': 'text/html' }).end(html)

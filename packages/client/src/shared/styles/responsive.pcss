@@ -41,12 +41,30 @@
 }
 
 @media (max-width: 767px) {
+  .landing {
+    min-height: 100dvh;
+  }
+
   .landing main {
-    padding: 24px 12px 32px;
+    padding: max(24px, env(safe-area-inset-top, 0px)) 12px
+      max(32px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .landing-header__inner {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
+
+  .hero {
+    margin-bottom: 40px;
   }
 
   .hero__text h1 {
     font-size: 28px;
+  }
+
+  .hero-visual-orbit {
+    width: min(300px, 92vw);
   }
 
   .team__grid {
@@ -78,6 +96,22 @@
   }
 }
 
+@media (max-width: 430px) {
+  .hero__text h1 {
+    font-size: 24px;
+    line-height: 1.15;
+  }
+
+  .hero__text p {
+    font-size: 15px;
+    margin-bottom: 16px;
+  }
+
+  .hero-visual-orbit {
+    width: min(260px, 88vw);
+  }
+}
+
 @media (max-width: 479px) {
   .landing-header__inner {
     padding: 0 12px;
@@ -102,5 +136,36 @@
 
   .leaderboard-grid-item {
     padding: 8px 0;
+  }
+
+  .leaderboard-toolbar__left,
+  .leaderboard-toolbar__right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .leaderboard-table {
+    min-width: 28rem;
+    font-size: 12px;
+  }
+
+  .leaderboard-table th,
+  .leaderboard-table td {
+    padding: 6px 5px;
+  }
+}
+
+@media (max-width: 479px) {
+  .leaderboard-table__col--date {
+    display: none;
+  }
+
+  .leaderboard-table {
+    min-width: 22rem;
+  }
+
+  .auth-card--leaderboard {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }

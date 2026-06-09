@@ -48,6 +48,10 @@ import type {
 } from '../game/match3/engine/bootstrap'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
 import { toggleFullscreen } from '../utils/fullscreen'
+import {
+  GH_PAGES_DEMO_GAME_FINISH_PATH,
+  GH_PAGES_DEMO_GAME_PATH,
+} from '../shared/ghPagesDemoAuth'
 import { publicAssetUrl } from '../utils/publicAssetUrl'
 import {
   DEFAULT_MATCH3_LEVEL_ID,
@@ -76,12 +80,30 @@ import { leaderboardRecordDateToday } from '../shared/utils/leaderboardDate'
 import { useSelector } from '../store'
 import { selectUser } from '../slices/userSlice'
 
+import { useGameReturnNotification } from '../hooks/useGameReturnNotification'
 import {
   markGameStart,
   markGameEndAndMeasure,
   startPerformanceMonitoring,
   type PerformanceMonitoringHandle,
 } from '../utils/performanceMetrics'
+import {
+  getNotificationPermission,
+  isNotificationSupported,
+  readNotificationsOptIn,
+  requestNotificationPermission,
+  writeNotificationsOptIn,
+} from '../utils/notifications'
+import {
+  readPauseOnTabHidden,
+  writePauseOnTabHidden,
+} from '../utils/webApiStorage'
+import {
+  isVibrationSupported,
+  readVibrationEnabled,
+  vibrateWinFeedback,
+  writeVibrationEnabled,
+} from '../utils/vibration'
 
 // 2DO: разобраться с алиасами @ для jest
 // import { publicAssetUrl } from '../utils/publicAssetUrl'
@@ -294,6 +316,18 @@ export function GamePage() {
     'always' | 'never' | 'pauses'
   >('always')
   const [soundEnabled, setSoundEnabled] = useState(true)
+  const [notificationsOptIn, setNotificationsOptIn] = useState(() =>
+    readNotificationsOptIn()
+  )
+  const [notificationPermission, setNotificationPermission] = useState(() =>
+    getNotificationPermission()
+  )
+  const [pauseOnTabHidden, setPauseOnTabHidden] = useState(() =>
+    readPauseOnTabHidden()
+  )
+  const [vibrationEnabled, setVibrationEnabled] = useState(() =>
+    readVibrationEnabled()
+  )
   const [vfxQuality, setVfxQuality] = useState<GameVfxQualityOption>('full')
   const [debugBoostersMode, setDebugBoostersMode] = useState(false)
   const [activeCompanionId, setActiveCompanionId] = useState(
@@ -521,8 +555,15 @@ export function GamePage() {
 
   const isStartRoute = location.pathname === '/game/start'
   const isGameLandingRoute = location.pathname === '/game'
-  const isPlayRoute = location.pathname === '/game/play'
-  const isFinishRoute = location.pathname === '/game/finish'
+  const isDemoPlayRoute = location.pathname === GH_PAGES_DEMO_GAME_PATH
+  const isDemoFinishRoute = location.pathname === GH_PAGES_DEMO_GAME_FINISH_PATH
+  const isPlayRoute = location.pathname === '/game/play' || isDemoPlayRoute
+  const isOnGameSection =
+    isPlayRoute || isStartRoute || isGameLandingRoute || isDemoFinishRoute
+
+  useGameReturnNotification(isOnGameSection && notificationsOptIn)
+  const isFinishRoute =
+    location.pathname === '/game/finish' || isDemoFinishRoute
 
   useEffect(() => {
     if (!isGameLandingRoute) return
@@ -809,6 +850,7 @@ export function GamePage() {
       })
       window.localStorage.setItem(LAST_RESULT_KEY, JSON.stringify(next))
       if (payload.reason === 'goalReached') {
+        vibrateWinFeedback()
         const currentWins = readNarrativeWinsTotal()
         const nextWins = currentWins + 1
         writeNarrativeWinsTotal(nextWins)
@@ -832,13 +874,16 @@ export function GamePage() {
           console.error('[game] submitLeaderboardScore failed:', e)
         })
       }
-      navigate('/game/finish', {
-        state: {
-          gameSettings: buildGameSettingsState(),
-        },
-      })
+      navigate(
+        isDemoPlayRoute ? GH_PAGES_DEMO_GAME_FINISH_PATH : '/game/finish',
+        {
+          state: {
+            gameSettings: buildGameSettingsState(),
+          },
+        }
+      )
     },
-    [buildGameSettingsState, user, navigate]
+    [buildGameSettingsState, isDemoPlayRoute, user, navigate]
   )
   const handleSendHeroChatMessage = useCallback((text: string) => {
     const check = validateForumContent(text)
@@ -1413,6 +1458,65 @@ export function GamePage() {
                         </select>
                       </label>
                       <label className="match3-page__settings-label">
+                        Напоминания (уведомления)
+                        <select
+                          value={notificationsOptIn ? 'on' : 'off'}
+                          disabled={!isNotificationSupported()}
+                          onChange={async e => {
+                            const enabled = e.target.value === 'on'
+                            if (!enabled) {
+                              writeNotificationsOptIn(false)
+                              setNotificationsOptIn(false)
+                              return
+                            }
+                            const perm = await requestNotificationPermission()
+                            setNotificationPermission(perm)
+                            if (perm !== 'granted') {
+                              writeNotificationsOptIn(false)
+                              setNotificationsOptIn(false)
+                              return
+                            }
+                            writeNotificationsOptIn(true)
+                            setNotificationsOptIn(true)
+                          }}>
+                          <option value="off">Выкл</option>
+                          <option value="on">Вкл</option>
+                        </select>
+                      </label>
+                      {notificationsOptIn &&
+                        notificationPermission === 'denied' && (
+                          <p className="match3-page__settings-hint">
+                            Разрешите уведомления в настройках браузера.
+                          </p>
+                        )}
+                      <label className="match3-page__settings-label">
+                        Пауза при сворачивании вкладки
+                        <select
+                          value={pauseOnTabHidden ? 'on' : 'off'}
+                          onChange={e => {
+                            const enabled = e.target.value === 'on'
+                            writePauseOnTabHidden(enabled)
+                            setPauseOnTabHidden(enabled)
+                          }}>
+                          <option value="on">Вкл</option>
+                          <option value="off">Выкл</option>
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
+                        Вибрация (комбо / победа)
+                        <select
+                          value={vibrationEnabled ? 'on' : 'off'}
+                          disabled={!isVibrationSupported()}
+                          onChange={e => {
+                            const enabled = e.target.value === 'on'
+                            writeVibrationEnabled(enabled)
+                            setVibrationEnabled(enabled)
+                          }}>
+                          <option value="off">Выкл</option>
+                          <option value="on">Вкл</option>
+                        </select>
+                      </label>
+                      <label className="match3-page__settings-label">
                         Графика (эффекты)
                         <select
                           value={vfxQuality}
@@ -1675,6 +1779,8 @@ export function GamePage() {
             iconThemeOption={resolvedIconTheme}
             boardFieldTheme={boardFieldTheme}
             soundEnabled={soundEnabled}
+            vibrationEnabled={vibrationEnabled}
+            pauseOnTabHidden={pauseOnTabHidden}
             vfxQuality={vfxQuality}
             debugBoostersMode={debugBoostersMode}
             hintIdleMs={hintIdleMs}
@@ -1814,38 +1920,63 @@ export function GamePage() {
                 </p>
               )}
               <div className="match3__start-actions">
-                <button
-                  type="button"
-                  className="btn btn--outline match3__again-btn"
-                  onClick={() =>
-                    navigate('/game/start', {
-                      state: {
-                        openSettings: true,
-                        gameSettings: buildGameSettingsState(),
-                      },
-                    })
-                  }>
-                  Настройки
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--outline"
-                  onClick={handleCycleFinishArenaBg}>
-                  Фон
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--primary match3__play-btn"
-                  onClick={() =>
-                    navigate('/game/start', {
-                      state: {
-                        openSettings: true,
-                        gameSettings: buildGameSettingsState(),
-                      },
-                    })
-                  }>
-                  Сыграть снова
-                </button>
+                {isDemoFinishRoute ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn--outline"
+                      onClick={() => navigate('/presentation')}>
+                      К презентации
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--outline"
+                      onClick={handleCycleFinishArenaBg}>
+                      Фон
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--primary match3__play-btn"
+                      onClick={() => navigate(GH_PAGES_DEMO_GAME_PATH)}>
+                      Сыграть снова
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn--outline match3__again-btn"
+                      onClick={() =>
+                        navigate('/game/start', {
+                          state: {
+                            openSettings: true,
+                            gameSettings: buildGameSettingsState(),
+                          },
+                        })
+                      }>
+                      Настройки
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--outline"
+                      onClick={handleCycleFinishArenaBg}>
+                      Фон
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--primary match3__play-btn"
+                      onClick={() =>
+                        navigate('/game/start', {
+                          state: {
+                            openSettings: true,
+                            gameSettings: buildGameSettingsState(),
+                          },
+                        })
+                      }>
+                      Сыграть снова
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

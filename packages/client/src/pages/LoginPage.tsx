@@ -15,6 +15,7 @@ import { Button, FieldError, Input } from '../shared/ui'
 import { useValidate } from '../hooks/useValidate'
 import { useDispatch, useSelector } from '../store'
 import {
+  clearUser,
   fetchUserThunk,
   loginThunk,
   logoutThunk,
@@ -23,7 +24,13 @@ import {
   selectUserIsAuthChecked,
   selectUserIsLoading,
 } from '../slices/userSlice'
-import { markGameLandingNeedsShow } from '../game/match3/gameLandingGate'
+import {
+  markGameLandingNeedsShow,
+  resolveGameEntryPath,
+  resolveGameReturnPath,
+} from '../game/match3/gameLandingGate'
+import { isGhPagesDemoSessionActive } from '../shared/ghPagesDemoAuth'
+import { isStaticGhPagesDeploy } from '../shared/staticDeploy'
 import {
   buildYandexAuthorizeUrl,
   buildYandexRedirectUri,
@@ -69,7 +76,7 @@ export function LoginPage() {
       returnPath !== '/login' &&
       !returnPath.startsWith('/sign')
     ) {
-      navigate(returnPath, { replace: true })
+      navigate(resolveGameReturnPath(returnPath), { replace: true })
     }
   }, [user, navigate, location.state])
 
@@ -104,7 +111,7 @@ export function LoginPage() {
       const result = await dispatch(loginThunk({ login, password }))
       if (loginThunk.fulfilled.match(result)) {
         markGameLandingNeedsShow()
-        navigate('/game', { replace: true })
+        navigate(resolveGameEntryPath(), { replace: true })
       }
     })
   }
@@ -135,6 +142,11 @@ export function LoginPage() {
         ) : (
           <section className="auth-card auth-card--wide">
             <h1>Вход</h1>
+            {IS_STATIC_GH_PAGES_DEPLOY ? (
+              <p className="auth-note">
+                Демо-вход: testuser12345/Testuser12345.
+              </p>
+            ) : null}
             {fromForum ? (
               <div className="auth-page__toast-wrap">
                 <div className="auth-page__toast">
@@ -235,6 +247,23 @@ export function LoginPage() {
 export const initLoginPage = ({ dispatch, getState }: PageInitArgs) => {
   const skipLogoutForForum = consumeForumAuthRedirect()
   const skipLogoutForAuthRedirect = peekAuthLoginRedirect() != null
+
+  if (isStaticGhPagesDeploy()) {
+    if (skipLogoutForForum || skipLogoutForAuthRedirect) {
+      const state = getState()
+      if (
+        !selectUserIsAuthChecked(state) ||
+        (!selectUser(state) && isGhPagesDemoSessionActive())
+      ) {
+        return dispatch(fetchUserThunk())
+          .unwrap()
+          .catch(() => undefined)
+      }
+      return undefined
+    }
+    dispatch(clearUser())
+    return undefined
+  }
 
   const ensureGuest = async () => {
     if (!selectUserIsAuthChecked(getState())) {

@@ -1,16 +1,22 @@
 import React, { useMemo, useState } from 'react'
 import { getApiResourcesUrl } from '../constants'
 import { Helmet } from 'react-helmet'
+import { Link } from 'react-router-dom'
 import clsx from 'clsx'
 
 import { PageInitArgs } from '../routes'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
-import { useSelector } from '../store'
+import { useDispatch, useSelector } from '../store'
 import {
+  addFriendThunk,
   fetchFriendsThunk,
+  removeFriendThunk,
+  selectFriendNicknames,
   selectFriends,
+  selectFriendsActionError,
   selectIsLoadingFriends,
+  clearFriendsActionError,
 } from '../slices/friendsSlice'
 import {
   fetchLeaderboardThunk,
@@ -25,6 +31,7 @@ import {
 } from '../slices/userSlice'
 import { usePage } from '../hooks/usePage'
 import { useLandingTheme } from '../contexts/LandingThemeContext'
+import { LeaderboardFriendToggle } from '../components/LeaderboardFriendToggle'
 import { Button } from '../shared/ui'
 import {
   compareLeaderboardRecordDates,
@@ -78,9 +85,12 @@ function defaultSortDirForKey(key: SortKey): SortDir {
 }
 
 export function LeaderboardPage() {
+  const dispatch = useDispatch()
   const { theme } = useLandingTheme()
   const friends = useSelector(selectFriends)
+  const friendNicknames = useSelector(selectFriendNicknames)
   const isLoading = useSelector(selectIsLoadingFriends)
+  const friendsActionError = useSelector(selectFriendsActionError)
   const isLoadingResults = useSelector(isLoadingLeaderboard)
   const user = useSelector(selectUser)
 
@@ -91,19 +101,59 @@ export function LeaderboardPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [showFriendsOnly, setShowFriendsOnly] = useState(false)
 
-  const friendNicknames = useMemo(
-    () => new Set(friends.map(f => f.name)),
-    [friends]
-  )
+  const handleToggleFriend = (entry: LeaderboardEntry) => {
+    if (!entry.nickname || entry.nickname === 'Gaius Anonimous') {
+      return
+    }
+    if (user && entry.id === user.id) {
+      return
+    }
+    dispatch(clearFriendsActionError())
+    if (friendNicknames.has(entry.nickname)) {
+      void dispatch(removeFriendThunk(entry.nickname))
+      return
+    }
+    void dispatch(
+      addFriendThunk({
+        nickname: entry.nickname,
+        displayName: entry.nickname,
+        avatar: entry.avatar,
+        friendPraktikumId: entry.id > 0 ? entry.id : undefined,
+      })
+    )
+  }
+
+  const renderFriendToggle = (entry: LeaderboardEntry) => {
+    if (!user) {
+      return (
+        <Link to="/login" className="auth-link leaderboard-friend-login">
+          Войти
+        </Link>
+      )
+    }
+    if (entry.id === user.id) {
+      return <span className="leaderboard-friend-self">Вы</span>
+    }
+    const isFriend = friendNicknames.has(entry.nickname)
+    return (
+      <LeaderboardFriendToggle
+        isFriend={isFriend}
+        onClick={() => handleToggleFriend(entry)}
+      />
+    )
+  }
 
   const leaderboardTable = useSelector(leaderboardData)
 
   const sortedEntries = useMemo(() => {
     let list = leaderboardTable
-    if (showFriendsOnly && friendNicknames.size > 0) {
-      list = list.filter((entry: LeaderboardEntry) =>
-        friendNicknames.has(entry.nickname)
-      )
+    if (showFriendsOnly) {
+      list =
+        friendNicknames.size > 0
+          ? list.filter((entry: LeaderboardEntry) =>
+              friendNicknames.has(entry.nickname)
+            )
+          : []
     }
 
     const copy = [...list]
@@ -149,12 +199,16 @@ export function LeaderboardPage() {
       <Header />
 
       <main className="auth-main">
-        <div className="auth-card auth-card--wide">
+        <div className="auth-card auth-card--wide auth-card--leaderboard">
           <h1>Лидерборд</h1>
           <p className="auth-note">
-            Демо-лидерборд. В будущем данные будут через API для всех и для
-            фильтра друзей.
+            Добавляйте игроков из таблицы в «Друзья» — фильтр покажет только их
+            записи. Список хранится на нашем сервере для вашего аккаунта.
           </p>
+
+          {friendsActionError ? (
+            <p className="auth-form__error">{friendsActionError}</p>
+          ) : null}
 
           <div className="leaderboard-toolbar">
             <div className="leaderboard-toolbar__left">
@@ -197,55 +251,84 @@ export function LeaderboardPage() {
           {viewMode === 'table' ? (
             <div className="extra-card leaderboard-card">
               <h3>Таблица рекордов</h3>
-              <table className="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>{sortLabel('rank', '#')}</th>
-                    <th>{sortLabel('nickname', 'Игрок')}</th>
-                    <th>{sortLabel('CM42_score', 'Рейтинг')}</th>
-                    <th>{sortLabel('bestScore', 'Рекорд')}</th>
-                    <th>{sortLabel('bestScoreDate', 'Дата рекорда')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!isLoadingResults && sortedEntries.length === 0 && (
+              <div className="leaderboard-table-scroll">
+                <table className="leaderboard-table">
+                  <thead>
                     <tr>
-                      <td colSpan={5}>
-                        {showFriendsOnly
-                          ? 'Нет записей среди ваших друзей.'
-                          : 'Записей пока нет.'}
-                      </td>
+                      <th className="leaderboard-table__col--rank">
+                        {sortLabel('rank', '#')}
+                      </th>
+                      <th className="leaderboard-table__col--player">
+                        {sortLabel('nickname', 'Игрок')}
+                      </th>
+                      <th className="leaderboard-table__col--num">
+                        {sortLabel('CM42_score', 'Рейтинг')}
+                      </th>
+                      <th className="leaderboard-table__col--num">
+                        {sortLabel('bestScore', 'Рекорд')}
+                      </th>
+                      <th className="leaderboard-table__col--date">
+                        {sortLabel('bestScoreDate', 'Дата')}
+                      </th>
+                      <th className="leaderboard-table__col--friends">
+                        Друзья
+                      </th>
                     </tr>
-                  )}
-                  {!isLoadingResults &&
-                    sortedEntries.map((entry, index) => (
-                      <tr key={entry.id}>
-                        <td>{index + 1}</td>
-                        <td>
-                          <span className="leaderboard-player">
-                            <span className="leaderboard-avatar">
-                              {entry.avatar ? (
-                                <img
-                                  src={`${getApiResourcesUrl()}${entry.avatar}`}
-                                />
-                              ) : (
-                                <div>👤</div>
-                              )}
-                            </span>
-                            <span>{entry.nickname || 'Gaius Anonimous'}</span>
-                          </span>
-                        </td>
-                        <td>{entry.CM42_score}</td>
-                        <td>{entry.bestScore}</td>
-                        <td>
-                          {formatLeaderboardRecordDateForDisplay(
-                            entry.bestScoreDate
-                          )}
+                  </thead>
+                  <tbody>
+                    {!isLoadingResults && sortedEntries.length === 0 && (
+                      <tr>
+                        <td colSpan={6}>
+                          {showFriendsOnly
+                            ? 'Нет записей среди ваших друзей.'
+                            : 'Записей пока нет.'}
                         </td>
                       </tr>
-                    ))}
-                </tbody>
-              </table>
+                    )}
+                    {!isLoadingResults &&
+                      sortedEntries.map((entry, index) => (
+                        <tr key={entry.id}>
+                          <td className="leaderboard-table__col--rank">
+                            {index + 1}
+                          </td>
+                          <td className="leaderboard-table__col--player">
+                            <span className="leaderboard-player">
+                              <span className="leaderboard-avatar">
+                                {entry.avatar ? (
+                                  <img
+                                    src={`${getApiResourcesUrl()}${
+                                      entry.avatar
+                                    }`}
+                                    alt=""
+                                  />
+                                ) : (
+                                  <div>👤</div>
+                                )}
+                              </span>
+                              <span className="leaderboard-player__name">
+                                {entry.nickname || 'Gaius Anonimous'}
+                              </span>
+                            </span>
+                          </td>
+                          <td className="leaderboard-table__col--num">
+                            {entry.CM42_score}
+                          </td>
+                          <td className="leaderboard-table__col--num">
+                            {entry.bestScore}
+                          </td>
+                          <td className="leaderboard-table__col--date">
+                            {formatLeaderboardRecordDateForDisplay(
+                              entry.bestScoreDate
+                            )}
+                          </td>
+                          <td className="leaderboard-table__col--friends">
+                            {renderFriendToggle(entry)}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
               {isLoadingResults && (
                 <div className="leaderboard-card-loader">
                   Идет загрузка лучших результатов...
@@ -287,6 +370,9 @@ export function LeaderboardPage() {
                             entry.bestScoreDate
                           )}
                         </div>
+                        <div className="leaderboard-grid-actions">
+                          {renderFriendToggle(entry)}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -310,10 +396,17 @@ export function LeaderboardPage() {
             ) : friends.length === 0 ? (
               <p>Список друзей пока пуст.</p>
             ) : (
-              <ul>
+              <ul className="leaderboard-friends-list">
                 {friends.map(friend => (
-                  <li key={friend.name}>
-                    {friend.name} {friend.secondName}
+                  <li key={friend.nickname}>
+                    <span>{friend.displayName || friend.nickname}</span>
+                    <LeaderboardFriendToggle
+                      isFriend
+                      onClick={() => {
+                        dispatch(clearFriendsActionError())
+                        void dispatch(removeFriendThunk(friend.nickname))
+                      }}
+                    />
                   </li>
                 ))}
               </ul>
@@ -327,18 +420,23 @@ export function LeaderboardPage() {
   )
 }
 
-export const initLeaderboardPage = ({ dispatch, state }: PageInitArgs) => {
-  const queue: Array<Promise<unknown>> = [
-    dispatch(
-      fetchLeaderboardThunk({
-        cursor: 0,
-        limit: 10,
-      })
-    ),
-    dispatch(fetchFriendsThunk()).catch(() => undefined),
-  ]
+export const initLeaderboardPage = async ({
+  dispatch,
+  state,
+  getState,
+}: PageInitArgs) => {
+  await dispatch(
+    fetchLeaderboardThunk({
+      cursor: 0,
+      limit: 10,
+    })
+  ).catch(() => undefined)
+
   if (!selectUser(state) && !selectUserIsAuthChecked(state)) {
-    queue.push(dispatch(fetchUserThunk()).catch(() => undefined))
+    await dispatch(fetchUserThunk()).catch(() => undefined)
   }
-  return Promise.all(queue)
+
+  if (selectUser(getState())) {
+    await dispatch(fetchFriendsThunk()).catch(() => undefined)
+  }
 }

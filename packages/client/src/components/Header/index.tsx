@@ -13,6 +13,8 @@
  * (на остальных страницах — как раньше - трио: light-flat / light-3d / dark-neon).
  **/
 import React, { useCallback, useEffect, useState } from 'react'
+
+import { GameLogoIcon } from '../GameLogoIcon'
 import { Link } from 'react-router-dom'
 import {
   type LandingTheme,
@@ -25,7 +27,10 @@ import {
   getFullscreenElement,
   toggleFullscreen,
 } from '../../utils/fullscreen'
-import { resolveGameEntryPath } from '../../game/match3/gameLandingGate'
+import {
+  resolveGameEntryPath,
+  type GameEntryPath,
+} from '../../game/match3/gameLandingGate'
 
 export type HeaderVariant = 'default' | 'game'
 
@@ -67,9 +72,7 @@ export function Header({
   const { theme, setTheme, toggleColorMode } = useLandingTheme()
   const user = useSelector(selectUser)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [gameNavPath, setGameNavPath] = useState<'/game' | '/game/start'>(
-    '/game'
-  )
+  const [gameNavPath, setGameNavPath] = useState<GameEntryPath>('/game')
 
   const closeMobile = useCallback(() => {
     setMobileOpen(false)
@@ -124,7 +127,7 @@ export function Header({
         <div className="landing-header__left">
           <div className="landing-logo">
             <Link className="btn btn--flat" to="/" onClick={closeMobile}>
-              <span className="landing-logo__icon" />
+              <GameLogoIcon />
               <span className="landing-logo__text">Cosmic Match</span>
             </Link>
           </div>

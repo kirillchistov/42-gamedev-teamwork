@@ -1,0 +1,126 @@
+# Прод / ВМ: образы из GHCR (без локальной сборки).
+# Использование на сервере:
+#   export CLIENT_IMAGE=ghcr.io/<owner>/<repo>/client:<sha>
+#   export SERVER_IMAGE=ghcr.io/<owner>/<repo>/server:<sha>
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# .env на ВМ: POSTGRES_*, SERVER_PORT, FORUM_*, NGINX_* (см. .env.sample)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cosmic-match-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    # Прод: только docker-сеть (server/migrate). Не публикуйте 5433 наружу — иначе брутфорс и Kinsing.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\" || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  migrate:
+    container_name: cosmic-match-migrate
+    image: ${SERVER_IMAGE:?SERVER_IMAGE is required}
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    command: ["/app/packages/server/scripts/docker-migrate.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  server:
+    container_name: cosmic-match-server
+    image: ${SERVER_IMAGE:?SERVER_IMAGE is required}
+    restart: unless-stopped
+    pull_policy: always
+    ports:
+      - "${SERVER_PORT:-3000}:${SERVER_PORT:-3000}"
+    environment:
+      NODE_ENV: production
+      SERVER_PORT: ${SERVER_PORT:-3000}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      FORUM_MODERATOR_PRAKTIKUM_IDS: ${FORUM_MODERATOR_PRAKTIKUM_IDS:-}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://127.0.0.1:' + (process.env.SERVER_PORT || 3000) + '/health', response => process.exit(response.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\"",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 8
+      start_period: 15s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  client:
+    container_name: cosmic-match-client
+    image: ${CLIENT_IMAGE:?CLIENT_IMAGE is required}
+    restart: unless-stopped
+    pull_policy: always
+    ports:
+      - "${CLIENT_PORT:-9000}:80"
+    environment:
+      NODE_ENV: production
+      PORT: "80"
+      # CSP upgrade-insecure-requests — только с валидным HTTPS (домен + Let's Encrypt)
+      # CSP_UPGRADE_INSECURE: "1"
+      INTERNAL_SERVER_URL: http://server:${SERVER_PORT:-3000}
+      PRAKTIKUM_API_URL: ${PRAKTIKUM_API_URL:-https://ya-praktikum.tech}
+      EXTERNAL_SERVER_URL: http://server:${SERVER_PORT:-3000}
+    depends_on:
+      server:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cosmic-match-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/nginx/docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/nginx/cosmic-match.docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx/certs:/etc/nginx/ssl:ro
+    depends_on:
+      client:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q --spider http://127.0.0.1/ping || exit 1",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  pgdata:

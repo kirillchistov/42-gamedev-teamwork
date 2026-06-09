@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
   const viteStaticDeploy =
     env.VITE_STATIC_DEPLOY ?? process.env.VITE_STATIC_DEPLOY ?? ''
   const isGhPagesDeploy = viteStaticDeploy === 'gh-pages'
+  const enableServiceWorker = process.env.VITE_ENABLE_SW === '1'
 
   return {
     base: viteBase,
@@ -40,6 +41,7 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_STATIC_DEPLOY': JSON.stringify(viteStaticDeploy),
       'process.env.GITHUB_PAGES_BASE_URL': JSON.stringify(viteBase),
       __GH_PAGES_API_PROXY__: JSON.stringify(isGhPagesDeploy),
+      __IS_GH_PAGES_STATIC_DEPLOY__: JSON.stringify(isGhPagesDeploy),
     },
     build: {
       outDir: path.join(__dirname, 'dist/client'),
@@ -76,6 +78,8 @@ export default defineConfig(({ mode }) => {
       },
       react(),
       VitePWA({
+        disable: !enableServiceWorker,
+        injectRegister: enableServiceWorker ? 'auto' : false,
         strategies: 'injectManifest',
         srcDir: 'src',
         filename: 'sw.ts',

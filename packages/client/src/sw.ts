@@ -15,15 +15,36 @@ const CACHE_NAME = 'match3-cache-v2'
 // self.__WB_MANIFEST заменяется плагином на массив ресурсов при сборке
 const PRECACHE_ENTRIES = self.__WB_MANIFEST || []
 
+function shouldProxyPraktikumApi(url: URL): boolean {
+  if (url.origin !== self.location.origin) {
+    return false
+  }
+  if (!isPraktikumProxyPath(url.pathname)) {
+    return false
+  }
+  if (typeof __GH_PAGES_API_PROXY__ !== 'undefined' && __GH_PAGES_API_PROXY__) {
+    return true
+  }
+  return self.location.hostname.endsWith('github.io')
+}
+
 // ─── Install ────────────────────────────────────────────
 // При первой загрузке кешируем все статические ресурсы
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
+    caches.open(CACHE_NAME).then(async cache => {
       const urls = PRECACHE_ENTRIES.map(entry =>
         typeof entry === 'string' ? entry : entry.url
       )
-      return cache.addAll(urls)
+      await Promise.all(
+        urls.map(async url => {
+          try {
+            await cache.add(url)
+          } catch {
+            /* один битый precache не должен ломать прокси /api/v2 */
+          }
+        })
+      )
     })
   )
   self.skipWaiting()
@@ -51,12 +72,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url)
 
   // GitHub Pages: same-origin /api/v2 → SW → ya-praktikum.tech (cookie first-party)
-  if (
-    typeof __GH_PAGES_API_PROXY__ !== 'undefined' &&
-    __GH_PAGES_API_PROXY__ &&
-    url.origin === self.location.origin &&
-    isPraktikumProxyPath(url.pathname)
-  ) {
+  if (shouldProxyPraktikumApi(url)) {
     const appBase =
       typeof __APP_BASE_URL__ === 'string' ? __APP_BASE_URL__ : '/'
     event.respondWith(proxyPraktikumApiRequest(request, appBase))

@@ -31,3 +31,10 @@ export function publicAssetUrl(pathFromPublicRoot: string): string {
   if (!base) return `/${path}`
   return `${base}/${path}`
 }
+
+/** Маршрут SPA с учётом base path (GitHub Pages и т.п.). */
+export function appRouteUrl(routePath: string): string {
+  const path = routePath.startsWith('/') ? routePath : `/${routePath}`
+  const base = readAppBase()
+  return base ? `${base}${path}` : path
+}

@@ -2,6 +2,7 @@
  * 1. Поддержка POST без обязательного JSON в ответе (POST /auth/logout)
  **/
 import { getBaseUrl } from '../../constants'
+import { humanizeApiReason } from '../utils/praktikumAuthErrors'
 
 export interface ApiResponse<T = unknown> {
   data: T
@@ -34,7 +35,15 @@ class ApiClient {
     const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(data.reason || 'Ошибка запроса')
+      const raw =
+        data &&
+        typeof data === 'object' &&
+        data !== null &&
+        'reason' in data &&
+        typeof (data as { reason: unknown }).reason === 'string'
+          ? (data as { reason: string }).reason
+          : 'Ошибка запроса'
+      throw new Error(humanizeApiReason(raw))
     }
 
     return data as T
@@ -58,12 +67,12 @@ class ApiClient {
             const j = JSON.parse(text) as {
               reason?: string
             }
-            if (j.reason) msg = j.reason
+            if (j.reason) msg = humanizeApiReason(j.reason)
           } catch {
             /* не JSON */
           }
         }
-        throw new Error(msg)
+        throw new Error(humanizeApiReason(msg))
       }
     })
   }
@@ -101,7 +110,7 @@ class ApiClient {
       credentials: 'include',
     }).then(async res => {
       const data = await res.json()
-      if (!res.ok) throw new Error(data.reason)
+      if (!res.ok) throw new Error(humanizeApiReason(String(data.reason ?? '')))
       return data as T
     })
   }

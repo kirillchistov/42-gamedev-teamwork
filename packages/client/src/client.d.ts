@@ -4,3 +4,5 @@ declare const __INTERNAL_SERVER_URL__: string
 declare const __APP_BASE_URL__: string
 /** Vite define: SW проксирует /api/v2 → ya-praktikum.tech на GitHub Pages. */
 declare const __GH_PAGES_API_PROXY__: boolean
+/** Vite define: статический деплой на GitHub Pages (без Express apiProxy). */
+declare const __IS_GH_PAGES_STATIC_DEPLOY__: boolean

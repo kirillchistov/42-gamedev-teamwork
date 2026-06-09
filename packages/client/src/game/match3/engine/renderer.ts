@@ -211,6 +211,10 @@ export function preloadIconTheme(theme: GameIconThemeOption): Promise<void> {
   return Promise.all(icons.map(waitForImage)).then(() => undefined)
 }
 
+if (typeof window !== 'undefined') {
+  void preloadIconTheme('cosmic')
+}
+
 function drawShape(
   ctx: CanvasRenderingContext2D,
   idx: number,
@@ -1222,7 +1226,6 @@ export function renderBoard(
             ? 'rgba(15, 23, 42, 0.55)'
             : 'rgba(148, 163, 184, 0.45)'
           ctx.shadowBlur = Math.max(4, Math.floor(cell * 0.12))
-          const pad = Math.max(4, Math.floor(cell * 0.14))
           drawTileIconContained(ctx, icon, drawX, drawY, cell, 0.76)
           ctx.restore()
         }

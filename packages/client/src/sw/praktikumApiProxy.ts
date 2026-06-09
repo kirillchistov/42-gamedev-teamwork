@@ -5,6 +5,7 @@ import {
   readSetCookieLines,
   rewritePraktikumSetCookie,
 } from '../shared/ghPagesPraktikumProxy'
+import { filterPraktikumCookieHeader } from '../shared/praktikumAuthCookies'
 
 function repoBaseFromAppBase(appBaseUrl: string): string {
   return appBaseUrl.replace(/\/+$/, '') || ''
@@ -26,6 +27,14 @@ export async function proxyPraktikumApiRequest(
 
   const headers = new Headers(request.headers)
   headers.delete('host')
+  const filteredCookie = filterPraktikumCookieHeader(
+    headers.get('cookie') ?? undefined
+  )
+  if (filteredCookie) {
+    headers.set('cookie', filteredCookie)
+  } else {
+    headers.delete('cookie')
+  }
 
   const init: RequestInit = {
     method: request.method,

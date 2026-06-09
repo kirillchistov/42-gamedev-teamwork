@@ -3,6 +3,15 @@
 
 .leaderboard-card {
   margin-bottom: 16px;
+  min-width: 0;
+}
+
+.leaderboard-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  margin: 0 -2px;
+  padding-bottom: 2px;
 }
 
 .leaderboard-card-loader {
@@ -13,6 +22,7 @@
 
 .leaderboard-toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
@@ -68,22 +78,59 @@
 
 .leaderboard-table {
   width: 100%;
+  min-width: 32rem;
   border-collapse: collapse;
   font-size: 13px;
+  table-layout: fixed;
 }
 
 .leaderboard-table th,
 .leaderboard-table td {
-  padding: 8px 10px;
+  padding: 8px 8px;
   border-bottom: 1px solid
     rgba(148, 163, 184, 0.45);
   text-align: left;
+  vertical-align: middle;
 }
 
 .leaderboard-table thead th {
   font-weight: 600;
   color: var(--color-text-subtle-light);
   white-space: nowrap;
+}
+
+.leaderboard-table__col--rank {
+  width: 2.5rem;
+}
+
+.leaderboard-table__col--player {
+  width: auto;
+  min-width: 7rem;
+}
+
+.leaderboard-table__col--num {
+  width: 4.5rem;
+  white-space: nowrap;
+}
+
+.leaderboard-table__col--date {
+  width: 6.5rem;
+  white-space: nowrap;
+}
+
+.leaderboard-table__col--friends {
+  width: 3.25rem;
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+  font-size: 11px;
+}
+
+.leaderboard-player__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 /* кнопка сортировки в заголовке */
@@ -223,4 +270,81 @@
 .leaderboard-grid-meta {
   font-size: 12px;
   color: var(--color-text-subtle-light);
+}
+
+.leaderboard-friends-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.leaderboard-friends-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.leaderboard-friend-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.leaderboard-friend-icon-btn__svg {
+  display: block;
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: currentColor;
+  color: var(--color-text-main-light);
+  opacity: 0.88;
+}
+
+.leaderboard-friend-icon-btn:hover {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.45);
+}
+
+.leaderboard-friend-icon-btn:active {
+  transform: scale(0.96);
+}
+
+.leaderboard-friend-icon-btn--remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.landing--dark-neon .leaderboard-friend-icon-btn__svg,
+body.landing--dark-neon .leaderboard-friend-icon-btn__svg,
+.user-app-shell[data-user-theme='dark-neon'] .leaderboard-friend-icon-btn__svg {
+  color: var(--color-text-main-dark);
+}
+
+.leaderboard-friend-self {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.leaderboard-friend-login {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.leaderboard-grid-actions {
+  margin-top: 0.5rem;
 }

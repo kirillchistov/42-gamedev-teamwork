@@ -2,31 +2,30 @@
  * Публичные маршруты без ProtectedRoute.
  * Игра, профиль, друзья, форум, лидеры — только после логина.
  */
-export const PUBLIC_ROUTE_PATHS: readonly string[] =
-  [
-    '/',
-    '/login',
-    '/sign-in',
-    '/signin',
-    '/logout',
-    '/oauth/yandex/callback',
-    '/signup',
-    '/register',
-    '/premium',
-    '/error404',
-    '/error/404',
-    '/error500',
-    '/error/500',
-    '*',
-  ]
+export const PUBLIC_ROUTE_PATHS: readonly string[] = [
+  '/',
+  '/login',
+  '/sign-in',
+  '/signin',
+  '/logout',
+  '/oauth/yandex/callback',
+  '/signup',
+  '/register',
+  '/premium',
+  '/presentation',
+  '/presentation/:slide',
+  '/game/demo',
+  '/game/demo/finish',
+  '/error404',
+  '/error/404',
+  '/error500',
+  '/error/500',
+  '*',
+]
 
-export const publicRoutePathSet = new Set(
-  PUBLIC_ROUTE_PATHS
-)
+export const publicRoutePathSet = new Set(PUBLIC_ROUTE_PATHS)
 
-export function isPublicRoutePath(
-  path: string | undefined
-): boolean {
+export function isPublicRoutePath(path: string | undefined): boolean {
   if (path === undefined) return false
   return publicRoutePathSet.has(path)
 }

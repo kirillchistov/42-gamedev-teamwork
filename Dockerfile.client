@@ -13,8 +13,10 @@ COPY . .
 
 RUN yarn lerna bootstrap
 # Браузерный бандл: same-origin (/api/v2, /api/forum), не URL с машины сборки.
+ARG VITE_YANDEX_OAUTH_REDIRECT_URI=
 ENV VITE_APP_API_URL=
 ENV PRAKTIKUM_API_URL=
+ENV VITE_YANDEX_OAUTH_REDIRECT_URI=${VITE_YANDEX_OAUTH_REDIRECT_URI}
 RUN rm -rf /app/packages/client/dist/ && yarn build --scope=client
 
 FROM node:${NODE_VERSION}-bookworm-slim AS production

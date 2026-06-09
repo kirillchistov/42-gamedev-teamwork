@@ -3,6 +3,10 @@
 export const CSP_ORIGINS = {
   praktikumApi: 'https://ya-praktikum.tech',
   yandexOAuth: 'https://oauth.yandex.ru',
+  googleFontsCss: 'https://fonts.googleapis.com',
+  googleFontsStatic: 'https://fonts.gstatic.com',
+  /** Обратное геокодирование для демо региона в профиле (без ключа). */
+  bigDataCloud: 'https://api.bigdatacloud.net',
 } as const
 
 function isDevEnv(): boolean {
@@ -12,6 +16,11 @@ function isDevEnv(): boolean {
 function isGhPagesStaticBuild(): boolean {
   const flag = process.env.VITE_STATIC_DEPLOY
   return flag === 'gh-pages'
+}
+
+/** Только для прода с валидным TLS (Let's Encrypt). На IP + :9000 ломает загрузку ассетов. */
+function shouldUpgradeInsecureRequests(): boolean {
+  return process.env.CSP_UPGRADE_INSECURE === '1'
 }
 
 // Сериализация директив в значение заголовка / meta
@@ -33,8 +42,11 @@ export function buildSsrCspDirectives(nonce: string): Record<string, string[]> {
     "'self'",
     CSP_ORIGINS.praktikumApi,
     CSP_ORIGINS.yandexOAuth,
+    CSP_ORIGINS.bigDataCloud,
   ]
-  const styleSrc = ["'self'", "'unsafe-inline'"]
+  const styleSrc = ["'self'", "'unsafe-inline'", CSP_ORIGINS.googleFontsCss]
+  const styleSrcElem = ["'self'", "'unsafe-inline'", CSP_ORIGINS.googleFontsCss]
+  const fontSrc = ["'self'", 'data:', CSP_ORIGINS.googleFontsStatic]
 
   if (isDevEnv()) {
     scriptSrc.push("'unsafe-eval'")
@@ -46,8 +58,9 @@ export function buildSsrCspDirectives(nonce: string): Record<string, string[]> {
     'base-uri': ["'self'"],
     'script-src': scriptSrc,
     'style-src': styleSrc,
+    'style-src-elem': styleSrcElem,
     'img-src': ["'self'", 'data:', 'blob:', 'https:'],
-    'font-src': ["'self'", 'data:'],
+    'font-src': fontSrc,
     'connect-src': connectSrc,
     'frame-src': [CSP_ORIGINS.yandexOAuth],
     'form-action': ["'self'", CSP_ORIGINS.yandexOAuth],
@@ -56,7 +69,7 @@ export function buildSsrCspDirectives(nonce: string): Record<string, string[]> {
     'object-src': ["'none'"],
   }
 
-  if (!isDevEnv()) {
+  if (!isDevEnv() && shouldUpgradeInsecureRequests()) {
     directives['upgrade-insecure-requests'] = []
   }
 

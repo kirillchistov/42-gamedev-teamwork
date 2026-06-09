@@ -48,8 +48,15 @@ function readAndConsumeInitialState(): RootState | undefined {
 
 const store = createAppStore(readAndConsumeInitialState())
 
-/** SSR без браузерных cookie мог пометить auth/forum как «проверенные» — сбрасываем до гидратации. */
-if (typeof window !== 'undefined') {
+/**
+ * После SSR: сброс «ложной» проверки сессии без user (cookie не дошли до Node).
+ * Вызывать только после hydrateRoot, иначе withAuthGuard рендерит loading вместо HTML с сервера.
+ */
+export function applySsrClientReconciliation(): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+
   const hydrated = store.getState()
   if (
     hydrated.user.isAuthChecked &&

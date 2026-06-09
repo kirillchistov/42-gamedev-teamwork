@@ -3,6 +3,7 @@ import { Comment } from './Comment'
 import { CommentReaction } from './CommentReaction'
 import { AnonymousSession } from './AnonymousSession'
 import { UserUiTheme } from './UserUiTheme'
+import { UserFriend } from './UserFriend'
 
 Topic.hasMany(Comment, {
   foreignKey: 'topicId',
@@ -52,5 +53,6 @@ export {
   Comment,
   CommentReaction,
   Topic,
+  UserFriend,
   UserUiTheme,
 }

@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { ThemeProvider } from '@gravity-ui/uikit'
-import { store } from './store'
+import { applySsrClientReconciliation, store } from './store'
 import { routes } from './routes'
 import { LandingThemeProvider } from './contexts/LandingThemeContext'
 import { ThemeServerSync } from './components/ThemeServerSync'
@@ -29,6 +29,7 @@ import '@gravity-ui/uikit/styles/styles.css'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppErrorFallback } from './components/AppErrorFallback'
 import { isPublicRoutePath } from './router/publicRoutePaths'
+import { unregisterStaleServiceWorkers } from './utils/unregisterStaleServiceWorker'
 
 const routerBasename = (() => {
   const base = import.meta.env.BASE_URL || '/'
@@ -81,8 +82,16 @@ const canHydrate = rootElement.firstElementChild != null
 
 const root = <React.StrictMode>{app}</React.StrictMode>
 
-if (canHydrate) {
-  ReactDOM.hydrateRoot(rootElement, root)
-} else {
-  ReactDOM.createRoot(rootElement).render(root)
+async function startClient(): Promise<void> {
+  await unregisterStaleServiceWorkers()
+
+  if (canHydrate) {
+    ReactDOM.hydrateRoot(rootElement, root)
+    applySsrClientReconciliation()
+  } else {
+    applySsrClientReconciliation()
+    ReactDOM.createRoot(rootElement).render(root)
+  }
 }
+
+void startClient()

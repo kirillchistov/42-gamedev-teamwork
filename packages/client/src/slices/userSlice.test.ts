@@ -182,10 +182,10 @@ describe('userSlice', () => {
 
       expect(loginThunk.rejected.match(action)).toBe(true)
       expect(action.payload).toBe(
-        'Вход выполнен, но сессия не подтвердилась. Обновите страницу (жёстко), очистите данные сайта или откройте в приватной вкладке и войдите снова.'
+        'Не удалось завершить вход. Обновите страницу и попробуйте ещё раз.'
       )
       expect(store.getState().user.error).toBe(
-        'Вход выполнен, но сессия не подтвердилась. Обновите страницу (жёстко), очистите данные сайта или откройте в приватной вкладке и войдите снова.'
+        'Не удалось завершить вход. Обновите страницу и попробуйте ещё раз.'
       )
     })
 
@@ -242,6 +242,46 @@ describe('userSlice', () => {
       expect(loginThunk.fulfilled.match(action)).toBe(true)
       expect(store.getState().user.data?.login).toBe('u')
     }, 10_000)
+
+    it('shows Russian message when signin returns incorrect credentials', async () => {
+      const fetchMock = jest.fn() as jest.Mock
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({}),
+        } as Response)
+      )
+      fetchMock.mockImplementationOnce(() =>
+        Promise.resolve({
+          ok: false,
+          status: 400,
+          json: async () => ({
+            reason: 'Login or password is incorrect',
+          }),
+        } as Response)
+      )
+
+      Object.defineProperty(global, 'fetch', {
+        value: fetchMock,
+        configurable: true,
+        writable: true,
+      })
+
+      const store = configureStore({
+        reducer: { user: userReducer },
+      })
+
+      const action = await store.dispatch(
+        loginThunk({
+          login: 'testuser',
+          password: 'wrong',
+        })
+      )
+
+      expect(loginThunk.rejected.match(action)).toBe(true)
+      expect(action.payload).toBe('Неверный логин или пароль')
+      expect(store.getState().user.error).toBe('Неверный логин или пароль')
+    })
 
     it('shows conflict message when signin returns already in system and /auth/user returns 401', async () => {
       const fetchMock = jest.fn() as jest.Mock

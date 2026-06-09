@@ -212,7 +212,8 @@ router.get('/topics', async (req, res) => {
         topicPayload(t, statsMap.get(t.id) ?? EMPTY_TOPIC_COMMENT_STATS, req)
       )
     )
-  } catch {
+  } catch (err) {
+    console.error('[forum] GET /topics', err)
     res.status(500).json({ reason: 'Internal error' })
   }
 })

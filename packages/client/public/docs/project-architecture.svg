@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 700" role="img" aria-labelledby="title desc">
+  <title id="title">Архитектура Cosmic Match</title>
+  <desc id="desc">SSR-клиент, игровой Canvas, API Практикума и форума, PostgreSQL, OAuth Яндекс, PWA, деплой в Яндекс Облако.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0b1220"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="hi" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a5f"/>
+      <stop offset="100%" style="stop-color:#334155"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <polygon points="0 0,9 3,0 6" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrowHi" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <polygon points="0 0,9 3,0 6" fill="#38bdf8"/>
+    </marker>
+    <marker id="arrowDash" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <polygon points="0 0,9 3,0 6" fill="#c4b5fd"/>
+    </marker>
+    <style>
+      .zone{fill:#0f172a;stroke:#475569;stroke-width:1.2;rx:14}
+      .box{fill:url(#hi);stroke:#64748b;stroke-width:1.5;rx:10}
+      .boxCore{fill:#334155;stroke:#38bdf8;stroke-width:1.8;rx:10}
+      .t{fill:#f8fafc;font:700 15px system-ui,sans-serif;text-anchor:middle}
+      .h{fill:#7dd3fc;font:600 12px system-ui,sans-serif;text-anchor:middle}
+      .s{fill:#cbd5e1;font:10px ui-monospace,monospace;text-anchor:middle}
+      .tag{fill:#1e293b;stroke:#38bdf8;stroke-width:1;rx:6}
+      .tagT{fill:#bae6fd;font:600 9px system-ui,sans-serif;text-anchor:middle}
+      .edge{stroke:#94a3b8;stroke-width:2;fill:none;marker-end:url(#arrow)}
+      .edgeHi{stroke:#38bdf8;stroke-width:2;fill:none;marker-end:url(#arrowHi)}
+      .edgeDash{stroke:#c4b5fd;stroke-width:2.2;fill:none;stroke-dasharray:10 7;marker-end:url(#arrowDash)}
+      .legend{fill:#94a3b8;font:10px system-ui,sans-serif}
+    </style>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  <text x="550" y="34" class="t" font-size="20">Cosmic Match — архитектура</text>
+  <text x="550" y="54" class="s">Монорепо Lerna · SSR + Canvas · API Практикума · форум Postgres · OAuth · PWA · Yandex Cloud</text>
+
+  <rect x="24" y="72" width="320" height="200" class="zone"/>
+  <text x="184" y="92" class="h">Браузер / PWA</text>
+  <rect x="44" y="104" width="280" height="52" class="boxCore"/>
+  <text x="184" y="126" class="t" font-size="13">React 18 + Redux Toolkit</text>
+  <text x="184" y="142" class="s">Router · Helmet · валидация</text>
+  <rect x="44" y="168" width="132" height="44" class="box"/>
+  <text x="110" y="188" class="h">Match-3 Canvas 2D</text>
+  <text x="110" y="202" class="s">движок · HUD · квесты</text>
+  <rect x="192" y="168" width="132" height="44" class="box"/>
+  <text x="258" y="188" class="h">Service Worker</text>
+  <text x="258" y="202" class="s">кэш · GH Pages</text>
+  <rect x="44" y="222" width="86" height="22" class="tag"/><text x="87" y="237" class="tagT">TypeScript</text>
+  <rect x="138" y="222" width="56" height="22" class="tag"/><text x="166" y="237" class="tagT">Vite</text>
+  <rect x="202" y="222" width="56" height="22" class="tag"/><text x="230" y="237" class="tagT">Jest</text>
+  <rect x="266" y="222" width="58" height="22" class="tag"/><text x="295" y="237" class="tagT">Canvas</text>
+
+  <rect x="368" y="72" width="320" height="200" class="zone"/>
+  <text x="528" y="92" class="h">SSR-клиент (Express :9000)</text>
+  <rect x="388" y="104" width="280" height="52" class="boxCore"/>
+  <text x="528" y="126" class="t" font-size="13">entry-server · hydrateRoot</text>
+  <text x="528" y="142" class="s">APP_INITIAL_STATE · CSP</text>
+  <rect x="388" y="168" width="132" height="44" class="box"/>
+  <text x="454" y="188" class="h">apiProxy</text>
+  <text x="454" y="202" class="s">/api/v2 same-origin</text>
+  <rect x="536" y="168" width="132" height="44" class="box"/>
+  <text x="602" y="188" class="h">OAuth callback</text>
+  <text x="602" y="202" class="s">Yandex · state</text>
+  <rect x="388" y="222" width="70" height="22" class="tag"/><text x="423" y="237" class="tagT">Express</text>
+  <rect x="466" y="222" width="88" height="22" class="tag"/><text x="510" y="237" class="tagT">React Router</text>
+  <rect x="562" y="222" width="50" height="22" class="tag"/><text x="587" y="237" class="tagT">CSP</text>
+  <rect x="620" y="222" width="48" height="22" class="tag"/><text x="644" y="237" class="tagT">SSR</text>
+
+  <rect x="712" y="72" width="364" height="200" class="zone"/>
+  <text x="894" y="92" class="h">HTTP API и данные</text>
+  <rect x="732" y="104" width="160" height="52" class="boxCore"/>
+  <text x="812" y="126" class="t" font-size="13">ya-praktikum.tech</text>
+  <text x="812" y="142" class="s">auth · profile · OAuth</text>
+  <rect x="908" y="104" width="148" height="52" class="box"/>
+  <text x="982" y="126" class="h">Yandex OAuth</text>
+  <text x="982" y="142" class="s">oauth.yandex.ru</text>
+  <rect x="732" y="168" width="160" height="52" class="box"/>
+  <text x="812" y="190" class="h">Forum API :3000</text>
+  <text x="812" y="206" class="s">Node · Express</text>
+  <rect x="908" y="168" width="148" height="52" class="box"/>
+  <text x="982" y="190" class="h">PostgreSQL</text>
+  <text x="982" y="206" class="s">темы · комментарии</text>
+  <rect x="732" y="222" width="64" height="22" class="tag"/><text x="764" y="237" class="tagT">REST</text>
+  <rect x="804" y="222" width="72" height="22" class="tag"/><text x="840" y="237" class="tagT">Cookie</text>
+  <rect x="884" y="222" width="80" height="22" class="tag"/><text x="924" y="237" class="tagT">Postgres</text>
+  <rect x="972" y="222" width="84" height="22" class="tag"/><text x="1014" y="237" class="tagT">Lerna</text>
+
+  <rect x="24" y="292" width="520" height="168" class="zone"/>
+  <text x="154" y="312" class="h">Ядро (packages/client/src/game)</text>
+  <rect x="44" y="328" width="150" height="48" class="box"/>
+  <text x="119" y="348" class="h">gameState</text>
+  <text x="119" y="362" class="s">ready · playing · end</text>
+  <rect x="206" y="328" width="150" height="48" class="box"/>
+  <text x="281" y="348" class="h">resolvePipeline</text>
+  <text x="281" y="362" class="s">swap · каскады</text>
+  <rect x="368" y="328" width="150" height="48" class="box"/>
+  <text x="443" y="348" class="h">renderer</text>
+  <text x="443" y="362" class="s">поле · FX · HUD</text>
+  <rect x="44" y="388" width="474" height="52" class="boxCore"/>
+  <text x="281" y="410" class="t" font-size="13">Match3Screen ↔ GamePage</text>
+  <text x="281" y="426" class="s">мост React UI · Performance API · темы арены</text>
+
+  <rect x="564" y="292" width="512" height="168" class="zone"/>
+  <text x="820" y="312" class="h">Деплой и инфра</text>
+  <rect x="584" y="328" width="148" height="48" class="box"/>
+  <text x="658" y="348" class="h">Docker Compose</text>
+  <text x="658" y="362" class="s">client · server · db</text>
+  <rect x="746" y="328" width="148" height="48" class="box"/>
+  <text x="820" y="348" class="h">nginx + TLS</text>
+  <text x="820" y="362" class="s">reverse proxy</text>
+  <rect x="908" y="328" width="148" height="48" class="box"/>
+  <text x="982" y="348" class="h">Yandex Cloud VM</text>
+  <text x="982" y="362" class="s">GHCR · autodeploy</text>
+  <rect x="584" y="388" width="472" height="52" class="boxCore"/>
+  <text x="820" y="410" class="t" font-size="13">CI: GitHub Actions → образы → прод-домен</text>
+  <text x="820" y="426" class="s">cosmic.ya-praktikum.tech · GitHub Pages</text>
+
+  <rect x="24" y="480" width="1052" height="196" class="zone"/>
+  <text x="550" y="500" class="h">Ключевые модули UI</text>
+  <rect x="44" y="516" width="118" height="56" class="box"/><text x="103" y="540" class="h">Лендинг</text><text x="103" y="556" class="s">Hero · Team</text>
+  <rect x="174" y="516" width="118" height="56" class="box"/><text x="233" y="540" class="h">Игра</text><text x="233" y="556" class="s">/game</text>
+  <rect x="304" y="516" width="118" height="56" class="box"/><text x="363" y="540" class="h">Профиль</text><text x="363" y="556" class="s">геолокация</text>
+  <rect x="434" y="516" width="118" height="56" class="box"/><text x="493" y="540" class="h">Лидерборд</text><text x="493" y="556" class="s">друзья</text>
+  <rect x="564" y="516" width="118" height="56" class="box"/><text x="623" y="540" class="h">Форум</text><text x="623" y="556" class="s">RTK slice</text>
+  <rect x="694" y="516" width="118" height="56" class="box"/><text x="753" y="540" class="h">Auth</text><text x="753" y="556" class="s">login · OAuth</text>
+  <rect x="824" y="516" width="118" height="56" class="box"/><text x="883" y="540" class="h">Темы</text><text x="883" y="556" class="s">UI + backend</text>
+  <rect x="954" y="516" width="102" height="56" class="box"/><text x="1005" y="540" class="h">PWA</text><text x="1005" y="556" class="s">manifest</text>
+  <rect x="44" y="586" width="1012" height="72" class="boxCore"/>
+  <text x="550" y="612" class="t" font-size="13">Монорепо Lerna: packages/client + packages/server</text>
+  <text x="550" y="630" class="s">docs/*.svg · презентация · e2e · Prettier · ESLint</text>
+  <rect x="300" y="638" width="72" height="20" class="tag"/><text x="336" y="652" class="tagT">Prettier</text>
+  <rect x="380" y="638" width="56" height="20" class="tag"/><text x="408" y="652" class="tagT">ESLint</text>
+  <rect x="444" y="638" width="56" height="20" class="tag"/><text x="472" y="652" class="tagT">Jest</text>
+  <rect x="508" y="638" width="64" height="20" class="tag"/><text x="540" y="652" class="tagT">Docker</text>
+  <rect x="580" y="638" width="56" height="20" class="tag"/><text x="608" y="652" class="tagT">nginx</text>
+  <rect x="644" y="638" width="88" height="20" class="tag"/><text x="688" y="652" class="tagT">GitHub Actions</text>
+
+  <!-- 1. Браузер → SSR: первый документ / гидратация -->
+  <path class="edgeHi" d="M 324 134 L 340 134 L 388 134"/>
+  <text x="332" y="128" class="legend">HTML + JS</text>
+
+  <!-- 2. SSR apiProxy → Практикум API -->
+  <path class="edgeHi" d="M 386 190 L 378 190 L 378 218 L 700 218 L 700 130 L 732 130"/>
+  <text x="610" y="216" class="legend">/api/v2 proxy</text>
+
+  <!-- 3. Браузер (Canvas) → игровое ядро -->
+  <path class="edgeHi" d="M 44 184 L 38 184 L 38 276 L 281 276 L 281 325"/>
+  <text x="128" y="264" class="legend">React → Canvas</text>
+
+  <!-- 4. Forum API → PostgreSQL -->
+  <path class="edge" d="M 732 192 L 720 192 L 720 256 L 1072 256 L 1072 192 L 1052 192"/>
+  <text x="868" y="253" class="legend">SQL</text>
+
+  <!-- 5. OAuth Яндекс → callback на SSR (redirect, не API-тело) -->
+  <path class="edgeDash" d="M 982 156 L 982 162 L 920 162 L 820 162 L 704 162 L 704 190 L 670 190"/>
+  <text x="870" y="156" class="legend">OAuth redirect</text>
+
+  <text x="550" y="672" class="legend" text-anchor="middle">Синяя — HTTP / загрузка приложения · Серая — данные (форум) · пунктир — OAuth redirect</text>
+  <!-- <text x="550" y="678" class="legend" text-anchor="middle">Деплой (низ) — хостинг контейнеров, не поток данных между API и игрой</text> -->
+</svg>
