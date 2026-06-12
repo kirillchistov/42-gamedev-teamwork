@@ -37,7 +37,7 @@ export type GameHudState = {
 
 export type ScoreMode = 'x1' | 'x2' | 'x3'
 
-export type Phase = 'idle' | 'playing' | 'ended'
+export type Phase = 'idle' | 'playing' | 'loss_offer' | 'ended'
 
 const SCORE_MULT: Record<ScoreMode, number> = {
   x1: 1,
@@ -45,25 +45,16 @@ const SCORE_MULT: Record<ScoreMode, number> = {
   x3: 3,
 }
 
-function isBoardSize(
-  n: number
-): n is BoardSizeOption {
-  return (
-    BOARD_SIZE_OPTIONS as readonly number[]
-  ).includes(n)
+function isBoardSize(n: number): n is BoardSizeOption {
+  return (BOARD_SIZE_OPTIONS as readonly number[]).includes(n)
 }
 
-export function tileKindsForBoardSize(
-  size: number
-): number {
-  if (isBoardSize(size))
-    return TILE_KINDS_BY_BOARD_SIZE[size]
+export function tileKindsForBoardSize(size: number): number {
+  if (isBoardSize(size)) return TILE_KINDS_BY_BOARD_SIZE[size]
   return TILE_KINDS_BY_BOARD_SIZE[8]
 }
 
-export function scoreMultiplier(
-  mode: ScoreMode
-): number {
+export function scoreMultiplier(mode: ScoreMode): number {
   return SCORE_MULT[mode]
 }
 
@@ -96,8 +87,7 @@ export function resetHudForIdle(
     goalTargetsLeft?: number
   }
 ): void {
-  const durationSec =
-    params.durationSec ?? GAME_DURATION_SEC
+  const durationSec = params.durationSec ?? GAME_DURATION_SEC
   hud.score = 0
   hud.moves = 0
   hud.currentCombo = 0
@@ -105,14 +95,10 @@ export function resetHudForIdle(
   hud.timeLeftSec = durationSec
   hud.playerRecord = params.playerRecord
   hud.dailyRecord = params.dailyRecord
-  hud.goalScore = Math.max(
-    0,
-    params.goalScore ?? hud.goalScore
-  )
+  hud.goalScore = Math.max(0, params.goalScore ?? hud.goalScore)
   hud.goalTargetsTotal = Math.max(
     0,
-    params.goalTargetsTotal ??
-      hud.goalTargetsTotal
+    params.goalTargetsTotal ?? hud.goalTargetsTotal
   )
   hud.goalTargetsLeft = Math.max(
     0,
@@ -135,25 +121,15 @@ export function resetHudForPlay(
   resetHudForIdle(hud, params)
 }
 
-export function syncGoalProgress(
-  hud: GameHudState
-): void {
-  const scorePct =
-    hud.goalScore > 0
-      ? (hud.score / hud.goalScore) * 100
-      : 100
+export function syncGoalProgress(hud: GameHudState): void {
+  const scorePct = hud.goalScore > 0 ? (hud.score / hud.goalScore) * 100 : 100
   const targetsPct =
     hud.goalTargetsTotal > 0
-      ? ((hud.goalTargetsTotal -
-          hud.goalTargetsLeft) /
-          hud.goalTargetsTotal) *
+      ? ((hud.goalTargetsTotal - hud.goalTargetsLeft) / hud.goalTargetsTotal) *
         100
       : 100
   const raw = Math.min(scorePct, targetsPct)
-  hud.goalProgressPct = Math.max(
-    0,
-    Math.min(100, Math.floor(raw))
-  )
+  hud.goalProgressPct = Math.max(0, Math.min(100, Math.floor(raw)))
 }
 
 export function createPlayableBoard(

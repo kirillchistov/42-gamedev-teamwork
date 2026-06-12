@@ -11,29 +11,25 @@ import { publicAssetUrl } from '../../utils/publicAssetUrl'
  *   постоянный URL после загрузки и синхронизировать с профилем пользователя; клиент тогда подставит
  *   готовый HTTPS-URL вместо ручного ввода.
  */
-export const MATCH3_ARENA_BG_URLS: readonly string[] =
-  [
-    publicAssetUrl('icons/bgcosmic1.jpg'),
-    publicAssetUrl('icons/bgcosmic2.jpg'),
-    publicAssetUrl('icons/bgcosmic3.jpg'),
-    publicAssetUrl('icons/bgcosmic4.jpg'),
-    publicAssetUrl('icons/bgcosmic5.jpg'),
-  ]
+export const MATCH3_ARENA_BG_URLS: readonly string[] = [
+  publicAssetUrl('icons/bgcosmic1.jpg'),
+  publicAssetUrl('icons/bgcosmic2.jpg'),
+  publicAssetUrl('icons/bgcosmic3.jpg'),
+  publicAssetUrl('icons/bgcosmic4.jpg'),
+  publicAssetUrl('icons/bgcosmic5.jpg'),
+]
 
 const STORAGE_KEY = 'match3:arena-bg-index'
 
 /** Свой URL фона (пустая строка в storage = не используется). */
-export const MATCH3_ARENA_BG_CUSTOM_KEY =
-  'match3:arena-bg-custom-url'
+export const MATCH3_ARENA_BG_CUSTOM_KEY = 'match3:arena-bg-custom-url'
 
-export const ARENA_BG_CHANGED_EVENT =
-  'match3:arena-bg-changed' as const
+export const ARENA_BG_CHANGED_EVENT = 'match3:arena-bg-changed' as const
 
 export function readArenaBgIndex(): number {
   if (typeof window === 'undefined') return 0
   try {
-    const raw =
-      window.localStorage.getItem(STORAGE_KEY)
+    const raw = window.localStorage.getItem(STORAGE_KEY)
     if (raw == null) return 0
     const n = Number(raw)
     if (!Number.isFinite(n)) return 0
@@ -44,25 +40,18 @@ export function readArenaBgIndex(): number {
   }
 }
 
-export function arenaBgUrlForIndex(
-  i: number
-): string {
+export function arenaBgUrlForIndex(i: number): string {
   const len = MATCH3_ARENA_BG_URLS.length
   if (len === 0) return ''
   const idx = ((Math.floor(i) % len) + len) % len
-  return (
-    MATCH3_ARENA_BG_URLS[idx] ??
-    MATCH3_ARENA_BG_URLS[0]
-  )
+  return MATCH3_ARENA_BG_URLS[idx] ?? MATCH3_ARENA_BG_URLS[0]
 }
 
 /**
  * Разрешённые адреса фона: `http(s):`, либо абсолютный путь с этого origin (`/…`, не `//…`).
  * Отсекаем `javascript:`, `data:` и т.п.
  */
-export function isAllowedArenaPhotoHref(
-  raw: string
-): boolean {
+export function isAllowedArenaPhotoHref(raw: string): boolean {
   const s = raw.trim()
   if (!s || s.length > 2048) return false
   const low = s.toLowerCase()
@@ -73,6 +62,9 @@ export function isAllowedArenaPhotoHref(
   ) {
     return false
   }
+  if (low.startsWith('blob:')) {
+    return true
+  }
   if (s.startsWith('//')) return false
   if (s.startsWith('/')) {
     if (s.includes('..')) return false
@@ -80,10 +72,7 @@ export function isAllowedArenaPhotoHref(
   }
   try {
     const u = new URL(s)
-    return (
-      u.protocol === 'https:' ||
-      u.protocol === 'http:'
-    )
+    return u.protocol === 'https:' || u.protocol === 'http:'
   } catch {
     return false
   }
@@ -92,9 +81,7 @@ export function isAllowedArenaPhotoHref(
 export function readArenaCustomPhotoUrl(): string {
   if (typeof window === 'undefined') return ''
   try {
-    const raw = window.localStorage.getItem(
-      MATCH3_ARENA_BG_CUSTOM_KEY
-    )
+    const raw = window.localStorage.getItem(MATCH3_ARENA_BG_CUSTOM_KEY)
     if (raw == null) return ''
     const t = raw.trim()
     if (!t) return ''
@@ -106,12 +93,9 @@ export function readArenaCustomPhotoUrl(): string {
 
 /** Пресет по индексу или свой URL, если задан и валиден. */
 /** Путь с корня сайта (`/icons/…`) — дополняем `BASE_URL` для GitHub Pages и т.п. */
-function resolveSitePathIfNeeded(
-  href: string
-): string {
+function resolveSitePathIfNeeded(href: string): string {
   const s = href.trim()
-  if (!s.startsWith('/') || s.startsWith('//'))
-    return href
+  if (!s.startsWith('/') || s.startsWith('//')) return href
   return publicAssetUrl(s.slice(1))
 }
 
@@ -129,14 +113,9 @@ export function readResolvedArenaPhotoUrl(): string {
 export function notifyArenaBgChanged(): void {
   if (typeof window === 'undefined') return
   try {
-    window.dispatchEvent(
-      new Event(ARENA_BG_CHANGED_EVENT)
-    )
+    window.dispatchEvent(new Event(ARENA_BG_CHANGED_EVENT))
   } catch (e) {
-    console.warn(
-      '[ArenaBg] dispatchEvent failed',
-      e
-    )
+    console.warn('[ArenaBg] dispatchEvent failed', e)
   }
 }
 
@@ -144,31 +123,21 @@ export function notifyArenaBgChanged(): void {
  * Сохранить свой URL фона. Пустая строка или невалидный URL — очистка.
  * @returns `true`, если значение сохранено или сброшено без ошибки.
  */
-export function setArenaCustomPhotoUrl(
-  raw: string
-): boolean {
+export function setArenaCustomPhotoUrl(raw: string): boolean {
   if (typeof window === 'undefined') return false
   try {
     const t = raw.trim()
     if (!t) {
-      window.localStorage.removeItem(
-        MATCH3_ARENA_BG_CUSTOM_KEY
-      )
+      window.localStorage.removeItem(MATCH3_ARENA_BG_CUSTOM_KEY)
       notifyArenaBgChanged()
       return true
     }
     if (!isAllowedArenaPhotoHref(t)) return false
-    window.localStorage.setItem(
-      MATCH3_ARENA_BG_CUSTOM_KEY,
-      t
-    )
+    window.localStorage.setItem(MATCH3_ARENA_BG_CUSTOM_KEY, t)
     notifyArenaBgChanged()
     return true
   } catch (e) {
-    console.warn(
-      '[ArenaBg] setArenaCustomPhotoUrl failed',
-      e
-    )
+    console.warn('[ArenaBg] setArenaCustomPhotoUrl failed', e)
     return false
   }
 }
@@ -184,16 +153,10 @@ export function cycleArenaBgNext(): void {
     const len = MATCH3_ARENA_BG_URLS.length
     if (len === 0) return
     const next = (readArenaBgIndex() + 1) % len
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      String(next)
-    )
+    window.localStorage.setItem(STORAGE_KEY, String(next))
     notifyArenaBgChanged()
   } catch (e) {
-    console.warn(
-      '[ArenaBg] cycleArenaBgNext failed',
-      e
-    )
+    console.warn('[ArenaBg] cycleArenaBgNext failed', e)
   }
 }
 

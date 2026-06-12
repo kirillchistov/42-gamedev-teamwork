@@ -12,6 +12,7 @@ import clsx from 'clsx'
 import { Helmet } from 'react-helmet'
 import { useLocation, useNavigate } from 'react-router-dom'
 
+import { CustomBgUnlockPanel } from '../components/Premium/CustomBgUnlockPanel'
 import { Header } from '../components/Header'
 import { Footer } from '../components/Footer'
 import { HeroChatPanel } from '../components/HeroChatPanel'
@@ -25,8 +26,8 @@ import {
   cycleArenaBgNext,
   readArenaCustomPhotoUrl,
   readResolvedArenaPhotoUrl,
-  setArenaCustomPhotoUrl,
 } from '../game/match3/match3ArenaBackground'
+import '../shared/styles/premium.pcss'
 import {
   hasSeenGameLanding,
   markGameLandingSeen,
@@ -145,68 +146,6 @@ const QUEST_COLOR_OPTIONS: Array<{
   { value: 'red', label: 'Красный' },
   { value: 'pink', label: 'Розовый' },
 ]
-
-function IconHelpCircle() {
-  return (
-    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M9.9 9.2a2.2 2.2 0 1 1 3.8 1.5c-.5.5-1.1.9-1.5 1.3-.4.4-.6.8-.6 1.4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="12" cy="16.9" r="1.1" fill="currentColor" />
-    </svg>
-  )
-}
-
-function IconUpload() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-      <path
-        d="M12 16V6m0 0-3 3m3-3 3 3"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M5 15.8V18a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function IconTrash() {
-  return (
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-      <path
-        d="M5.5 7h13M10 4.8h4M9 10.2V16m6-5.8V16M8.2 7l.8 11a1 1 0 0 0 1 .9h4a1 1 0 0 0 1-.9l.8-11"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
 
 function IconHeroStoryScroll() {
   return (
@@ -584,29 +523,6 @@ export function GamePage() {
       clearArenaCustomPhotoUrl()
     }
     cycleArenaBgNext()
-  }, [])
-
-  const handleArenaCustomApply = useCallback(() => {
-    const t = arenaCustomUrlDraft.trim()
-    if (!t) {
-      clearArenaCustomPhotoUrl()
-      setToastMessage('Свой фон отключён, снова пресеты')
-      return
-    }
-    const ok = setArenaCustomPhotoUrl(t)
-    if (!ok) {
-      setToastMessage(
-        'Некорректный адрес. Разрешены https://…, http://… или путь с сайта (например /icons/…).'
-      )
-      return
-    }
-    setToastMessage('Свой фон сохранён')
-  }, [arenaCustomUrlDraft])
-
-  const handleArenaCustomClear = useCallback(() => {
-    clearArenaCustomPhotoUrl()
-    setArenaCustomUrlDraft('')
-    setToastMessage('Свой фон сброшен')
   }, [])
 
   useEffect(() => {
@@ -1325,48 +1241,12 @@ export function GamePage() {
                             ))}
                           </select>
                         </label>
-                        <label className="match3-page__settings-label match3-page__settings-label--bg-url">
-                          <span className="match3-page__settings-label-head">
-                            Фон (свой URL)
-                            <button
-                              type="button"
-                              className="match3-page__hint-icon"
-                              aria-label="О подсказке хранения URL"
-                              title="Хранится в этом браузере (localStorage). Позже можно подключить загрузку через API (например, вложения чата Практикума) и сохранять ссылку с сервера.">
-                              <IconHelpCircle />
-                            </button>
-                          </span>
-                          <span className="match3-page__bg-url-line">
-                            <input
-                              type="url"
-                              inputMode="url"
-                              placeholder="https://… или /icons/…"
-                              value={arenaCustomUrlDraft}
-                              onChange={e =>
-                                setArenaCustomUrlDraft(e.target.value)
-                              }
-                            />
-                            <span className="match3-page__settings-actions">
-                              <button
-                                type="button"
-                                className="match3-page__icon-btn"
-                                aria-label="Применить URL"
-                                title="Применить URL"
-                                onClick={handleArenaCustomApply}>
-                                <IconUpload />
-                              </button>
-                              <button
-                                type="button"
-                                className="match3-page__icon-btn match3-page__icon-btn--danger"
-                                aria-label="Сбросить свой URL"
-                                title="Сбросить свой URL"
-                                onClick={handleArenaCustomClear}>
-                                <IconTrash />
-                              </button>
-                            </span>
-                          </span>
-                        </label>
                       </div>
+                      <CustomBgUnlockPanel
+                        urlDraft={arenaCustomUrlDraft}
+                        onUrlDraftChange={setArenaCustomUrlDraft}
+                        onApplied={setToastMessage}
+                      />
                       <BoardFieldThemePreview theme={boardFieldTheme} />
                       <label className="match3-page__settings-label">
                         Участвовать в рейтинге
@@ -1568,6 +1448,11 @@ export function GamePage() {
                           <option value="pauses">Показывать при паузах</option>
                         </select>
                       </label>
+                      <p className="match3-page__settings-hint">
+                        Авто-подсказки на поле: до 2 за партию и 3 в день
+                        бесплатно. Дальше — кнопка «Подсказка» в HUD (кредиты /
+                        кристаллы).
+                      </p>
                       <label className="match3-page__settings-label">
                         Цель (очки)
                         <input

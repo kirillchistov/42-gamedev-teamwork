@@ -8,16 +8,29 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import './match3.pcss'
+import '../../shared/styles/premium.pcss'
 import { usePageVisibilityPause } from '../../hooks/usePageVisibilityPause'
 import {
   MATCH3_PERF_PAUSE_EVENT,
   type Match3PerfPauseDetail,
 } from '../../utils/performanceMetrics'
 import { vibrateComboFeedback } from '../../utils/vibration'
+import { LoseContinueModal } from '../../components/Premium/LoseContinueModal'
+import { WalletBar } from '../../components/Premium/WalletBar'
+import {
+  canUseFreeHint,
+  ECONOMY_CHANGED_EVENT,
+  purchaseContinue,
+  purchaseHint,
+  PRICES,
+  resetSessionFreeHints,
+  type ContinuePaymentMethod,
+} from '../monetization/economy'
 import {
   createMatch3Game,
   type GameEndPayload,
   type GameHudState,
+  type LossOfferPayload,
 } from './engine/bootstrap'
 import { HieroglyphCardOverlay } from './HieroglyphCardOverlay'
 import {
@@ -228,6 +241,14 @@ export function Match3Screen({
   const initialHintShownRef = useRef(false)
   const [playingElapsedSec, setPlayingElapsedSec] = useState(0)
   const [hintsHidden, setHintsHidden] = useState(false)
+  const [lossOffer, setLossOffer] = useState<LossOfferPayload | null>(null)
+  const [effectiveMoveLimit, setEffectiveMoveLimit] =
+    useState<MoveLimitOption>(moveLimit)
+  const [monetizationToast, setMonetizationToast] = useState('')
+  const [economyTick, setEconomyTick] = useState(0)
+  const onLossOfferRef = useRef<((payload: LossOfferPayload) => void) | null>(
+    null
+  )
   const [hieroglyphOverlayKind, setHieroglyphOverlayKind] = useState<
     number | null
   >(null)
@@ -278,6 +299,32 @@ export function Match3Screen({
     }, BORDER_SPARK_CLEAR_MS)
   }, [])
 
+  onLossOfferRef.current = payload => {
+    setLossOffer(payload)
+    setMonetizationToast('')
+  }
+
+  useEffect(() => {
+    setEffectiveMoveLimit(moveLimit)
+  }, [moveLimit])
+
+  useEffect(() => {
+    const onEconomy = () => setEconomyTick(v => v + 1)
+    window.addEventListener(ECONOMY_CHANGED_EVENT, onEconomy)
+    return () => window.removeEventListener(ECONOMY_CHANGED_EVENT, onEconomy)
+  }, [])
+
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game || uiPhase !== 'playing') return
+    const allowAuto =
+      playerHintsMode !== 'never' &&
+      canUseFreeHint() &&
+      (playerHintsMode !== 'pauses' || isPauseOpen) &&
+      !lossOffer
+    game.setAutoHintsEnabled(allowAuto)
+  }, [playerHintsMode, uiPhase, isPauseOpen, lossOffer, economyTick])
+
   useEffect(() => {
     const canvas = canvasRef.current
     const fxCanvas = fxCanvasRef.current
@@ -296,7 +343,9 @@ export function Match3Screen({
         }
         setHieroglyphOverlayKind(kind)
       },
+      onLossOffer: payload => onLossOfferRef.current?.(payload),
       onGameEnd: payload => {
+        setLossOffer(null)
         if (forcePlayMode && onGameFinished) {
           onGameFinished(payload)
           return
@@ -608,7 +657,9 @@ export function Match3Screen({
     return `${mm}:${ss}`
   }, [hud.timeLeftSec])
   const remainingLabel =
-    limitMode === 'moves' ? `${Math.max(moveLimit - hud.moves, 0)}` : timeLabel
+    limitMode === 'moves'
+      ? `${Math.max(effectiveMoveLimit - hud.moves, 0)}`
+      : timeLabel
   const hudHintCore = showInitialHint
     ? 'Следите за подсказками, чтобы не пропустить комбинацию'
     : playerHintsMode === 'pauses'
@@ -653,17 +704,90 @@ export function Match3Screen({
 
   const handlePlay = () => {
     setIsPauseOpen(false)
+    setLossOffer(null)
+    resetSessionFreeHints()
+    setEffectiveMoveLimit(moveLimit)
     setUiPhase('playing')
     gameRef.current?.startPlay()
   }
 
   const handlePlayAgain = () => {
     setIsPauseOpen(false)
+    setLossOffer(null)
+    resetSessionFreeHints()
+    setEffectiveMoveLimit(moveLimit)
     setResultSnapshot(null)
     setGameEndReason(null)
     setCountdownVal(PRESTART_COUNTDOWN_SEC)
     setUiPhase('countdown')
     gameRef.current?.resetIdle()
+  }
+
+  const handleContinuePurchase = (method: ContinuePaymentMethod) => {
+    if (!lossOffer) return
+    const res = purchaseContinue(method, lossOffer.continueIndex, limitMode)
+    if (!res.ok) {
+      setMonetizationToast(res.reason)
+      return
+    }
+    const resume = () => {
+      const ok = gameRef.current?.resumeAfterContinue({
+        extraMoves: res.extraMoves,
+        extraSeconds: res.extraSeconds,
+      })
+      if (!ok) {
+        setMonetizationToast('Не удалось продолжить партию')
+        return
+      }
+      if (res.extraMoves) {
+        setEffectiveMoveLimit(prev => prev + res.extraMoves)
+      }
+      setLossOffer(null)
+      setMonetizationToast(
+        method === 'rewarded'
+          ? 'Продолжение за видео (демо)'
+          : 'Партия продолжена'
+      )
+      setEconomyTick(v => v + 1)
+    }
+    if (method === 'rewarded') {
+      window.setTimeout(resume, 700)
+      return
+    }
+    resume()
+  }
+
+  const handleQuitAfterLoss = () => {
+    gameRef.current?.confirmLoss()
+    setLossOffer(null)
+  }
+
+  const handlePaidHint = () => {
+    const res = purchaseHint()
+    if (!res.ok) {
+      setMonetizationToast(res.reason)
+      return
+    }
+    const shown = gameRef.current?.revealInstantHint()
+    if (!shown) {
+      setMonetizationToast('Сейчас подсказку показать нельзя')
+      return
+    }
+    const label =
+      res.method === 'free'
+        ? 'Бесплатная подсказка'
+        : res.method === 'credits'
+        ? `Подсказка (−${PRICES.hint.credits} кр.)`
+        : `Подсказка (−${PRICES.hint.crystals} крист.)`
+    setMonetizationToast(label)
+    setEconomyTick(v => v + 1)
+    const game = gameRef.current
+    if (!game) return
+    const allowAuto =
+      playerHintsMode !== 'never' &&
+      canUseFreeHint() &&
+      (playerHintsMode !== 'pauses' || isPauseOpen)
+    game.setAutoHintsEnabled(allowAuto)
   }
   const handleRestartFromHud = () => {
     if (uiPhase !== 'playing') return
@@ -876,7 +1000,28 @@ export function Match3Screen({
                   <IconPause />
                 </button>
               )}
+              <button
+                type="button"
+                className="match3__hud-hint-buy"
+                onClick={handlePaidHint}
+                aria-label="Купить подсказку"
+                title={
+                  canUseFreeHint()
+                    ? 'Бесплатная подсказка (лимит)'
+                    : `${PRICES.hint.credits} кр. / ${PRICES.hint.crystals} крист.`
+                }>
+                <span className="match3__hud-btn-label">Подсказка</span>
+                <span aria-hidden>💡</span>
+              </button>
             </div>
+            <div className="match3__hud-wallet">
+              <WalletBar compact />
+            </div>
+            {monetizationToast ? (
+              <div className="match3__monetization-toast">
+                {monetizationToast}
+              </div>
+            ) : null}
             {questToastText ? (
               <div className="match3__quest-toast">{questToastText}</div>
             ) : null}
@@ -941,6 +1086,18 @@ export function Match3Screen({
             )}
           </>
         )}
+
+        {lossOffer ? (
+          <div className="match3__overlay match3__overlay--continue">
+            <LoseContinueModal
+              limitMode={limitMode}
+              continueIndex={lossOffer.continueIndex}
+              onContinue={handleContinuePurchase}
+              onQuit={handleQuitAfterLoss}
+              className="match3__lose-continue"
+            />
+          </div>
+        ) : null}
 
         {showBoard && uiPhase !== 'results' && (
           <div

@@ -121,12 +121,21 @@ export type GameEndPayload = {
   snapshot: GameHudState
 }
 
+export type LossOfferPayload = {
+  reason: 'movesOut' | 'timeOut'
+  snapshot: GameHudState
+  /** Сколько продолжений уже было в этой попытке (0 = первое предложение). */
+  continueIndex: number
+}
+
 type CreateParams = {
   canvas: HTMLCanvasElement
   /** Опционально: второй canvas (поверх поля) для частиц и вспышки. */
   fxCanvas?: HTMLCanvasElement
   onHudChange?: (next: GameHudState) => void
   onGameEnd?: (payload: GameEndPayload) => void
+  /** Поражение по ходам/времени: UI может предложить continue до финального onGameEnd. */
+  onLossOffer?: (payload: LossOfferPayload) => void
   /**
    * Тема поля «Иероглиф»: повторный тап по уже выбранной фишке открывает карточку.
    */
@@ -178,6 +187,7 @@ export function createMatch3Game(params: CreateParams) {
     fxCanvas,
     onHudChange,
     onGameEnd,
+    onLossOffer,
     onHieroglyphCardOpen,
     onComboShake,
     onPremiumMatchBorder,
@@ -303,6 +313,9 @@ export function createMatch3Game(params: CreateParams) {
   let hintMove: MoveCandidate | null = null
   let hintPulsePhase = 0
   let hintIdleMs = DEFAULT_HINT_IDLE_MS
+  let autoHintsEnabled = true
+  let continueCountThisRun = 0
+  let pendingLossReason: 'movesOut' | 'timeOut' | null = null
   let inputBlocked = false
   /** Пауза таймера режима «на время» (карточка иероглифа). */
   let roundTimerPaused = false
@@ -629,7 +642,10 @@ export function createMatch3Game(params: CreateParams) {
 
   const clearHint = () => idleHint.clearHint()
   const stopHintTimer = () => idleHint.stopTimer()
-  const scheduleHint = () => idleHint.schedule()
+  const scheduleHint = () => {
+    if (!autoHintsEnabled) return
+    idleHint.schedule()
+  }
   const markPlayerActivity = () => {
     ensureStartedTimeModeTimer()
     idleHint.markActivity()
@@ -659,6 +675,7 @@ export function createMatch3Game(params: CreateParams) {
   let roundTimer: ReturnType<typeof createRoundTimer> | null = null
 
   const finishGame = (reason: GameEndReason) => {
+    pendingLossReason = null
     playSound(reason === 'goalReached' ? 'win' : 'lose')
     phase = 'ended'
     roundTimerPaused = false
@@ -677,6 +694,26 @@ export function createMatch3Game(params: CreateParams) {
     })
   }
 
+  const offerLoss = (reason: 'movesOut' | 'timeOut') => {
+    if (!onLossOffer) {
+      finishGame(reason)
+      return
+    }
+    pendingLossReason = reason
+    phase = 'loss_offer'
+    roundTimerPaused = true
+    roundTimer?.stop()
+    stopHintTimer()
+    clearHint()
+    syncGoalProgress(hud)
+    emitHud()
+    onLossOffer({
+      reason,
+      snapshot: { ...hud },
+      continueIndex: continueCountThisRun,
+    })
+  }
+
   roundTimer = createRoundTimer({
     getPhase: () => phase,
     getInputBlocked: () => inputBlocked,
@@ -686,7 +723,7 @@ export function createMatch3Game(params: CreateParams) {
       hud.timeLeftSec = next
     },
     emitHud,
-    onTimeUp: () => finishGame('timeOut'),
+    onTimeUp: () => offerLoss('timeOut'),
   })
 
   const stopTimer = () => roundTimer?.stop()
@@ -697,6 +734,48 @@ export function createMatch3Game(params: CreateParams) {
     if (roundTimerStarted) return
     startGameTimer()
     roundTimerStarted = true
+  }
+
+  const resumeAfterContinue = (grant: {
+    extraMoves?: number
+    extraSeconds?: number
+  }): boolean => {
+    if (phase !== 'loss_offer') return false
+    continueCountThisRun += 1
+    phase = 'playing'
+    pendingLossReason = null
+    roundTimerPaused = false
+    if (gameLimitMode === 'moves' && grant.extraMoves) {
+      gameMoveLimit += Math.max(0, Math.floor(grant.extraMoves))
+    }
+    if (gameLimitMode === 'time' && grant.extraSeconds) {
+      hud.timeLeftSec += Math.max(0, Math.floor(grant.extraSeconds))
+      if (roundTimerStarted) {
+        roundTimer?.start()
+      } else {
+        ensureStartedTimeModeTimer()
+      }
+    }
+    scheduleHint()
+    emitHud()
+    return true
+  }
+
+  const confirmLoss = () => {
+    if (phase !== 'loss_offer' || !pendingLossReason) return
+    finishGame(pendingLossReason)
+  }
+
+  const revealInstantHint = (): boolean => {
+    if (phase !== 'playing' || isResolving || inputBlocked) return false
+    if (firstPick || targetCell) return false
+    const candidate = findPossibleMoves(getMatchBoard())[0]
+    if (!candidate) return false
+    hintMove = candidate
+    startHintPulseAnimation()
+    drawBoard()
+    stopHintTimer()
+    return true
   }
 
   const renderInteraction = () => {
@@ -960,7 +1039,7 @@ export function createMatch3Game(params: CreateParams) {
         gameLimitMode === 'moves' &&
         hud.moves >= gameMoveLimit
       ) {
-        finishGame('movesOut')
+        offerLoss('movesOut')
         return
       }
     } else {
@@ -1067,6 +1146,8 @@ export function createMatch3Game(params: CreateParams) {
   const startPlay = () => {
     roundTimerPaused = false
     roundTimerStarted = false
+    continueCountThisRun = 0
+    pendingLossReason = null
     stopTimer()
     stopHintTimer()
     clearHint()
@@ -1197,6 +1278,19 @@ export function createMatch3Game(params: CreateParams) {
     }
   }
 
+  const setAutoHintsEnabled = (enabled: boolean) => {
+    autoHintsEnabled = Boolean(enabled)
+    if (!autoHintsEnabled) {
+      stopHintTimer()
+      clearHint()
+      drawBoard()
+      return
+    }
+    if (phase === 'playing') {
+      scheduleHint()
+    }
+  }
+
   const setSoundEnabled = (enabled: boolean) => {
     soundEnabled = Boolean(enabled)
     if (soundEnabled) {
@@ -1290,6 +1384,10 @@ export function createMatch3Game(params: CreateParams) {
     setLevel,
     setScoreMode,
     setHintIdleMs,
+    setAutoHintsEnabled,
+    revealInstantHint,
+    resumeAfterContinue,
+    confirmLoss,
     destroy,
   }
 }

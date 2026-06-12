@@ -1592,6 +1592,52 @@
   -webkit-backdrop-filter: blur(2px);
 }
 
+.match3__overlay--continue {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  overflow: auto;
+  background: rgba(2, 6, 23, 0.78);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.match3__lose-continue {
+  width: min(960px, 100%);
+  max-height: min(92vh, 900px);
+  overflow: auto;
+}
+
+.match3__hud-hint-buy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  background: rgba(30, 41, 59, 0.72);
+  color: #fde68a;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.match3__hud-wallet {
+  margin: 4px 8px 0;
+}
+
+.match3__monetization-toast {
+  margin: 4px 8px 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  color: #e0f2fe;
+  font-size: 12px;
+}
+
 .match3__pause-title {
   margin: 0 0 10px;
   color: #e2e8f0;
