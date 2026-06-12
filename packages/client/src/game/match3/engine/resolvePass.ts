@@ -27,14 +27,11 @@ import {
   type GameVfxQualityOption,
 } from './config'
 import type { MatchFxApi } from './matchFx'
+import type { SoundFx } from './bootstrap'
 import { getCellKind } from './core/cell'
-import type {
-  QuestColor,
-  ResolveQuestDelta,
-} from './quests'
+import type { QuestColor, ResolveQuestDelta } from './quests'
 
-export const RESOLVE_FALL_ANIM_MS =
-  match3AnimMs(190)
+export const RESOLVE_FALL_ANIM_MS = match3AnimMs(190)
 
 export type ResolveTileMotion = {
   from: CellRC
@@ -67,18 +64,13 @@ export type Match3ResolvePassEnv = {
   iceScorePerDamage: number
   iceBreakBonus: number
   targetScorePerHit: number
-  onPremiumMatchBorder?: (
-    shape: 'line4plus' | 'tOrL'
-  ) => void
+  onPremiumMatchBorder?: (shape: 'line4plus' | 'tOrL') => void
   onComboShake?: (chain: number) => void
-  playSound: (fx: 'match' | 'cascade') => void
+  playSound: (fx: SoundFx) => void
   matchFx: MatchFxApi | null
   ensureFxLoop: () => void
   cloneBoard: (b: Board) => Board
-  buildFallMotions: (
-    before: Board,
-    after: Board
-  ) => ResolveTileMotion[]
+  buildFallMotions: (before: Board, after: Board) => ResolveTileMotion[]
   animateTileMotions: (
     motions: ResolveTileMotion[],
     durationMs: number,
@@ -94,9 +86,7 @@ export type Match3ResolvePassEnv = {
   activeScoreMultiplier: () => number
 }
 
-export async function runOneResolvePass(
-  env: Match3ResolvePassEnv
-): Promise<{
+export async function runOneResolvePass(env: Match3ResolvePassEnv): Promise<{
   matched: boolean
   nextChain: number
   questDelta: ResolveQuestDelta
@@ -115,21 +105,16 @@ export async function runOneResolvePass(
     }
   }
 
-  const boardBeforeClear = env.cloneBoard(
-    env.board
+  const boardBeforeClear = env.cloneBoard(env.board)
+  const specialActivations = collectSpecialActivations(
+    boardBeforeClear,
+    matches
   )
-  const specialActivations =
-    collectSpecialActivations(
-      boardBeforeClear,
-      matches
-    )
 
-  const matchClusterStyle =
-    classifySwapCelebration(matches)
+  const matchClusterStyle = classifySwapCelebration(matches)
   if (
     env.gameVfxQuality === 'full' &&
-    (matchClusterStyle === 'line4plus' ||
-      matchClusterStyle === 'tOrL')
+    (matchClusterStyle === 'line4plus' || matchClusterStyle === 'tOrL')
   ) {
     env.onPremiumMatchBorder?.(matchClusterStyle)
   }
@@ -140,35 +125,27 @@ export async function runOneResolvePass(
   })
 
   const rows = env.board.length
-  const cols =
-    rows > 0 ? env.board[0]?.length ?? 0 : 0
+  const cols = rows > 0 ? env.board[0]?.length ?? 0 : 0
   const clearedCells = collectClearedCells(
     rows,
     cols,
     matches,
     specialActivations
   )
-  const clearedByColor: Record<string, number> =
-    {}
+  const clearedByColor: Record<string, number> = {}
   for (const cell of clearedCells) {
-    const value =
-      boardBeforeClear[cell.r]?.[cell.c]
+    const value = boardBeforeClear[cell.r]?.[cell.c]
     if (typeof value !== 'number' || value < 0) {
       continue
     }
     const kind = getCellKind(value)
     const color =
-      COLOR_BY_KIND_INDEX[
-        Math.abs(kind) %
-          COLOR_BY_KIND_INDEX.length
-      ] ?? 'blue'
-    clearedByColor[color] =
-      (clearedByColor[color] ?? 0) + 1
+      COLOR_BY_KIND_INDEX[Math.abs(kind) % COLOR_BY_KIND_INDEX.length] ?? 'blue'
+    clearedByColor[color] = (clearedByColor[color] ?? 0) + 1
   }
 
   const base = clearAndScore(env.board, matches, {
-    isCellClearable: (r, c) =>
-      !env.isFrozenCell(r, c),
+    isCellClearable: (r, c) => !env.isFrozenCell(r, c),
   })
 
   const iceDamage = applyIceDamage({
@@ -190,48 +167,40 @@ export async function runOneResolvePass(
   })
   env.setGoalGrid(goalDamage.nextGoalGrid)
 
-  env.hud.goalTargetsLeft = countPositiveCells(
-    env.getGoalGrid()
-  )
+  env.hud.goalTargetsLeft = countPositiveCells(env.getGoalGrid())
   syncGoalProgress(env.hud)
 
   const gained = Math.floor(
-    base *
-      env.chain *
-      env.scoreMult() *
-      env.activeScoreMultiplier()
+    base * env.chain * env.scoreMult() * env.activeScoreMultiplier()
   )
-  env.hud.score +=
-    gained + iceDamage.score + goalDamage.score
+  env.hud.score += gained + iceDamage.score + goalDamage.score
   env.hud.currentCombo = env.chain
   syncGoalProgress(env.hud)
   env.emitHud()
 
-  if (
-    env.chain >= COMBO_SHAKE_MIN_CHAIN &&
-    env.gameVfxQuality === 'full'
-  ) {
+  if (env.chain >= COMBO_SHAKE_MIN_CHAIN && env.gameVfxQuality === 'full') {
     env.onComboShake?.(env.chain)
   }
-  env.playSound(
-    env.chain > 1 ? 'cascade' : 'match'
-  )
+  env.playSound(env.chain > 1 ? 'cascade' : 'match')
 
-  if (
-    env.matchFx &&
-    env.gameVfxQuality === 'full'
-  ) {
+  for (const activation of specialActivations) {
+    if (activation.type === 'bomb') {
+      env.playSound('bomb')
+    } else if (activation.orientation === 'col') {
+      env.playSound('rocket')
+    } else {
+      env.playSound('laser')
+    }
+  }
+
+  if (env.matchFx && env.gameVfxQuality === 'full') {
     env.matchFx.burstSpecialActivations(
       boardBeforeClear,
       specialActivations,
       env.gameTheme
     )
     if (goalDamage.hits.length > 0) {
-      env.matchFx.burstGoalHits(
-        env.board,
-        goalDamage.hits,
-        env.gameTheme
-      )
+      env.matchFx.burstGoalHits(env.board, goalDamage.hits, env.gameTheme)
     }
     env.matchFx.burstScoreText(
       env.board,
@@ -245,16 +214,11 @@ export async function runOneResolvePass(
   const beforeFall = env.cloneBoard(env.board)
   collapse(env.board)
   refill(env.board, env.tileKinds)
-  const fallMotions = env.buildFallMotions(
-    beforeFall,
-    env.board
-  )
+  const fallMotions = env.buildFallMotions(beforeFall, env.board)
   env.clearHint()
-  await env.animateTileMotions(
-    fallMotions,
-    RESOLVE_FALL_ANIM_MS,
-    { overshoot: true }
-  )
+  await env.animateTileMotions(fallMotions, RESOLVE_FALL_ANIM_MS, {
+    overshoot: true,
+  })
 
   await env.delay(match3AnimMs(24))
   return {

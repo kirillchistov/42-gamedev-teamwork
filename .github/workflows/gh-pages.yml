@@ -7,6 +7,7 @@ on:
       - dev
       - sprint_9
       - feature/9.8-final-demo
+      - feature/9.0-visuals
   workflow_dispatch:
 
 permissions:

@@ -156,7 +156,15 @@ type TileMotion = ResolveTileMotion
 type IceGrid = OverlayGrid
 type GoalGrid = OverlayGrid
 
-type SoundFx = 'swap' | 'match' | 'cascade' | 'win' | 'lose'
+export type SoundFx =
+  | 'swap'
+  | 'match'
+  | 'cascade'
+  | 'win'
+  | 'lose'
+  | 'laser'
+  | 'rocket'
+  | 'bomb'
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => {
@@ -410,6 +418,39 @@ export function createMatch3Game(params: CreateParams) {
       osc.start(now + when)
       osc.stop(now + when + dur)
     }
+    const playNoise = (
+      duration: number,
+      gainPeak: number,
+      filterFreq: number,
+      filterQ: number,
+      when = 0
+    ) => {
+      const sampleCount = Math.max(1, Math.floor(ac.sampleRate * duration))
+      const buffer = ac.createBuffer(1, sampleCount, ac.sampleRate)
+      const data = buffer.getChannelData(0)
+      for (let i = 0; i < sampleCount; i += 1) {
+        const fadeOut = 1 - (i / sampleCount) * 0.35
+        data[i] = (Math.random() * 2 - 1) * fadeOut
+      }
+      const src = ac.createBufferSource()
+      src.buffer = buffer
+      const filter = ac.createBiquadFilter()
+      filter.type = 'bandpass'
+      filter.frequency.setValueAtTime(filterFreq, now + when)
+      filter.Q.setValueAtTime(filterQ, now + when)
+      const gain = ac.createGain()
+      gain.gain.setValueAtTime(0.0001, now + when)
+      gain.gain.exponentialRampToValueAtTime(
+        Math.max(0.0001, gainPeak),
+        now + when + 0.02
+      )
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + when + duration)
+      src.connect(filter)
+      filter.connect(gain)
+      gain.connect(ac.destination)
+      src.start(now + when)
+      src.stop(now + when + duration)
+    }
 
     if (fx === 'swap') {
       makeTone(360, 0.05, 'triangle', 0.04, 0.0001)
@@ -432,8 +473,28 @@ export function createMatch3Game(params: CreateParams) {
       makeTone(784, 0.14, 'sine', 0.05, 0.0001, 0.12)
       return
     }
-    makeTone(240, 0.12, 'sawtooth', 0.06, 0.0001)
-    makeTone(180, 0.12, 'sawtooth', 0.05, 0.0001, 0.06)
+    if (fx === 'laser') {
+      playNoise(0.36, 0.11, 2900, 14)
+      makeTone(2100, 0.3, 'sawtooth', 0.018, 0.0001)
+      makeTone(1400, 0.24, 'triangle', 0.012, 0.0001, 0.04)
+      return
+    }
+    if (fx === 'rocket') {
+      makeTone(140, 0.24, 'triangle', 0.05, 0.0001)
+      makeTone(360, 0.18, 'sine', 0.035, 0.0001, 0.05)
+      playNoise(0.22, 0.055, 900, 5)
+      return
+    }
+    if (fx === 'bomb') {
+      makeTone(92, 0.22, 'sine', 0.08, 0.0001)
+      makeTone(48, 0.28, 'triangle', 0.06, 0.0001, 0.04)
+      playNoise(0.16, 0.09, 180, 2.5)
+      return
+    }
+    if (fx === 'lose') {
+      makeTone(240, 0.12, 'sawtooth', 0.06, 0.0001)
+      makeTone(180, 0.12, 'sawtooth', 0.05, 0.0001, 0.06)
+    }
   }
 
   const cloneBoard = (src: Board): Board => src.map(row => [...row])

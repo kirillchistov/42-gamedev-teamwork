@@ -332,6 +332,192 @@ function drawShape(
   ctx.restore()
 }
 
+function drawRocketGlyph(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  cell: number
+) {
+  const bodyW = cell * 0.28
+  const bodyH = cell * 0.42
+  const bodyTop = cy - cell * 0.14
+  const bodyBottom = bodyTop + bodyH
+  const noseH = cell * 0.16
+
+  ctx.fillStyle = 'rgba(148, 163, 184, 0.92)'
+  ctx.strokeStyle = 'rgba(226, 232, 240, 0.98)'
+  ctx.lineWidth = Math.max(1, cell * 0.035)
+  ctx.beginPath()
+  ctx.moveTo(cx, bodyTop - noseH)
+  ctx.lineTo(cx - bodyW * 0.55, bodyTop + noseH * 0.35)
+  ctx.lineTo(cx + bodyW * 0.55, bodyTop + noseH * 0.35)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  const bodyG = ctx.createLinearGradient(
+    cx - bodyW / 2,
+    bodyTop,
+    cx + bodyW / 2,
+    bodyBottom
+  )
+  bodyG.addColorStop(0, 'rgba(248, 250, 252, 0.95)')
+  bodyG.addColorStop(0.45, 'rgba(203, 213, 225, 0.92)')
+  bodyG.addColorStop(1, 'rgba(100, 116, 139, 0.9)')
+  ctx.fillStyle = bodyG
+  ctx.strokeStyle = 'rgba(241, 245, 249, 0.95)'
+  ctx.beginPath()
+  pathRoundRect(ctx, cx - bodyW / 2, bodyTop, bodyW, bodyH, bodyW * 0.22)
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.fillStyle = 'rgba(251, 191, 36, 0.95)'
+  ctx.beginPath()
+  ctx.moveTo(cx - bodyW * 0.62, bodyBottom - cell * 0.02)
+  ctx.lineTo(cx - bodyW * 0.34, bodyBottom + cell * 0.12)
+  ctx.lineTo(cx - bodyW * 0.12, bodyBottom)
+  ctx.closePath()
+  ctx.fill()
+  ctx.beginPath()
+  ctx.moveTo(cx + bodyW * 0.62, bodyBottom - cell * 0.02)
+  ctx.lineTo(cx + bodyW * 0.34, bodyBottom + cell * 0.12)
+  ctx.lineTo(cx + bodyW * 0.12, bodyBottom)
+  ctx.closePath()
+  ctx.fill()
+
+  const flameG = ctx.createLinearGradient(
+    cx,
+    bodyBottom,
+    cx,
+    bodyBottom + cell * 0.2
+  )
+  flameG.addColorStop(0, 'rgba(254, 240, 138, 0.98)')
+  flameG.addColorStop(0.55, 'rgba(251, 146, 60, 0.92)')
+  flameG.addColorStop(1, 'rgba(239, 68, 68, 0.35)')
+  ctx.fillStyle = flameG
+  ctx.beginPath()
+  ctx.moveTo(cx, bodyBottom + cell * 0.2)
+  ctx.lineTo(cx - bodyW * 0.34, bodyBottom + cell * 0.02)
+  ctx.lineTo(cx + bodyW * 0.34, bodyBottom + cell * 0.02)
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.fillStyle = 'rgba(56, 189, 248, 0.88)'
+  ctx.beginPath()
+  ctx.arc(
+    cx,
+    bodyTop + bodyH * 0.34,
+    Math.max(1.5, cell * 0.045),
+    0,
+    Math.PI * 2
+  )
+  ctx.fill()
+}
+
+function drawBombGlyph(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  cell: number
+) {
+  const radius = Math.max(6, cell * 0.22)
+  const sphereG = ctx.createRadialGradient(
+    cx - radius * 0.28,
+    cy - radius * 0.32,
+    radius * 0.12,
+    cx,
+    cy,
+    radius
+  )
+  sphereG.addColorStop(0, 'rgba(248, 250, 252, 0.95)')
+  sphereG.addColorStop(0.35, 'rgba(71, 85, 105, 0.96)')
+  sphereG.addColorStop(1, 'rgba(15, 23, 42, 0.98)')
+  ctx.fillStyle = sphereG
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.95)'
+  ctx.lineWidth = Math.max(1, cell * 0.035)
+  ctx.beginPath()
+  ctx.arc(cx, cy + cell * 0.02, radius, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.strokeStyle = 'rgba(120, 113, 108, 0.95)'
+  ctx.lineWidth = Math.max(1.2, cell * 0.04)
+  ctx.beginPath()
+  ctx.moveTo(cx + radius * 0.15, cy - radius * 0.72)
+  ctx.quadraticCurveTo(
+    cx + radius * 0.55,
+    cy - radius * 1.05,
+    cx + radius * 0.42,
+    cy - radius * 1.28
+  )
+  ctx.stroke()
+
+  ctx.fillStyle = 'rgba(251, 191, 36, 0.98)'
+  ctx.beginPath()
+  ctx.arc(
+    cx + radius * 0.42,
+    cy - radius * 1.28,
+    Math.max(2, cell * 0.05),
+    0,
+    Math.PI * 2
+  )
+  ctx.fill()
+  ctx.fillStyle = 'rgba(254, 240, 138, 0.85)'
+  ctx.beginPath()
+  ctx.arc(
+    cx + radius * 0.52,
+    cy - radius * 1.36,
+    Math.max(1.2, cell * 0.028),
+    0,
+    Math.PI * 2
+  )
+  ctx.fill()
+}
+
+function drawLaserGlyph(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  cell: number
+) {
+  const barH = cell * 0.5
+  const barY = y + (cell - barH) / 2
+  const barX = x + cell * 0.06
+  const barW = cell * 0.88
+
+  ctx.shadowColor = 'rgba(56, 189, 248, 0.85)'
+  ctx.shadowBlur = Math.max(4, cell * 0.12)
+
+  const glow = ctx.createLinearGradient(barX, barY, barX, barY + barH)
+  glow.addColorStop(0, 'rgba(56, 189, 248, 0.22)')
+  glow.addColorStop(0.5, 'rgba(14, 165, 233, 0.42)')
+  glow.addColorStop(1, 'rgba(56, 189, 248, 0.22)')
+  ctx.fillStyle = glow
+  ctx.strokeStyle = 'rgba(186, 230, 253, 0.98)'
+  ctx.lineWidth = Math.max(1.2, cell * 0.04)
+  ctx.beginPath()
+  pathRoundRect(ctx, barX, barY, barW, barH, barH * 0.22)
+  ctx.fill()
+  ctx.stroke()
+
+  const coreH = Math.max(2, barH * 0.34)
+  const coreY = barY + (barH - coreH) / 2
+  const coreG = ctx.createLinearGradient(barX, coreY, barX + barW, coreY)
+  coreG.addColorStop(0, 'rgba(224, 242, 254, 0.55)')
+  coreG.addColorStop(0.5, 'rgba(255, 255, 255, 0.98)')
+  coreG.addColorStop(1, 'rgba(224, 242, 254, 0.55)')
+  ctx.fillStyle = coreG
+  ctx.fillRect(barX + barW * 0.08, coreY, barW * 0.84, coreH)
+
+  ctx.fillStyle = 'rgba(125, 211, 252, 0.75)'
+  const stripeH = Math.max(1, barH * 0.08)
+  for (let i = 0; i < 4; i += 1) {
+    const sy = barY + barH * 0.14 + i * (barH * 0.22)
+    ctx.fillRect(barX + barW * 0.12, sy, barW * 0.76, stripeH)
+  }
+  ctx.shadowBlur = 0
+}
+
 function drawSpecialMarker(
   ctx: CanvasRenderingContext2D,
   value: number,
@@ -344,60 +530,16 @@ function drawSpecialMarker(
   const cx = x + cell / 2
   const cy = y + cell / 2
   ctx.save()
-  ctx.lineWidth = Math.max(1.3, cell * 0.05)
 
   if (specialType === 'line') {
     const orientation = getLineOrientation(value)
-    ctx.fillStyle = 'rgba(3, 105, 161, 0.34)'
-    ctx.strokeStyle = 'rgba(186, 230, 253, 0.98)'
-    if (orientation === 'row' || !orientation) {
-      const h = Math.max(5, cell * 0.18)
-      ctx.beginPath()
-      pathRoundRect(ctx, x + cell * 0.14, cy - h / 2, cell * 0.72, h, h / 2)
-      ctx.fill()
-      ctx.stroke()
-      ctx.fillStyle = 'rgba(224, 242, 254, 0.95)'
-      const stripeH = Math.max(1, cell * 0.045)
-      for (let i = 0; i < 3; i += 1) {
-        const sy = cy - h * 0.24 + i * (h * 0.24)
-        ctx.fillRect(x + cell * 0.2, sy, cell * 0.6, stripeH)
-      }
+    if (orientation === 'col') {
+      drawRocketGlyph(ctx, cx, cy, cell)
     } else {
-      const w = Math.max(5, cell * 0.18)
-      ctx.beginPath()
-      pathRoundRect(ctx, cx - w / 2, y + cell * 0.14, w, cell * 0.72, w / 2)
-      ctx.fill()
-      ctx.stroke()
-      ctx.fillStyle = 'rgba(224, 242, 254, 0.95)'
-      const stripeW = Math.max(1, cell * 0.045)
-      for (let i = 0; i < 3; i += 1) {
-        const sx = cx - w * 0.24 + i * (w * 0.24)
-        ctx.fillRect(sx, y + cell * 0.2, stripeW, cell * 0.6)
-      }
+      drawLaserGlyph(ctx, x, y, cell)
     }
   } else {
-    const radius = Math.max(6, cell * 0.2)
-    ctx.fillStyle = 'rgba(220, 38, 38, 0.34)'
-    ctx.strokeStyle = 'rgba(254, 226, 226, 0.96)'
-    ctx.beginPath()
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.stroke()
-    ctx.fillStyle = 'rgba(254, 242, 242, 0.92)'
-    for (let i = 0; i < 8; i += 1) {
-      const a = (Math.PI * 2 * i) / 8
-      const sx = cx + Math.cos(a) * (radius * 1.15)
-      const sy = cy + Math.sin(a) * (radius * 1.15)
-      ctx.beginPath()
-      ctx.arc(sx, sy, Math.max(1, radius * 0.14), 0, Math.PI * 2)
-      ctx.fill()
-    }
-    ctx.beginPath()
-    ctx.moveTo(cx, cy - radius - cell * 0.08)
-    ctx.lineTo(cx, cy + radius + cell * 0.08)
-    ctx.moveTo(cx - radius - cell * 0.08, cy)
-    ctx.lineTo(cx + radius + cell * 0.08, cy)
-    ctx.stroke()
+    drawBombGlyph(ctx, cx, cy, cell)
   }
 
   ctx.restore()
