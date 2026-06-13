@@ -874,16 +874,17 @@ export function Match3Screen({
     }
 
     if (!progress) {
+      const previewRows: QuestHudRow[] = quests.map(quest => ({
+        id: quest.id,
+        title: quest.title,
+        progress: 0,
+        target: quest.targetCount ?? 1,
+        completed: false,
+      }))
       return {
         totalCount: quests.length,
         completedCount: 0,
-        quests: quests.map(quest => ({
-          id: quest.id,
-          title: quest.title,
-          progress: 0,
-          target: quest.targetCount ?? 1,
-          completed: false,
-        })),
+        quests: previewRows,
       }
     }
     return {

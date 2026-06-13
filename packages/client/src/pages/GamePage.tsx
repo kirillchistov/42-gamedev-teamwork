@@ -43,6 +43,24 @@ import {
   writeNarrativeWinsTotal,
 } from '../game/match3/gameCompanions'
 import { Match3Screen } from '../game/match3/Match3Screen'
+import { LevelMapPanel, SectorBriefing } from '../game/match3/LevelMapPanel'
+import {
+  DEFAULT_ROUTE_SECTOR_ID,
+  getRouteSectorById,
+  getRouteSectorByLevelId,
+  getLevelPresetForSector,
+  ROUTE_MAP_SECTORS,
+} from '../game/match3/levelMap'
+import {
+  getNextSector,
+  getRecommendedSectorId,
+  isSectorUnlocked,
+  readRouteMapProgress,
+  rememberSelectedSector,
+  recordSectorWin,
+  ROUTE_MAP_PROGRESS_EVENT,
+  type RouteMapProgress,
+} from '../game/match3/levelProgress'
 import type {
   GameEndPayload,
   GameHudState,
@@ -57,7 +75,6 @@ import { publicAssetUrl } from '../utils/publicAssetUrl'
 import {
   DEFAULT_MATCH3_LEVEL_ID,
   getMatch3LevelById,
-  MATCH3_LEVELS,
 } from '../game/match3/engine/levels'
 import {
   buildQuestTitle,
@@ -269,6 +286,10 @@ export function GamePage() {
     readActiveCompanionId
   )
   const [quests, setQuests] = useState<QuestConfig[]>(initialLevel.quests ?? [])
+  const [routeMapProgress, setRouteMapProgress] = useState(readRouteMapProgress)
+  const [selectedSectorId, setSelectedSectorId] = useState(() =>
+    getRecommendedSectorId()
+  )
   const [winsTotal, setWinsTotal] = useState(readNarrativeWinsTotal)
   const [lastShownBeatIndex, setLastShownBeatIndex] = useState(
     readLastShownBeatIndex
@@ -327,6 +348,7 @@ export function GamePage() {
       debugBoostersMode,
       activeCompanionId,
       quests,
+      selectedSectorId,
     }),
     [
       limitMode,
@@ -340,17 +362,20 @@ export function GamePage() {
       debugBoostersMode,
       activeCompanionId,
       quests,
+      selectedSectorId,
     ]
   )
   const routeState = location.state as {
     notice?: string
     openSettings?: boolean
+    unlockedSectorId?: string
     gameSettings?: {
       limitMode: GameLimitMode
       moveLimit: MoveLimitOption
       durationSec: GameDurationOption
       goalScore: number
       selectedLevelId: string
+      selectedSectorId?: string
       boardSize: BoardSizeOption
       tileKinds: number
       boardFieldTheme?: BoardFieldThemeOption
@@ -361,6 +386,7 @@ export function GamePage() {
   } | null
   const notice = routeState?.notice
   const openSettingsOnStart = Boolean(routeState?.openSettings)
+  const unlockedSectorIdFromFinish = routeState?.unlockedSectorId
   // ===== PERFORMANCE MONITORING =====
   const perfMonitorRef = useRef<PerformanceMonitoringHandle | null>(null)
   // ===== END PERFORMANCE MONITORING =====
@@ -422,7 +448,20 @@ export function GamePage() {
     if (Array.isArray(settings.quests)) {
       setQuests(sanitizeLevelQuests(settings.quests))
     }
+    if (settings.selectedSectorId) {
+      setSelectedSectorId(settings.selectedSectorId)
+    } else {
+      const sector = getRouteSectorByLevelId(settings.selectedLevelId)
+      if (sector) setSelectedSectorId(sector.id)
+    }
   }, [routeState?.gameSettings])
+
+  useEffect(() => {
+    const onProgress = () => setRouteMapProgress(readRouteMapProgress())
+    window.addEventListener(ROUTE_MAP_PROGRESS_EVENT, onProgress)
+    return () =>
+      window.removeEventListener(ROUTE_MAP_PROGRESS_EVENT, onProgress)
+  }, [])
 
   useEffect(() => {
     if (!toastMessage) return
@@ -572,6 +611,51 @@ export function GamePage() {
   const selectedLevel = useMemo(
     () => getMatch3LevelById(selectedLevelId),
     [selectedLevelId]
+  )
+
+  const selectedSector = useMemo(() => {
+    return (
+      getRouteSectorById(selectedSectorId) ??
+      getRouteSectorById(DEFAULT_ROUTE_SECTOR_ID) ??
+      ROUTE_MAP_SECTORS[0]
+    )
+  }, [selectedSectorId])
+
+  const applySectorPreset = useCallback((sectorId: string) => {
+    const sector = getRouteSectorById(sectorId)
+    if (!sector) return
+    const preset = getLevelPresetForSector(sector)
+    setSelectedSectorId(sectorId)
+    setSelectedLevelId(preset.id)
+    setBoardSize(preset.boardSize)
+    setDurationSec(preset.durationSec)
+    setGoalScore(preset.goalValue)
+    setMoveLimit(MOVE_LIMIT_BY_LEVEL[preset.id] ?? 75)
+    setTileKinds(preset.tileKinds)
+    setQuests(sanitizeLevelQuests(preset.quests))
+    setDebugBoostersMode(false)
+    setRouteMapProgress(rememberSelectedSector(sectorId))
+  }, [])
+
+  useEffect(() => {
+    if (routeState?.gameSettings) return
+    applySectorPreset(getRecommendedSectorId())
+  }, [applySectorPreset, routeState?.gameSettings])
+
+  const handleSelectSector = useCallback(
+    (sectorId: string) => {
+      const sector = getRouteSectorById(sectorId)
+      if (!sector) return
+      if (
+        !isSectorUnlocked(sector, routeMapProgress, {
+          unlockAll: isDemoPlayRoute,
+        })
+      ) {
+        return
+      }
+      applySectorPreset(sectorId)
+    },
+    [applySectorPreset, routeMapProgress, isDemoPlayRoute]
   )
 
   const paletteTheme: GameThemeOption = useMemo(
@@ -727,11 +811,7 @@ export function GamePage() {
               return next
             }
 
-            if (
-              patch.type &&
-              patch.type !== 'composite' &&
-              quest.type === 'composite'
-            ) {
+            if (patch.type && quest.type === 'composite') {
               const next: QuestConfig = {
                 id: quest.id,
                 title: quest.title,
@@ -889,12 +969,26 @@ export function GamePage() {
         return nextHistory
       })
       window.localStorage.setItem(LAST_RESULT_KEY, JSON.stringify(next))
+      let unlockedSectorId: string | undefined
       if (payload.reason === 'goalReached') {
         vibrateWinFeedback()
         const currentWins = readNarrativeWinsTotal()
         const nextWins = currentWins + 1
         writeNarrativeWinsTotal(nextWins)
         setWinsTotal(nextWins)
+
+        const progressBefore = readRouteMapProgress()
+        recordSectorWin(selectedSectorId, payload.snapshot.score)
+        const progressAfter = readRouteMapProgress()
+        setRouteMapProgress(progressAfter)
+        const nextSector = getNextSector(selectedSectorId)
+        if (
+          nextSector &&
+          isSectorUnlocked(nextSector, progressAfter) &&
+          !isSectorUnlocked(nextSector, progressBefore)
+        ) {
+          unlockedSectorId = nextSector.id
+        }
       }
       advanceArenaBgAfterGame()
 
@@ -919,11 +1013,12 @@ export function GamePage() {
         {
           state: {
             gameSettings: buildGameSettingsState(),
+            unlockedSectorId,
           },
         }
       )
     },
-    [buildGameSettingsState, isDemoPlayRoute, user, navigate]
+    [buildGameSettingsState, isDemoPlayRoute, selectedSectorId, user, navigate]
   )
   const handleSendHeroChatMessage = useCallback((text: string) => {
     const check = validateForumContent(text)
@@ -966,7 +1061,7 @@ export function GamePage() {
           <div className="match3-home-screen__inner">
             <h1 className="match3-home-screen__title">Cosmic Match</h1>
             <p className="match3-home-screen__subtitle">
-              "3 в ряд" скомбо‑каскадами, целями уровня и прогрессией.
+              Пройдите секторы маршрута, закрывайте цели и бонусные квесты.
             </p>
             <p className="match3-home-screen__subtitle">
               Подходит для коротких сессий и соревновательной игры.
@@ -1011,24 +1106,25 @@ export function GamePage() {
 
             <div className="match3-home-screen__cards">
               <article className="match3-home-screen__card">
-                <h2>Как играть</h2>
+                <h2>Карта маршрута</h2>
                 <p>
-                  Меняйте соседние фишки, собирайте линии 3+ и запускайте
-                  каскады для максимального счёта.
+                  Три сектора кампании открываются по очереди. Квесты внутри
+                  сектора — отдельные бонусные задачи, не путать с переходом
+                  дальше.
                 </p>
               </article>
               <article className="match3-home-screen__card">
                 <h2>Цель матча</h2>
                 <p>
-                  Закрывайте цели уровня и улучшайте личный результат, чтобы
-                  продвигаться в таблице лидеров.
+                  Закрывайте цель по очкам в выбранном секторе и улучшайте
+                  результат в таблице лидеров.
                 </p>
               </article>
               <article className="match3-home-screen__card">
                 <h2>Настройки</h2>
                 <p>
-                  Выбирайте дизайн поля, уровень сложности и количество фишек на
-                  свое усмотрение.
+                  Тонкая настройка поля и подсказок — в параметрах. Сектор
+                  выбирается на карте маршрута.
                 </p>
               </article>
             </div>
@@ -1194,49 +1290,21 @@ export function GamePage() {
                     )}
                   </div>
                 )}
-                <div className="match3__start-info">
-                  <button
-                    type="button"
-                    className="btn btn--flat"
-                    onClick={() => setShowSettingsPanel(true)}>
-                    Уровень: {appliedLevel.title}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--flat"
-                    onClick={() => setShowSettingsPanel(true)}>
-                    Цель: {appliedLevel.goalValue} очков
-                  </button>
-                  {appliedLevel.targetCells && appliedLevel.targetCells > 0 && (
-                    <div>Меток для бомб: {appliedLevel.targetCells}</div>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn--flat"
-                    onClick={() => setShowSettingsPanel(true)}>
-                    Поле: {appliedLevel.boardSize}x{appliedLevel.boardSize}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--flat"
-                    onClick={() => setShowSettingsPanel(true)}>
-                    Поле: {BOARD_FIELD_THEME_LABELS[boardFieldTheme]}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--flat"
-                    onClick={() => setShowSettingsPanel(true)}>
-                    {limitMode === 'moves'
-                      ? `Ходы: ${moveLimit}`
-                      : `Время: ${appliedLevel.durationSec / 60} мин`}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--flat"
-                    onClick={() => setShowSettingsPanel(true)}>
-                    Типов фишек: {appliedLevel.tileKinds}
-                  </button>
-                </div>
+                <LevelMapPanel
+                  sectors={ROUTE_MAP_SECTORS}
+                  progress={routeMapProgress}
+                  selectedSectorId={selectedSector.id}
+                  unlockAll={isDemoPlayRoute}
+                  onSelect={handleSelectSector}
+                />
+                <SectorBriefing
+                  sector={selectedSector}
+                  goalScore={goalScore}
+                  moveLimit={moveLimit}
+                  limitMode={limitMode}
+                  durationMin={appliedLevel.durationSec / 60}
+                  questCount={quests.length}
+                />
                 <div className="match3__start-actions">
                   <button
                     type="button"
@@ -1279,27 +1347,38 @@ export function GamePage() {
                     </div>
                     <div className="match3-page__settings-grid">
                       <label className="match3-page__settings-label">
-                        Уровень
+                        Сектор маршрута
                         <select
-                          value={selectedLevelId}
-                          onChange={e => {
-                            const nextId = e.target.value
-                            const preset = getMatch3LevelById(nextId)
-                            setSelectedLevelId(nextId)
-                            setBoardSize(preset.boardSize)
-                            setDurationSec(preset.durationSec)
-                            setGoalScore(preset.goalValue)
-                            setMoveLimit(MOVE_LIMIT_BY_LEVEL[nextId] ?? 75)
-                            setTileKinds(preset.tileKinds)
-                            setQuests(sanitizeLevelQuests(preset.quests))
-                            setDebugBoostersMode(false)
-                          }}>
-                          {MATCH3_LEVELS.map(level => (
-                            <option key={level.id} value={level.id}>
-                              {level.title}
-                            </option>
-                          ))}
+                          value={selectedSectorId}
+                          onChange={e => handleSelectSector(e.target.value)}>
+                          {ROUTE_MAP_SECTORS.map(sector => {
+                            const unlocked = isSectorUnlocked(
+                              sector,
+                              routeMapProgress
+                            )
+                            return (
+                              <option
+                                key={sector.id}
+                                value={sector.id}
+                                disabled={!unlocked}>
+                                {sector.title}
+                                {!unlocked ? ' (закрыт)' : ''}
+                              </option>
+                            )
+                          })}
                         </select>
+                      </label>
+                      <p className="match3-page__settings-hint">
+                        Сектор задаёт пресет сложности и квесты. Цель матча —
+                        очки; квесты — бонусные задачи.
+                      </p>
+                      <label className="match3-page__settings-label match3-page__settings-label--readonly">
+                        Пресет сложности
+                        <input
+                          type="text"
+                          readOnly
+                          value={selectedLevel.title}
+                        />
                       </label>
                       <label className="match3-page__settings-label">
                         Размер поля
@@ -2127,15 +2206,24 @@ export function GamePage() {
                   finishStats?.isWin ? 'is-win' : 'is-lose'
                 )}>
                 {finishStats?.isWin
-                  ? 'Цель уровня выполнена'
+                  ? `Сектор ${selectedSector.title}: цель выполнена`
                   : lastResult?.reason === 'timeOut'
                   ? 'Время вышло, цель не достигнута'
                   : lastResult?.reason === 'movesOut'
                   ? 'Ходы закончились, цель не достигнута'
                   : 'Цель не достигнута'}
               </p>
+              {finishStats?.isWin && unlockedSectorIdFromFinish ? (
+                <p className="match3-finish-unlock">
+                  Открыт{' '}
+                  {getRouteSectorById(unlockedSectorIdFromFinish)?.title ??
+                    'новый сектор'}
+                  . Можно продолжить маршрут.
+                </p>
+              ) : null}
               {lastResult ? (
                 <ul className="match3__results-list">
+                  <li>Сектор: {selectedSector.title}</li>
                   <li>Счёт: {lastResult.snapshot.score}</li>
                   <li>Цель: {finishStats?.effectiveGoalScore ?? goalScore}</li>
                   <li>
@@ -2198,7 +2286,6 @@ export function GamePage() {
                       onClick={() =>
                         navigate('/game/start', {
                           state: {
-                            openSettings: true,
                             gameSettings: buildGameSettingsState(),
                           },
                         })
@@ -2211,18 +2298,41 @@ export function GamePage() {
                       onClick={handleCycleFinishArenaBg}>
                       Фон
                     </button>
+                    {finishStats?.isWin && unlockedSectorIdFromFinish ? (
+                      <button
+                        type="button"
+                        className="btn btn--primary match3__play-btn"
+                        onClick={() => {
+                          applySectorPreset(unlockedSectorIdFromFinish)
+                          navigate('/game/start', {
+                            state: {
+                              gameSettings: {
+                                ...buildGameSettingsState(),
+                                selectedSectorId: unlockedSectorIdFromFinish,
+                              },
+                            },
+                          })
+                        }}>
+                        Следующий сектор
+                      </button>
+                    ) : null}
                     <button
                       type="button"
-                      className="btn btn--primary match3__play-btn"
+                      className={
+                        finishStats?.isWin && unlockedSectorIdFromFinish
+                          ? 'btn btn--outline match3__play-btn'
+                          : 'btn btn--primary match3__play-btn'
+                      }
                       onClick={() =>
                         navigate('/game/start', {
                           state: {
-                            openSettings: true,
                             gameSettings: buildGameSettingsState(),
                           },
                         })
                       }>
-                      Сыграть снова
+                      {finishStats?.isWin && unlockedSectorIdFromFinish
+                        ? 'Повторить сектор'
+                        : 'Сыграть снова'}
                     </button>
                   </>
                 )}

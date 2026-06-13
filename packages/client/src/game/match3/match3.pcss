@@ -2588,6 +2588,192 @@ button.match3__results-badge-win-wrap:focus-visible {
   color: #334155;
 }
 
+/* карта маршрута (секторы кампании) */
+
+.match3-route-map {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(15, 23, 42, 0.5);
+  display: grid;
+  gap: 12px;
+}
+
+.match3-route-map__head strong {
+  display: block;
+  font-size: 16px;
+}
+
+.match3-route-map__hint {
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.match3-route-map__track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 720px) {
+  .match3-route-map__track {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .match3-route-map__node-wrap--linked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -6px;
+    width: 12px;
+    height: 2px;
+    background: rgba(125, 211, 252, 0.45);
+    transform: translateY(-50%);
+  }
+
+  .match3-route-map__node-wrap {
+    position: relative;
+  }
+}
+
+.match3-route-map__node {
+  width: 100%;
+  min-height: 100%;
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.72);
+  color: #e2e8f0;
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.match3-route-map__node:hover:not(:disabled) {
+  border-color: rgba(56, 189, 248, 0.65);
+  transform: translateY(-1px);
+}
+
+.match3-route-map__node--selected {
+  border-color: rgba(56, 189, 248, 0.95);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.45) inset,
+    0 0 18px rgba(56, 189, 248, 0.18);
+}
+
+.match3-route-map__node--done {
+  border-color: rgba(74, 222, 128, 0.55);
+}
+
+.match3-route-map__node--locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.match3-route-map__node-order {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(56, 189, 248, 0.2);
+  color: #bae6fd;
+}
+
+.match3-route-map__node-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.match3-route-map__node-tagline,
+.match3-route-map__node-meta,
+.match3-route-map__node-quests,
+.match3-route-map__node-lock {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.match3-route-map__node-badge {
+  font-size: 11px;
+  color: #86efac;
+  font-weight: 600;
+}
+
+.match3-sector-briefing {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.match3-sector-briefing__title {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.match3-sector-briefing__grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px 14px;
+}
+
+.match3-sector-briefing__grid dt {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.match3-sector-briefing__grid dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.match3-finish-unlock {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(74, 222, 128, 0.45);
+  background: rgba(22, 163, 74, 0.12);
+  color: #bbf7d0;
+  font-size: 13px;
+}
+
+.landing--light-flat .match3-route-map,
+.landing--light-3d .match3-route-map,
+.landing--light-flat .match3-sector-briefing,
+.landing--light-3d .match3-sector-briefing {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(14, 165, 233, 0.35);
+}
+
+.landing--light-flat .match3-route-map__node,
+.landing--light-3d .match3-route-map__node {
+  background: rgba(248, 250, 252, 0.95);
+  color: #0f172a;
+}
+
 /* старт-экран */
 
 .match3-start-screen {
