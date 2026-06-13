@@ -9,11 +9,19 @@ import {
   type RouteMapProgress,
   writeRouteMapProgress,
 } from './levelProgress'
-import { getRouteSectorById } from './levelMap'
+import { getRouteSectorById, type RouteMapSector } from './levelMap'
 
-const alpha = getRouteSectorById('sector-alpha')!
-const beta = getRouteSectorById('sector-beta')!
-const gamma = getRouteSectorById('sector-gamma')!
+function requireSector(sectorId: string): RouteMapSector {
+  const sector = getRouteSectorById(sectorId)
+  if (!sector) {
+    throw new Error(`Missing test sector: ${sectorId}`)
+  }
+  return sector
+}
+
+const alpha = requireSector('sector-alpha')
+const beta = requireSector('sector-beta')
+const gamma = requireSector('sector-gamma')
 
 function resetStorage() {
   window.localStorage.removeItem(ROUTE_MAP_PROGRESS_KEY)

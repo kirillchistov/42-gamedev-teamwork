@@ -106,12 +106,9 @@ export function getRecommendedSectorId(
   if (firstIncomplete) return firstIncomplete.id
 
   const last = progress.lastSelectedSectorId
-  if (
-    last &&
-    getRouteSectorById(last) &&
-    isSectorUnlocked(getRouteSectorById(last)!, progress, options)
-  ) {
-    return last
+  const lastSector = last ? getRouteSectorById(last) : undefined
+  if (lastSector && isSectorUnlocked(lastSector, progress, options)) {
+    return lastSector.id
   }
 
   return unlocked[unlocked.length - 1]?.id ?? DEFAULT_ROUTE_SECTOR_ID

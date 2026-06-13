@@ -59,7 +59,6 @@ import {
   rememberSelectedSector,
   recordSectorWin,
   ROUTE_MAP_PROGRESS_EVENT,
-  type RouteMapProgress,
 } from '../game/match3/levelProgress'
 import type {
   GameEndPayload,
