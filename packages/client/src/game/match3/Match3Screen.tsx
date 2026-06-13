@@ -55,6 +55,16 @@ type QuestPreview = {
   id: string
   title: string
   targetCount?: number
+  type?: string
+}
+
+type QuestHudRow = {
+  id: string
+  title: string
+  progress: number
+  target: number
+  completed: boolean
+  nested?: boolean
 }
 
 const BORDER_SPARK_COUNT = 34
@@ -830,6 +840,39 @@ export function Match3Screen({
   const showBoard = forcePlayMode || !isStartPhase
   const questSummary = useMemo(() => {
     const progress = hud.questProgress
+    const mapRuntimeQuest = (
+      quest: NonNullable<typeof progress>['quests'][number]
+    ): QuestHudRow[] => {
+      if (quest.parts && quest.parts.length > 0) {
+        return [
+          {
+            id: quest.id,
+            title: quest.title,
+            progress: quest.progress,
+            target: quest.target,
+            completed: quest.completed,
+          },
+          ...quest.parts.map(part => ({
+            id: part.id,
+            title: part.title,
+            progress: part.progress,
+            target: part.target,
+            completed: part.completed,
+            nested: true,
+          })),
+        ]
+      }
+      return [
+        {
+          id: quest.id,
+          title: quest.title,
+          progress: quest.progress,
+          target: quest.target,
+          completed: quest.completed,
+        },
+      ]
+    }
+
     if (!progress) {
       return {
         totalCount: quests.length,
@@ -846,13 +889,7 @@ export function Match3Screen({
     return {
       totalCount: progress.totalCount,
       completedCount: progress.completedCount,
-      quests: progress.quests.map(quest => ({
-        id: quest.id,
-        title: quest.title,
-        progress: quest.progress,
-        target: quest.target,
-        completed: quest.completed,
-      })),
+      quests: progress.quests.flatMap(mapRuntimeQuest),
     }
   }, [hud.questProgress, quests])
 
@@ -1038,7 +1075,8 @@ export function Match3Screen({
                       className={clsx(
                         quest.completed && 'match3__quest-item--done',
                         justCompletedQuestIds.includes(quest.id) &&
-                          'match3__quest-item--just-done'
+                          'match3__quest-item--just-done',
+                        quest.nested && 'match3__quest-item--nested'
                       )}>
                       <span>{quest.title}</span>
                       <span>
@@ -1069,7 +1107,7 @@ export function Match3Screen({
                       <span className="match3__hud-target-crosshair" />
                       <span className="match3__hud-target-bomb">💣</span>
                     </span>
-                    Блокер: взрыв
+                    Блокер: лёд и метки
                   </span>
                 </div>
                 {playerHintsMode === 'always' && (
@@ -1171,6 +1209,21 @@ export function Match3Screen({
                         : `Время: ${appliedLevel.durationSec / 60} мин`}
                     </div>
                     <div>Типов фишек: {appliedLevel.tileKinds}</div>
+                    {quests.length > 0 && (
+                      <div className="match3__start-quests">
+                        <strong>Квесты: {quests.length}</strong>
+                        <ul>
+                          {quests.map(quest => (
+                            <li key={quest.id}>
+                              {quest.title}
+                              {quest.type !== 'composite' && quest.targetCount
+                                ? ` — ${quest.targetCount}`
+                                : ''}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                   <div className="match3__start-actions">
                     <button

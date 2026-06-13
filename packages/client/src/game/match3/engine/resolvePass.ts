@@ -29,7 +29,12 @@ import {
 import type { MatchFxApi } from './matchFx'
 import type { SoundFx } from './bootstrap'
 import { getCellKind } from './core/cell'
-import type { QuestColor, ResolveQuestDelta } from './quests'
+import {
+  activationToQuestSpecialKind,
+  kindIndexToQuestColor,
+  type QuestColor,
+  type ResolveQuestDelta,
+} from './quests'
 
 export const RESOLVE_FALL_ANIM_MS = match3AnimMs(190)
 
@@ -39,14 +44,6 @@ export type ResolveTileMotion = {
 }
 
 const COMBO_SHAKE_MIN_CHAIN = 3
-const COLOR_BY_KIND_INDEX: QuestColor[] = [
-  'blue',
-  'green',
-  'yellow',
-  'red',
-  'pink',
-]
-
 export type Match3ResolvePassEnv = {
   board: Board
   getMatchBoard: () => Board
@@ -100,6 +97,7 @@ export async function runOneResolvePass(env: Match3ResolvePassEnv): Promise<{
         clearedByColor: {},
         clearedSpecialByColor: {},
         clearedSpecialByKind: {},
+        clearedSpecialCombined: {},
         clearedBlockers: 0,
       },
     }
@@ -139,9 +137,28 @@ export async function runOneResolvePass(env: Match3ResolvePassEnv): Promise<{
       continue
     }
     const kind = getCellKind(value)
-    const color =
-      COLOR_BY_KIND_INDEX[Math.abs(kind) % COLOR_BY_KIND_INDEX.length] ?? 'blue'
+    const color = kindIndexToQuestColor(kind)
     clearedByColor[color] = (clearedByColor[color] ?? 0) + 1
+  }
+
+  const clearedSpecialByColor: Partial<Record<QuestColor, number>> = {}
+  const clearedSpecialByKind: ResolveQuestDelta['clearedSpecialByKind'] = {}
+  const clearedSpecialCombined: ResolveQuestDelta['clearedSpecialCombined'] = {}
+  for (const activation of specialActivations) {
+    const value = boardBeforeClear[activation.cell.r]?.[activation.cell.c]
+    if (typeof value !== 'number' || value < 0) {
+      continue
+    }
+    const color = kindIndexToQuestColor(getCellKind(value))
+    const kind = activationToQuestSpecialKind({
+      type: activation.type,
+      orientation: activation.orientation,
+    })
+    clearedSpecialByColor[color] = (clearedSpecialByColor[color] ?? 0) + 1
+    clearedSpecialByKind[kind] = (clearedSpecialByKind[kind] ?? 0) + 1
+    const combinedKey = `${color}:${kind}`
+    clearedSpecialCombined[combinedKey] =
+      (clearedSpecialCombined[combinedKey] ?? 0) + 1
   }
 
   const base = clearAndScore(env.board, matches, {
@@ -226,9 +243,10 @@ export async function runOneResolvePass(env: Match3ResolvePassEnv): Promise<{
     nextChain: env.chain + 1,
     questDelta: {
       clearedByColor,
-      clearedSpecialByColor: {},
-      clearedSpecialByKind: {},
-      clearedBlockers: goalDamage.hits.length,
+      clearedSpecialByColor,
+      clearedSpecialByKind,
+      clearedSpecialCombined,
+      clearedBlockers: iceDamage.breaks + goalDamage.hits.length,
     },
   }
 }

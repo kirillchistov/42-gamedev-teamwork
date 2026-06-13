@@ -18,23 +18,14 @@ function shuffleInPlace<T>(items: T[]) {
   }
 }
 
-export function cloneOverlayGrid(
-  src: OverlayGrid
-): OverlayGrid {
+export function cloneOverlayGrid(src: OverlayGrid): OverlayGrid {
   return src.map(row => [...row])
 }
 
-export function countPositiveCells(
-  grid: OverlayGrid
-): number {
+export function countPositiveCells(grid: OverlayGrid): number {
   return grid.reduce(
     (acc, row) =>
-      acc +
-      row.reduce(
-        (rowAcc, value) =>
-          rowAcc + (value > 0 ? 1 : 0),
-        0
-      ),
+      acc + row.reduce((rowAcc, value) => rowAcc + (value > 0 ? 1 : 0), 0),
     0
   )
 }
@@ -45,14 +36,11 @@ export function createIceGrid(
   hp: number
 ): OverlayGrid {
   const rows = srcBoard.length
-  const cols =
-    rows > 0 ? srcBoard[0]?.length ?? 0 : 0
-  const grid: OverlayGrid = Array.from(
-    { length: rows },
-    () => Array.from({ length: cols }, () => 0)
+  const cols = rows > 0 ? srcBoard[0]?.length ?? 0 : 0
+  const grid: OverlayGrid = Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => 0)
   )
-  if (rows === 0 || cols === 0 || count <= 0)
-    return grid
+  if (rows === 0 || cols === 0 || count <= 0) return grid
   const targetCount = Math.min(rows * cols, count)
   const candidates: CellRC[] = []
   for (let r = 0; r < rows; r += 1) {
@@ -64,12 +52,7 @@ export function createIceGrid(
   shuffleInPlace(candidates)
   const picked: CellRC[] = []
   const hasIceNeighbor = (cell: CellRC) =>
-    picked.some(
-      p =>
-        Math.abs(p.r - cell.r) +
-          Math.abs(p.c - cell.c) ===
-        1
-    )
+    picked.some(p => Math.abs(p.r - cell.r) + Math.abs(p.c - cell.c) === 1)
   for (const cell of candidates) {
     if (picked.length >= targetCount) break
     if (hasIceNeighbor(cell)) continue
@@ -78,12 +61,7 @@ export function createIceGrid(
   if (picked.length < targetCount) {
     for (const cell of candidates) {
       if (picked.length >= targetCount) break
-      if (
-        picked.some(
-          p => p.r === cell.r && p.c === cell.c
-        )
-      )
-        continue
+      if (picked.some(p => p.r === cell.r && p.c === cell.c)) continue
       picked.push(cell)
     }
   }
@@ -101,24 +79,13 @@ export function createGoalGrid(
   hp: number
 ): OverlayGrid {
   const layout = createGoalLayout(srcBoard, count)
-  return createGoalGridFromLayout(
-    srcBoard,
-    layout,
-    hp
-  )
+  return createGoalGridFromLayout(srcBoard, layout, hp)
 }
 
-export function createGoalLayout(
-  srcBoard: Board,
-  count: number
-): CellRC[] {
+export function createGoalLayout(srcBoard: Board, count: number): CellRC[] {
   const rows = srcBoard.length
-  const cols =
-    rows > 0 ? srcBoard[0]?.length ?? 0 : 0
-  const capped = Math.max(
-    0,
-    Math.min(rows * cols, Math.floor(count))
-  )
+  const cols = rows > 0 ? srcBoard[0]?.length ?? 0 : 0
+  const capped = Math.max(0, Math.min(rows * cols, Math.floor(count)))
   if (capped <= 0) return []
   const candidates: CellRC[] = []
   for (let r = 0; r < rows; r += 1) {
@@ -137,26 +104,18 @@ export function createGoalGridFromLayout(
   hp: number
 ): OverlayGrid {
   const rows = srcBoard.length
-  const cols =
-    rows > 0 ? srcBoard[0]?.length ?? 0 : 0
-  const grid: OverlayGrid = Array.from(
-    { length: rows },
-    () => Array.from({ length: cols }, () => 0)
+  const cols = rows > 0 ? srcBoard[0]?.length ?? 0 : 0
+  const grid: OverlayGrid = Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => 0)
   )
   if (layout.length === 0) return grid
   for (let i = 0; i < layout.length; i += 1) {
     const cell = layout[i]
     if (!cell) break
-    if (
-      cell.r < 0 ||
-      cell.c < 0 ||
-      cell.r >= rows ||
-      cell.c >= cols
-    ) {
+    if (cell.r < 0 || cell.c < 0 || cell.r >= rows || cell.c >= cols) {
       continue
     }
-    if ((srcBoard[cell.r]?.[cell.c] ?? -1) < 0)
-      continue
+    if ((srcBoard[cell.r]?.[cell.c] ?? -1) < 0) continue
     const row = grid[cell.r]
     if (!row) continue
     row[cell.c] = hp
@@ -171,19 +130,16 @@ export function applyIceDamage(params: {
   scoreMult: number
   scorePerDamage: number
   breakBonus: number
-}): { nextIceGrid: OverlayGrid; score: number } {
-  const {
-    iceGrid,
-    cleared,
-    chain,
-    scoreMult,
-    scorePerDamage,
-    breakBonus,
-  } = params
+}): {
+  nextIceGrid: OverlayGrid
+  score: number
+  breaks: number
+} {
+  const { iceGrid, cleared, chain, scoreMult, scorePerDamage, breakBonus } =
+    params
   const nextIceGrid = cloneOverlayGrid(iceGrid)
   const rows = nextIceGrid.length
-  const cols =
-    rows > 0 ? nextIceGrid[0]?.length ?? 0 : 0
+  const cols = rows > 0 ? nextIceGrid[0]?.length ?? 0 : 0
   const inBounds = (r: number, c: number) =>
     r >= 0 && c >= 0 && r < rows && c < cols
   const damaged = new Set<string>()
@@ -211,12 +167,11 @@ export function applyIceDamage(params: {
       if (updated === 0) breaks += 1
     }
   }
-  const raw =
-    damageHits * scorePerDamage +
-    breaks * breakBonus
+  const raw = damageHits * scorePerDamage + breaks * breakBonus
   return {
     nextIceGrid,
     score: Math.floor(raw * chain * scoreMult),
+    breaks,
   }
 }
 
@@ -231,17 +186,10 @@ export function applyGoalDamageFromBombs(params: {
   score: number
   hits: CellRC[]
 } {
-  const {
-    goalGrid,
-    activations,
-    chain,
-    scoreMult,
-    scorePerHit,
-  } = params
+  const { goalGrid, activations, chain, scoreMult, scorePerHit } = params
   const nextGoalGrid = cloneOverlayGrid(goalGrid)
   const rows = nextGoalGrid.length
-  const cols =
-    rows > 0 ? nextGoalGrid[0]?.length ?? 0 : 0
+  const cols = rows > 0 ? nextGoalGrid[0]?.length ?? 0 : 0
   const inBounds = (r: number, c: number) =>
     r >= 0 && c >= 0 && r < rows && c < cols
   const hits: CellRC[] = []
@@ -270,12 +218,7 @@ export function applyGoalDamageFromBombs(params: {
   }
   return {
     nextGoalGrid,
-    score: Math.floor(
-      hits.length *
-        scorePerHit *
-        chain *
-        scoreMult
-    ),
+    score: Math.floor(hits.length * scorePerHit * chain * scoreMult),
     hits,
   }
 }
